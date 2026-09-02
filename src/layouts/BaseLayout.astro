@@ -1,5 +1,7 @@
 ---
 // Tipografía de marca, self-hosted (nada de Google Fonts por CDN).
+// Montserrat variable cubre SemiBold (600) para subtítulos y Bold (700) para
+// títulos con un solo archivo; Poppins Regular (400) es la tipografía de cuerpo.
 import '@fontsource-variable/montserrat'; // títulos (Bold / SemiBold)
 import '@fontsource/poppins/400.css'; // cuerpo
 import '@fontsource/poppins/500.css';
@@ -53,7 +55,8 @@ const jsonLd = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <meta name="theme-color" content="#0d2c84" />
+    <meta name="theme-color" content="#050d28" />
+    <meta name="color-scheme" content="dark" />
 
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
