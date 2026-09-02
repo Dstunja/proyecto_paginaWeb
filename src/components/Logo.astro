@@ -4,14 +4,12 @@ import { empresa } from '../data/site';
 /**
  * Logo oficial de la marca.
  *
- * Sobre el fondo oscuro del sitio el logotipo horizontal no sirve: su texto
- * "Distribuciones" está en azul oscuro #0D2C84 y se perdería contra el fondo.
- * Por eso la variante que se usa en barra y pie es `claro`: el isotipo dentro
- * de una pastilla blanca (que conserva sus colores de marca) más el nombre
- * tipografiado en Montserrat blanco, con la línea naranja del logo.
- *
- * - `claro`: pastilla blanca con isotipo + wordmark. Para fondos oscuros.
- * - `completo`: logotipo horizontal original. Reservado para fondos claros.
+ * - `completo`: logotipo horizontal original. Es el que va en la barra, sobre
+ *   el fondo blanco del sitio.
+ * - `claro`: el isotipo dentro de una pastilla blanca (conserva sus colores de
+ *   marca) más el nombre en Montserrat blanco y la línea naranja del logo.
+ *   Para fondos oscuros, como el pie de página: ahí el logotipo horizontal no
+ *   serviría, porque su texto es azul oscuro #0D2C84.
  * - `iso`: solo el isotipo, para espacios donde el logo completo no cabe.
  *
  * Las rutas respetan el `base` configurado en astro.config.mjs.
@@ -22,7 +20,7 @@ interface Props {
   class?: string;
 }
 
-const { variante = 'claro', href, class: clase } = Astro.props;
+const { variante = 'completo', href, class: clase } = Astro.props;
 const Tag = href ? 'a' : 'div';
 const etiqueta = `${empresa.razonSocial} — inicio`;
 
@@ -72,7 +70,7 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
   {
     variante === 'claro' && (
       <>
-        <span class="icono-int flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-[0_4px_14px_rgba(3,8,25,.35)]">
+        <span class="icono-int flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-[0_4px_14px_rgba(0,0,0,.18)]">
           <img
             src={ISOTIPO}
             alt=""
@@ -83,7 +81,7 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
         </span>
         <span class="font-display leading-tight text-ink">
           <span class="block text-[18px] font-bold tracking-[-0.01em]">Distribuciones</span>
-          <span class="mt-1 flex items-center gap-2 text-[10.5px] font-semibold tracking-[0.08em] text-ink/70 uppercase">
+          <span class="mt-1 flex items-center gap-2 text-[10.5px] font-semibold tracking-[0.08em] text-muted uppercase">
             <span class="h-[2px] w-5 bg-accent" aria-hidden="true" />
             Santiago De Tunja S.A.S
           </span>

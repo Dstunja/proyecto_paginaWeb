@@ -26,7 +26,7 @@ import {
     <div class="wrap">
       <div class="grid grid-cols-1 items-center gap-14 tablet:grid-cols-[1.05fr_.95fr] tablet:gap-16">
         <div>
-          <p class="glass mb-7 inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-[13px] font-semibold text-ink/85">
+          <p class="glass mb-7 inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-[13px] font-semibold text-ink">
             <span class="relative flex h-2 w-2" aria-hidden="true">
               <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75"></span>
               <span class="relative inline-flex h-2 w-2 rounded-full bg-secondary"></span>
@@ -35,7 +35,7 @@ import {
           </p>
           <h1 class="text-[38px] mob:text-[46px] tablet:text-[60px]">
             Las marcas que mueven tu negocio,{' '}
-            <span class="text-accent">más cerca de ti.</span>
+            <span class="text-accent-strong">más cerca de ti.</span>
           </h1>
           <p class="mt-7 max-w-[48ch] text-lg text-muted tablet:text-xl">
             Distribuimos productos de consumo masivo a negocios de Boyacá, Santander y
@@ -55,12 +55,12 @@ import {
             <img
               src={ruta(HERO_IMAGEN)}
               alt="Camión de reparto de Distribuciones Santiago de Tunja"
-              class="aspect-[4/3] w-full rounded-[28px] object-cover shadow-[0_28px_60px_rgba(3,8,25,.6)]"
+              class="aspect-[4/3] w-full rounded-[28px] object-cover shadow-[0_28px_60px_rgba(13,44,132,.22)]"
             />
           ) : (
             /* Sin foto todavía: panel de marca. Al definir HERO_IMAGEN en
                src/data/site.ts se reemplaza por la foto real del camión. */
-            <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[28px] border border-line bg-gradient-to-br from-primary to-midnight shadow-[0_28px_60px_rgba(3,8,25,.6)]">
+            <div class="sobre-oscuro relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[28px] bg-gradient-to-br from-primary to-primary-dark shadow-[0_28px_60px_rgba(13,44,132,.22)]">
               <div class="absolute -top-20 -right-16 h-72 w-72 rounded-full bg-secondary/25 blur-2xl" />
               <div class="absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-accent/10 blur-2xl" />
               <div class="relative flex flex-col items-center gap-6 px-8 text-center">
@@ -84,7 +84,7 @@ import {
       </div>
 
       <!-- BARRA DE CIFRAS -->
-      <div class="glass mt-20 rounded-[24px] px-6 py-9 tablet:px-10">
+      <div class="sobre-oscuro mt-20 rounded-[24px] bg-primary px-6 py-9 shadow-[0_18px_44px_rgba(13,44,132,.22)] tablet:px-10">
         <dl class="grid grid-cols-2 gap-y-9 tablet:grid-cols-4">
           {
             cifras.map((cifra, i) => (
@@ -110,7 +110,7 @@ import {
   </section>
 
   <!-- MARCAS -->
-  <div class="border-y border-line bg-surface/40 py-16">
+  <div class="border-y border-line bg-base py-16">
     <div class="wrap">
       <p class="mb-8 text-center text-[12.5px] font-semibold tracking-[0.14em] text-muted uppercase">
         Marcas que distribuimos
@@ -118,7 +118,7 @@ import {
       <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
         {
           marcas.map((marca) => (
-            <span class="font-display text-[15px] font-semibold text-ink/55 transition-colors duration-200 hover:text-ink">
+            <span class="font-display text-[15px] font-semibold text-muted transition-colors duration-200 hover:text-primary">
               {marca}
             </span>
           ))
@@ -158,7 +158,7 @@ import {
   </section>
 
   <!-- COBERTURA -->
-  <section class="section border-y border-line bg-base/60">
+  <section class="section border-y border-line bg-base">
     <div class="wrap grid grid-cols-1 items-start gap-14 tablet:grid-cols-[.9fr_1.1fr]">
       <div>
         <span class="kicker">Nuestra red</span>
@@ -221,7 +221,7 @@ import {
   </section>
 
   <!-- HAZ TU PEDIDO -->
-  <section id="haz-tu-pedido" class="section border-y border-line bg-base/60">
+  <section id="haz-tu-pedido" class="section border-y border-line bg-base">
     <div class="wrap">
       <div class="mx-auto mb-14 max-w-[46ch] text-center">
         <span class="kicker">Haz tu pedido</span>

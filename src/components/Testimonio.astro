@@ -11,7 +11,7 @@ const iniciales = testimonio.nombre
 ---
 
 <figure
-  class="glass-card mt-10 grid grid-cols-1 items-center gap-10 px-8 py-10 text-ink tablet:grid-cols-[1.4fr_.6fr] tablet:px-12"
+  class="sobre-oscuro mt-10 grid grid-cols-1 items-center gap-10 rounded-card bg-primary px-8 py-10 shadow-[0_18px_44px_rgba(13,44,132,.22)] tablet:grid-cols-[1.4fr_.6fr] tablet:px-12"
 >
   <div>
     <div class="mb-4 flex gap-1" role="img" aria-label={`${testimonio.estrellas} de 5 estrellas`}>
@@ -22,7 +22,7 @@ const iniciales = testimonio.nombre
             class={
               i < testimonio.estrellas
                 ? 'h-[18px] w-[18px] text-accent [&_svg]:fill-current'
-                : 'h-[18px] w-[18px] text-ink/25'
+                : 'h-[18px] w-[18px] text-ink/30'
             }
             interactivo={false}
           />

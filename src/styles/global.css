@@ -3,10 +3,15 @@
 /* ---------------------------------------------------------------------------
    Identidad visual de Distribuciones Santiago de Tunja S.A.S.
 
-   Rediseño 2026: interfaz oscura, minimalista y premium. Todo el sitio vive
-   sobre azules profundos derivados del azul de marca; el azul #1E88E5 es el
-   acento primario y el naranja #F5A623 se reserva para las llamadas a la
-   acción importantes y detalles puntuales.
+   El color primario del sitio es el BLANCO: el fondo es blanco, las tarjetas
+   son blancas y el aire manda. Sobre ese lienzo se aplica la paleta de marca
+   del manual:
+
+     #0D2C84  azul oscuro   títulos, botón principal, pie de página
+     #1E88E5  azul          acentos, íconos, enlaces, estados activos
+     #F5A623  naranja       llamadas a la acción destacadas y detalles
+     #F5F7FA  gris muy claro franjas alternas
+     #263238  gris oscuro   texto
 
    Tailwind 4 genera utilidades a partir de estas variables:
      --color-primary  ->  bg-primary / text-primary / border-primary
@@ -20,38 +25,41 @@
   --font-display: "Montserrat Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-body: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
 
-  /* --- Fondos: medianoche derivada del azul oscuro de marca --- */
-  --color-midnight: #050d28; /* fondo más profundo: body y pie de página */
-  --color-base: #071235; /* fondo de secciones alternas */
-  --color-surface: #0b1a47; /* panel elevado sobre el fondo */
-  --color-surface-2: #102455; /* panel un escalón más claro */
+  /* --- Fondos: el blanco es el color primario --- */
+  --color-canvas: #ffffff; /* fondo del sitio */
+  --color-surface: #ffffff; /* tarjetas y paneles */
+  --color-base: #f5f7fa; /* franjas alternas (gris muy claro de marca) */
+  --color-surface-2: #eef2f8; /* un escalón más de gris, para rellenos */
 
   /* --- Paleta oficial --- */
-  --color-primary: #0d2c84; /* azul oscuro de marca: bloques sólidos */
+  --color-primary: #0d2c84; /* azul oscuro de marca */
   --color-primary-dark: #082063; /* hover del azul oscuro */
-  --color-primary-soft: rgba(30, 136, 229, 0.12); /* velo azul sobre fondo oscuro */
-  --color-secondary: #1e88e5; /* acento primario: botones, enlaces, hover */
-  --color-secondary-dark: #64b5f6; /* azul claro legible sobre fondo oscuro */
-  --color-secondary-soft: rgba(30, 136, 229, 0.18);
-  --color-accent: #f5a623; /* naranja: solo CTA importantes y detalles */
-  --color-accent-dark: #ffb944; /* hover del naranja sobre fondo oscuro */
-  --color-accent-text: #f5a623; /* naranja como texto sobre fondo oscuro */
+  --color-primary-soft: #e8eefc; /* velo azul muy claro */
+  --color-secondary: #1e88e5; /* azul: acentos, íconos, estados activos */
+  --color-secondary-dark: #1565c0; /* azul legible como texto (contraste AA) */
+  --color-secondary-soft: #e3f1fd;
+  --color-accent: #f5a623; /* naranja: CTA destacado */
+  --color-accent-dark: #d98c07; /* hover del naranja */
+  --color-accent-text: #a65f00; /* naranja legible como texto pequeño sobre blanco */
+  --color-accent-strong: #c77700; /* naranja para titulares grandes (AA en texto grande) */
 
   /* --- Texto --- */
-  --color-ink: #f5f7fa; /* gris claro: texto principal sobre oscuro */
-  --color-ink-dark: #263238; /* gris oscuro: texto sobre naranja o blanco */
-  --color-muted: #a8b6d9; /* texto secundario (contraste AA sobre medianoche) */
+  --color-ink: #263238; /* gris oscuro de marca: texto principal */
+  --color-ink-dark: #1a2327; /* texto sobre naranja, verde o amarillo */
+  --color-muted: #5f6b73; /* texto secundario (AA sobre blanco y sobre #F5F7FA) */
 
   /* --- Líneas y estados --- */
-  --color-line: rgba(245, 247, 250, 0.12);
-  --color-ok: #5fd08a;
+  --color-line: #e1e7ef;
+  --color-ok: #1d7a45;
   --color-whatsapp: #25d366;
 
-  /* --- Vidrio esmerilado (navbar y tarjetas) --- */
-  --color-glass: rgba(245, 247, 250, 0.06);
-  --color-glass-strong: rgba(245, 247, 250, 0.09);
-  --color-glass-border: rgba(245, 247, 250, 0.14);
-  --blur-glass: 20px;
+  /* --- Vidrio esmerilado (barra fija, píldoras y chips) ---
+     Sobre fondo claro el "vidrio" es un velo azul muy tenue: se nota el
+     contorno sin ensuciar el blanco. */
+  --color-glass: rgba(13, 44, 132, 0.05);
+  --color-glass-strong: rgba(13, 44, 132, 0.09);
+  --color-glass-border: rgba(13, 44, 132, 0.12);
+  --blur-glass: 18px;
 
   --radius-card: 18px;
 
@@ -90,22 +98,16 @@
     scroll-behavior: smooth;
     /* La barra superior es fija: los anclajes no deben quedar debajo de ella. */
     scroll-padding-top: calc(var(--nav-h) + 1.5rem);
-    color-scheme: dark;
-    background-color: var(--color-midnight);
+    color-scheme: light;
+    background-color: var(--color-canvas);
   }
 
   body {
-    @apply bg-midnight text-ink font-body;
+    @apply bg-canvas text-ink font-body;
     font-size: 16px;
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Halo azul muy tenue que da profundidad al fondo medianoche. */
-    background-image:
-      radial-gradient(60rem 40rem at 50% -10%, rgba(30, 136, 229, 0.16), transparent 70%),
-      radial-gradient(45rem 35rem at 110% 8%, rgba(13, 44, 132, 0.35), transparent 65%);
-    background-attachment: fixed;
-    background-repeat: no-repeat;
   }
 
   /* La barra de navegación es fija: se reserva su altura al inicio del
@@ -114,9 +116,10 @@
     padding-top: var(--nav-h);
   }
 
-  /* h1 en Montserrat Bold; h2/h3/h4 en SemiBold, como pide el manual. */
+  /* h1 en Montserrat Bold; h2/h3/h4 en SemiBold, como pide el manual.
+     Los títulos van en azul oscuro de marca sobre el fondo blanco. */
   h1 {
-    @apply font-display text-ink;
+    @apply font-display text-primary;
     font-weight: 700;
     letter-spacing: -0.025em;
     line-height: 1.06;
@@ -125,7 +128,7 @@
   h2,
   h3,
   h4 {
-    @apply font-display text-ink;
+    @apply font-display text-primary;
     font-weight: 600;
     letter-spacing: -0.015em;
     line-height: 1.18;
@@ -147,12 +150,12 @@
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-secondary-dark);
+    outline: 3px solid var(--color-secondary);
     outline-offset: 3px;
   }
 }
 
-/* Vidrio esmerilado: fondo translúcido + desenfoque + borde sutil.
+/* Vidrio esmerilado: velo translúcido + desenfoque + borde sutil.
    Se declara con @utility (Tailwind 4) para poder usarla tanto como clase
    suelta como dentro de un @apply. */
 @utility glass {
@@ -163,6 +166,46 @@
 }
 
 @layer components {
+  /* --- Bloques oscuros sobre el sitio claro -------------------------------
+     El pie de página y algún panel de marca van en azul oscuro. En vez de
+     cambiar clase por clase, se reescriben aquí los tokens de texto, líneas y
+     vidrio: todo lo que hay dentro (text-ink, text-muted, border-line, glass)
+     se vuelve legible sobre el fondo oscuro sin tocar el marcado. */
+  .sobre-oscuro {
+    --color-ink: #ffffff;
+    --color-ink-dark: #1a2327;
+    --color-muted: rgba(255, 255, 255, 0.72);
+    --color-line: rgba(255, 255, 255, 0.18);
+    --color-secondary-dark: #90caf9;
+    --color-accent-text: #f5a623;
+    --color-accent-strong: #f5a623;
+    --color-glass: rgba(255, 255, 255, 0.08);
+    --color-glass-strong: rgba(255, 255, 255, 0.14);
+    --color-glass-border: rgba(255, 255, 255, 0.22);
+    color: var(--color-ink);
+  }
+
+  .sobre-oscuro :is(h1, h2, h3, h4) {
+    color: var(--color-ink);
+  }
+
+  /* Barra fija y panel del menú móvil: blancos y translúcidos, con un filo
+     de línea abajo. El contenido se desliza por debajo con desenfoque. */
+  .barra-fija {
+    /* Sin soporte de desenfoque el blanco va casi opaco, para que el texto de
+       la página no se transparente detrás de la barra. */
+    background-color: rgba(255, 255, 255, 0.94);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .barra-fija {
+      background-color: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(var(--blur-glass)) saturate(160%);
+      -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(160%);
+    }
+  }
+
   /* Contenedor estándar de página: ancho máximo centrado, aire generoso. */
   .wrap {
     @apply mx-auto w-full px-6 mob:px-8;
@@ -174,23 +217,25 @@
     @apply py-20 tablet:py-28;
   }
 
-  /* --- Vidrio esmerilado --------------------------------------------------
-     `glass` se define arriba como utilidad (@utility) para poder combinarla con
-     variantes. `.glass-card` le agrega el realce al pasar el mouse o al
-     recibir foco de teclado. */
+  /* --- Tarjetas ----------------------------------------------------------
+     Blancas, con un filo de línea y una sombra muy suave; se elevan al pasar
+     el mouse o al recibir foco de teclado. */
   .glass-card {
-    @apply glass rounded-card transition-all duration-300 ease-out;
-    box-shadow: inset 0 1px 0 0 rgba(245, 247, 250, 0.06);
+    @apply rounded-card border border-line bg-surface transition-all duration-300 ease-out;
+    box-shadow: 0 1px 2px rgba(13, 44, 132, 0.04);
   }
 
   .glass-card:hover,
   .glass-card:focus-within {
-    background-color: var(--color-glass-strong);
     border-color: rgba(30, 136, 229, 0.45);
     transform: translateY(-4px);
-    box-shadow:
-      inset 0 1px 0 0 rgba(245, 247, 250, 0.09),
-      0 18px 40px rgba(3, 8, 25, 0.55);
+    box-shadow: 0 18px 40px rgba(13, 44, 132, 0.1);
+  }
+
+  /* Dentro de un bloque oscuro la tarjeta vuelve a ser de vidrio. */
+  .sobre-oscuro .glass-card {
+    background-color: var(--color-glass);
+    border-color: var(--color-glass-border);
   }
 
   /* --- Botones tipo píldora ---------------------------------------------- */
@@ -205,26 +250,36 @@
     transform: translateY(-2px) scale(1.02);
   }
 
+  /* Botón principal: azul oscuro de marca. */
   .btn-primary {
-    @apply bg-secondary text-white;
-    box-shadow: 0 8px 24px rgba(30, 136, 229, 0.28);
+    @apply bg-primary text-white;
+    box-shadow: 0 8px 24px rgba(13, 44, 132, 0.22);
   }
 
   .btn-primary:hover,
   .btn-primary:focus-visible {
-    background-color: #3b9bef;
-    box-shadow: 0 14px 32px rgba(30, 136, 229, 0.42);
+    @apply bg-primary-dark;
+    box-shadow: 0 14px 32px rgba(13, 44, 132, 0.32);
   }
 
-  /* Botón secundario: contorno de vidrio sobre el fondo oscuro. */
+  /* Botón secundario: blanco con contorno azul oscuro. */
   .btn-secondary {
-    @apply glass text-ink;
+    @apply border-primary bg-surface text-primary;
   }
 
   .btn-secondary:hover,
   .btn-secondary:focus-visible {
-    background-color: var(--color-secondary-soft);
-    border-color: rgba(30, 136, 229, 0.5);
+    @apply bg-primary-soft;
+  }
+
+  /* Dentro de un bloque oscuro, el secundario pasa a contorno de vidrio. */
+  .sobre-oscuro .btn-secondary {
+    @apply glass text-ink;
+  }
+
+  .sobre-oscuro .btn-secondary:hover,
+  .sobre-oscuro .btn-secondary:focus-visible {
+    background-color: var(--color-glass-strong);
   }
 
   /* Botón destacado: texto oscuro sobre naranja para cumplir contraste AA. */
@@ -236,7 +291,7 @@
   .btn-accent:hover,
   .btn-accent:focus-visible {
     @apply bg-accent-dark;
-    box-shadow: 0 14px 32px rgba(245, 166, 35, 0.4);
+    box-shadow: 0 14px 32px rgba(245, 166, 35, 0.38);
   }
 
   /* Canal de WhatsApp. Conserva su verde corporativo: el color reconocible de
@@ -244,13 +299,13 @@
      parte de como se identifica el canal de un vistazo. */
   .btn-whatsapp {
     @apply bg-whatsapp text-ink-dark;
-    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.28);
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.26);
   }
 
   .btn-whatsapp:hover,
   .btn-whatsapp:focus-visible {
-    filter: brightness(1.08);
-    box-shadow: 0 14px 32px rgba(37, 211, 102, 0.42);
+    filter: brightness(1.05);
+    box-shadow: 0 14px 32px rgba(37, 211, 102, 0.38);
   }
 
   .kicker {
@@ -260,9 +315,9 @@
 
   /* Campos de formulario (PQRS, contacto, empleos) */
   .field {
-    @apply w-full rounded-xl border border-line bg-surface/60 px-4 py-3 text-[15px]
-           text-ink transition-colors duration-200 placeholder:text-muted/60
-           focus:border-secondary focus:bg-surface;
+    @apply w-full rounded-xl border border-line bg-surface px-4 py-3 text-[15px]
+           text-ink transition-colors duration-200 placeholder:text-muted/70
+           focus:border-secondary;
   }
 
   .field-label {
@@ -287,10 +342,14 @@
 
   /* Contenedor circular/cuadrado del ícono, que además cambia de fondo. */
   .icono-chip {
-    @apply flex items-center justify-center rounded-2xl text-secondary-dark
-           transition-all duration-300 ease-out;
-    background-color: var(--color-primary-soft);
-    border: 1px solid var(--color-glass-border);
+    @apply flex items-center justify-center rounded-2xl border border-transparent
+           bg-primary-soft text-primary transition-all duration-300 ease-out;
+  }
+
+  .sobre-oscuro .icono-chip {
+    background-color: var(--color-glass);
+    border-color: var(--color-glass-border);
+    color: var(--color-ink);
   }
 
   .group:hover .icono-chip,
