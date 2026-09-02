@@ -1,0 +1,55 @@
+# Publicacion del sitio en GitHub Pages (revision interna).
+#
+# El sitio queda en https://dstunja.github.io/proyecto_paginaWeb, que es el
+# `site` + `base` configurados en astro.config.mjs. Si algun dia se cambia el
+# nombre del repositorio, hay que actualizar el `base` de ese archivo.
+#
+# Requisito en el repositorio: Settings > Pages > Source = "GitHub Actions".
+name: Desplegar en GitHub Pages
+
+on:
+  # Cada push a la rama principal republica el sitio.
+  push:
+    branches: [main]
+  # Permite lanzarlo a mano desde la pestana Actions.
+  workflow_dispatch:
+
+# Permisos minimos que necesita el despliegue con OIDC.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un despliegue a la vez. No se cancelan los que ya empezaron, para no dejar
+# una publicacion a medias.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Compilar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      # La accion oficial de Astro instala dependencias, ejecuta `astro build`
+      # y sube dist/ como artefacto de Pages.
+      - name: Compilar el sitio con Astro
+        uses: withastro/action@v3
+        with:
+          node-version: 22
+          package-manager: npm
+
+  deploy:
+    name: Publicar
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
