@@ -68,6 +68,7 @@ const direccionCompleta = `${empresa.direccion}, ${empresa.ciudad}, ${empresa.de
 <script>
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
+  import { FONDO } from '../lib/mapa-base';
 
   const contenedor = document.getElementById('mapa-sede');
   if (contenedor) {
@@ -81,12 +82,9 @@ const direccionCompleta = `${empresa.direccion}, ${empresa.ciudad}, ${empresa.de
       scrollWheelZoom: false,
     });
 
-    // Calles de OpenStreetMap: a este nivel de detalle se leen los nombres.
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
-    }).addTo(mapa);
+    // Mismo fondo a color que el mapa de cobertura (ver src/lib/mapa-base.ts).
+    // A este nivel de zoom se leen los nombres de las calles del barrio.
+    L.tileLayer(FONDO.url, FONDO.opciones).addTo(mapa);
 
     L.marker([lat, lng], {
       icon: L.divIcon({

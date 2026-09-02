@@ -198,6 +198,11 @@ const listaDepartamentos =
     background: var(--color-fondo);
   }
 
+  /* Con el mapa a color, una sombra suave despega los puntos del fondo. */
+  :global(#mapa-red .leaflet-overlay-pane path) {
+    filter: drop-shadow(0 1px 2px rgba(3, 8, 25, 0.45));
+  }
+
   :global(#mapa-red .leaflet-control-zoom a) {
     color: var(--color-primary) !important;
     border-radius: 8px !important;
@@ -234,6 +239,7 @@ const listaDepartamentos =
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
   import { municipios, colorDepartamento, sede, type Municipio } from '../data/municipios';
+  import { FONDO } from '../lib/mapa-base';
 
   const contenedor = document.getElementById('mapa-red');
 
@@ -248,14 +254,8 @@ const listaDepartamentos =
       zoomControl: true,
     });
 
-    L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-      {
-        maxZoom: 16,
-        attribution:
-          'Teselas &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a> — Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
-      },
-    ).addTo(mapa);
+    // Fondo a color de OpenStreetMap (ver src/lib/mapa-base.ts).
+    L.tileLayer(FONDO.url, FONDO.opciones).addTo(mapa);
 
     const normalizar = (texto: string) =>
       texto
@@ -288,10 +288,12 @@ const listaDepartamentos =
 
       const marcador = L.circleMarker([municipio.lat, municipio.lng], {
         radius: radio(municipio.clientes),
+        // Aro blanco grueso: sobre el mapa a color es lo que separa el punto
+        // del fondo. La sombra la pone el CSS del contenedor.
         color: '#ffffff',
-        weight: 2,
+        weight: 3,
         fillColor: colorDepartamento(municipio.departamento),
-        fillOpacity: 0.9,
+        fillOpacity: 1,
       });
 
       marcador
@@ -299,8 +301,8 @@ const listaDepartamentos =
         .bindPopup(ficha(municipio));
 
       // Al pasar el mouse el punto se agranda un poco.
-      marcador.on('mouseover', () => marcador.setStyle({ weight: 3, fillOpacity: 1 }));
-      marcador.on('mouseout', () => marcador.setStyle({ weight: 2, fillOpacity: 0.9 }));
+      marcador.on('mouseover', () => marcador.setStyle({ weight: 5 }));
+      marcador.on('mouseout', () => marcador.setStyle({ weight: 3 }));
 
       marcador.addTo(capa);
       puntos.set(normalizar(municipio.nombre), { marcador, municipio });
@@ -402,9 +404,9 @@ const listaDepartamentos =
       mapa.once('moveend', () => marcador.openPopup());
 
       // Realce temporal para que el punto buscado se distinga de los demás.
-      marcador.setStyle({ weight: 4, radius: radio(municipio.clientes) + 3 });
+      marcador.setStyle({ weight: 5, radius: radio(municipio.clientes) + 3 });
       window.setTimeout(
-        () => marcador.setStyle({ weight: 2, radius: radio(municipio.clientes) }),
+        () => marcador.setStyle({ weight: 3, radius: radio(municipio.clientes) }),
         2500,
       );
 
