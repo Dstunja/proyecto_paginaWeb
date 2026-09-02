@@ -1,0 +1,86 @@
+---
+import { empresa } from '../data/site';
+
+/**
+ * Formulario sin servidor.
+ *
+ * El sitio es 100 % estático (Cloudflare, sin backend), así que el formulario
+ * NO envía nada por sí mismo: arma un correo con lo que escribió la persona y
+ * lo abre en su gestor de correo. Es la opción que funciona sin depender de
+ * ningún servicio externo.
+ *
+ * PARA PRODUCCIÓN se recomienda conectar un endpoint real (una Cloudflare
+ * Function, Formspree, Web3Forms…) y cambiar `action`/`method` de este <form>:
+ * así la solicitud queda registrada aunque la persona no tenga cliente de
+ * correo configurado. Para PQRS esto es especialmente importante, porque la
+ * empresa debe poder demostrar la fecha de radicación y la respuesta.
+ */
+interface Props {
+  asunto: string;
+  /** Texto del botón de envío. */
+  boton?: string;
+  destinatario?: string;
+}
+
+const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
+---
+
+<form
+  data-mailto
+  data-asunto={asunto}
+  data-destinatario={destinatario}
+  novalidate={false}
+  class="grid grid-cols-1 gap-5"
+>
+  <slot />
+
+  <div class="flex flex-wrap items-center gap-4">
+    <button type="submit" class="btn btn-primary">{boton}</button>
+    <a class="btn btn-secondary" href={empresa.whatsapp} target="_blank" rel="noopener">
+      Prefiero WhatsApp
+    </a>
+  </div>
+
+  <p data-aviso class="m-0 hidden text-[14.5px] text-ok" role="status" aria-live="polite"></p>
+</form>
+
+<script>
+  const ETIQUETAS: Record<string, string> = {};
+
+  document.querySelectorAll<HTMLFormElement>('form[data-mailto]').forEach((form) => {
+    // Etiqueta legible de cada campo, para que el correo se entienda.
+    form.querySelectorAll<HTMLLabelElement>('label[for]').forEach((label) => {
+      ETIQUETAS[label.htmlFor] = label.textContent?.replace(/\*/g, '').trim() ?? label.htmlFor;
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!form.reportValidity()) return;
+
+      const datos = new FormData(form);
+      const lineas: string[] = [];
+
+      for (const [nombre, valor] of datos.entries()) {
+        if (typeof valor !== 'string' || valor.trim() === '') continue;
+        const etiqueta = ETIQUETAS[nombre] ?? nombre;
+        lineas.push(`${etiqueta}: ${valor.trim()}`);
+      }
+
+      const destinatario = form.dataset.destinatario ?? '';
+      const asunto = form.dataset.asunto ?? 'Mensaje desde la web';
+      const cuerpo = `${lineas.join('\n')}\n\n---\nEnviado desde dstunja.com`;
+
+      const aviso = form.querySelector<HTMLElement>('[data-aviso]');
+      if (aviso) {
+        aviso.textContent =
+          'Abrimos tu gestor de correo con la solicitud lista para enviar. Si no se abrió, escríbenos por WhatsApp.';
+        aviso.classList.remove('hidden');
+      }
+
+      window.location.href =
+        `mailto:${destinatario}` +
+        `?subject=${encodeURIComponent(asunto)}` +
+        `&body=${encodeURIComponent(cuerpo)}`;
+    });
+  });
+</script>

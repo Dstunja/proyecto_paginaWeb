@@ -1,0 +1,187 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import FormularioMailto from '../components/FormularioMailto.astro';
+import Icono from '../components/Icono.astro';
+
+/**
+ * EDITAR AQUÍ: vacantes reales.
+ * Si el arreglo queda vacío, la página muestra el mensaje de "no hay vacantes
+ * abiertas" y la persona igual puede dejar su hoja de vida.
+ */
+const vacantes = [
+  {
+    cargo: 'Auxiliar de bodega',
+    ciudad: 'Tunja, Boyacá',
+    tipo: 'Tiempo completo',
+    resumen: 'Alistamiento, cargue y control de inventario en la sede principal.',
+  },
+  {
+    cargo: 'Conductor repartidor',
+    ciudad: 'Boyacá y Santander',
+    tipo: 'Tiempo completo',
+    resumen: 'Entrega en ruta a puntos de venta. Se requiere licencia C1 vigente.',
+  },
+  {
+    cargo: 'Asesor comercial',
+    ciudad: 'Zona centro',
+    tipo: 'Tiempo completo',
+    resumen: 'Atención y crecimiento de la cartera de tenderos asignada.',
+  },
+];
+
+const proceso = [
+  {
+    icono: 'file-text',
+    titulo: 'Envías tu hoja de vida',
+    texto: 'Por el formulario de esta página o por WhatsApp.',
+  },
+  {
+    icono: 'user-check',
+    titulo: 'Revisamos tu perfil',
+    texto: 'Contactamos a quienes se ajustan a la vacante.',
+  },
+  {
+    icono: 'message-square',
+    titulo: 'Entrevista',
+    texto: 'Presencial en Tunja o virtual, según el cargo.',
+  },
+  { icono: 'briefcase', titulo: 'Contratación', texto: 'Exámenes, documentos y vinculación.' },
+];
+---
+
+<BaseLayout
+  title="Empleos — Distribuciones Santiago de Tunja"
+  description="Trabaja con nosotros: vacantes en logística, distribución y comercial en Boyacá, Santander y Cundinamarca. Envía tu hoja de vida."
+>
+  <PageHero
+    kicker="Trabaja con nosotros"
+    titulo="Únete a nuestro equipo"
+    texto="Somos una empresa en crecimiento en el sector logístico y de distribución. Estas son las oportunidades abiertas."
+  />
+
+  <!-- VACANTES -->
+  <section class="py-[72px]">
+    <div class="wrap">
+      <div class="mb-10 max-w-[56ch]">
+        <span class="kicker">Vacantes</span>
+        <h2 class="text-3xl text-primary">Oportunidades abiertas</h2>
+      </div>
+
+      {
+        vacantes.length === 0 ? (
+          <p class="rounded-card border border-line bg-surface p-7 text-muted">
+            En este momento no tenemos vacantes abiertas. Puedes dejarnos tu hoja de vida en el
+            formulario de abajo y te contactamos cuando se abra un proceso.
+          </p>
+        ) : (
+          <div class="grid grid-cols-1 gap-[22px] tablet:grid-cols-3">
+            {vacantes.map((vacante) => (
+              <article class="group flex flex-col rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+                <span class="icono-chip mb-5 h-12 w-12">
+                  <Icono nombre="briefcase" class="h-6 w-6" interactivo={false} />
+                </span>
+                <h3 class="mb-2 text-lg text-primary">{vacante.cargo}</h3>
+                <p class="m-0 text-[13px] font-semibold text-accent-text">
+                  {vacante.ciudad} · {vacante.tipo}
+                </p>
+                <p class="mt-3 mb-0 text-[14.5px] text-muted">{vacante.resumen}</p>
+                <a
+                  class="mt-6 text-[14.5px] font-semibold text-primary underline"
+                  href="#postular"
+                  data-postular={vacante.cargo}
+                >
+                  Postularme a esta vacante
+                </a>
+              </article>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <!-- PROCESO -->
+  <section class="border-y border-line bg-base py-[72px]">
+    <div class="wrap">
+      <div class="mb-10 max-w-[56ch]">
+        <span class="kicker">Cómo es el proceso</span>
+        <h2 class="text-3xl text-primary">De la hoja de vida al primer día</h2>
+      </div>
+      <div class="grid grid-cols-1 gap-[22px] mob:grid-cols-2 tablet:grid-cols-4">
+        {
+          proceso.map((paso, i) => (
+            <div class="group rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+              <span class="icono-chip mb-5 h-12 w-12">
+                <Icono nombre={paso.icono} class="h-6 w-6" interactivo={false} />
+              </span>
+              <div class="mb-1.5 font-display text-sm font-semibold text-accent-text">
+                0{i + 1}
+              </div>
+              <h3 class="mb-2 text-base text-primary">{paso.titulo}</h3>
+              <p class="m-0 text-[14.5px] text-muted">{paso.texto}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- POSTULACIÓN -->
+  <section id="postular" class="py-[72px]">
+    <div class="wrap grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[.9fr_1.1fr]">
+      <div>
+        <span class="kicker">Postulación</span>
+        <h2 class="text-3xl text-primary">Déjanos tus datos</h2>
+        <p class="mt-3 text-muted">
+          Completa el formulario y adjunta tu hoja de vida en el correo que se abrirá. También
+          puedes escribirnos por WhatsApp si prefieres.
+        </p>
+        <p class="mt-4 text-[14.5px] text-muted">
+          Al enviar tus datos autorizas su tratamiento para fines de selección de personal, conforme
+          a la Ley 1581 de 2012.
+        </p>
+      </div>
+
+      <div class="rounded-card border border-line bg-surface p-7">
+        <FormularioMailto asunto="Postulación de empleo — dstunja.com" boton="Enviar postulación">
+          <div>
+            <label class="field-label" for="nombre-empleo">Nombre completo *</label>
+            <input class="field" id="nombre-empleo" name="nombre-empleo" type="text" required />
+          </div>
+          <div class="grid grid-cols-1 gap-5 mob:grid-cols-2">
+            <div>
+              <label class="field-label" for="correo-empleo">Correo *</label>
+              <input class="field" id="correo-empleo" name="correo-empleo" type="email" required />
+            </div>
+            <div>
+              <label class="field-label" for="telefono-empleo">Teléfono *</label>
+              <input class="field" id="telefono-empleo" name="telefono-empleo" type="tel" required />
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="cargo-empleo">Cargo al que te postulas *</label>
+            <select class="field" id="cargo-empleo" name="cargo-empleo" required>
+              {vacantes.map((v) => <option value={v.cargo}>{v.cargo}</option>)}
+              <option value="Otro / hoja de vida espontánea">Otro / hoja de vida espontánea</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="mensaje-empleo">Cuéntanos sobre tu experiencia</label>
+            <textarea class="field" id="mensaje-empleo" name="mensaje-empleo" rows="4"></textarea>
+          </div>
+        </FormularioMailto>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  // Al pulsar "Postularme a esta vacante" el formulario queda con ese cargo elegido.
+  document.querySelectorAll<HTMLAnchorElement>('[data-postular]').forEach((enlace) => {
+    enlace.addEventListener('click', () => {
+      const select = document.getElementById('cargo-empleo') as HTMLSelectElement | null;
+      if (select && enlace.dataset.postular) select.value = enlace.dataset.postular;
+    });
+  });
+</script>

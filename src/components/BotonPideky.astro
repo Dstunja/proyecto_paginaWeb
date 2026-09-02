@@ -1,0 +1,27 @@
+---
+import { PIDEKY_URL } from '../data/site';
+import Icono from './Icono.astro';
+
+const configurado = PIDEKY_URL.trim() !== '';
+---
+
+<a
+  class="btn btn-accent mt-auto"
+  id="pideky-open"
+  href={configurado ? PIDEKY_URL : '#'}
+  data-configurado={String(configurado)}
+  {...configurado ? { target: '_blank', rel: 'noopener' } : {}}
+>
+  Ir a Pideky
+  <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
+</a>
+
+<script>
+  // Mientras no exista la URL real de Pideky, el botón lo dice en vez de no hacer nada.
+  const boton = document.getElementById('pideky-open');
+  boton?.addEventListener('click', (e) => {
+    if (boton.dataset.configurado === 'true') return;
+    e.preventDefault();
+    alert('Falta configurar el enlace real de Pideky: define PIDEKY_URL en src/data/site.ts.');
+  });
+</script>

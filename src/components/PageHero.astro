@@ -1,0 +1,19 @@
+---
+interface Props {
+  kicker: string;
+  titulo: string;
+  texto?: string;
+}
+
+const { kicker, titulo, texto } = Astro.props;
+---
+
+<section class="border-b border-line bg-base pt-14 pb-12">
+  <div class="wrap">
+    <div class="max-w-[70ch]">
+      <span class="kicker">{kicker}</span>
+      <h1 class="text-[30px] text-primary tablet:text-[38px]">{titulo}</h1>
+      {texto && <p class="mt-4 max-w-[60ch] text-lg text-muted">{texto}</p>}
+    </div>
+  </div>
+</section>

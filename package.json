@@ -1,0 +1,37 @@
+{
+  "name": "dstunja-web",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sitio de Distribuciones Santiago de Tunja S.A.S. — Astro + Tailwind, estatico, desplegado en Cloudflare.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "og": "node scripts/build-og.mjs",
+    "deploy": "astro build && wrangler deploy",
+    "favicon": "node scripts/build-favicon.mjs",
+    "iconos": "npm run favicon && npm run og"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "@fontsource-variable/montserrat": "^5.3.0",
+    "@fontsource/poppins": "^5.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.2.10",
+    "lucide-static": "^1.39.0",
+    "simple-icons": "^16.29.0",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "playwright": "^1.61.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.111.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

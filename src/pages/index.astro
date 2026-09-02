@@ -1,0 +1,290 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import BuscadorCobertura from '../components/BuscadorCobertura.astro';
+import MapaCobertura from '../components/MapaCobertura.astro';
+import BotonPideky from '../components/BotonPideky.astro';
+import Icono from '../components/Icono.astro';
+import Testimonio from '../components/Testimonio.astro';
+import {
+  cifras,
+  marcas,
+  valorAgregado,
+  beneficios,
+  cobertura,
+  empresa,
+  HERO_IMAGEN,
+} from '../data/site';
+---
+
+<BaseLayout
+  title="Distribuciones Santiago de Tunja — Distribuidor Nutresa en Boyacá, Santander y Cundinamarca"
+  description="Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. 21 años de experiencia, 87 municipios cubiertos, más de 7600 puntos de venta."
+>
+  <!-- HERO -->
+  <section class="bg-base pt-14 pb-0">
+    <div class="wrap">
+      <div class="grid grid-cols-1 items-center gap-12 tablet:grid-cols-[1.05fr_.95fr]">
+        <div>
+          <p class="mb-4 inline-flex items-center gap-2 rounded-full bg-secondary-soft px-3.5 py-1.5 text-[13px] font-semibold text-secondary-dark">
+            <span class="h-2 w-2 rounded-full bg-secondary"></span>
+            Aliado comercial de Grupo Nutresa
+          </p>
+          <h1 class="text-[34px] text-primary tablet:text-[46px]">
+            Las marcas que mueven tu negocio,{' '}
+            <span class="text-accent-text">más cerca de ti.</span>
+          </h1>
+          <p class="mt-5 max-w-[46ch] text-lg text-muted">
+            Distribuimos productos de consumo masivo a negocios de Boyacá, Santander y
+            Cundinamarca, con entregas semanales y asesoría cercana.
+          </p>
+          <div class="mt-8 flex flex-wrap gap-3.5">
+            <a class="btn btn-primary" href="/catalogo/">Conoce nuestro portafolio</a>
+            <a class="btn btn-whatsapp" href={empresa.whatsapp} target="_blank" rel="noopener">
+              Haz tu pedido
+              <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
+            </a>
+          </div>
+        </div>
+
+        {
+          HERO_IMAGEN ? (
+            <img
+              src={HERO_IMAGEN}
+              alt="Camión de reparto de Distribuciones Santiago de Tunja"
+              class="aspect-[4/3] w-full rounded-2xl object-cover shadow-[0_18px_40px_rgba(13,44,132,.18)]"
+            />
+          ) : (
+            /* Sin foto todavía: panel de marca. Al definir HERO_IMAGEN en
+               src/data/site.ts se reemplaza por la foto real del camión. */
+            <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-primary shadow-[0_18px_40px_rgba(13,44,132,.18)]">
+              <div class="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-secondary/25" />
+              <div class="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-white/5" />
+              <div class="relative flex flex-col items-center gap-5 px-8 text-center">
+                <img
+                  src="/LOGO-removebg-preview.png"
+                  alt=""
+                  width="183"
+                  height="180"
+                  class="h-28 w-28 object-contain drop-shadow-[0_6px_18px_rgba(0,0,0,.25)]"
+                />
+                <p class="font-display text-lg font-semibold text-white">
+                  Llevamos las mejores marcas del país a tu tienda
+                </p>
+                <p class="text-sm text-white/70">
+                  Boyacá · Santander · Cundinamarca
+                </p>
+              </div>
+            </div>
+          )
+        }
+      </div>
+
+      <!-- BARRA DE CIFRAS -->
+      <div class="relative z-10 mt-12 translate-y-8 rounded-2xl bg-primary px-6 py-7 shadow-[0_14px_34px_rgba(13,44,132,.22)]">
+        <dl class="grid grid-cols-2 gap-y-7 tablet:grid-cols-4">
+          {
+            cifras.map((cifra, i) => (
+              <div
+                class:list={[
+                  'group flex items-center justify-center gap-3.5 px-2 text-white',
+                  i > 0 && 'mob:border-l mob:border-white/15',
+                ]}
+              >
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-accent transition-all duration-200 group-hover:bg-accent group-hover:text-primary">
+                  <Icono nombre={cifra.icono} class="h-5 w-5" />
+                </span>
+                <div>
+                  <dd class="font-display text-[26px] leading-none font-bold">{cifra.valor}</dd>
+                  <dt class="mt-1 text-[12.5px] text-white/70">{cifra.etiqueta}</dt>
+                </div>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARCAS -->
+  <div class="border-b border-line bg-surface pt-20 pb-8">
+    <div class="wrap">
+      <p class="mb-5 text-center text-[13px] font-semibold tracking-wide text-muted uppercase">
+        Marcas que distribuimos
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+        {
+          marcas.map((marca) => (
+            <span class="font-display text-[15px] font-semibold text-primary/70 transition-colors duration-200 hover:text-primary">
+              {marca}
+            </span>
+          ))
+        }
+      </div>
+      {/* EDITAR AQUÍ: cuando tengas los logotipos autorizados de cada marca,
+          reemplaza estos nombres por <img> con los archivos en public/marcas/. */}
+    </div>
+  </div>
+
+  <!-- VALOR AGREGADO -->
+  <section class="py-[72px]">
+    <div class="wrap">
+      <div class="mb-10 max-w-[56ch]">
+        <span class="kicker">Nuestro valor agregado</span>
+        <h2 class="text-3xl text-primary">
+          Soluciones integrales para hacer crecer a nuestros aliados comerciales
+        </h2>
+      </div>
+      <div class="grid grid-cols-1 gap-[22px] tablet:grid-cols-3">
+        {
+          valorAgregado.map((item) => (
+            <div class="group rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+              <span class="icono-chip mb-5 h-12 w-12">
+                <Icono nombre={item.icono} class="h-6 w-6" interactivo={false} />
+              </span>
+              <div class="mb-1.5 font-display text-sm font-semibold text-accent-text">
+                {item.num}
+              </div>
+              <h3 class="mb-2.5 text-lg text-primary">{item.titulo}</h3>
+              <p class="m-0 text-[14.5px] text-muted">{item.texto}</p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- COBERTURA -->
+  <section class="border-y border-line bg-base py-[72px]">
+    <div class="wrap grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[.9fr_1.1fr]">
+      <div>
+        <span class="kicker">Nuestra red</span>
+        <h2 class="text-3xl text-primary">Llevamos nuestras marcas más lejos</h2>
+        <p class="mt-3 text-muted">
+          Llegamos a 87 municipios en tres departamentos. 21 años distribuyendo desde el corazón de
+          Boyacá.
+        </p>
+        <div class="mt-6 flex flex-col gap-[18px]">
+          {
+            cobertura.map((dep, i) => (
+              <div class="flex items-center justify-between border-b border-line pb-3.5">
+                <span class="flex items-center gap-2.5 font-medium">
+                  <span
+                    class:list={[
+                      'h-3 w-3 rounded-full',
+                      ['bg-primary', 'bg-secondary', 'bg-accent'][i],
+                    ]}
+                  />
+                  {dep.departamento}
+                </span>
+                <span class="font-display text-[26px] font-bold text-primary">
+                  {dep.municipios}
+                </span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      <BuscadorCobertura />
+      <MapaCobertura />
+    </div>
+  </section>
+
+  <!-- PARA TU NEGOCIO -->
+  <section class="py-[72px]">
+    <div class="wrap">
+      <div class="mb-10 max-w-[56ch]">
+        <span class="kicker">Para tu negocio</span>
+        <h2 class="text-3xl text-primary">Impulsa tu negocio con nuestro respaldo</h2>
+      </div>
+
+      <div class="grid grid-cols-1 gap-[22px] mob:grid-cols-2 tablet:grid-cols-4">
+        {
+          beneficios.map((b) => (
+            <div class="group rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+              <span class="icono-chip mb-5 h-12 w-12">
+                <Icono nombre={b.icono} class="h-6 w-6" interactivo={false} />
+              </span>
+              <h3 class="mb-2 text-base text-primary">{b.titulo}</h3>
+              <p class="m-0 text-[14px] text-muted">{b.texto}</p>
+            </div>
+          ))
+        }
+      </div>
+
+      <Testimonio />
+    </div>
+  </section>
+
+  <!-- HAZ TU PEDIDO -->
+  <section id="haz-tu-pedido" class="border-y border-line bg-base py-[72px]">
+    <div class="wrap">
+      <div class="mb-10 text-center">
+        <span class="kicker">Haz tu pedido</span>
+        <h2 class="text-3xl text-primary">Pide fácil y rápido</h2>
+        <p class="mt-3 text-muted">Elige el canal que prefieras.</p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-[22px] tablet:grid-cols-2">
+        <div class="group flex flex-col items-center rounded-card border border-line bg-surface p-9 text-center transition-all duration-200 hover:border-whatsapp/50 hover:shadow-[0_10px_28px_rgba(37,211,102,.14)]">
+          <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-whatsapp/10 text-whatsapp transition-all duration-200 group-hover:scale-105 group-hover:bg-whatsapp group-hover:text-white group-focus-within:scale-105">
+            <Icono nombre="whatsapp" class="h-8 w-8" interactivo={false} />
+          </span>
+          <h3 class="mt-5 text-xl text-primary">WhatsApp</h3>
+          <p class="mt-2 mb-6 text-[14.5px] text-muted">
+            Habla con un asesor y realiza tu pedido.
+          </p>
+          <a
+            class="btn btn-whatsapp mt-auto"
+            href={empresa.whatsapp}
+            target="_blank"
+            rel="noopener"
+          >
+            Escribir ahora
+            <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
+          </a>
+        </div>
+
+        <div class="group flex flex-col items-center rounded-card border border-line bg-surface p-9 text-center transition-all duration-200 hover:border-accent/60 hover:shadow-[0_10px_28px_rgba(245,166,35,.18)]">
+          <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/15 text-accent-text transition-all duration-200 group-hover:scale-105 group-hover:bg-accent group-hover:text-ink-dark group-focus-within:scale-105">
+            <Icono nombre="shopping-cart" class="h-8 w-8" interactivo={false} />
+          </span>
+          <h3 class="mt-5 text-xl text-primary">Pideky</h3>
+          <p class="mt-2 mb-6 text-[14.5px] text-muted">
+            Haz tu pedido en línea de manera rápida, sin registro previo.
+          </p>
+          <BotonPideky />
+        </div>
+      </div>
+
+      <div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface px-7 py-6">
+        <div>
+          <p class="m-0 font-display text-lg font-semibold text-primary">¿Aún no eres cliente?</p>
+          <p class="m-0 text-[14.5px] text-muted">Regístrate y empieza a comprar con nosotros.</p>
+        </div>
+        <a class="btn btn-accent" href="/contactanos/">Quiero ser cliente</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA: EMPLEOS + PQRS -->
+  <section class="py-[72px]">
+    <div class="wrap grid grid-cols-1 gap-[22px] tablet:grid-cols-2">
+      <div class="rounded-card border border-line bg-surface p-8">
+        <h3 class="mb-2.5 text-[19px] text-primary">Únete a nuestro equipo</h3>
+        <p class="mb-5 text-[14.5px] text-muted">
+          ¿Buscas una oportunidad profesional en el sector logístico? Estamos en constante
+          crecimiento.
+        </p>
+        <a class="btn btn-secondary" href="/empleos/">Postularme ahora</a>
+      </div>
+      <div class="rounded-card border border-transparent bg-primary-soft p-8">
+        <h3 class="mb-2.5 text-[19px] text-primary">Atención al cliente</h3>
+        <p class="mb-5 text-[14.5px] text-muted">
+          ¿Tienes alguna solicitud, queja o reclamo? Estamos aquí para escucharte y mejorar.
+        </p>
+        <a class="btn btn-primary" href="/pqrs/">Enviar PQRS</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

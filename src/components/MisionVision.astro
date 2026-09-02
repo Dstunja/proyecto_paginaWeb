@@ -1,0 +1,118 @@
+---
+import Icono from './Icono.astro';
+
+/**
+ * Pestañas de Misión / Visión: funcionan con clic y con teclado
+ * (flechas, Home, End). No dependen de :hover, así que sirven en móvil.
+ */
+const paneles = [
+  {
+    id: 'mision',
+    tab: 'Misión',
+    titulo: 'Nuestra misión',
+    icono: 'target',
+    // EDITAR AQUÍ: reemplazar por el texto oficial de la misión.
+    texto:
+      'Distribuir con eficiencia, compromiso y calidad las mejores marcas de alimentos del país, llegando cada semana a más de 7.600 puntos de venta en Boyacá, Santander y Cundinamarca. Trabajamos para que nuestros aliados comerciales crezcan con nosotros, con un servicio cercano, entregas cumplidas y un equipo humano que entiende su negocio.',
+    puntos: ['Entregas cumplidas', 'Servicio cercano', 'Crecimiento del aliado'],
+  },
+  {
+    id: 'vision',
+    tab: 'Visión',
+    titulo: 'Nuestra visión',
+    icono: 'eye',
+    // EDITAR AQUÍ: reemplazar por el texto oficial de la visión.
+    texto:
+      'Ser en 2030 el distribuidor de alimentos de mayor cobertura y confianza del centro oriente colombiano, reconocido por la excelencia logística, la adopción de canales digitales como Pideky y por generar oportunidades de desarrollo para las familias y los tenderos de cada municipio que atendemos.',
+    puntos: ['Mayor cobertura regional', 'Excelencia logística', 'Transformación digital'],
+  },
+];
+---
+
+<div class="rounded-2xl border border-line bg-surface p-2.5 shadow-[0_10px_28px_rgba(13,44,132,.06)]" data-mv-tabs>
+  <div class="flex flex-col gap-1.5 rounded-xl bg-primary-soft p-1.5 mob:flex-row" role="tablist" aria-label="Misión y visión">
+    {
+      paneles.map((p, i) => (
+        <button
+          type="button"
+          role="tab"
+          id={`mv-tab-${p.id}`}
+          aria-controls={`mv-panel-${p.id}`}
+          aria-selected={i === 0 ? 'true' : 'false'}
+          tabindex={i === 0 ? 0 : -1}
+          class="flex-1 rounded-[9px] border-0 bg-transparent px-4 py-3 font-display text-[15.5px]
+                 font-extrabold text-primary transition-all duration-200 hover:bg-white/60
+                 aria-selected:bg-primary aria-selected:text-white
+                 aria-selected:shadow-[0_2px_8px_rgba(23,58,44,.18)]"
+        >
+          {p.tab}
+        </button>
+      ))
+    }
+  </div>
+
+  <div class="px-3.5 pt-6 pb-5 tablet:px-6 tablet:pt-[30px] tablet:pb-[26px]">
+    {
+      paneles.map((p, i) => (
+        <div
+          role="tabpanel"
+          id={`mv-panel-${p.id}`}
+          aria-labelledby={`mv-tab-${p.id}`}
+          tabindex="0"
+          hidden={i !== 0}
+          class="outline-none motion-safe:animate-[mvFade_.24s_ease_both]"
+        >
+          <h3 class="mb-3 flex items-center gap-2.5 text-[19px] text-primary tablet:text-[22px]">
+            <span class="icono-chip h-[38px] w-[38px] shrink-0">
+              <Icono nombre={p.icono} class="h-5 w-5" interactivo={false} />
+            </span>
+            {p.titulo}
+          </h3>
+          <p class="m-0 max-w-[70ch] text-base text-muted">{p.texto}</p>
+          <ul class="m-0 mt-5 flex list-none flex-wrap gap-2 p-0">
+            {p.puntos.map((punto) => (
+              <li class="rounded-full bg-primary-soft px-3.5 py-1.5 text-[13px] font-semibold text-primary transition-colors duration-200 hover:bg-secondary hover:text-white">
+                {punto}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-mv-tabs]').forEach((root) => {
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    if (!tabs.length) return;
+
+    function seleccionar(indice: number, enfocar = true) {
+      tabs.forEach((tab, i) => {
+        const activo = i === indice;
+        const panel = document.getElementById(tab.getAttribute('aria-controls') ?? '');
+        tab.setAttribute('aria-selected', String(activo));
+        tab.tabIndex = activo ? 0 : -1;
+        if (panel) panel.hidden = !activo;
+      });
+      if (enfocar) tabs[indice]?.focus();
+    }
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => seleccionar(i, false));
+      tab.addEventListener('keydown', (e) => {
+        const destinos: Record<string, number> = {
+          ArrowRight: i + 1,
+          ArrowDown: i + 1,
+          ArrowLeft: i - 1,
+          ArrowUp: i - 1,
+          Home: 0,
+          End: tabs.length - 1,
+        };
+        if (!(e.key in destinos)) return;
+        e.preventDefault();
+        seleccionar((destinos[e.key]! + tabs.length) % tabs.length);
+      });
+    });
+  });
+</script>

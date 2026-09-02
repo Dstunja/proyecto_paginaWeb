@@ -1,0 +1,121 @@
+---
+/**
+ * Íconos del sitio.
+ *
+ * - Los íconos de interfaz vienen de `lucide-static` (trazo, 24×24).
+ * - Los íconos de marca (WhatsApp, Facebook, Instagram, X) vienen de
+ *   `simple-icons`, que trae el logotipo oficial de cada una.
+ * Todo se inserta como SVG en línea: no hay peticiones a CDN ni emojis.
+ *
+ * La micro-interacción vive en la clase `icono-int` (ver global.css): se
+ * activa con el mouse y con el foco de teclado.
+ */
+import award from 'lucide-static/icons/award.svg?raw';
+import alertTriangle from 'lucide-static/icons/alert-triangle.svg?raw';
+import badgePercent from 'lucide-static/icons/badge-percent.svg?raw';
+import briefcase from 'lucide-static/icons/briefcase.svg?raw';
+import building from 'lucide-static/icons/building-2.svg?raw';
+import eye from 'lucide-static/icons/eye.svg?raw';
+import fileText from 'lucide-static/icons/file-text.svg?raw';
+import lightbulb from 'lucide-static/icons/lightbulb.svg?raw';
+import messageSquare from 'lucide-static/icons/message-square.svg?raw';
+import target from 'lucide-static/icons/target.svg?raw';
+import thumbsUp from 'lucide-static/icons/thumbs-up.svg?raw';
+import beef from 'lucide-static/icons/beef.svg?raw';
+import candy from 'lucide-static/icons/candy.svg?raw';
+import clock from 'lucide-static/icons/clock.svg?raw';
+import coffee from 'lucide-static/icons/coffee.svg?raw';
+import cookie from 'lucide-static/icons/cookie.svg?raw';
+import handshake from 'lucide-static/icons/handshake.svg?raw';
+import headset from 'lucide-static/icons/headset.svg?raw';
+import mail from 'lucide-static/icons/mail.svg?raw';
+import map from 'lucide-static/icons/map.svg?raw';
+import mapPin from 'lucide-static/icons/map-pin.svg?raw';
+import nut from 'lucide-static/icons/nut.svg?raw';
+import packageIcon from 'lucide-static/icons/package.svg?raw';
+import phone from 'lucide-static/icons/phone.svg?raw';
+import search from 'lucide-static/icons/search.svg?raw';
+import shieldCheck from 'lucide-static/icons/shield-check.svg?raw';
+import shoppingCart from 'lucide-static/icons/shopping-cart.svg?raw';
+import star from 'lucide-static/icons/star.svg?raw';
+import store from 'lucide-static/icons/store.svg?raw';
+import tag from 'lucide-static/icons/tag.svg?raw';
+import truck from 'lucide-static/icons/truck.svg?raw';
+import userCheck from 'lucide-static/icons/user-check.svg?raw';
+import users from 'lucide-static/icons/users.svg?raw';
+
+import { siWhatsapp, siFacebook, siInstagram, siX } from 'simple-icons';
+
+const LUCIDE: Record<string, string> = {
+  'alert-triangle': alertTriangle,
+  award,
+  'badge-percent': badgePercent,
+  briefcase,
+  building,
+  eye,
+  'file-text': fileText,
+  lightbulb,
+  'message-square': messageSquare,
+  target,
+  'thumbs-up': thumbsUp,
+  beef,
+  candy,
+  clock,
+  coffee,
+  cookie,
+  handshake,
+  headset,
+  mail,
+  map,
+  'map-pin': mapPin,
+  nut,
+  package: packageIcon,
+  phone,
+  search,
+  'shield-check': shieldCheck,
+  'shopping-cart': shoppingCart,
+  star,
+  store,
+  tag,
+  truck,
+  'user-check': userCheck,
+  users,
+};
+
+const MARCAS = {
+  whatsapp: siWhatsapp,
+  facebook: siFacebook,
+  instagram: siInstagram,
+  x: siX,
+};
+
+export type NombreIcono = keyof typeof LUCIDE | keyof typeof MARCAS;
+
+interface Props {
+  nombre: string;
+  /** Tamaño y color se controlan con clases de utilidad. */
+  class?: string;
+  /** Aplica la micro-interacción compartida. */
+  interactivo?: boolean;
+  /** Texto alternativo; si se omite el ícono queda oculto para lectores. */
+  titulo?: string;
+}
+
+const { nombre, class: clase = 'h-6 w-6', interactivo = true, titulo } = Astro.props;
+
+const marca = MARCAS[nombre as keyof typeof MARCAS];
+
+const svg = marca
+  ? `<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="${marca.path}"/></svg>`
+  : LUCIDE[nombre];
+
+if (!svg) throw new Error(`Icono desconocido: ${nombre}`);
+---
+
+<span
+  class:list={[clase, 'inline-block shrink-0 [&>svg]:h-full [&>svg]:w-full', interactivo && 'icono-int']}
+  role={titulo ? 'img' : undefined}
+  aria-label={titulo}
+  aria-hidden={titulo ? undefined : 'true'}
+  set:html={svg}
+/>

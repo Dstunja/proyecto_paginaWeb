@@ -1,0 +1,162 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import MapaCobertura from '../components/MapaCobertura.astro';
+import FormularioMailto from '../components/FormularioMailto.astro';
+import Icono from '../components/Icono.astro';
+import { empresa } from '../data/site';
+
+// EDITAR AQUÍ: horario real de atención.
+const horario = [
+  { dia: 'Lunes a viernes', horas: '7:30 a. m. – 5:30 p. m.' },
+  { dia: 'Sábados', horas: '8:00 a. m. – 12:00 m.' },
+  { dia: 'Domingos y festivos', horas: 'Cerrado' },
+];
+
+const canales = [
+  {
+    icono: 'whatsapp',
+    titulo: 'WhatsApp',
+    valor: empresa.telefono,
+    href: empresa.whatsapp,
+    externo: true,
+    nota: 'La vía más rápida para pedidos y asesoría comercial.',
+  },
+  {
+    icono: 'phone',
+    titulo: 'Teléfono',
+    valor: empresa.telefono,
+    href: `tel:${empresa.telefonoE164}`,
+    externo: false,
+    nota: 'Atención en horario de oficina.',
+  },
+  {
+    icono: 'mail',
+    titulo: 'Correo',
+    valor: empresa.email,
+    href: `mailto:${empresa.email}`,
+    externo: false,
+    nota: 'Para cotizaciones, facturación y temas administrativos.',
+  },
+];
+---
+
+<BaseLayout
+  title="Contáctanos — Distribuciones Santiago de Tunja"
+  description="Escríbenos por WhatsApp, teléfono o correo. Sede principal en Tunja, Boyacá. Atendemos Boyacá, Santander y Cundinamarca."
+>
+  <PageHero
+    kicker="Contacto"
+    titulo="Hablemos"
+    texto="Estamos en Tunja y atendemos 87 municipios. Escoge el canal que más te sirva y te respondemos."
+  />
+
+  <!-- CANALES -->
+  <section class="py-[72px]">
+    <div class="wrap">
+      <div class="grid grid-cols-1 gap-[22px] tablet:grid-cols-3">
+        {
+          canales.map((canal) => (
+            <div class="group rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+              <span class="icono-chip mb-5 h-12 w-12">
+                <Icono nombre={canal.icono} class="h-6 w-6" interactivo={false} />
+              </span>
+              <h2 class="mb-2 text-lg text-primary">{canal.titulo}</h2>
+              <a
+                class="text-[15px] font-semibold text-accent-text underline"
+                href={canal.href}
+                {...canal.externo ? { target: '_blank', rel: 'noopener' } : {}}
+              >
+                {canal.valor}
+              </a>
+              <p class="mt-3 mb-0 text-[14.5px] text-muted">{canal.nota}</p>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="mt-11 grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[1.1fr_.9fr]">
+        <MapaCobertura enGrid={false} titulo="Nuestra sede" />
+
+        <div class="rounded-card border border-line bg-surface p-7">
+          <h2 class="mb-4 text-lg text-primary">Horario de atención</h2>
+          <ul class="m-0 flex list-none flex-col gap-3 p-0">
+            {
+              horario.map((h) => (
+                <li class="flex items-baseline justify-between border-b border-line pb-3 text-[14.5px]">
+                  <span class="font-medium">{h.dia}</span>
+                  <span class="text-muted">{h.horas}</span>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="mt-5 mb-0 text-[14.5px] text-muted">
+            {empresa.direccion}, {empresa.ciudad}, {empresa.departamento}.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMULARIO -->
+  <section class="border-t border-line bg-base py-[72px]">
+    <div class="wrap grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[.9fr_1.1fr]">
+      <div>
+        <span class="kicker">Escríbenos</span>
+        <h2 class="text-3xl text-primary">Cuéntanos qué necesitas</h2>
+        <p class="mt-3 text-muted">
+          Si eres tendero o negocio y quieres ser atendido por nuestra ruta, déjanos tus datos y un
+          asesor de tu zona te contacta.
+        </p>
+        <p class="mt-4 text-[14.5px] text-muted">
+          ¿Es una petición, queja o reclamo formal? Usa el{' '}
+          <a class="font-semibold text-primary underline" href="/pqrs/">formulario de PQRS</a>.
+        </p>
+      </div>
+
+      <div class="rounded-card border border-line bg-surface p-7">
+        <FormularioMailto asunto="Contacto desde dstunja.com" boton="Enviar mensaje">
+          <div>
+            <label class="field-label" for="nombre-contacto">Nombre completo *</label>
+            <input class="field" id="nombre-contacto" name="nombre-contacto" type="text" required />
+          </div>
+          <div class="grid grid-cols-1 gap-5 mob:grid-cols-2">
+            <div>
+              <label class="field-label" for="correo-contacto">Correo *</label>
+              <input
+                class="field"
+                id="correo-contacto"
+                name="correo-contacto"
+                type="email"
+                required
+              />
+            </div>
+            <div>
+              <label class="field-label" for="telefono-contacto">Teléfono</label>
+              <input class="field" id="telefono-contacto" name="telefono-contacto" type="tel" />
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="municipio-contacto">Municipio</label>
+            <input
+              class="field"
+              id="municipio-contacto"
+              name="municipio-contacto"
+              type="text"
+              placeholder="Ej. Duitama"
+            />
+          </div>
+          <div>
+            <label class="field-label" for="mensaje-contacto">Mensaje *</label>
+            <textarea
+              class="field"
+              id="mensaje-contacto"
+              name="mensaje-contacto"
+              rows="5"
+              required></textarea>
+          </div>
+        </FormularioMailto>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

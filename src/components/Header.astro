@@ -1,0 +1,101 @@
+---
+import { navegacion, empresa } from '../data/site';
+import Logo from './Logo.astro';
+import Icono from './Icono.astro';
+
+/** Ruta actual normalizada, para marcar el enlace activo. */
+const actual = Astro.url.pathname.replace(/\/+$/, '') || '/';
+---
+
+<header class="sticky top-0 z-[100] border-b border-line bg-surface">
+  <div class="wrap flex items-center justify-between gap-6 py-3.5">
+    <Logo href="/" />
+
+    <button
+      type="button"
+      id="nav-toggle"
+      class="group flex flex-col gap-[5px] rounded-lg p-2 transition-colors duration-200 hover:bg-primary-soft tablet:hidden"
+      aria-label="Abrir menú"
+      aria-expanded="false"
+      aria-controls="main-nav"
+    >
+      <span class="block h-0.5 w-[22px] bg-primary transition-colors duration-200"></span>
+      <span class="block h-0.5 w-[22px] bg-primary transition-colors duration-200"></span>
+      <span class="block h-0.5 w-[22px] bg-primary transition-colors duration-200"></span>
+    </button>
+
+    <nav
+      id="main-nav"
+      class="invisible absolute inset-x-0 top-full z-40 flex -translate-y-[130%] flex-col
+             items-start gap-[18px] border-b border-line bg-surface px-8 py-5 opacity-0
+             shadow-[0_12px_24px_rgba(13,44,132,.08)]
+             transition-[transform,opacity,visibility] duration-200
+             data-[open=true]:visible data-[open=true]:translate-y-0 data-[open=true]:opacity-100
+             tablet:static tablet:visible tablet:z-auto tablet:translate-y-0 tablet:flex-row
+             tablet:items-center tablet:gap-7 tablet:border-0 tablet:bg-transparent tablet:p-0
+             tablet:opacity-100 tablet:shadow-none tablet:transition-none"
+      data-open="false"
+    >
+      {
+        navegacion.map((item) => {
+          const href = item.href.replace(/\/+$/, '') || '/';
+          const esActual = href === actual;
+          return (
+            <a
+              href={item.href}
+              aria-current={esActual ? 'page' : undefined}
+              class:list={[
+                'relative py-1 font-display text-[14px] font-semibold tracking-wide uppercase transition-colors duration-200 hover:text-secondary-dark',
+                esActual
+                  ? "text-primary after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:bg-accent after:content-['']"
+                  : 'text-ink',
+              ]}
+            >
+              {item.texto}
+            </a>
+          );
+        })
+      }
+    </nav>
+
+    <a
+      class="btn btn-primary hidden !px-5 !py-2.5 !text-[13px] tracking-wide uppercase tablet:inline-flex"
+      href={empresa.whatsapp}
+      target="_blank"
+      rel="noopener"
+    >
+      Haz tu pedido
+      <Icono nombre="whatsapp" class="h-4 w-4" />
+    </a>
+  </div>
+</header>
+
+<script>
+  const toggle = document.getElementById('nav-toggle');
+  const nav = document.getElementById('main-nav');
+
+  if (toggle && nav) {
+    toggle.addEventListener('click', () => {
+      const abierto = nav.dataset.open !== 'true';
+      nav.dataset.open = String(abierto);
+      toggle.setAttribute('aria-expanded', String(abierto));
+      toggle.setAttribute('aria-label', abierto ? 'Cerrar menú' : 'Abrir menú');
+    });
+
+    // Cerrar al navegar dentro de la misma página (anclas) o con Escape.
+    nav.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('a')) {
+        nav.dataset.open = 'false';
+        toggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && nav.dataset.open === 'true') {
+        nav.dataset.open = 'false';
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.focus();
+      }
+    });
+  }
+</script>

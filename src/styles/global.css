@@ -1,0 +1,200 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Identidad visual de Distribuciones Santiago de Tunja S.A.S.
+
+   Tailwind 4 genera utilidades a partir de estas variables:
+     --color-primary  ->  bg-primary / text-primary / border-primary
+     --font-display   ->  font-display
+   Cambiar un color de marca aquí lo cambia en todo el sitio.
+--------------------------------------------------------------------------- */
+@theme {
+  /* Tipografía de marca, servida self-hosted (no Google Fonts por CDN).
+     Montserrat para títulos (Bold en h1, SemiBold en h2/h3), Poppins para
+     el texto de cuerpo. */
+  --font-display: "Montserrat Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-body: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+  /* Paleta oficial */
+  --color-primary: #0d2c84; /* azul oscuro: encabezados, botón principal */
+  --color-primary-dark: #082063; /* hover del azul oscuro */
+  --color-primary-soft: #e8eefc; /* fondo suave derivado del azul */
+  --color-secondary: #1e88e5; /* azul: acentos, íconos, bordes activos */
+  --color-secondary-dark: #1565c0; /* azul para texto y enlaces (contraste AA) */
+  --color-secondary-soft: #e3f1fd;
+  --color-accent: #f5a623; /* naranja: CTA destacado */
+  --color-accent-dark: #d98c07; /* hover del naranja */
+  --color-accent-text: #a65f00; /* naranja legible sobre fondo claro */
+  --color-base: #f5f7fa; /* gris muy claro: fondos alternos */
+  --color-surface: #ffffff;
+  --color-ink: #263238; /* gris oscuro: texto y pie de página */
+  --color-ink-dark: #1a2327;
+  --color-muted: #5f6b73;
+  --color-line: #e1e7ef;
+  --color-ok: #1d7a45;
+  --color-whatsapp: #25d366;
+
+  --radius-card: 12px;
+
+  --container-site: 1180px;
+
+  /* Puntos de quiebre propios: el menú y las rejillas cambian a 900px. */
+  --breakpoint-mob: 520px;
+  --breakpoint-tablet: 900px;
+}
+
+@keyframes mvFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface text-ink font-body;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  /* h1 en Montserrat Bold; h2/h3/h4 en SemiBold, como pide el manual. */
+  h1 {
+    @apply font-display;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.12;
+  }
+
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1.2;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img {
+    max-width: 100%;
+    display: block;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-secondary);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Contenedor estándar de página */
+  .wrap {
+    @apply mx-auto w-full px-8;
+    max-width: var(--container-site);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-transparent
+           px-6 py-3.5 text-[15px] font-semibold transition-all duration-200;
+    font-family: var(--font-display);
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
+  }
+
+  .btn-secondary {
+    @apply border-primary bg-surface text-primary hover:bg-primary-soft;
+  }
+
+  /* Botón destacado: texto oscuro sobre naranja para cumplir contraste AA. */
+  .btn-accent {
+    @apply bg-accent text-ink-dark hover:bg-accent-dark;
+  }
+
+  .btn-whatsapp {
+    @apply bg-whatsapp text-ink-dark hover:brightness-95;
+  }
+
+  .kicker {
+    @apply mb-2.5 block text-[13px] font-semibold tracking-wide text-accent-text uppercase;
+    font-family: var(--font-display);
+  }
+
+  /* Campos de formulario (PQRS, contacto, empleos) */
+  .field {
+    @apply w-full rounded-lg border border-line bg-surface px-3.5 py-3 text-[15px]
+           text-ink transition-colors duration-150 placeholder:text-muted/70
+           focus:border-secondary;
+  }
+
+  .field-label {
+    @apply mb-2 block text-sm font-semibold;
+  }
+
+  /* ---- Micro-interacción compartida por todos los íconos ----
+     Se activa con el mouse y también con foco de teclado, para que la
+     retroalimentación sea la misma con cualquier forma de navegación.
+     El elemento padre debe llevar la clase `group`. */
+  .icono-int {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .group:hover .icono-int,
+  .group:focus-visible .icono-int,
+  .group:focus-within .icono-int,
+  .icono-int:hover,
+  .icono-int:focus-visible {
+    transform: scale(1.05);
+  }
+
+  /* Contenedor circular/cuadrado del ícono, que además cambia de fondo. */
+  .icono-chip {
+    @apply flex items-center justify-center rounded-xl bg-primary-soft text-primary
+           transition-all duration-200 ease-out;
+  }
+
+  .group:hover .icono-chip,
+  .group:focus-visible .icono-chip,
+  .group:focus-within .icono-chip,
+  .icono-chip:hover,
+  .icono-chip:focus-visible {
+    @apply bg-secondary text-white;
+    transform: scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .btn:hover,
+  .group:hover .icono-int,
+  .group:hover .icono-chip,
+  .icono-int:hover,
+  .icono-chip:hover {
+    transform: none;
+  }
+}

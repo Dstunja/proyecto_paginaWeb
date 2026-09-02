@@ -1,0 +1,95 @@
+---
+// Tipografía de marca, self-hosted (nada de Google Fonts por CDN).
+import '@fontsource-variable/montserrat'; // títulos (Bold / SemiBold)
+import '@fontsource/poppins/400.css'; // cuerpo
+import '@fontsource/poppins/500.css';
+import '@fontsource/poppins/600.css';
+import '../styles/global.css';
+
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import WhatsappFlotante from '../components/WhatsappFlotante.astro';
+import { empresa, redes } from '../data/site';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Imagen Open Graph relativa a la raíz del sitio. */
+  ogImage?: string;
+}
+
+const { title, description, ogImage = '/og.png' } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogUrl = new URL(ogImage, Astro.site).href;
+
+// Datos estructurados: ayudan a que Google muestre la ficha del negocio.
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: empresa.razonSocial,
+  alternateName: empresa.nombre,
+  description: empresa.descripcion,
+  url: Astro.site?.href,
+  telephone: empresa.telefonoE164,
+  email: empresa.email,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: empresa.direccion,
+    addressLocality: empresa.ciudad,
+    addressRegion: empresa.departamento,
+    addressCountry: empresa.pais,
+  },
+  areaServed: ['Boyacá', 'Santander', 'Cundinamarca'],
+  sameAs: redes.map((r) => r.url),
+};
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#0d2c84" />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={empresa.nombre} />
+    <meta property="og:locale" content="es_CO" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogUrl} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+  </head>
+
+  <body>
+    <a
+      href="#main"
+      class="absolute -left-[999px] top-0 z-[200] rounded-br-lg bg-primary px-4 py-2.5 text-white focus:left-0"
+      >Saltar al contenido</a
+    >
+
+    <Header />
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <Footer />
+    <WhatsappFlotante />
+  </body>
+</html>

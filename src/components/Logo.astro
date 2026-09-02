@@ -1,0 +1,84 @@
+---
+import { empresa } from '../data/site';
+
+/**
+ * Logo oficial de la marca.
+ *
+ * - `completo`: logotipo horizontal (isotipo + nombre) sobre fondo claro.
+ * - `claro`: para fondos oscuros (pie de página). El logotipo horizontal
+ *   tiene el texto en azul oscuro y ahí no se leería, así que se arma con el
+ *   isotipo y el nombre en blanco, respetando la línea naranja de la marca.
+ * - `iso`: solo el isotipo, para espacios donde el logo completo no cabe.
+ */
+interface Props {
+  variante?: 'completo' | 'claro' | 'iso';
+  href?: string;
+  class?: string;
+}
+
+const { variante = 'completo', href, class: clase } = Astro.props;
+const Tag = href ? 'a' : 'div';
+const etiqueta = `${empresa.razonSocial} — inicio`;
+---
+
+<Tag
+  {...href ? { href, 'aria-label': etiqueta } : {}}
+  class:list={['group inline-flex items-center gap-3', clase]}
+>
+  {
+    variante === 'completo' && (
+      <>
+        {/* Pantallas muy pequeñas: solo el isotipo. */}
+        <img
+          src="/LOGO-removebg-preview.png"
+          alt={empresa.razonSocial}
+          width="183"
+          height="180"
+          class="icono-int h-11 w-11 object-contain mob:hidden"
+        />
+        <img
+          src="/logo-distribuciones.png"
+          alt={empresa.razonSocial}
+          width="3821"
+          height="1441"
+          class="icono-int hidden h-14 w-auto object-contain mob:block"
+        />
+      </>
+    )
+  }
+
+  {
+    variante === 'iso' && (
+      <img
+        src="/LOGO-removebg-preview.png"
+        alt={empresa.razonSocial}
+        width="183"
+        height="180"
+        class="icono-int h-11 w-11 object-contain"
+      />
+    )
+  }
+
+  {
+    variante === 'claro' && (
+      <>
+        <span class="icono-int flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white p-1.5">
+          <img
+            src="/LOGO-removebg-preview.png"
+            alt=""
+            width="183"
+            height="180"
+            class="h-full w-full object-contain"
+          />
+        </span>
+        <span class="font-display leading-tight text-white">
+          <span class="block text-[19px] font-bold">Distribuciones</span>
+          <span class="mt-1 flex items-center gap-2 text-[11px] font-semibold tracking-wide text-white/80">
+            <span class="h-[2px] w-5 bg-accent" aria-hidden="true" />
+            Santiago De Tunja S.A.S
+          </span>
+        </span>
+      </>
+    )
+  }
+</Tag>

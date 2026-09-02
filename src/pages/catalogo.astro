@@ -1,0 +1,111 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import Icono from '../components/Icono.astro';
+import { empresa } from '../data/site';
+
+/**
+ * EDITAR AQUÍ: clasificación y portafolio real.
+ * Estas categorías agrupan las marcas que ya aparecían en el prototipo.
+ * Cuando exista el listado oficial (con referencias y presentaciones),
+ * reemplazar este arreglo o alimentarlo desde un archivo de datos.
+ */
+const categorias = [
+  {
+    icono: 'cookie',
+    nombre: 'Galletas y pasabocas',
+    marcas: ['Noel', 'Ducales', 'Saltín Noel', 'Dux'],
+    texto: 'Galletas dulces y saladas para el día a día de la tienda.',
+  },
+  {
+    icono: 'candy',
+    nombre: 'Chocolates y bebidas',
+    marcas: ['Jet', 'Jumbo', 'Corona', 'Choco Listo'],
+    texto: 'Chocolatinas, chocolate de mesa y bebidas achocolatadas.',
+  },
+  {
+    icono: 'coffee',
+    nombre: 'Café',
+    marcas: ['Sello Rojo', 'La Bastilla', 'Matiz'],
+    texto: 'Café molido y soluble para consumo en casa y para negocio.',
+  },
+  {
+    icono: 'beef',
+    nombre: 'Cárnicos',
+    marcas: ['Zenú', 'Rica'],
+    texto: 'Línea de cárnicos con manejo de cadena de frío en toda la ruta.',
+  },
+  {
+    icono: 'nut',
+    nombre: 'Nueces y otros',
+    marcas: ['La Especial', 'Nutresa'],
+    texto: 'Frutos secos y demás referencias del portafolio del grupo.',
+  },
+];
+
+const mensajeWhatsapp = encodeURIComponent(
+  'Hola, quiero recibir el catálogo de productos y hablar con un asesor comercial.',
+);
+---
+
+<BaseLayout
+  title="Catálogo — Distribuciones Santiago de Tunja"
+  description="Portafolio de marcas de Grupo Nutresa que distribuimos en Boyacá, Santander y Cundinamarca: galletas, chocolates, café, cárnicos y más."
+>
+  <PageHero
+    kicker="Portafolio"
+    titulo="Las marcas que llevamos a tu negocio"
+    texto="Distribuimos el portafolio de Grupo Nutresa en 87 municipios. Pide el catálogo completo con precios y presentaciones a través de tu asesor."
+  />
+
+  <section class="py-[72px]">
+    <div class="wrap">
+      <div class="grid grid-cols-1 gap-[22px] mob:grid-cols-2 tablet:grid-cols-3">
+        {
+          categorias.map((cat) => (
+            <div class="group flex flex-col rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+              <span class="icono-chip mb-5 h-12 w-12">
+                <Icono nombre={cat.icono} class="h-6 w-6" interactivo={false} />
+              </span>
+              <h2 class="mb-2.5 text-lg text-primary">{cat.nombre}</h2>
+              <p class="m-0 text-[14.5px] text-muted">{cat.texto}</p>
+              <ul class="m-0 mt-5 flex list-none flex-wrap gap-2 p-0">
+                {cat.marcas.map((marca) => (
+                  <li class="rounded-full bg-primary-soft px-3.5 py-1.5 text-[13px] font-semibold text-primary transition-colors duration-200 hover:bg-secondary hover:text-white">
+                    {marca}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+
+      <div
+        class="mt-12 grid grid-cols-1 items-center gap-8 rounded-[20px] bg-primary p-8 text-white tablet:grid-cols-[1.2fr_.8fr] tablet:p-12"
+      >
+        <div>
+          <h2 class="text-2xl text-white">¿Quieres el catálogo completo?</h2>
+          <p class="mt-3 max-w-[52ch] text-white/80">
+            Un asesor te comparte el listado de referencias, presentaciones y precios vigentes para
+            tu municipio, y te explica las condiciones de entrega.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-3.5">
+          <a
+            class="btn btn-accent"
+            href={`${empresa.whatsapp}?text=${mensajeWhatsapp}`}
+            target="_blank"
+            rel="noopener"
+          >
+            Pedir catálogo
+            <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
+          </a>
+          <a class="btn border-white/40 text-white hover:bg-white/10" href="/contactanos/">
+            Contactar
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

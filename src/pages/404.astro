@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { navegacion } from '../data/site';
+---
+
+<BaseLayout
+  title="Página no encontrada — Distribuciones Santiago de Tunja"
+  description="La página que buscas no existe o cambió de dirección."
+>
+  <section class="py-24">
+    <div class="wrap">
+      <div class="max-w-[60ch]">
+      <span class="kicker">Error 404</span>
+      <h1 class="text-[34px] text-primary">Esta página no existe</h1>
+      <p class="mt-4 text-lg text-muted">
+        Puede que el enlace esté roto o que la página haya cambiado de dirección. Desde aquí puedes
+        seguir navegando:
+      </p>
+
+      <ul class="mt-8 flex list-none flex-wrap gap-3 p-0">
+        {
+          navegacion.map((item) => (
+            <li>
+              <a
+                class="rounded-full border border-line bg-surface px-4 py-2 text-[14.5px] font-semibold text-primary hover:bg-primary-soft"
+                href={item.href}
+              >
+                {item.texto}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+        <a class="btn btn-primary mt-10" href="/">Volver al inicio</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

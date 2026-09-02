@@ -1,0 +1,166 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import FormularioMailto from '../components/FormularioMailto.astro';
+import Icono from '../components/Icono.astro';
+import { empresa } from '../data/site';
+
+const tipos = [
+  {
+    icono: 'file-text',
+    nombre: 'Petición',
+    texto: 'Solicitas información, una copia de un documento o una gestión concreta.',
+  },
+  { icono: 'alert-triangle', nombre: 'Queja', texto: 'Estás inconforme con la atención o la conducta de un colaborador.' },
+  { icono: 'message-square', nombre: 'Reclamo', texto: 'Un producto o una entrega no llegó como debía.' },
+  { icono: 'lightbulb', nombre: 'Sugerencia', texto: 'Tienes una idea para que hagamos mejor las cosas.' },
+  { icono: 'thumbs-up', nombre: 'Felicitación', texto: 'Algo salió muy bien y quieres contárnoslo.' },
+];
+---
+
+<BaseLayout
+  title="PQRS — Distribuciones Santiago de Tunja"
+  description="Radica tu petición, queja, reclamo, sugerencia o felicitación ante Distribuciones Santiago de Tunja. Respondemos en máximo 15 días hábiles."
+>
+  <PageHero
+    kicker="Atención al cliente"
+    titulo="Peticiones, quejas, reclamos y sugerencias"
+    texto="Queremos escucharte. Cuéntanos qué pasó y lo revisamos con el área responsable."
+  />
+
+  <!-- TIPOS -->
+  <section class="py-[72px]">
+    <div class="wrap">
+      <div class="mb-10 max-w-[56ch]">
+        <span class="kicker">Antes de empezar</span>
+        <h2 class="text-3xl text-primary">¿Qué vas a radicar?</h2>
+        <p class="mt-3 text-base text-muted">
+          Elegir bien el tipo de solicitud nos ayuda a darle el trámite correcto.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-[22px] mob:grid-cols-2 tablet:grid-cols-3">
+        {
+          tipos.map((tipo) => (
+            <div class="group rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+              <span class="icono-chip mb-5 h-12 w-12">
+                <Icono nombre={tipo.icono} class="h-6 w-6" interactivo={false} />
+              </span>
+              <h3 class="mb-2 text-lg text-primary">{tipo.nombre}</h3>
+              <p class="m-0 text-[14.5px] text-muted">{tipo.texto}</p>
+            </div>
+          ))
+        }
+
+        {/* EDITAR AQUÍ: confirmar con la empresa el plazo real de respuesta. */}
+        <div class="group rounded-card border border-transparent bg-primary-soft p-7">
+          <span class="icono-chip mb-5 h-12 w-12 bg-white">
+            <Icono nombre="clock" class="h-6 w-6" interactivo={false} />
+          </span>
+          <h3 class="mb-2 text-lg text-primary">¿Cuánto tardamos?</h3>
+          <p class="m-0 text-[14.5px] text-muted">
+            Respondemos en un plazo máximo de 15 días hábiles. Si es urgente, escríbenos por{' '}
+            <a class="font-semibold text-primary underline" href={empresa.whatsapp} target="_blank" rel="noopener">
+              WhatsApp</a
+            >.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMULARIO -->
+  <section class="border-y border-line bg-base py-[72px]">
+    <div class="wrap grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[.9fr_1.1fr]">
+      <div>
+        <span class="kicker">Radicación</span>
+        <h2 class="text-3xl text-primary">Formulario de PQRS</h2>
+        <p class="mt-3 text-muted">
+          Diligencia los campos marcados con * y describe lo ocurrido con el mayor detalle posible:
+          fecha, municipio, punto de venta y número de factura si aplica.
+        </p>
+        <p class="mt-4 text-[14.5px] text-muted">
+          Al enviar autorizas el tratamiento de tus datos personales para gestionar y responder tu
+          solicitud, conforme a la Ley 1581 de 2012 y a nuestra política de tratamiento de datos.
+        </p>
+        <p class="mt-4 text-[14.5px] text-muted">
+          También puedes radicar presencialmente en {empresa.direccion}, {empresa.ciudad}, o al
+          correo{' '}
+          <a class="font-semibold text-primary underline" href={`mailto:${empresa.email}`}>
+            {empresa.email}</a
+          >.
+        </p>
+      </div>
+
+      <div class="rounded-card border border-line bg-surface p-7">
+        <FormularioMailto asunto="PQRS desde dstunja.com" boton="Enviar PQRS">
+          <div>
+            <label class="field-label" for="tipo-pqrs">Tipo de solicitud *</label>
+            <select class="field" id="tipo-pqrs" name="tipo-pqrs" required>
+              {tipos.map((t) => <option value={t.nombre}>{t.nombre}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label class="field-label" for="nombre-pqrs">Nombre completo *</label>
+            <input class="field" id="nombre-pqrs" name="nombre-pqrs" type="text" required />
+          </div>
+
+          <div class="grid grid-cols-1 gap-5 mob:grid-cols-2">
+            <div>
+              <label class="field-label" for="documento-pqrs">Documento de identidad</label>
+              <input class="field" id="documento-pqrs" name="documento-pqrs" type="text" />
+            </div>
+            <div>
+              <label class="field-label" for="telefono-pqrs">Teléfono *</label>
+              <input class="field" id="telefono-pqrs" name="telefono-pqrs" type="tel" required />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-5 mob:grid-cols-2">
+            <div>
+              <label class="field-label" for="correo-pqrs">Correo *</label>
+              <input class="field" id="correo-pqrs" name="correo-pqrs" type="email" required />
+            </div>
+            <div>
+              <label class="field-label" for="municipio-pqrs">Municipio *</label>
+              <input class="field" id="municipio-pqrs" name="municipio-pqrs" type="text" required />
+            </div>
+          </div>
+
+          <div>
+            <label class="field-label" for="descripcion-pqrs">Descripción *</label>
+            <textarea
+              class="field"
+              id="descripcion-pqrs"
+              name="descripcion-pqrs"
+              rows="6"
+              required
+              placeholder="Cuéntanos qué pasó: fecha, lugar, producto o factura relacionada."></textarea>
+          </div>
+
+          <label class="flex items-start gap-3 text-[14.5px] text-muted">
+            <input
+              type="checkbox"
+              id="autorizacion-pqrs"
+              name="autorizacion-pqrs"
+              value="Sí, autoriza el tratamiento de datos"
+              required
+              class="mt-1 h-4 w-4 shrink-0 accent-[var(--color-primary)]"
+            />
+            <span>
+              Autorizo el tratamiento de mis datos personales para la gestión de esta solicitud. *
+            </span>
+          </label>
+        </FormularioMailto>
+
+        <p class="mt-6 mb-0 border-t border-line pt-5 text-[13px] text-muted">
+          Nota técnica: este formulario abre tu gestor de correo con la solicitud lista para enviar.
+          Para dejar constancia automática de la radicación conviene conectar un endpoint real
+          (Cloudflare Function, Formspree o similar); ver el comentario en{' '}
+          <code>src/components/FormularioMailto.astro</code>.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

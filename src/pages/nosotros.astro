@@ -1,0 +1,130 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import MisionVision from '../components/MisionVision.astro';
+import Icono from '../components/Icono.astro';
+import { cifras, cobertura } from '../data/site';
+
+// EDITAR AQUÍ: valores corporativos oficiales de la empresa.
+const valores = [
+  {
+    icono: 'clock',
+    titulo: 'Cumplimiento',
+    texto: 'Lo que prometemos se entrega. Cada semana, en cada punto de venta.',
+  },
+  {
+    icono: 'users',
+    titulo: 'Cercanía',
+    texto: 'Conocemos por nombre a los tenderos de los municipios que atendemos.',
+  },
+  {
+    icono: 'shield-check',
+    titulo: 'Calidad',
+    texto: 'Cadena de frío, manejo y almacenamiento según los estándares de nuestros aliados.',
+  },
+  {
+    icono: 'handshake',
+    titulo: 'Crecimiento compartido',
+    texto: 'Si al aliado comercial le va bien, a nosotros también.',
+  },
+];
+---
+
+<BaseLayout
+  title="Nosotros — Distribuciones Santiago de Tunja"
+  description="21 años distribuyendo las marcas de Grupo Nutresa en Boyacá, Santander y Cundinamarca. Conoce nuestra historia, misión, visión y valores."
+>
+  <PageHero
+    kicker="Quiénes somos"
+    titulo="21 años conectando marcas con el comercio de la región"
+    texto="Somos una empresa boyacense dedicada a la distribución de alimentos, aliada comercial de Grupo Nutresa en Boyacá, Santander y Cundinamarca."
+  />
+
+  <!-- HISTORIA + CIFRAS -->
+  <section class="py-[72px]">
+    <div class="wrap grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[1.1fr_.9fr]">
+      <div>
+        <h2 class="text-3xl text-primary">Nuestra historia</h2>
+        <!-- EDITAR AQUÍ: reemplazar por la historia real (fundación, hitos, crecimiento). -->
+        <p class="mt-4 text-muted">
+          Distribuciones Santiago de Tunja nació en Tunja con una operación pequeña y una idea
+          simple: que ningún tendero de la región se quedara sin producto. Hoy, dos décadas después,
+          atendemos cada semana más de 7.600 puntos de venta en 87 municipios de tres departamentos.
+        </p>
+        <p class="mt-4 text-muted">
+          Nuestra sede principal está en Tunja y desde allí sale la operación logística que cubre el
+          centro oriente del país, con un equipo humano que conoce el territorio y el negocio de
+          cada cliente.
+        </p>
+
+        <div class="mt-8 flex flex-col gap-[18px]">
+          {
+            cobertura.map((dep) => (
+              <div class="flex items-baseline justify-between border-b border-line pb-3.5">
+                <span class="font-medium">{dep.departamento}</span>
+                <span class="font-display text-[26px] font-bold text-primary">
+                  {dep.municipios} municipios
+                </span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-6 rounded-2xl bg-primary px-[30px] py-[34px] text-white">
+        {
+          cifras.map((cifra) => (
+            <div class="group flex items-start gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-accent transition-all duration-200 group-hover:bg-accent group-hover:text-primary">
+                <Icono nombre={cifra.icono} class="h-5 w-5" />
+              </span>
+              <div>
+                <div class="font-display text-[28px] leading-none font-bold">{cifra.valor}</div>
+                <div class="mt-1.5 text-[12.5px] text-white/70">{cifra.etiqueta}</div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- MISIÓN Y VISIÓN -->
+  <section class="border-y border-line bg-base py-[72px]">
+    <div class="wrap">
+      <div class="mb-10 max-w-[56ch]">
+        <span class="kicker">Nuestro norte</span>
+        <h2 class="text-3xl text-primary">Misión y visión</h2>
+      </div>
+      <MisionVision />
+    </div>
+  </section>
+
+  <!-- VALORES -->
+  <section class="py-[72px]">
+    <div class="wrap">
+      <div class="mb-10 max-w-[56ch]">
+        <span class="kicker">Cómo trabajamos</span>
+        <h2 class="text-3xl text-primary">Nuestros valores</h2>
+      </div>
+      <div class="grid grid-cols-1 gap-[22px] mob:grid-cols-2 tablet:grid-cols-4">
+        {
+          valores.map((valor) => (
+            <div class="group rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+              <span class="icono-chip mb-5 h-12 w-12">
+                <Icono nombre={valor.icono} class="h-6 w-6" interactivo={false} />
+              </span>
+              <h3 class="mb-2.5 text-lg text-primary">{valor.titulo}</h3>
+              <p class="m-0 text-[14.5px] text-muted">{valor.texto}</p>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="mt-12 flex flex-wrap gap-3.5">
+        <a class="btn btn-primary" href="/contactanos/">Hablar con un asesor</a>
+        <a class="btn btn-secondary" href="/empleos/">Trabajar con nosotros</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
