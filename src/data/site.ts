@@ -49,7 +49,7 @@ export const navegacion = [
 /** Barra de cifras del hero: cada una con su ícono. */
 export const cifras = [
   { valor: '21', etiqueta: 'años de experiencia', icono: 'award' },
-  { valor: '+7.600', etiqueta: 'puntos de venta', icono: 'store' },
+  { valor: '1', etiqueta: 'punto de venta', icono: 'store' },
   { valor: '87', etiqueta: 'municipios', icono: 'map-pin' },
   { valor: '3', etiqueta: 'departamentos', icono: 'map' },
 ] as const;
@@ -92,7 +92,7 @@ export const valorAgregado = [
     icono: 'truck',
     titulo: 'Distribución eficiente',
     texto:
-      'Llegamos a más de 7600 puntos de venta, con entregas semanales garantizadas de manera segura y responsable.',
+      'Llegamos a 87 municipios de tres departamentos, con entregas semanales garantizadas de manera segura y responsable.',
   },
   {
     num: '02',
