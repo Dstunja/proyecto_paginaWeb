@@ -5,7 +5,7 @@ import FormularioMailto from '../components/FormularioMailto.astro';
 import Icono from '../components/Icono.astro';
 import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
-import { vacantes } from '../data/vacantes';
+import { vacantes, contactoEmpleo } from '../data/vacantes';
 
 /**
  * Las vacantes viven en src/data/vacantes.ts, porque las comparten esta página
@@ -80,7 +80,7 @@ const proceso = [
                     width="800"
                     height="600"
                     loading="lazy"
-                    class="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    class="aspect-[4/3] w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                 </a>
 
@@ -157,13 +157,27 @@ const proceso = [
           puedes escribirnos por WhatsApp si prefieres.
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
+          También puedes escribirnos directamente a{' '}
+          <a
+            class="font-semibold text-secondary-dark underline"
+            href={`mailto:${contactoEmpleo.email}`}
+          >
+            {contactoEmpleo.email}
+          </a>{' '}
+          o al {contactoEmpleo.whatsapp.texto}.
+        </p>
+        <p class="mt-4 text-[14.5px] text-muted">
           Al enviar tus datos autorizas su tratamiento para fines de selección de personal, conforme
           a la Ley 1581 de 2012.
         </p>
       </div>
 
       <div class="glass-card p-8">
-        <FormularioMailto asunto="Postulación de empleo — dstunja.com" boton="Enviar postulación">
+        <FormularioMailto
+          asunto="Postulación de empleo — dstunja.com"
+          boton="Enviar postulación"
+          destinatario={contactoEmpleo.email}
+        >
           <div>
             <label class="field-label" for="nombre-empleo">Nombre completo *</label>
             <input class="field" id="nombre-empleo" name="nombre-empleo" type="text" required />

@@ -3,8 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Icono from '../../components/Icono.astro';
 import { ruta } from '../../lib/rutas';
 import { imagenOMarcador } from '../../lib/imagenes';
-import { vacantes } from '../../data/vacantes';
-import { empresa } from '../../data/site';
+import { vacantes, contactoEmpleo } from '../../data/vacantes';
 
 /**
  * Página de detalle de cada vacante: /empleos/<slug>/
@@ -30,6 +29,8 @@ const { src: imagen, esMarcador } = imagenOMarcador(vacante.imagen, vacante.carg
 const mensajeWhatsapp = encodeURIComponent(
   `Hola, vi la convocatoria de "${vacante.cargo}" en la página y me interesa postularme.`,
 );
+
+const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
 ---
 
 <BaseLayout
@@ -92,9 +93,7 @@ const mensajeWhatsapp = encodeURIComponent(
           {
             vacante.requisitos.map((requisito) => (
               <li class="flex items-start gap-3 text-[15px]">
-                <span class="icono-chip mt-0.5 h-7 w-7 shrink-0 rounded-lg">
-                  <Icono nombre="shield-check" class="h-4 w-4" interactivo={false} />
-                </span>
+                <Icono nombre="circle-check" class="mt-1 h-[18px] w-[18px] shrink-0 text-verde" interactivo={false} />
                 {requisito}
               </li>
             ))
@@ -108,9 +107,7 @@ const mensajeWhatsapp = encodeURIComponent(
               <ul class="mt-5 flex list-none flex-col gap-3 p-0">
                 {vacante.ofrecemos.map((item) => (
                   <li class="flex items-start gap-3 text-[15px]">
-                    <span class="icono-chip mt-0.5 h-7 w-7 shrink-0 rounded-lg">
-                      <Icono nombre="thumbs-up" class="h-4 w-4" interactivo={false} />
-                    </span>
+                    <Icono nombre="circle-check" class="mt-1 h-[18px] w-[18px] shrink-0 text-verde" interactivo={false} />
                     {item}
                   </li>
                 ))}
@@ -119,22 +116,72 @@ const mensajeWhatsapp = encodeURIComponent(
           )
         }
 
-        <div class="mt-12 flex flex-wrap gap-4">
-          <a
-            class="btn btn-primary"
-            href={ruta(`/empleos/?cargo=${encodeURIComponent(vacante.cargo)}#postular`)}
-          >
-            Postularme a esta vacante
-          </a>
-          <a
-            class="btn btn-whatsapp"
-            href={`${empresa.whatsapp}?text=${mensajeWhatsapp}`}
-            target="_blank"
-            rel="noopener"
-          >
-            Preguntar por WhatsApp
-            <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
-          </a>
+        <div class="mt-12 rounded-card border border-line bg-base p-7">
+          <h2 class="text-[20px]">Contacto</h2>
+          <ul class="mt-4 flex list-none flex-col gap-3 p-0">
+            <li>
+              <a
+                class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
+                href={`mailto:${contactoEmpleo.email}?subject=${asuntoCorreo}`}
+              >
+                <Icono nombre="mail" class="h-[18px] w-[18px] text-secondary" />
+                {contactoEmpleo.email}
+              </a>
+            </li>
+            <li>
+              <a
+                class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
+                href={`tel:+${contactoEmpleo.whatsapp.numero}`}
+              >
+                <Icono nombre="phone" class="h-[18px] w-[18px] text-secondary" />
+                {contactoEmpleo.whatsapp.texto}
+              </a>
+            </li>
+            {
+              vacante.whatsappExtra && (
+                <li>
+                  <a
+                    class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
+                    href={`tel:+${vacante.whatsappExtra.numero}`}
+                  >
+                    <Icono nombre="phone" class="h-[18px] w-[18px] text-secondary" />
+                    {vacante.whatsappExtra.texto}
+                  </a>
+                </li>
+              )
+            }
+          </ul>
+
+          <div class="mt-7 flex flex-wrap gap-4">
+            <a
+              class="btn btn-whatsapp"
+              href={`https://wa.me/${contactoEmpleo.whatsapp.numero}?text=${mensajeWhatsapp}`}
+              target="_blank"
+              rel="noopener"
+            >
+              Escribir al {contactoEmpleo.whatsapp.texto}
+              <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
+            </a>
+            {
+              vacante.whatsappExtra && (
+                <a
+                  class="btn btn-secondary"
+                  href={`https://wa.me/${vacante.whatsappExtra.numero}?text=${mensajeWhatsapp}`}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Escribir al {vacante.whatsappExtra.texto}
+                  <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
+                </a>
+              )
+            }
+            <a
+              class="btn btn-primary"
+              href={ruta(`/empleos/?cargo=${encodeURIComponent(vacante.cargo)}#postular`)}
+            >
+              Postularme a esta vacante
+            </a>
+          </div>
         </div>
       </div>
     </div>

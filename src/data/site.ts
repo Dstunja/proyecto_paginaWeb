@@ -77,12 +77,13 @@ export const cobertura = [
 export const PIDEKY_URL = '';
 
 /**
- * EDITAR AQUÍ: foto real del hero (camión o bodega).
- * Deja el archivo en public/ (por ejemplo public/hero-camion.jpg) y pon aquí
- * la ruta: '/hero-camion.jpg'. Mientras esté vacío se muestra un panel de
- * marca con el isotipo, sin foto de archivo genérica.
+ * Imagen principal del hero: la mascota de la empresa (el búho conductor)
+ * sobre el camión de reparto con el portafolio.
+ *
+ * EDITAR AQUÍ: para cambiarla, deja el archivo en public/img/marca/ y pon aquí
+ * su ruta. Si se deja vacío, el hero vuelve al panel de marca con el isotipo.
  */
-export const HERO_IMAGEN = '';
+export const HERO_IMAGEN = '/img/marca/mascota-camion.jpg';
 
 /** Valor agregado (home). */
 export const valorAgregado = [
