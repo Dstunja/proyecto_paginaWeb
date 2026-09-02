@@ -2,20 +2,12 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
 import { logoMarca } from '../lib/imagenes';
-import BuscadorCobertura from '../components/BuscadorCobertura.astro';
-import MapaCobertura from '../components/MapaCobertura.astro';
+import MapaRed from '../components/MapaRed.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
 import Testimonio from '../components/Testimonio.astro';
-import {
-  cifras,
-  marcas,
-  valorAgregado,
-  beneficios,
-  cobertura,
-  empresa,
-  HERO_IMAGEN,
-} from '../data/site';
+import { cifras, marcas, valorAgregado, beneficios, empresa, HERO_IMAGEN } from '../data/site';
+import { departamentos } from '../data/municipios';
 
 /* Logos de marca de la franja del inicio. Si el archivo todavía no está en
    public/img/marcas/, se muestra el nombre en texto (ver src/lib/imagenes.ts). */
@@ -32,9 +24,9 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
       <div class="grid grid-cols-1 items-center gap-14 tablet:grid-cols-[1.05fr_.95fr] tablet:gap-16">
         <div>
           <p class="glass mb-7 inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-[13px] font-semibold text-ink">
-            <span class="relative flex h-2 w-2" aria-hidden="true">
-              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75"></span>
-              <span class="relative inline-flex h-2 w-2 rounded-full bg-secondary"></span>
+            <span class="relative flex h-2.5 w-2.5" aria-hidden="true">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-verde opacity-75"></span>
+              <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-verde"></span>
             </span>
             Aliado comercial de Grupo Nutresa
           </p>
@@ -172,39 +164,40 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   </section>
 
   <!-- COBERTURA -->
-  <section class="section border-y border-line bg-base">
-    <div class="wrap grid grid-cols-1 items-start gap-14 tablet:grid-cols-[.9fr_1.1fr]">
-      <div>
-        <span class="kicker">Nuestra red</span>
-        <h2 class="text-[28px] tablet:text-[38px]">Llevamos nuestras marcas más lejos</h2>
-        <p class="mt-3 text-muted">
-          Llegamos a 87 municipios en tres departamentos. 21 años distribuyendo desde el corazón de
-          Boyacá.
-        </p>
-        <div class="mt-6 flex flex-col gap-[18px]">
+  <section id="cobertura" class="section border-y border-line bg-base">
+    <div class="wrap">
+      <div class="mb-10 flex flex-col gap-8 tablet:flex-row tablet:items-end tablet:justify-between">
+        <div class="max-w-[52ch]">
+          <span class="kicker">Nuestra red</span>
+          <h2 class="text-[28px] tablet:text-[38px]">Cobertura nacional</h2>
+          <p class="mt-3 text-muted">
+            Llegamos a 87 municipios en tres departamentos. 21 años distribuyendo desde el corazón
+            de Boyacá.
+          </p>
+        </div>
+
+        <dl class="flex flex-wrap gap-x-9 gap-y-4">
           {
-            cobertura.map((dep, i) => (
-              <div class="flex items-center justify-between border-b border-line pb-3.5">
-                <span class="flex items-center gap-2.5 font-medium">
+            departamentos.map((dep) => (
+              <div>
+                <dt class="flex items-center gap-2 text-[13px] font-medium text-muted">
                   <span
-                    class:list={[
-                      'h-3 w-3 rounded-full',
-                      ['bg-secondary-dark', 'bg-secondary', 'bg-accent'][i],
-                    ]}
+                    class="h-2.5 w-2.5 rounded-full"
+                    style={`background:${dep.color}`}
+                    aria-hidden="true"
                   />
-                  {dep.departamento}
-                </span>
-                <span class="font-display text-[26px] font-bold text-ink">
-                  {dep.municipios}
-                </span>
+                  {dep.nombre}
+                </dt>
+                <dd class="mt-1 font-display text-[30px] leading-none font-bold text-primary">
+                  {dep.total}
+                </dd>
               </div>
             ))
           }
-        </div>
+        </dl>
       </div>
 
-      <BuscadorCobertura />
-      <MapaCobertura />
+      <MapaRed />
     </div>
   </section>
 

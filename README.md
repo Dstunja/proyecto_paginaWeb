@@ -35,6 +35,7 @@ src/
   data/site.ts             Datos de la empresa: teléfono, correo, marcas,
                            municipios, cifras, menú. EDITAR AQUÍ primero.
   data/vacantes.ts         Vacantes y convocatorias (listado y detalle).
+  data/municipios.ts       Municipios cubiertos y sus coordenadas (mapa).
   data/innovaciones.ts     Novedades mes a mes de la página de innovación.
   lib/rutas.ts             ruta(): antepone el `base` a los enlaces internos y
                            a los archivos de public/. OBLIGATORIO usarlo.
@@ -52,6 +53,9 @@ src/
     MisionVision.astro     Pestañas accesibles de Misión / Visión.
     BuscadorCobertura.astro Buscador de municipios (ignora tildes y mayúsculas).
     MapaCobertura.astro    Mapa de la sede (OpenStreetMap o Google Maps).
+    MapaRed.astro          Mapa interactivo de cobertura: un punto por
+                           municipio, filtros por departamento y buscador
+                           (Leaflet + teselas de Esri).
     BotonPideky.astro      Botón de Pideky.
     FormularioMailto.astro Formularios de contacto, empleos y PQRS.
     PageHero.astro         Encabezado de las páginas internas.
@@ -88,6 +92,7 @@ legacy-html/               El prototipo HTML original, como referencia.
 | Categorías del catálogo | `src/pages/catalogo.astro` |
 | Vacantes y convocatorias | `src/data/vacantes.ts` |
 | Novedades de innovación | `src/data/innovaciones.ts` |
+| Municipios del mapa de cobertura | `src/data/municipios.ts` |
 | Vacantes de empleo | `src/pages/empleos.astro` |
 | Horario de atención | `src/pages/contactanos.astro` |
 
@@ -121,6 +126,24 @@ los colores de la marca, así que **solo se ven con conexión a internet**. En
 cuanto dejes el archivo real en su carpeta y vuelvas a compilar, el marcador
 desaparece sin tocar el código. Todos los puntos donde falta una imagen real
 están marcados en el código con `EDITAR AQUÍ`.
+
+## Mapa de cobertura
+
+La sección "Cobertura nacional" del inicio dibuja un punto por municipio con
+[Leaflet](https://leafletjs.com) (paquete del proyecto, no CDN) sobre el fondo
+claro de Esri. Los datos están en `src/data/municipios.ts`: nombre,
+departamento y coordenadas de la cabecera municipal.
+
+**Pendiente**: buscamos el listado oficial en `ListadoAutomatizacionDST.xlsx`
+(Escritorio), pero ese archivo contiene las funciones a automatizar por área,
+no los municipios. Por ahora están cargados los 22 municipios que ya traía el
+prototipo, con coordenadas aproximadas; los contadores siguen mostrando las
+cifras oficiales (67 / 18 / 2) y la leyenda del mapa dice cuántos van
+cargados. Al recibir el listado real basta con agregar una línea por municipio
+en ese archivo — está marcado con `EDITAR AQUÍ`.
+
+Los colores de cada departamento se definen una sola vez (`departamentos` en
+`municipios.ts`) y se usan tanto en los contadores como en los puntos del mapa.
 
 ## Identidad visual
 

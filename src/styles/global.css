@@ -51,6 +51,7 @@
   /* --- Líneas y estados --- */
   --color-line: #e1e7ef;
   --color-ok: #1d7a45;
+  --color-verde: #16a34a; /* verde de estado: punto de "aliado comercial" */
   --color-whatsapp: #25d366;
 
   /* --- Vidrio esmerilado (barra fija, píldoras y chips) ---
@@ -88,12 +89,13 @@
   :root {
     /* Altura de la barra fija. `main` reserva este espacio y los anclajes lo
        descuentan, para que nada quede escondido debajo de la barra. */
-    --nav-h: 4.5rem;
+    --nav-h: 5rem;
   }
 
   @media (min-width: 900px) {
     :root {
-      --nav-h: 5rem;
+      /* Alto suficiente para el logotipo horizontal sin que quede apretado. */
+      --nav-h: 6.25rem;
     }
   }
 

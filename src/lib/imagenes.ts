@@ -66,10 +66,22 @@ export function imagenOMarcador(
   ancho = 800,
   alto = 600,
 ): { src: string; esMarcador: boolean } {
-  if (rutaPublica && existeEnPublico(rutaPublica)) {
-    return { src: ruta(rutaPublica), esMarcador: false };
-  }
+  const encontrada = rutaPublica ? buscarConCualquierExtension(rutaPublica) : null;
+  if (encontrada) return { src: ruta(encontrada), esMarcador: false };
   return { src: marcador(textoAlterno, ancho, alto), esMarcador: true };
+}
+
+/**
+ * Busca el archivo tal cual y, si no está, con las demás extensiones de imagen.
+ *
+ * Así da igual que en los datos diga `.jpg` y el archivo subido sea `.png`:
+ * mientras el nombre coincida, la imagen se usa igual.
+ */
+function buscarConCualquierExtension(rutaPublica: string): string | null {
+  if (existeEnPublico(rutaPublica)) return rutaPublica;
+
+  const sinExtension = rutaPublica.replace(/\.[a-z0-9]+$/i, '');
+  return EXTENSIONES.map((ext) => sinExtension + ext).find(existeEnPublico) ?? null;
 }
 
 /**

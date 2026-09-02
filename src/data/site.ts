@@ -65,14 +65,10 @@ export const cobertura = [
   { departamento: 'Cundinamarca', municipios: 2 },
 ] as const;
 
-/** EDITAR AQUÍ: lista real de los 87 municipios cubiertos. */
-export const MUNICIPIOS: string[] = [
-  'Tunja', 'Duitama', 'Sogamoso', 'Chiquinquirá', 'Paipa', 'Villa de Leyva',
-  'Nobsa', 'Moniquirá', 'Ramiriquí', 'Garagoa', 'Puerto Boyacá', 'Samacá',
-  'Bucaramanga', 'Barrancabermeja', 'Floridablanca', 'Girón', 'San Gil',
-  'Socorro', 'Zapatoca', 'Piedecuesta',
-  'Zipaquirá', 'Chocontá',
-];
+/**
+ * Los municipios cubiertos (con sus coordenadas para el mapa) viven ahora en
+ * src/data/municipios.ts, que es lo que usa la sección "Cobertura nacional".
+ */
 
 /**
  * EDITAR AQUÍ: URL real de la app / web de Pideky cuando exista.

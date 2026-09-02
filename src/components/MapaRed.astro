@@ -1,0 +1,376 @@
+---
+import Icono from './Icono.astro';
+import { departamentos, municipios, totalOficial } from '../data/municipios';
+
+/**
+ * Mapa interactivo de cobertura.
+ *
+ * Un punto por municipio, con el color de su departamento, más un marcador
+ * pulsante para Tunja (sede principal). Encima del mapa: filtros por
+ * departamento y buscador de municipio. Todo se arma en el navegador con
+ * Leaflet (paquete instalado en el proyecto, no CDN); las teselas vienen de
+ * Esri, con su atribución obligatoria abajo a la derecha.
+ */
+const cargados = municipios.length;
+---
+
+<div class="glass-card overflow-hidden">
+  <!-- CONTROLES -->
+  <div
+    class="flex flex-col gap-4 border-b border-line px-5 py-4 tablet:flex-row tablet:items-center tablet:justify-between"
+  >
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar municipios por departamento">
+      <button
+        type="button"
+        class="filtro-mapa"
+        data-filtro="todos"
+        aria-pressed="true"
+      >
+        Todos los municipios
+      </button>
+      {
+        departamentos.map((dep) => (
+          <button type="button" class="filtro-mapa" data-filtro={dep.nombre} aria-pressed="false">
+            <span
+              class="h-2.5 w-2.5 rounded-full"
+              style={`background:${dep.color}`}
+              aria-hidden="true"
+            />
+            {dep.nombre}
+          </button>
+        ))
+      }
+    </div>
+
+    <form class="flex w-full gap-2 tablet:w-auto" id="buscador-mapa" role="search">
+      <label class="sr-only" for="buscar-municipio">Buscar municipio</label>
+      <input
+        class="field !w-full !py-2.5 tablet:!w-[240px]"
+        id="buscar-municipio"
+        name="municipio"
+        type="search"
+        list="lista-municipios"
+        placeholder="Busca tu municipio…"
+        autocomplete="off"
+      />
+      <datalist id="lista-municipios">
+        {municipios.map((m) => <option value={m.nombre} />)}
+      </datalist>
+      <button
+        class="group flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-semibold text-white transition-colors duration-200 hover:bg-primary-dark"
+        type="submit"
+      >
+        <Icono nombre="search" class="h-[18px] w-[18px]" />
+        <span class="sr-only mob:not-sr-only">Buscar</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- MAPA -->
+  <div class="relative">
+    <div
+      id="mapa-red"
+      class="h-[420px] w-full bg-base tablet:h-[520px]"
+      role="application"
+      aria-label="Mapa de los municipios cubiertos"
+    >
+    </div>
+
+    <!-- Aviso del buscador: aparece sobre el mapa al buscar. -->
+    <p
+      id="aviso-mapa"
+      class="pointer-events-none absolute inset-x-4 top-4 z-[500] m-0 hidden rounded-xl bg-surface px-4 py-2.5 text-[14px] font-medium shadow-[0_8px_24px_rgba(13,44,132,.16)] tablet:inset-x-auto tablet:left-1/2 tablet:-translate-x-1/2"
+      role="status"
+    >
+    </p>
+  </div>
+
+  <!-- LEYENDA -->
+  <div class="flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-line px-5 py-4 text-[13.5px]">
+    <span class="inline-flex items-center gap-2.5 font-medium">
+      <span class="punto-sede" aria-hidden="true"></span>
+      Tunja, sede principal — punto pulsante en el mapa
+    </span>
+    {
+      departamentos.map((dep) => (
+        <span class="inline-flex items-center gap-2 text-muted">
+          <span
+            class="h-3 w-3 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(13,44,132,.2)]"
+            style={`background:${dep.color}`}
+            aria-hidden="true"
+          />
+          {dep.nombre}
+        </span>
+      ))
+    }
+    <span class="text-muted">
+      {cargados} de {totalOficial} municipios cargados
+    </span>
+  </div>
+</div>
+
+<style>
+  /* Píldoras de filtro */
+  .filtro-mapa {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    padding: 0.5rem 1rem;
+    font-family: var(--font-display);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--color-muted);
+    transition: all 0.2s ease-out;
+  }
+
+  .filtro-mapa:hover {
+    border-color: var(--color-secondary);
+    color: var(--color-primary);
+  }
+
+  .filtro-mapa[aria-pressed='true'] {
+    border-color: transparent;
+    background: var(--color-primary);
+    color: #fff;
+  }
+
+  /* Punto pulsante de la sede, en la leyenda y en el mapa */
+  .punto-sede {
+    position: relative;
+    display: inline-block;
+    height: 0.75rem;
+    width: 0.75rem;
+    border-radius: 9999px;
+    background: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(13, 44, 132, 0.18);
+  }
+
+  .punto-sede::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-primary);
+    animation: pulso-sede 1.8s ease-out infinite;
+  }
+
+  @keyframes pulso-sede {
+    0% {
+      transform: scale(0.9);
+      opacity: 0.9;
+    }
+    70% {
+      transform: scale(2.1);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(2.1);
+      opacity: 0;
+    }
+  }
+
+  /* Marcador de la sede dentro del mapa (lo inserta Leaflet como divIcon) */
+  :global(.marcador-sede) {
+    display: grid;
+    place-items: center;
+  }
+
+  :global(.marcador-sede .nucleo) {
+    position: relative;
+    display: block;
+    height: 14px;
+    width: 14px;
+    border-radius: 9999px;
+    background: var(--color-primary);
+    border: 3px solid #fff;
+    box-shadow: 0 2px 6px rgba(3, 8, 25, 0.4);
+  }
+
+  :global(.marcador-sede .nucleo::after) {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-primary);
+    animation: pulso-sede 1.8s ease-out infinite;
+  }
+
+  /* Ajustes de Leaflet al estilo del sitio */
+  :global(.leaflet-container) {
+    font-family: var(--font-body);
+    background: var(--color-base);
+  }
+
+  :global(.leaflet-control-zoom a) {
+    color: var(--color-primary) !important;
+    border-radius: 8px !important;
+  }
+
+  :global(.leaflet-popup-content-wrapper) {
+    border-radius: 12px;
+  }
+
+  :global(.leaflet-popup-content) {
+    margin: 12px 16px;
+    font-size: 13.5px;
+  }
+
+  :global(.leaflet-popup-content strong) {
+    font-family: var(--font-display);
+    color: var(--color-primary);
+  }
+</style>
+
+<script>
+  import L from 'leaflet';
+  import 'leaflet/dist/leaflet.css';
+  import { municipios, colorDepartamento } from '../data/municipios';
+
+  const contenedor = document.getElementById('mapa-red');
+  if (contenedor) {
+    const mapa = L.map(contenedor, {
+      center: [6.1, -73.4],
+      zoom: 7,
+      // La rueda del mouse no debe secuestrar el scroll de la página.
+      scrollWheelZoom: false,
+      zoomControl: true,
+    });
+
+    // Fondo claro de Esri: deja que los puntos de color sean lo que resalta.
+    // Alternativa sin Esri:
+    //   https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png  (atribución © OpenStreetMap)
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      {
+        maxZoom: 16,
+        attribution:
+          'Teselas &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a> — Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
+      },
+    ).addTo(mapa);
+
+    /** Una capa por departamento, para poder filtrar. */
+    const capas = new Map<string, L.LayerGroup>();
+    /** Marcador de cada municipio, para centrarlo desde el buscador. */
+    const marcadores = new Map<string, { marcador: L.CircleMarker | L.Marker; nombre: string }>();
+
+    for (const municipio of municipios) {
+      const capa = capas.get(municipio.departamento) ?? L.layerGroup();
+      capas.set(municipio.departamento, capa);
+
+      const popup = `<strong>${municipio.nombre}</strong><br>${municipio.departamento}${
+        municipio.sede ? '<br>Sede principal' : ''
+      }`;
+
+      const marcador = municipio.sede
+        ? L.marker([municipio.lat, municipio.lng], {
+            icon: L.divIcon({
+              className: 'marcador-sede',
+              html: '<span class="nucleo"></span>',
+              iconSize: [14, 14],
+              iconAnchor: [7, 7],
+            }),
+            title: `${municipio.nombre} — sede principal`,
+            zIndexOffset: 1000,
+          })
+        : L.circleMarker([municipio.lat, municipio.lng], {
+            radius: 7,
+            color: '#ffffff',
+            weight: 2,
+            fillColor: colorDepartamento(municipio.departamento),
+            fillOpacity: 1,
+          });
+
+      marcador.bindPopup(popup);
+      marcador.bindTooltip(municipio.nombre, { direction: 'top', offset: [0, -8] });
+      marcador.addTo(capa);
+      marcadores.set(normalizar(municipio.nombre), { marcador, nombre: municipio.nombre });
+    }
+
+    capas.forEach((capa) => capa.addTo(mapa));
+
+    /** Encuadra el mapa sobre las capas visibles. */
+    function encuadrar(visibles: L.LayerGroup[]) {
+      const puntos: L.LatLngExpression[] = [];
+      for (const capa of visibles) {
+        capa.eachLayer((m) => {
+          const latlng = (m as L.CircleMarker).getLatLng?.();
+          if (latlng) puntos.push(latlng);
+        });
+      }
+      if (puntos.length > 1) mapa.fitBounds(L.latLngBounds(puntos).pad(0.12), { maxZoom: 9 });
+      else if (puntos.length === 1) mapa.setView(puntos[0], 10);
+    }
+
+    encuadrar([...capas.values()]);
+
+    // ---- Filtros por departamento ----
+    const botones = document.querySelectorAll<HTMLButtonElement>('[data-filtro]');
+    botones.forEach((boton) => {
+      boton.addEventListener('click', () => {
+        const filtro = boton.dataset.filtro!;
+        botones.forEach((b) => b.setAttribute('aria-pressed', String(b === boton)));
+
+        const visibles: L.LayerGroup[] = [];
+        capas.forEach((capa, departamento) => {
+          const mostrar = filtro === 'todos' || filtro === departamento;
+          if (mostrar) {
+            capa.addTo(mapa);
+            visibles.push(capa);
+          } else {
+            mapa.removeLayer(capa);
+          }
+        });
+        encuadrar(visibles);
+      });
+    });
+
+    // ---- Buscador ----
+    const formulario = document.getElementById('buscador-mapa') as HTMLFormElement | null;
+    const campo = document.getElementById('buscar-municipio') as HTMLInputElement | null;
+    const aviso = document.getElementById('aviso-mapa');
+
+    function mostrarAviso(texto: string, ok: boolean) {
+      if (!aviso) return;
+      aviso.textContent = texto;
+      aviso.classList.remove('hidden');
+      aviso.style.color = ok ? 'var(--color-ok)' : 'var(--color-accent-text)';
+    }
+
+    formulario?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const valor = campo?.value.trim() ?? '';
+      if (!valor) {
+        mostrarAviso('Escribe el nombre de tu municipio.', false);
+        return;
+      }
+
+      const encontrado = marcadores.get(normalizar(valor));
+      if (!encontrado) {
+        mostrarAviso(`Por ahora no tenemos cobertura confirmada en "${valor}". Escríbenos y lo validamos.`, false);
+        return;
+      }
+
+      // Si estaba filtrado por otro departamento, se vuelve a "todos".
+      botones.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === 'todos')));
+      capas.forEach((capa) => capa.addTo(mapa));
+
+      mapa.flyTo(encontrado.marcador.getLatLng(), 11, { duration: 0.8 });
+      encontrado.marcador.openPopup();
+      mostrarAviso(`Sí, llegamos a ${encontrado.nombre}.`, true);
+    });
+
+    campo?.addEventListener('input', () => aviso?.classList.add('hidden'));
+  }
+
+  /** Compara sin tildes ni mayúsculas: "chiquinquira" encuentra "Chiquinquirá". */
+  function normalizar(texto: string): string {
+    return texto
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+</script>
