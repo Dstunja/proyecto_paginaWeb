@@ -74,10 +74,22 @@
 }
 
 @layer base {
+  :root {
+    /* Altura de la barra fija. `main` reserva este espacio y los anclajes lo
+       descuentan, para que nada quede escondido debajo de la barra. */
+    --nav-h: 4.5rem;
+  }
+
+  @media (min-width: 900px) {
+    :root {
+      --nav-h: 5rem;
+    }
+  }
+
   html {
     scroll-behavior: smooth;
     /* La barra superior es fija: los anclajes no deben quedar debajo de ella. */
-    scroll-padding-top: 6rem;
+    scroll-padding-top: calc(var(--nav-h) + 1.5rem);
     color-scheme: dark;
     background-color: var(--color-midnight);
   }
@@ -94,6 +106,12 @@
       radial-gradient(45rem 35rem at 110% 8%, rgba(13, 44, 132, 0.35), transparent 65%);
     background-attachment: fixed;
     background-repeat: no-repeat;
+  }
+
+  /* La barra de navegación es fija: se reserva su altura al inicio del
+     contenido para que el primer bloque no quede debajo de ella. */
+  main {
+    padding-top: var(--nav-h);
   }
 
   /* h1 en Montserrat Bold; h2/h3/h4 en SemiBold, como pide el manual. */
