@@ -2,6 +2,7 @@
 import { empresa, redes, navegacion } from '../data/site';
 import Logo from './Logo.astro';
 import Icono from './Icono.astro';
+import { ruta } from '../lib/rutas';
 
 const anio = new Date().getFullYear();
 
@@ -51,7 +52,7 @@ const canales = [
               <li>
                 <a
                   class="text-sm text-white/70 transition-colors duration-200 hover:text-accent"
-                  href={item.href}
+                  href={ruta(item.href)}
                 >
                   {item.texto}
                 </a>
@@ -69,7 +70,7 @@ const canales = [
               <li>
                 <a
                   class="group flex items-center gap-2.5 text-sm text-white/70 transition-colors duration-200 hover:text-accent"
-                  href={canal.href}
+                  href={ruta(canal.href)}
                   {...canal.externo ? { target: '_blank', rel: 'noopener' } : {}}
                 >
                   <Icono nombre={canal.icono} class="h-4 w-4" />

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { ruta } from '../lib/rutas';
 import PageHero from '../components/PageHero.astro';
 import Icono from '../components/Icono.astro';
 import { empresa } from '../data/site';
@@ -101,7 +102,7 @@ const mensajeWhatsapp = encodeURIComponent(
             Pedir catálogo
             <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
           </a>
-          <a class="btn border-white/40 text-white hover:bg-white/10" href="/contactanos/">
+          <a class="btn border-white/40 text-white hover:bg-white/10" href={ruta('/contactanos/')}>
             Contactar
           </a>
         </div>

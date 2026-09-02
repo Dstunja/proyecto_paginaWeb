@@ -23,7 +23,9 @@ interface Props {
 const { title, description, ogImage = '/og.png' } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-const ogUrl = new URL(ogImage, Astro.site).href;
+const base = import.meta.env.BASE_URL;
+const publico = (archivo: string) => `${base}${base.endsWith('/') ? '' : '/'}${archivo}`;
+const ogUrl = new URL(publico(ogImage.replace(/^\//, '')), Astro.site).href;
 
 // Datos estructurados: ayudan a que Google muestre la ficha del negocio.
 const jsonLd = {
@@ -32,7 +34,7 @@ const jsonLd = {
   name: empresa.razonSocial,
   alternateName: empresa.nombre,
   description: empresa.descripcion,
-  url: Astro.site?.href,
+  url: new URL(base, Astro.site).href,
   telephone: empresa.telefonoE164,
   email: empresa.email,
   address: {
@@ -58,9 +60,9 @@ const jsonLd = {
     <meta name="theme-color" content="#050d28" />
     <meta name="color-scheme" content="dark" />
 
-    <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="icon" href={publico('favicon.ico')} sizes="any" />
+    <link rel="apple-touch-icon" href={publico('apple-touch-icon.png')} />
+    <link rel="sitemap" href={publico('sitemap-index.xml')} />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={empresa.nombre} />

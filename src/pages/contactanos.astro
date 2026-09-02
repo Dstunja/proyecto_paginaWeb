@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { ruta } from '../lib/rutas';
 import PageHero from '../components/PageHero.astro';
 import MapaCobertura from '../components/MapaCobertura.astro';
 import FormularioMailto from '../components/FormularioMailto.astro';
@@ -110,7 +111,7 @@ const canales = [
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
           ¿Es una petición, queja o reclamo formal? Usa el{' '}
-          <a class="font-semibold text-primary underline" href="/pqrs/">formulario de PQRS</a>.
+          <a class="font-semibold text-primary underline" href={ruta('/pqrs/')}>formulario de PQRS</a>.
         </p>
       </div>
 

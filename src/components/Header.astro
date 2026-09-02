@@ -2,16 +2,17 @@
 import { navegacion, empresa } from '../data/site';
 import Logo from './Logo.astro';
 import Icono from './Icono.astro';
+import { ruta, esActual } from '../lib/rutas';
 
-/** Ruta actual normalizada, para marcar el enlace activo. */
-const actual = Astro.url.pathname.replace(/\/+$/, '') || '/';
+/** Ruta actual, para marcar el enlace activo (descuenta el `base`). */
+const actual = Astro.url.pathname;
 ---
 
 {/* Barra fija de vidrio esmerilado: el contenido se desliza por debajo.
     La altura vive en --nav-h (global.css) y `main` reserva ese espacio. */}
 <header class="glass fixed inset-x-0 top-0 z-[100] border-x-0 border-t-0 border-b">
   <div class="wrap flex h-[var(--nav-h)] items-center justify-between gap-6">
-    <Logo href="/" />
+    <Logo href={ruta('/')} />
 
     <button
       type="button"
@@ -40,15 +41,14 @@ const actual = Astro.url.pathname.replace(/\/+$/, '') || '/';
     >
       {
         navegacion.map((item) => {
-          const href = item.href.replace(/\/+$/, '') || '/';
-          const esActual = href === actual;
+          const activo = esActual(item.href, actual);
           return (
             <a
-              href={item.href}
-              aria-current={esActual ? 'page' : undefined}
+              href={ruta(item.href)}
+              aria-current={activo ? 'page' : undefined}
               class:list={[
                 'relative py-1 font-display text-[13px] font-semibold tracking-[0.08em] uppercase transition-colors duration-200 hover:text-secondary-dark',
-                esActual
+                activo
                   ? "text-ink after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:rounded-full after:bg-accent after:content-['']"
                   : 'text-ink/65',
               ]}

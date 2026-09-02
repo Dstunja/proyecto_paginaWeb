@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { ruta } from '../lib/rutas';
 import BuscadorCobertura from '../components/BuscadorCobertura.astro';
 import MapaCobertura from '../components/MapaCobertura.astro';
 import BotonPideky from '../components/BotonPideky.astro';
@@ -38,7 +39,7 @@ import {
             Cundinamarca, con entregas semanales y asesoría cercana.
           </p>
           <div class="mt-8 flex flex-wrap gap-3.5">
-            <a class="btn btn-primary" href="/catalogo/">Conoce nuestro portafolio</a>
+            <a class="btn btn-primary" href={ruta('/catalogo/')}>Conoce nuestro portafolio</a>
             <a class="btn btn-whatsapp" href={empresa.whatsapp} target="_blank" rel="noopener">
               Haz tu pedido
               <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
@@ -49,7 +50,7 @@ import {
         {
           HERO_IMAGEN ? (
             <img
-              src={HERO_IMAGEN}
+              src={ruta(HERO_IMAGEN)}
               alt="Camión de reparto de Distribuciones Santiago de Tunja"
               class="aspect-[4/3] w-full rounded-2xl object-cover shadow-[0_18px_40px_rgba(13,44,132,.18)]"
             />
@@ -61,7 +62,7 @@ import {
               <div class="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-white/5" />
               <div class="relative flex flex-col items-center gap-5 px-8 text-center">
                 <img
-                  src="/LOGO-removebg-preview.png"
+                  src={ruta('/LOGO-removebg-preview.png')}
                   alt=""
                   width="183"
                   height="180"
@@ -262,7 +263,7 @@ import {
           <p class="m-0 font-display text-lg font-semibold text-primary">¿Aún no eres cliente?</p>
           <p class="m-0 text-[14.5px] text-muted">Regístrate y empieza a comprar con nosotros.</p>
         </div>
-        <a class="btn btn-accent" href="/contactanos/">Quiero ser cliente</a>
+        <a class="btn btn-accent" href={ruta('/contactanos/')}>Quiero ser cliente</a>
       </div>
     </div>
   </section>
@@ -276,14 +277,14 @@ import {
           ¿Buscas una oportunidad profesional en el sector logístico? Estamos en constante
           crecimiento.
         </p>
-        <a class="btn btn-secondary" href="/empleos/">Postularme ahora</a>
+        <a class="btn btn-secondary" href={ruta('/empleos/')}>Postularme ahora</a>
       </div>
       <div class="rounded-card border border-transparent bg-primary-soft p-8">
         <h3 class="mb-2.5 text-[19px] text-primary">Atención al cliente</h3>
         <p class="mb-5 text-[14.5px] text-muted">
           ¿Tienes alguna solicitud, queja o reclamo? Estamos aquí para escucharte y mejorar.
         </p>
-        <a class="btn btn-primary" href="/pqrs/">Enviar PQRS</a>
+        <a class="btn btn-primary" href={ruta('/pqrs/')}>Enviar PQRS</a>
       </div>
     </div>
   </section>

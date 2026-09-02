@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { ruta } from '../lib/rutas';
 import PageHero from '../components/PageHero.astro';
 import MisionVision from '../components/MisionVision.astro';
 import Icono from '../components/Icono.astro';
@@ -122,8 +123,8 @@ const valores = [
       </div>
 
       <div class="mt-12 flex flex-wrap gap-3.5">
-        <a class="btn btn-primary" href="/contactanos/">Hablar con un asesor</a>
-        <a class="btn btn-secondary" href="/empleos/">Trabajar con nosotros</a>
+        <a class="btn btn-primary" href={ruta('/contactanos/')}>Hablar con un asesor</a>
+        <a class="btn btn-secondary" href={ruta('/empleos/')}>Trabajar con nosotros</a>
       </div>
     </div>
   </section>

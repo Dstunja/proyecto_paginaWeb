@@ -15,4 +15,4 @@ Stack: Astro + Tailwind 4 + TypeScript.
 
 - Colores: azul oscuro #0D2C84, azul #1E88E5, naranja #F5A623, gris claro #F5F7FA, gris oscuro #263238
 - Tipografía: Montserrat (Bold títulos, SemiBold subtítulos), Poppins Regular cuerpo
-- Logos en public/: "logo distribuciones-13.png" (completo) y "LOGO-removebg-preview.png" (ícono)
+- Logos en public/: "logo-distribuciones.png" (completo) y "LOGO-removebg-preview.png" (ícono)

@@ -1,6 +1,7 @@
 ---
 import { testimonio } from '../data/site';
 import Icono from './Icono.astro';
+import { ruta } from '../lib/rutas';
 
 const iniciales = testimonio.nombre
   .split(' ')
@@ -43,7 +44,7 @@ const iniciales = testimonio.nombre
     {
       testimonio.foto ? (
         <img
-          src={testimonio.foto}
+          src={ruta(testimonio.foto)}
           alt={`${testimonio.nombre}, ${testimonio.negocio}`}
           class="h-32 w-32 rounded-full border-4 border-white/20 object-cover"
         />
