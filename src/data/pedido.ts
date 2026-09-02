@@ -25,14 +25,22 @@ export const WHATSAPP_NUMERO = empresa.telefonoE164.replace(/\D/g, '');
 /**
  * Tope de caracteres del texto YA CODIFICADO que se manda en `?text=`.
  *
- * `wa.me` no documenta un límite, pero las URL muy largas fallan de formas
- * distintas según el navegador y el sistema (Android corta cerca de los 2 KB).
- * Se deja margen para el resto de la URL y se recorta el listado antes de
- * llegar ahí; el pedido completo se copia al portapapeles para pegarlo como
- * segundo mensaje. Abrir varias ventanas de wa.me seguidas no es opción: el
- * navegador bloquea la segunda por ser una ventana emergente.
+ * `wa.me` no documenta ningún límite, así que se elige uno conservador: 4000
+ * caracteres codificados dejan la URL completa por debajo de 4 KB, que es
+ * territorio seguro en cualquier navegador actual y en el paso a la app de
+ * Android. Ojo con la aritmética: codificar más o menos duplica el texto
+ * (`×` ocupa 6 caracteres, cada tilde 6, cada salto de línea 3), de modo que
+ * 4000 codificados son unas 30 referencias por mensaje.
+ *
+ * AJUSTAR AQUÍ si en la práctica se ve que WhatsApp aguanta más (subirlo hace
+ * que quepan más referencias en el primer mensaje) o si algún teléfono falla
+ * con pedidos largos (bajarlo).
+ *
+ * Lo que no cabe no se pierde: el pedido completo se copia al portapapeles
+ * para pegarlo como segundo mensaje. Abrir varias ventanas de wa.me seguidas
+ * no es alternativa, porque el navegador bloquea la segunda por emergente.
  */
-export const LIMITE_TEXTO_URL = 1800;
+export const LIMITE_TEXTO_URL = 4000;
 
 /** Cantidad máxima por referencia, para atajar errores de digitación. */
 export const CANTIDAD_MAXIMA = 999;

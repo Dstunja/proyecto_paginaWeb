@@ -144,14 +144,22 @@ export function leerPedido(): Pedido {
   }
 }
 
-/** Guarda el pedido y avisa a toda la página. */
-export function guardarPedido(pedido: Pedido): void {
+/**
+ * Guarda el pedido y avisa a toda la página.
+ *
+ * `avisar` se pone en false para los cambios que no alteran la lista —escribir
+ * el nombre del negocio, por ejemplo—: repintar en cada tecla movería el
+ * cursor de sitio.
+ */
+export function guardarPedido(pedido: Pedido, avisar = true): void {
   try {
     window.localStorage.setItem(CLAVE_PEDIDO, JSON.stringify(pedido));
   } catch {
     // Sin almacenamiento el pedido solo dura lo que dure la página abierta.
   }
-  document.dispatchEvent(new CustomEvent<Pedido>(EVENTO_PEDIDO, { detail: pedido }));
+  if (avisar) {
+    document.dispatchEvent(new CustomEvent<Pedido>(EVENTO_PEDIDO, { detail: pedido }));
+  }
 }
 
 /**
@@ -228,7 +236,7 @@ function encabezado(pedido: Pedido): string {
   if (municipio) lineas.push(`Municipio: ${municipio}`);
   if (contacto) lineas.push(`Contacto: ${contacto}`);
   if (telefono) lineas.push(`Teléfono: ${telefono}`);
-  lineas.push('');
+  lineas.push('', '');
   return lineas.join('\n');
 }
 
