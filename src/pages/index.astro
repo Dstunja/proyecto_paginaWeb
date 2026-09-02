@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
+import { logoMarca } from '../lib/imagenes';
 import BuscadorCobertura from '../components/BuscadorCobertura.astro';
 import MapaCobertura from '../components/MapaCobertura.astro';
 import BotonPideky from '../components/BotonPideky.astro';
@@ -15,6 +16,10 @@ import {
   empresa,
   HERO_IMAGEN,
 } from '../data/site';
+
+/* Logos de marca de la franja del inicio. Si el archivo todavía no está en
+   public/img/marcas/, se muestra el nombre en texto (ver src/lib/imagenes.ts). */
+const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(marca) }));
 ---
 
 <BaseLayout
@@ -115,13 +120,22 @@ import {
       <p class="mb-8 text-center text-[12.5px] font-semibold tracking-[0.14em] text-muted uppercase">
         Marcas que distribuimos
       </p>
-      <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+      <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-5">
         {
-          marcas.map((marca) => (
-            <span class="font-display text-[15px] font-semibold text-muted transition-colors duration-200 hover:text-primary">
-              {marca}
-            </span>
-          ))
+          marcasConLogo.map((marca) =>
+            marca.logo ? (
+              <img
+                src={marca.logo}
+                alt={marca.nombre}
+                loading="lazy"
+                class="h-10 w-auto max-w-[130px] object-contain opacity-80 transition-opacity duration-200 hover:opacity-100"
+              />
+            ) : (
+              <span class="font-display text-[15px] font-semibold text-muted transition-colors duration-200 hover:text-primary">
+                {marca.nombre}
+              </span>
+            ),
+          )
         }
       </div>
       {/* EDITAR AQUÍ: cuando tengas los logotipos autorizados de cada marca,

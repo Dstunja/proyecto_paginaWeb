@@ -17,7 +17,7 @@ const actual = Astro.url.pathname;
     <button
       type="button"
       id="nav-toggle"
-      class="group flex flex-col gap-[5px] rounded-full p-2.5 transition-colors duration-200 hover:bg-secondary-soft tablet:hidden"
+      class="group flex flex-col gap-[5px] rounded-full p-2.5 transition-colors duration-200 hover:bg-secondary-soft nav:hidden"
       aria-label="Abrir menú"
       aria-expanded="false"
       aria-controls="main-nav"
@@ -34,9 +34,9 @@ const actual = Astro.url.pathname;
              shadow-[0_18px_40px_rgba(13,44,132,.12)]
              transition-[transform,opacity,visibility] duration-300 ease-out
              data-[open=true]:visible data-[open=true]:translate-y-0 data-[open=true]:opacity-100
-             tablet:static tablet:visible tablet:z-auto tablet:translate-y-0 tablet:flex-row
-             tablet:items-center tablet:gap-8 tablet:border-0 tablet:bg-transparent tablet:p-0
-             tablet:opacity-100 tablet:shadow-none tablet:backdrop-blur-none tablet:transition-none"
+             nav:static nav:visible nav:z-auto nav:translate-y-0 nav:flex-row
+             nav:items-center nav:gap-6 [@media(min-width:1250px)]:gap-8 nav:border-0 nav:bg-transparent nav:p-0
+             nav:opacity-100 nav:shadow-none nav:backdrop-blur-none nav:transition-none"
       data-open="false"
     >
       {
@@ -61,7 +61,7 @@ const actual = Astro.url.pathname;
     </nav>
 
     <a
-      class="btn btn-primary hidden !px-5 !py-2.5 !text-[12.5px] tracking-[0.08em] uppercase tablet:inline-flex"
+      class="btn btn-primary hidden whitespace-nowrap !px-5 !py-2.5 !text-[12.5px] tracking-[0.08em] uppercase nav:inline-flex"
       href={empresa.whatsapp}
       target="_blank"
       rel="noopener"

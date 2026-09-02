@@ -1,0 +1,120 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import Icono from '../components/Icono.astro';
+import { ruta } from '../lib/rutas';
+import { imagenOMarcador } from '../lib/imagenes';
+import { innovacionesOrdenadas } from '../data/innovaciones';
+import { empresa } from '../data/site';
+
+/**
+ * Línea de tiempo de innovaciones y novedades.
+ *
+ * El contenido vive en src/data/innovaciones.ts. Cada novedad muestra su
+ * imagen desde public/img/innovacion/; mientras el archivo no exista se usa un
+ * marcador de posición con el título, para poder publicar la novedad antes de
+ * tener la foto.
+ */
+const novedades = innovacionesOrdenadas.map((novedad) => ({
+  ...novedad,
+  ...imagenOMarcador(novedad.imagen, novedad.titulo, 1200, 675),
+}));
+---
+
+<BaseLayout
+  title="Innovación — Distribuciones Santiago de Tunja"
+  description="Novedades, mejoras y proyectos de Distribuciones Santiago de Tunja: tecnología, logística y equipo humano, mes a mes."
+>
+  <PageHero
+    kicker="Innovación"
+    titulo="Lo que estamos mejorando"
+    texto="Mes a mes contamos las novedades de la operación: nuevas herramientas, mejoras en las rutas y proyectos con nuestro equipo y nuestros aliados."
+  />
+
+  <section class="section">
+    <div class="wrap">
+      {
+        novedades.length === 0 ? (
+          <p class="glass-card p-8 text-muted">
+            Pronto publicaremos aquí las novedades de la operación.
+          </p>
+        ) : (
+          /* Línea de tiempo: un riel vertical a la izquierda con un punto por
+             novedad. En móvil el riel se mantiene, solo se estrecha. */
+          <ol class="relative m-0 flex list-none flex-col gap-10 p-0 pl-8 tablet:gap-14 tablet:pl-12">
+            <span
+              class="absolute top-2 bottom-2 left-[7px] w-px bg-line tablet:left-[11px]"
+              aria-hidden="true"
+            />
+
+            {novedades.map((novedad) => (
+              <li class="group relative">
+                <span
+                  class="absolute top-2 -left-8 flex h-4 w-4 items-center justify-center rounded-full border-2 border-accent bg-surface transition-transform duration-300 group-hover:scale-125 tablet:-left-12"
+                  aria-hidden="true"
+                />
+
+                <article class="glass-card overflow-hidden">
+                  <div class="grid grid-cols-1 items-stretch tablet:grid-cols-[.85fr_1.15fr]">
+                    <img
+                      src={novedad.src}
+                      alt=""
+                      width="1200"
+                      height="675"
+                      loading="lazy"
+                      class="aspect-[16/9] h-full w-full bg-primary-soft object-cover tablet:aspect-auto"
+                    />
+
+                    <div class="p-7 tablet:p-9">
+                      <div class="flex flex-wrap items-center gap-3">
+                        <p class="m-0 inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[0.08em] text-accent-text uppercase">
+                          <Icono nombre="calendar" class="h-4 w-4" interactivo={false} />
+                          {novedad.fecha}
+                        </p>
+                        {novedad.etiqueta && (
+                          <span class="rounded-full bg-primary-soft px-3 py-1 text-[12px] font-semibold text-primary">
+                            {novedad.etiqueta}
+                          </span>
+                        )}
+                      </div>
+
+                      <h2 class="mt-3 text-[22px] tablet:text-[26px]">{novedad.titulo}</h2>
+                      <p class="mt-3 mb-0 text-[15px] text-muted">{novedad.descripcion}</p>
+                    </div>
+                  </div>
+                </article>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section border-t border-line bg-base">
+    <div class="wrap">
+      <div class="sobre-oscuro flex flex-wrap items-center justify-between gap-8 rounded-card bg-primary px-8 py-10 shadow-[0_18px_44px_rgba(13,44,132,.22)] tablet:px-12">
+        <div>
+          <span class="icono-chip mb-5 h-12 w-12">
+            <Icono nombre="sparkles" class="h-6 w-6" interactivo={false} />
+          </span>
+          <h2 class="max-w-[24ch] text-[24px] tablet:text-[30px]">
+            ¿Tienes una idea para mejorar nuestra operación?
+          </h2>
+          <p class="mt-3 mb-0 max-w-[52ch] text-muted">
+            Nuestros aliados comerciales y nuestro equipo son la mejor fuente de ideas. Cuéntanos la
+            tuya y la revisamos.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-4">
+          <a class="btn btn-accent" href={ruta('/pqrs/')}>Enviar una sugerencia</a>
+          <a class="btn btn-secondary" href={empresa.whatsapp} target="_blank" rel="noopener">
+            Escribirnos
+            <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

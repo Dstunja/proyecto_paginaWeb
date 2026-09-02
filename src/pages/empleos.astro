@@ -3,32 +3,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import FormularioMailto from '../components/FormularioMailto.astro';
 import Icono from '../components/Icono.astro';
+import { ruta } from '../lib/rutas';
+import { imagenOMarcador } from '../lib/imagenes';
+import { vacantes } from '../data/vacantes';
 
 /**
- * EDITAR AQUÍ: vacantes reales.
- * Si el arreglo queda vacío, la página muestra el mensaje de "no hay vacantes
- * abiertas" y la persona igual puede dejar su hoja de vida.
+ * Las vacantes viven en src/data/vacantes.ts, porque las comparten esta página
+ * y la de detalle (/empleos/<slug>/).
+ *
+ * Cada tarjeta lleva la foto de la vacante; mientras no exista el archivo en
+ * public/img/empleos/, `imagenOMarcador` devuelve un marcador de posición con
+ * el nombre del cargo para que la rejilla no se vea rota.
  */
-const vacantes = [
-  {
-    cargo: 'Auxiliar de bodega',
-    ciudad: 'Tunja, Boyacá',
-    tipo: 'Tiempo completo',
-    resumen: 'Alistamiento, cargue y control de inventario en la sede principal.',
-  },
-  {
-    cargo: 'Conductor repartidor',
-    ciudad: 'Boyacá y Santander',
-    tipo: 'Tiempo completo',
-    resumen: 'Entrega en ruta a puntos de venta. Se requiere licencia C1 vigente.',
-  },
-  {
-    cargo: 'Asesor comercial',
-    ciudad: 'Zona centro',
-    tipo: 'Tiempo completo',
-    resumen: 'Atención y crecimiento de la cartera de tenderos asignada.',
-  },
-];
+const tarjetas = vacantes.map((vacante) => ({
+  ...vacante,
+  ...imagenOMarcador(vacante.imagen, vacante.cargo, 800, 600),
+}));
 
 const proceso = [
   {
@@ -75,24 +65,53 @@ const proceso = [
             formulario de abajo y te contactamos cuando se abra un proceso.
           </p>
         ) : (
-          <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3">
-            {vacantes.map((vacante) => (
-              <article class="group glass-card flex flex-col p-8">
-                <span class="icono-chip mb-5 h-12 w-12">
-                  <Icono nombre="briefcase" class="h-6 w-6" interactivo={false} />
-                </span>
-                <h3 class="mb-2 text-lg">{vacante.cargo}</h3>
-                <p class="m-0 text-[13px] font-semibold text-accent-text">
-                  {vacante.ciudad} · {vacante.tipo}
-                </p>
-                <p class="mt-3 mb-0 text-[14.5px] text-muted">{vacante.resumen}</p>
+          <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-3">
+            {tarjetas.map((vacante) => (
+              <article class="group glass-card flex flex-col overflow-hidden">
                 <a
-                  class="mt-6 text-[14.5px] font-semibold text-secondary-dark underline"
-                  href="#postular"
-                  data-postular={vacante.cargo}
+                  href={ruta(`/empleos/${vacante.slug}/`)}
+                  class="block overflow-hidden bg-primary-soft"
+                  tabindex="-1"
+                  aria-hidden="true"
                 >
-                  Postularme a esta vacante
+                  <img
+                    src={vacante.src}
+                    alt=""
+                    width="800"
+                    height="600"
+                    loading="lazy"
+                    class="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
                 </a>
+
+                <div class="flex flex-1 flex-col p-7">
+                  <p class="m-0 text-[12.5px] font-semibold tracking-[0.08em] text-accent-text uppercase">
+                    {vacante.ciudad} · {vacante.tipo}
+                  </p>
+                  <h3 class="mt-2 mb-0 text-lg">
+                    <a class="hover:text-secondary-dark" href={ruta(`/empleos/${vacante.slug}/`)}>
+                      {vacante.cargo}
+                    </a>
+                  </h3>
+                  <p class="mt-3 mb-0 text-[14.5px] text-muted">{vacante.resumen}</p>
+
+                  <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
+                    <a
+                      class="group/enlace inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-secondary-dark"
+                      href={ruta(`/empleos/${vacante.slug}/`)}
+                    >
+                      Ver detalle
+                      <Icono nombre="arrow-right" class="h-4 w-4" />
+                    </a>
+                    <a
+                      class="text-[14.5px] font-semibold text-muted underline transition-colors duration-200 hover:text-primary"
+                      href="#postular"
+                      data-postular={vacante.cargo}
+                    >
+                      Postularme
+                    </a>
+                  </div>
+                </div>
               </article>
             ))}
           </div>
@@ -177,11 +196,25 @@ const proceso = [
 </BaseLayout>
 
 <script>
+  const select = () => document.getElementById('cargo-empleo') as HTMLSelectElement | null;
+
+  /** Elige una opción del select solo si ese cargo existe en la lista. */
+  function elegirCargo(cargo: string) {
+    const campo = select();
+    if (!campo) return;
+    const existe = Array.from(campo.options).some((o) => o.value === cargo);
+    if (existe) campo.value = cargo;
+  }
+
   // Al pulsar "Postularme a esta vacante" el formulario queda con ese cargo elegido.
   document.querySelectorAll<HTMLAnchorElement>('[data-postular]').forEach((enlace) => {
     enlace.addEventListener('click', () => {
-      const select = document.getElementById('cargo-empleo') as HTMLSelectElement | null;
-      if (select && enlace.dataset.postular) select.value = enlace.dataset.postular;
+      if (enlace.dataset.postular) elegirCargo(enlace.dataset.postular);
     });
   });
+
+  // Al llegar desde la página de detalle (/empleos/?cargo=...#postular) el
+  // formulario aparece con la vacante ya seleccionada.
+  const cargoEnUrl = new URLSearchParams(window.location.search).get('cargo');
+  if (cargoEnUrl) elegirCargo(cargoEnUrl);
 </script>

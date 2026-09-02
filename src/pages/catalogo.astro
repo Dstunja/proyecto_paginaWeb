@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
+import { logoMarca } from '../lib/imagenes';
 import PageHero from '../components/PageHero.astro';
 import Icono from '../components/Icono.astro';
 import { empresa } from '../data/site';
@@ -44,6 +45,19 @@ const categorias = [
   },
 ];
 
+/**
+ * Logo de cada marca, si ya está subido.
+ *
+ * EDITAR AQUÍ: los logos van en public/img/marcas/ con el nombre de la marca
+ * en minúsculas y con guiones: 'Saltín Noel' -> saltin-noel.png
+ * (también sirven .svg, .webp o .jpg). Mientras el archivo no exista, la marca
+ * se sigue mostrando como píldora de texto, sin imágenes rotas.
+ */
+const categoriasConLogos = categorias.map((cat) => ({
+  ...cat,
+  marcas: cat.marcas.map((marca) => ({ nombre: marca, logo: logoMarca(marca) })),
+}));
+
 const mensajeWhatsapp = encodeURIComponent(
   'Hola, quiero recibir el catálogo de productos y hablar con un asesor comercial.',
 );
@@ -63,19 +77,30 @@ const mensajeWhatsapp = encodeURIComponent(
     <div class="wrap">
       <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-3">
         {
-          categorias.map((cat) => (
+          categoriasConLogos.map((cat) => (
             <div class="group glass-card flex flex-col p-8">
               <span class="icono-chip mb-5 h-12 w-12">
                 <Icono nombre={cat.icono} class="h-6 w-6" interactivo={false} />
               </span>
               <h2 class="mb-3 text-lg">{cat.nombre}</h2>
               <p class="m-0 text-[14.5px] text-muted">{cat.texto}</p>
-              <ul class="m-0 mt-5 flex list-none flex-wrap gap-2 p-0">
-                {cat.marcas.map((marca) => (
-                  <li class="glass rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-ink transition-colors duration-200 hover:bg-secondary hover:text-white">
-                    {marca}
-                  </li>
-                ))}
+              <ul class="m-0 mt-5 flex list-none flex-wrap items-center gap-2.5 p-0">
+                {cat.marcas.map((marca) =>
+                  marca.logo ? (
+                    <li class="flex h-11 items-center rounded-xl border border-line bg-surface px-3 transition-all duration-200 hover:border-secondary/50 hover:shadow-[0_6px_18px_rgba(13,44,132,.1)]">
+                      <img
+                        src={marca.logo}
+                        alt={marca.nombre}
+                        loading="lazy"
+                        class="h-9 w-auto max-w-[110px] object-contain"
+                      />
+                    </li>
+                  ) : (
+                    <li class="glass rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-ink transition-colors duration-200 hover:bg-secondary hover:text-white">
+                      {marca.nombre}
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
           ))

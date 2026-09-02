@@ -40,6 +40,7 @@ export const navegacion = [
   { texto: 'Inicio', href: '/' },
   { texto: 'Nosotros', href: '/nosotros/' },
   { texto: 'Catálogo', href: '/catalogo/' },
+  { texto: 'Innovación', href: '/innovacion/' },
   { texto: 'Empleos', href: '/empleos/' },
   { texto: 'Contáctanos', href: '/contactanos/' },
   { texto: 'PQRS', href: '/pqrs/' },

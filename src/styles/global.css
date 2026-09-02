@@ -65,9 +65,12 @@
 
   --container-site: 1180px;
 
-  /* Puntos de quiebre propios: el menú y las rejillas cambian a 900px. */
+  /* Puntos de quiebre propios: las rejillas cambian a 900px y el menú
+     horizontal aparece a 1100px, que es donde caben los siete enlaces sin
+     apretar el logo ni el botón de pedido. */
   --breakpoint-mob: 520px;
   --breakpoint-tablet: 900px;
+  --breakpoint-nav: 1100px;
 }
 
 @keyframes mvFade {

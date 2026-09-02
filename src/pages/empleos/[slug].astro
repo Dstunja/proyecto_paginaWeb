@@ -1,0 +1,166 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icono from '../../components/Icono.astro';
+import { ruta } from '../../lib/rutas';
+import { imagenOMarcador } from '../../lib/imagenes';
+import { vacantes } from '../../data/vacantes';
+import { empresa } from '../../data/site';
+
+/**
+ * Página de detalle de cada vacante: /empleos/<slug>/
+ *
+ * Está pensada para mostrar el flyer completo (por ejemplo "Buscamos
+ * vehículos") junto al texto, de modo que los requisitos se puedan leer
+ * también en texto y no solo dentro de la imagen. La imagen se muestra sin
+ * recortar (`object-contain`), así que sirve tanto horizontal como vertical.
+ */
+export function getStaticPaths() {
+  return vacantes.map((vacante) => ({
+    params: { slug: vacante.slug },
+    props: { vacante },
+  }));
+}
+
+const { vacante } = Astro.props;
+
+// EDITAR AQUÍ: reemplazar con imagen real de la vacante
+// -> public/img/empleos/<slug>.jpg   (ver src/data/vacantes.ts)
+const { src: imagen, esMarcador } = imagenOMarcador(vacante.imagen, vacante.cargo, 900, 1200);
+
+const mensajeWhatsapp = encodeURIComponent(
+  `Hola, vi la convocatoria de "${vacante.cargo}" en la página y me interesa postularme.`,
+);
+---
+
+<BaseLayout
+  title={`${vacante.cargo} — Empleos en Distribuciones Santiago de Tunja`}
+  description={vacante.resumen}
+>
+  <!-- ENCABEZADO -->
+  <section class="border-b border-line bg-base pt-14 pb-12">
+    <div class="wrap">
+      <a
+        class="group mb-6 inline-flex items-center gap-2 text-[14.5px] font-semibold text-secondary-dark"
+        href={ruta('/empleos/')}
+      >
+        <Icono nombre="arrow-right" class="h-4 w-4 rotate-180" />
+        Volver a empleos
+      </a>
+
+      <span class="kicker">{vacante.tipo}</span>
+      <h1 class="max-w-[24ch] text-[32px] tablet:text-[46px]">{vacante.cargo}</h1>
+
+      <p class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14.5px] text-muted">
+        <span class="inline-flex items-center gap-2">
+          <Icono nombre="map-pin" class="h-4 w-4" interactivo={false} />
+          {vacante.ciudad}
+        </span>
+        <span class="inline-flex items-center gap-2">
+          <Icono nombre="briefcase" class="h-4 w-4" interactivo={false} />
+          {vacante.tipo}
+        </span>
+      </p>
+    </div>
+  </section>
+
+  <!-- FLYER + DESCRIPCIÓN -->
+  <section class="section">
+    <div class="wrap grid grid-cols-1 items-start gap-12 tablet:grid-cols-[.95fr_1.05fr]">
+      <figure class="glass-card m-0 overflow-hidden p-3">
+        <img
+          src={imagen}
+          alt={`Convocatoria: ${vacante.cargo}`}
+          loading="eager"
+          class="w-full rounded-[12px] bg-primary-soft object-contain"
+        />
+        {
+          esMarcador && (
+            <figcaption class="px-2 pt-3 pb-1 text-[12.5px] text-muted">
+              Imagen de ejemplo. Sube el flyer real a{' '}
+              <code class="font-mono">public{vacante.imagen}</code>.
+            </figcaption>
+          )
+        }
+      </figure>
+
+      <div>
+        <h2 class="text-[24px] tablet:text-[30px]">Sobre la convocatoria</h2>
+        {vacante.descripcion.map((parrafo) => <p class="mt-4 text-muted">{parrafo}</p>)}
+
+        <h2 class="mt-12 text-[24px] tablet:text-[30px]">Requisitos</h2>
+        <ul class="mt-5 flex list-none flex-col gap-3 p-0">
+          {
+            vacante.requisitos.map((requisito) => (
+              <li class="flex items-start gap-3 text-[15px]">
+                <span class="icono-chip mt-0.5 h-7 w-7 shrink-0 rounded-lg">
+                  <Icono nombre="shield-check" class="h-4 w-4" interactivo={false} />
+                </span>
+                {requisito}
+              </li>
+            ))
+          }
+        </ul>
+
+        {
+          vacante.ofrecemos && vacante.ofrecemos.length > 0 && (
+            <>
+              <h2 class="mt-12 text-[24px] tablet:text-[30px]">Qué ofrecemos</h2>
+              <ul class="mt-5 flex list-none flex-col gap-3 p-0">
+                {vacante.ofrecemos.map((item) => (
+                  <li class="flex items-start gap-3 text-[15px]">
+                    <span class="icono-chip mt-0.5 h-7 w-7 shrink-0 rounded-lg">
+                      <Icono nombre="thumbs-up" class="h-4 w-4" interactivo={false} />
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )
+        }
+
+        <div class="mt-12 flex flex-wrap gap-4">
+          <a
+            class="btn btn-primary"
+            href={ruta(`/empleos/?cargo=${encodeURIComponent(vacante.cargo)}#postular`)}
+          >
+            Postularme a esta vacante
+          </a>
+          <a
+            class="btn btn-whatsapp"
+            href={`${empresa.whatsapp}?text=${mensajeWhatsapp}`}
+            target="_blank"
+            rel="noopener"
+          >
+            Preguntar por WhatsApp
+            <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OTRAS VACANTES -->
+  {
+    vacantes.length > 1 && (
+      <section class="section border-t border-line bg-base">
+        <div class="wrap">
+          <h2 class="mb-8 text-[24px] tablet:text-[30px]">Otras convocatorias abiertas</h2>
+          <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-3">
+            {vacantes
+              .filter((v) => v.slug !== vacante.slug)
+              .map((otra) => (
+                <a class="group glass-card block p-7" href={ruta(`/empleos/${otra.slug}/`)}>
+                  <p class="m-0 text-[12.5px] font-semibold tracking-[0.08em] text-accent-text uppercase">
+                    {otra.ciudad}
+                  </p>
+                  <h3 class="mt-2 mb-0 text-lg group-hover:text-secondary-dark">{otra.cargo}</h3>
+                  <p class="mt-3 mb-0 text-[14.5px] text-muted">{otra.resumen}</p>
+                </a>
+              ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>
