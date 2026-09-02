@@ -22,28 +22,31 @@ import {
   description="Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. 21 años de experiencia, 87 municipios cubiertos, más de 7600 puntos de venta."
 >
   <!-- HERO -->
-  <section class="bg-base pt-14 pb-0">
+  <section class="relative overflow-hidden pt-14 pb-0 tablet:pt-24">
     <div class="wrap">
-      <div class="grid grid-cols-1 items-center gap-12 tablet:grid-cols-[1.05fr_.95fr]">
+      <div class="grid grid-cols-1 items-center gap-14 tablet:grid-cols-[1.05fr_.95fr] tablet:gap-16">
         <div>
-          <p class="mb-4 inline-flex items-center gap-2 rounded-full bg-secondary-soft px-3.5 py-1.5 text-[13px] font-semibold text-secondary-dark">
-            <span class="h-2 w-2 rounded-full bg-secondary"></span>
+          <p class="glass mb-7 inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-[13px] font-semibold text-ink/85">
+            <span class="relative flex h-2 w-2" aria-hidden="true">
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary opacity-75"></span>
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-secondary"></span>
+            </span>
             Aliado comercial de Grupo Nutresa
           </p>
-          <h1 class="text-[34px] text-primary tablet:text-[46px]">
+          <h1 class="text-[38px] mob:text-[46px] tablet:text-[60px]">
             Las marcas que mueven tu negocio,{' '}
-            <span class="text-accent-text">más cerca de ti.</span>
+            <span class="text-accent">más cerca de ti.</span>
           </h1>
-          <p class="mt-5 max-w-[46ch] text-lg text-muted">
+          <p class="mt-7 max-w-[48ch] text-lg text-muted tablet:text-xl">
             Distribuimos productos de consumo masivo a negocios de Boyacá, Santander y
             Cundinamarca, con entregas semanales y asesoría cercana.
           </p>
-          <div class="mt-8 flex flex-wrap gap-3.5">
-            <a class="btn btn-primary" href={ruta('/catalogo/')}>Conoce nuestro portafolio</a>
-            <a class="btn btn-whatsapp" href={empresa.whatsapp} target="_blank" rel="noopener">
+          <div class="mt-10 flex flex-wrap gap-4">
+            <a class="btn btn-accent" href={empresa.whatsapp} target="_blank" rel="noopener">
               Haz tu pedido
               <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
             </a>
+            <a class="btn btn-secondary" href={ruta('/catalogo/')}>Conoce nuestro portafolio</a>
           </div>
         </div>
 
@@ -52,26 +55,26 @@ import {
             <img
               src={ruta(HERO_IMAGEN)}
               alt="Camión de reparto de Distribuciones Santiago de Tunja"
-              class="aspect-[4/3] w-full rounded-2xl object-cover shadow-[0_18px_40px_rgba(13,44,132,.18)]"
+              class="aspect-[4/3] w-full rounded-[28px] object-cover shadow-[0_28px_60px_rgba(3,8,25,.6)]"
             />
           ) : (
             /* Sin foto todavía: panel de marca. Al definir HERO_IMAGEN en
                src/data/site.ts se reemplaza por la foto real del camión. */
-            <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl bg-primary shadow-[0_18px_40px_rgba(13,44,132,.18)]">
-              <div class="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-secondary/25" />
-              <div class="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-white/5" />
-              <div class="relative flex flex-col items-center gap-5 px-8 text-center">
+            <div class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[28px] border border-line bg-gradient-to-br from-primary to-midnight shadow-[0_28px_60px_rgba(3,8,25,.6)]">
+              <div class="absolute -top-20 -right-16 h-72 w-72 rounded-full bg-secondary/25 blur-2xl" />
+              <div class="absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-accent/10 blur-2xl" />
+              <div class="relative flex flex-col items-center gap-6 px-8 text-center">
                 <img
                   src={ruta('/LOGO-removebg-preview.png')}
                   alt=""
                   width="183"
                   height="180"
-                  class="h-28 w-28 object-contain drop-shadow-[0_6px_18px_rgba(0,0,0,.25)]"
+                  class="h-28 w-28 object-contain drop-shadow-[0_10px_28px_rgba(0,0,0,.45)]"
                 />
-                <p class="font-display text-lg font-semibold text-white">
+                <p class="max-w-[26ch] font-display text-xl font-semibold text-ink">
                   Llevamos las mejores marcas del país a tu tienda
                 </p>
-                <p class="text-sm text-white/70">
+                <p class="text-sm tracking-[0.08em] text-muted uppercase">
                   Boyacá · Santander · Cundinamarca
                 </p>
               </div>
@@ -81,22 +84,22 @@ import {
       </div>
 
       <!-- BARRA DE CIFRAS -->
-      <div class="relative z-10 mt-12 translate-y-8 rounded-2xl bg-primary px-6 py-7 shadow-[0_14px_34px_rgba(13,44,132,.22)]">
-        <dl class="grid grid-cols-2 gap-y-7 tablet:grid-cols-4">
+      <div class="glass mt-20 rounded-[24px] px-6 py-9 tablet:px-10">
+        <dl class="grid grid-cols-2 gap-y-9 tablet:grid-cols-4">
           {
             cifras.map((cifra, i) => (
               <div
                 class:list={[
-                  'group flex items-center justify-center gap-3.5 px-2 text-white',
-                  i > 0 && 'mob:border-l mob:border-white/15',
+                  'group flex items-center justify-center gap-4 px-2 text-ink',
+                  i > 0 && 'mob:border-l mob:border-line',
                 ]}
               >
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-accent transition-all duration-200 group-hover:bg-accent group-hover:text-primary">
+                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent transition-all duration-300 group-hover:scale-105 group-hover:bg-accent group-hover:text-ink-dark">
                   <Icono nombre={cifra.icono} class="h-5 w-5" />
                 </span>
                 <div>
-                  <dd class="font-display text-[26px] leading-none font-bold">{cifra.valor}</dd>
-                  <dt class="mt-1 text-[12.5px] text-white/70">{cifra.etiqueta}</dt>
+                  <dd class="font-display text-[30px] leading-none font-bold">{cifra.valor}</dd>
+                  <dt class="mt-1.5 text-[12.5px] text-muted">{cifra.etiqueta}</dt>
                 </div>
               </div>
             ))

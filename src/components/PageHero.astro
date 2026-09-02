@@ -1,4 +1,10 @@
 ---
+/**
+ * Encabezado de las páginas internas.
+ *
+ * Mismo lenguaje que el hero de la portada: mucho aire, jerarquía tipográfica
+ * marcada y ancho de lectura acotado sobre el fondo medianoche.
+ */
 interface Props {
   kicker: string;
   titulo: string;
@@ -8,12 +14,12 @@ interface Props {
 const { kicker, titulo, texto } = Astro.props;
 ---
 
-<section class="border-b border-line bg-base pt-14 pb-12">
+<section class="relative overflow-hidden border-b border-line pt-16 pb-16 tablet:pt-24 tablet:pb-20">
   <div class="wrap">
     <div class="max-w-[70ch]">
       <span class="kicker">{kicker}</span>
-      <h1 class="text-[30px] text-primary tablet:text-[38px]">{titulo}</h1>
-      {texto && <p class="mt-4 max-w-[60ch] text-lg text-muted">{texto}</p>}
+      <h1 class="text-[34px] mob:text-[40px] tablet:text-[52px]">{titulo}</h1>
+      {texto && <p class="mt-6 max-w-[58ch] text-lg text-muted tablet:text-xl">{texto}</p>}
     </div>
   </div>
 </section>

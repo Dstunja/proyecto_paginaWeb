@@ -239,15 +239,19 @@
     box-shadow: 0 14px 32px rgba(245, 166, 35, 0.4);
   }
 
+  /* Canal de WhatsApp. La paleta del rediseño solo admite los colores de
+     marca, asi que el verde corporativo de WhatsApp se sustituye por el
+     naranja de CTA; el icono sigue identificando el canal. Para recuperar el
+     verde basta con volver a `bg-whatsapp` aqui. */
   .btn-whatsapp {
-    @apply bg-whatsapp text-ink-dark;
-    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.24);
+    @apply bg-accent text-ink-dark;
+    box-shadow: 0 8px 24px rgba(245, 166, 35, 0.26);
   }
 
   .btn-whatsapp:hover,
   .btn-whatsapp:focus-visible {
-    filter: brightness(1.06);
-    box-shadow: 0 14px 32px rgba(37, 211, 102, 0.38);
+    @apply bg-accent-dark;
+    box-shadow: 0 14px 32px rgba(245, 166, 35, 0.4);
   }
 
   .kicker {
