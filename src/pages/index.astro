@@ -7,7 +7,9 @@ import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
 import Testimonio from '../components/Testimonio.astro';
 import { cifras, marcas, valorAgregado, beneficios, empresa, HERO_IMAGEN } from '../data/site';
-import { departamentos } from '../data/municipios';
+import { departamentos, totalClientes } from '../data/municipios';
+
+const formatoNumero = new Intl.NumberFormat('es-CO');
 
 /* Logos de marca de la franja del inicio. Si el archivo todavía no está en
    public/img/marcas/, se muestra el nombre en texto (ver src/lib/imagenes.ts). */
@@ -95,7 +97,9 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
                   <Icono nombre={cifra.icono} class="h-5 w-5" />
                 </span>
                 <div>
-                  <dd class="font-display text-[30px] leading-none font-bold">{cifra.valor}</dd>
+                  <dd class="font-display text-[30px] leading-none font-bold" data-contador>
+                    {cifra.valor}
+                  </dd>
                   <dt class="mt-1.5 text-[12.5px] text-muted">{cifra.etiqueta}</dt>
                 </div>
               </div>
@@ -107,7 +111,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   </section>
 
   <!-- MARCAS -->
-  <div class="border-y border-line bg-base py-16">
+  <div class="border-y border-line bg-fondo py-16">
     <div class="wrap">
       <p class="mb-8 text-center text-[12.5px] font-semibold tracking-[0.14em] text-muted uppercase">
         Marcas que distribuimos
@@ -164,15 +168,15 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   </section>
 
   <!-- COBERTURA -->
-  <section id="cobertura" class="section border-y border-line bg-base">
+  <section id="cobertura" class="section border-y border-line bg-fondo">
     <div class="wrap">
       <div class="mb-10 flex flex-col gap-8 tablet:flex-row tablet:items-end tablet:justify-between">
         <div class="max-w-[52ch]">
           <span class="kicker">Nuestra red</span>
           <h2 class="text-[28px] tablet:text-[38px]">Cobertura nacional</h2>
           <p class="mt-3 text-muted">
-            Llegamos a 87 municipios en tres departamentos. 21 años distribuyendo desde el corazón
-            de Boyacá.
+            Atendemos {formatoNumero.format(totalClientes)} clientes en 87 municipios de tres
+            departamentos. Cada punto del mapa es un cliente real de la red.
           </p>
         </div>
 
@@ -190,6 +194,9 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
                 </dt>
                 <dd class="mt-1 font-display text-[30px] leading-none font-bold text-primary">
                   {dep.total}
+                </dd>
+                <dd class="mt-1 m-0 text-[12.5px] text-muted">
+                  {formatoNumero.format(dep.clientes)} clientes
                 </dd>
               </div>
             ))
@@ -212,13 +219,17 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
       <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
         {
           beneficios.map((b) => (
-            <div class="group glass-card p-8">
+            <a class="tarjeta-int flex flex-col p-8" href={ruta(b.enlace)}>
               <span class="icono-chip mb-5 h-12 w-12">
                 <Icono nombre={b.icono} class="h-6 w-6" interactivo={false} />
               </span>
               <h3 class="mb-2 text-base">{b.titulo}</h3>
               <p class="m-0 text-[14px] text-muted">{b.texto}</p>
-            </div>
+              <span class="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-secondary-dark">
+                {b.enlaceTexto}
+                <Icono nombre="arrow-right" class="flecha-int h-4 w-4" interactivo={false} />
+              </span>
+            </a>
           ))
         }
       </div>
@@ -228,7 +239,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   </section>
 
   <!-- HAZ TU PEDIDO -->
-  <section id="haz-tu-pedido" class="section border-y border-line bg-base">
+  <section id="haz-tu-pedido" class="section border-y border-line bg-fondo">
     <div class="wrap">
       <div class="mx-auto mb-14 max-w-[46ch] text-center">
         <span class="kicker">Haz tu pedido</span>
@@ -299,3 +310,52 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  /**
+   * Cifras que cuentan hacia arriba cuando la barra entra en pantalla.
+   *
+   * El número se lee del propio texto (así el HTML sigue siendo correcto sin
+   * JavaScript) y se respeta el prefijo: "+7.600" cuenta hasta 7600 y conserva
+   * el "+". Si el sistema pide menos movimiento, no se anima nada.
+   */
+  const menosMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cifras = document.querySelectorAll<HTMLElement>('[data-contador]');
+  const formato = new Intl.NumberFormat('es-CO');
+
+  if (cifras.length && !menosMovimiento && 'IntersectionObserver' in window) {
+    const animar = (el: HTMLElement) => {
+      const texto = el.textContent?.trim() ?? '';
+      const prefijo = texto.match(/^\D*/)?.[0] ?? '';
+      const destino = Number(texto.replace(/\D/g, ''));
+      if (!destino) return;
+
+      const duracion = 900;
+      const inicio = performance.now();
+
+      const paso = (ahora: number) => {
+        const avance = Math.min((ahora - inicio) / duracion, 1);
+        // Curva ease-out: arranca rápido y frena al final.
+        const valor = Math.round(destino * (1 - Math.pow(1 - avance, 3)));
+        el.textContent = prefijo + formato.format(valor);
+        if (avance < 1) requestAnimationFrame(paso);
+      };
+
+      el.textContent = prefijo + '0';
+      requestAnimationFrame(paso);
+    };
+
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        for (const entrada of entradas) {
+          if (!entrada.isIntersecting) continue;
+          animar(entrada.target as HTMLElement);
+          observador.unobserve(entrada.target);
+        }
+      },
+      { threshold: 0.6 },
+    );
+
+    cifras.forEach((cifra) => observador.observe(cifra));
+  }
+</script>

@@ -13,6 +13,7 @@
     "og": "node scripts/build-og.mjs",
     "deploy": "astro build && wrangler deploy",
     "favicon": "node scripts/build-favicon.mjs",
+    "geocodificar": "node scripts/geocodificar.mjs",
     "iconos": "npm run favicon && npm run og"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.10",
     "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3",
     "lucide-static": "^1.39.0",
     "simple-icons": "^16.29.0",
     "tailwindcss": "^4.3.3"
@@ -29,6 +31,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@types/leaflet": "^1.9.22",
+    "@types/leaflet.markercluster": "^1.5.6",
     "playwright": "^1.61.0",
     "typescript": "^6.0.3",
     "wrangler": "^4.111.0"

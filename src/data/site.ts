@@ -110,27 +110,39 @@ export const valorAgregado = [
   },
 ] as const;
 
-/** Sección "Para tu negocio" (home). */
+/**
+ * Sección "Para tu negocio" (home).
+ * Cada tarjeta es un enlace: además de contar el beneficio, lleva a la página
+ * donde se puede actuar sobre él.
+ */
 export const beneficios = [
   {
     icono: 'shield-check',
     titulo: 'Productos de calidad',
     texto: 'Las mejores marcas del país, con manejo y almacenamiento cuidado en toda la ruta.',
+    enlace: '/catalogo/',
+    enlaceTexto: 'Ver el portafolio',
   },
   {
     icono: 'badge-percent',
     titulo: 'Precios competitivos',
     texto: 'Ofertas y promociones de la quincena pensadas para el margen de tu negocio.',
+    enlace: '/catalogo/',
+    enlaceTexto: 'Pedir la lista de precios',
   },
   {
     icono: 'user-check',
     titulo: 'Asesoría personalizada',
     texto: 'Un asesor de tu zona que conoce tu tienda y te ayuda a rotar el inventario.',
+    enlace: '/contactanos/',
+    enlaceTexto: 'Hablar con un asesor',
   },
   {
     icono: 'clock',
     titulo: 'Entregas confiables',
     texto: 'Frecuencia semanal y cumplimiento para que tu negocio no se detenga.',
+    enlace: '/#cobertura',
+    enlaceTexto: 'Ver la cobertura',
   },
 ] as const;
 

@@ -25,6 +25,7 @@ npm run preview      # ver dist/ como quedará en producción
 npm run check        # revisa tipos y errores de Astro
 npm run og           # regenera la tarjeta de link (public/og.png)
 npm run favicon      # regenera favicon.ico y apple-touch-icon desde el isotipo
+npm run geocodificar # busca las coordenadas que falten (municipios y sede)
 npm run iconos       # las dos anteriores
 ```
 
@@ -35,7 +36,9 @@ src/
   data/site.ts             Datos de la empresa: teléfono, correo, marcas,
                            municipios, cifras, menú. EDITAR AQUÍ primero.
   data/vacantes.ts         Vacantes y convocatorias (listado y detalle).
-  data/municipios.ts       Municipios cubiertos y sus coordenadas (mapa).
+  data/clientes-municipio.ts  Clientes reales por municipio (base de datos).
+  data/coordenadas.json    Caché de coordenadas geocodificadas con Nominatim.
+  data/municipios.ts       Cruce de los dos anteriores: lo que usa el mapa.
   data/innovaciones.ts     Novedades mes a mes de la página de innovación.
   lib/rutas.ts             ruta(): antepone el `base` a los enlaces internos y
                            a los archivos de public/. OBLIGATORIO usarlo.
@@ -74,6 +77,7 @@ public/
   og.png, robots.txt
 scripts/build-og.mjs       Genera la tarjeta Open Graph con Playwright.
 scripts/build-favicon.mjs  Genera los íconos a partir del isotipo.
+scripts/geocodificar.mjs   Consulta Nominatim y llena data/coordenadas.json.
 legacy-html/               El prototipo HTML original, como referencia.
 ```
 
@@ -144,6 +148,40 @@ en ese archivo — está marcado con `EDITAR AQUÍ`.
 
 Los colores de cada departamento se definen una sola vez (`departamentos` en
 `municipios.ts`) y se usan tanto en los contadores como en los puntos del mapa.
+
+## Mapa de la red comercial
+
+La sección "Cobertura nacional" del inicio dibuja **un punto por cliente**: son
+12.286 puntos repartidos en 87 municipios de Boyacá, Santander y Cundinamarca.
+Al alejarse se agrupan y cada grupo muestra su total (por ejemplo 3.658 sobre
+Tunja); al acercar, el grupo se abre hasta ver los puntos uno a uno.
+
+De dónde sale cada dato:
+
+| Archivo | Qué guarda | Cómo se actualiza |
+| --- | --- | --- |
+| `src/data/clientes-municipio.ts` | Clientes por municipio, de la base de datos real | Regenerándolo desde el Excel de clientes |
+| `src/data/coordenadas.json` | Coordenadas de cada cabecera y de la sede | `npm run geocodificar` |
+| `src/data/municipios.ts` | Cruce de los dos anteriores | Solo, al compilar |
+
+`npm run geocodificar` consulta [Nominatim](https://nominatim.openstreetmap.org)
+(OpenStreetMap, gratis y sin API key), respeta su límite de una consulta por
+segundo y **solo pide lo que falte**: como el resultado queda en
+`coordenadas.json`, una compilación normal no genera ni una petición. Si alguna
+coordenada quedara mal, se corrige a mano en ese JSON; para volver a pedirla,
+basta con borrar esa entrada.
+
+**Los puntos individuales son aproximados a propósito**: la base de datos tiene
+cuántos clientes hay en cada municipio, no la dirección de cada uno. Por eso los
+puntos se reparten en un radio de 1 a 3 km alrededor de la cabecera, con un
+generador con semilla para que el mapa se vea igual en cada visita. El número de
+cada grupo sí es exacto.
+
+Los 4 clientes fuera de la zona (3 en Bogotá y 1 en Medellín) no se dibujan: el
+mapa es el de la red de los tres departamentos.
+
+El mapa de **Contáctanos** es distinto: muestra la sede a nivel de calle
+(zoom 16), centrada en la coordenada geocodificada de Cra 2 Este #58-79.
 
 ## Identidad visual
 

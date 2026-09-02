@@ -1,0 +1,617 @@
+{
+  "__sede__": {
+    "lat": 5.560469,
+    "lng": -73.348366,
+    "fuente": "Carrera 2 Este, Tunja, Centro, Boyacá, RAP (Especial) Central, 150003, Colombia",
+    "consulta": "{\"q\":\"Carrera 2 Este 58-79, Tunja, Boyacá, Colombia\"}"
+  },
+  "Tunja": {
+    "departamento": "Boyaca",
+    "lat": 5.53243,
+    "lng": -73.3616,
+    "fuente": "Tunja, Centro, Boyacá, RAP (Especial) Central, 150001, Colombia",
+    "revisar": false
+  },
+  "Chiquinquira": {
+    "departamento": "Boyaca",
+    "lat": 5.62349,
+    "lng": -73.82095,
+    "fuente": "Chiquinquirá, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Barbosa": {
+    "departamento": "Santander",
+    "lat": 5.9326,
+    "lng": -73.61244,
+    "fuente": "Barbosa, Vélez, Santander, RAP Gran Santander, 684511, Colombia",
+    "revisar": false
+  },
+  "Moniquira": {
+    "departamento": "Boyaca",
+    "lat": 5.87631,
+    "lng": -73.57321,
+    "fuente": "Moniquirá, Ricaurte, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Samaca": {
+    "departamento": "Boyaca",
+    "lat": 5.49179,
+    "lng": -73.48529,
+    "fuente": "Samacá, Centro, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Velez": {
+    "departamento": "Santander",
+    "lat": 6.01236,
+    "lng": -73.67296,
+    "fuente": "Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Villa De Leyva": {
+    "departamento": "Boyaca",
+    "lat": 5.63382,
+    "lng": -73.52397,
+    "fuente": "Villa de Leyva, Ricaurte, Boyacá, RAP (Especial) Central, 154001, Colombia",
+    "revisar": false
+  },
+  "Garagoa": {
+    "departamento": "Boyaca",
+    "lat": 5.08222,
+    "lng": -73.36431,
+    "fuente": "Garagoa, Neira, Boyacá, RAP (Especial) Central, 152860, Colombia",
+    "revisar": false
+  },
+  "Simijaca": {
+    "departamento": "Cundinamarca",
+    "lat": 5.5024,
+    "lng": -73.85222,
+    "fuente": "Simijaca Centro, Simijaca, Ubaté, Cundinamarca, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Ventaquemada": {
+    "departamento": "Boyaca",
+    "lat": 5.36662,
+    "lng": -73.52164,
+    "fuente": "Ventaquemada, Márquez, Boyacá, RAP (Especial) Central, 153640, Colombia",
+    "revisar": false
+  },
+  "Puente Nacional": {
+    "departamento": "Santander",
+    "lat": 5.8771,
+    "lng": -73.67911,
+    "fuente": "Puente Nacional, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Suaita": {
+    "departamento": "Santander",
+    "lat": 6.10327,
+    "lng": -73.44017,
+    "fuente": "Suaita, Comunera, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Ramiriqui": {
+    "departamento": "Boyaca",
+    "lat": 5.40051,
+    "lng": -73.33588,
+    "fuente": "Ramiriquí, Casco Urbano Ramiriqui, Ramiriquí, Márquez, Boyacá, RAP (Especial) Central, 153601, Colombia",
+    "revisar": false
+  },
+  "Boyaca": {
+    "departamento": "Boyaca",
+    "lat": 5.45452,
+    "lng": -73.36154,
+    "fuente": "Boyacá, Márquez, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Arcabuco": {
+    "departamento": "Boyaca",
+    "lat": 5.7543,
+    "lng": -73.43641,
+    "fuente": "Arcabuco, Ricaurte, Boyacá, RAP (Especial) Central, 154201, Colombia",
+    "revisar": false
+  },
+  "Tibana": {
+    "departamento": "Boyaca",
+    "lat": 5.31799,
+    "lng": -73.39661,
+    "fuente": "Tibaná, Márquez, Boyacá, RAP (Especial) Central, 153260, Colombia",
+    "revisar": false
+  },
+  "Miraflores": {
+    "departamento": "Boyaca",
+    "lat": 5.19547,
+    "lng": -73.14396,
+    "fuente": "Miraflores, Lengupá, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Jenesano": {
+    "departamento": "Boyaca",
+    "lat": 5.38543,
+    "lng": -73.36443,
+    "fuente": "Jenesano, Márquez, Boyacá, RAP (Especial) Central, 153601, Colombia",
+    "revisar": false
+  },
+  "Tuta": {
+    "departamento": "Boyaca",
+    "lat": 5.69022,
+    "lng": -73.22772,
+    "fuente": "Tuta, Centro, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Sachica": {
+    "departamento": "Boyaca",
+    "lat": 5.58449,
+    "lng": -73.54279,
+    "fuente": "Sáchica, Ricaurte, Boyacá, RAP (Especial) Central, 153880, Colombia",
+    "revisar": false
+  },
+  "Soraca": {
+    "departamento": "Boyaca",
+    "lat": 5.50113,
+    "lng": -73.33287,
+    "fuente": "Soracá, Centro, Boyacá, RAP (Especial) Central, 057117, Colombia",
+    "revisar": false
+  },
+  "Otanche": {
+    "departamento": "Boyaca",
+    "lat": 5.66,
+    "lng": -74.18166,
+    "fuente": "Otanche, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Susa": {
+    "departamento": "Cundinamarca",
+    "lat": 5.45495,
+    "lng": -73.81538,
+    "fuente": "Susa, Ubaté, Cundinamarca, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Toca": {
+    "departamento": "Boyaca",
+    "lat": 5.56511,
+    "lng": -73.18468,
+    "fuente": "Toca, Centro, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Muzo": {
+    "departamento": "Boyaca",
+    "lat": 5.53213,
+    "lng": -74.10278,
+    "fuente": "Muzo, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Pauna": {
+    "departamento": "Boyaca",
+    "lat": 5.65737,
+    "lng": -73.97894,
+    "fuente": "Pauna, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "La Belleza": {
+    "departamento": "Santander",
+    "lat": 5.85884,
+    "lng": -73.96583,
+    "fuente": "La Belleza, Vélez, Santander, RAP Gran Santander, 685061, Colombia",
+    "revisar": false
+  },
+  "Saboya": {
+    "departamento": "Boyaca",
+    "lat": 5.69753,
+    "lng": -73.76568,
+    "fuente": "Saboyá, Occidente, Boyacá, RAP (Especial) Central, 154601, Colombia",
+    "revisar": false
+  },
+  "Combita": {
+    "departamento": "Boyaca",
+    "lat": 5.63369,
+    "lng": -73.32435,
+    "fuente": "Cómbita, Centro, Boyacá, RAP (Especial) Central, 150201, Colombia",
+    "revisar": false
+  },
+  "Sutamarchan": {
+    "departamento": "Boyaca",
+    "lat": 5.62048,
+    "lng": -73.62044,
+    "fuente": "Sutamarchán, Ricaurte, Boyacá, RAP (Especial) Central, 153860, Colombia",
+    "revisar": false
+  },
+  "Siachoque": {
+    "departamento": "Boyaca",
+    "lat": 5.51307,
+    "lng": -73.24489,
+    "fuente": "Siachoque, Centro, Boyacá, RAP (Especial) Central, 153460, Colombia",
+    "revisar": false
+  },
+  "Chitaraque": {
+    "departamento": "Boyaca",
+    "lat": 6.02798,
+    "lng": -73.44693,
+    "fuente": "Chitaraque, Ricaurte, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Raquira": {
+    "departamento": "Boyaca",
+    "lat": 5.53801,
+    "lng": -73.63222,
+    "fuente": "Ráquira, Ricaurte, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "San Pablo De Borbur": {
+    "departamento": "Boyaca",
+    "lat": 5.65169,
+    "lng": -74.0697,
+    "fuente": "San Pablo de Borbur, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Santana": {
+    "departamento": "Boyaca",
+    "lat": 6.05749,
+    "lng": -73.48216,
+    "fuente": "Santana, Ricaurte, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Turmeque": {
+    "departamento": "Boyaca",
+    "lat": 5.32409,
+    "lng": -73.49058,
+    "fuente": "Turmequé, Márquez, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Rondon": {
+    "departamento": "Boyaca",
+    "lat": 5.73411,
+    "lng": -73.0729,
+    "fuente": "Rondon, Paipa, Tundama, Boyacá, RAP (Especial) Central, 150447, Colombia",
+    "revisar": false
+  },
+  "Togüi": {
+    "departamento": "Boyaca",
+    "lat": 5.93747,
+    "lng": -73.51372,
+    "fuente": "Togüi, Togüí, Ricaurte, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Macanal": {
+    "departamento": "Boyaca",
+    "lat": 4.9723,
+    "lng": -73.32002,
+    "fuente": "Macanal, Neira, Boyacá, RAP (Especial) Central, 152840, Colombia",
+    "revisar": false
+  },
+  "Motavita": {
+    "departamento": "Boyaca",
+    "lat": 5.57634,
+    "lng": -73.3674,
+    "fuente": "Motavita, Centro, Boyacá, RAP (Especial) Central, 154080, Colombia",
+    "revisar": false
+  },
+  "Tinjaca": {
+    "departamento": "Boyaca",
+    "lat": 5.57957,
+    "lng": -73.64674,
+    "fuente": "Tinjacá, Ricaurte, Boyacá, RAP (Especial) Central, 153860, Colombia",
+    "revisar": false
+  },
+  "Nuevo Colon": {
+    "departamento": "Boyaca",
+    "lat": 5.35497,
+    "lng": -73.45722,
+    "fuente": "Nuevo Colón, Márquez, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Cienega": {
+    "departamento": "Boyaca",
+    "lat": 5.40975,
+    "lng": -73.29548,
+    "fuente": "Ciénega, Márquez, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Güepsa": {
+    "departamento": "Santander",
+    "lat": 6.0254,
+    "lng": -73.57251,
+    "fuente": "Güepsa, Vélez, Santander, RAP Gran Santander, 154460, Colombia",
+    "revisar": false
+  },
+  "Cucaita": {
+    "departamento": "Boyaca",
+    "lat": 5.54312,
+    "lng": -73.45478,
+    "fuente": "Cucaita, Centro, Boyacá, RAP (Especial) Central, 154060, Colombia",
+    "revisar": false
+  },
+  "Gachantiva": {
+    "departamento": "Boyaca",
+    "lat": 5.75161,
+    "lng": -73.54828,
+    "fuente": "Gachantivá, Ricaurte, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Santa Sofia": {
+    "departamento": "Boyaca",
+    "lat": 5.71359,
+    "lng": -73.60315,
+    "fuente": "Santa Sofía, Ricaurte, Boyacá, RAP (Especial) Central, 154240, Colombia",
+    "revisar": false
+  },
+  "Tenza": {
+    "departamento": "Boyaca",
+    "lat": 5.07673,
+    "lng": -73.41979,
+    "fuente": "Tenza, Oriente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Zetaquira": {
+    "departamento": "Boyaca",
+    "lat": 5.28189,
+    "lng": -73.16782,
+    "fuente": "Zetaquira, Lengupá, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Umbita": {
+    "departamento": "Boyaca",
+    "lat": 5.22123,
+    "lng": -73.45704,
+    "fuente": "Úmbita, Márquez, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Sucre": {
+    "departamento": "Santander",
+    "lat": 5.91881,
+    "lng": -73.79126,
+    "fuente": "Sucre, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "San Jose De Pare": {
+    "departamento": "Boyaca",
+    "lat": 6.01762,
+    "lng": -73.54785,
+    "fuente": "San José de Pare, Ricaurte, Boyacá, RAP (Especial) Central, 154460, Colombia",
+    "revisar": false
+  },
+  "Chivor": {
+    "departamento": "Boyaca",
+    "lat": 4.88867,
+    "lng": -73.36948,
+    "fuente": "Chivor, Oriente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Chinavita": {
+    "departamento": "Boyaca",
+    "lat": 5.16896,
+    "lng": -73.36872,
+    "fuente": "Chinavita, Neira, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Maripi": {
+    "departamento": "Boyaca",
+    "lat": 5.54952,
+    "lng": -74.00469,
+    "fuente": "Maripí, Occidente, Boyacá, RAP (Especial) Central, 154820, Colombia",
+    "revisar": false
+  },
+  "Paez": {
+    "departamento": "Boyaca",
+    "lat": 5.10201,
+    "lng": -73.05218,
+    "fuente": "Páez, Lengupá, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Florian": {
+    "departamento": "Santander",
+    "lat": 5.80242,
+    "lng": -73.97093,
+    "fuente": "Florián, Vélez, Santander, RAP Gran Santander, 684541, Colombia",
+    "revisar": false
+  },
+  "Chivata": {
+    "departamento": "Boyaca",
+    "lat": 5.55734,
+    "lng": -73.28304,
+    "fuente": "Chivatá, Centro, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Quipama": {
+    "departamento": "Boyaca",
+    "lat": 5.52297,
+    "lng": -74.18125,
+    "fuente": "Quípama, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "La Capilla": {
+    "departamento": "Boyaca",
+    "lat": 5.09579,
+    "lng": -73.44469,
+    "fuente": "La Capilla, Oriente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Buenavista": {
+    "departamento": "Boyaca",
+    "lat": 5.51165,
+    "lng": -73.94311,
+    "fuente": "Buenavista, Occidente, Boyacá, RAP (Especial) Central, 155067, Colombia",
+    "revisar": false
+  },
+  "Guavata": {
+    "departamento": "Santander",
+    "lat": 5.95427,
+    "lng": -73.69979,
+    "fuente": "Guavatá, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Jesus Maria": {
+    "departamento": "Santander",
+    "lat": 5.87656,
+    "lng": -73.78278,
+    "fuente": "Jesús María, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Gambita": {
+    "departamento": "Santander",
+    "lat": 5.94586,
+    "lng": -73.34535,
+    "fuente": "Gámbita, Comunera, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "La Paz": {
+    "departamento": "Santander",
+    "lat": 6.17859,
+    "lng": -73.58958,
+    "fuente": "La Paz, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Somondoco": {
+    "departamento": "Boyaca",
+    "lat": 4.98596,
+    "lng": -73.43262,
+    "fuente": "Somondoco, Oriente, Boyacá, RAP (Especial) Central, 153037, Colombia",
+    "revisar": false
+  },
+  "Caldas": {
+    "departamento": "Boyaca",
+    "lat": 5.55459,
+    "lng": -73.86546,
+    "fuente": "Caldas, Occidente, Boyacá, RAP (Especial) Central, 154660, Colombia",
+    "revisar": false
+  },
+  "Bolivar": {
+    "departamento": "Santander",
+    "lat": 5.98998,
+    "lng": -73.77055,
+    "fuente": "Bolívar, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Sora": {
+    "departamento": "Boyaca",
+    "lat": 5.56685,
+    "lng": -73.44992,
+    "fuente": "Sora, Centro, Boyacá, RAP (Especial) Central, 154060, Colombia",
+    "revisar": false
+  },
+  "San Eduardo": {
+    "departamento": "Boyaca",
+    "lat": 5.22352,
+    "lng": -73.07717,
+    "fuente": "San Eduardo, Lengupá, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Oicata": {
+    "departamento": "Boyaca",
+    "lat": 5.59443,
+    "lng": -73.30815,
+    "fuente": "Oicatá, Centro, Boyacá, RAP (Especial) Central, 150004, Colombia",
+    "revisar": false
+  },
+  "Briceño": {
+    "departamento": "Boyaca",
+    "lat": 5.69087,
+    "lng": -73.92345,
+    "fuente": "Briceño, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Almeida": {
+    "departamento": "Boyaca",
+    "lat": 4.97116,
+    "lng": -73.37882,
+    "fuente": "Almeida, Oriente, Boyacá, RAP (Especial) Central, 153027, Colombia",
+    "revisar": false
+  },
+  "San Miguel De Sema": {
+    "departamento": "Boyaca",
+    "lat": 5.51899,
+    "lng": -73.723,
+    "fuente": "San Miguel de Sema, Occidente, Boyacá, RAP (Especial) Central, 153820, Colombia",
+    "revisar": false
+  },
+  "La Victoria": {
+    "departamento": "Boyaca",
+    "lat": 5.52354,
+    "lng": -74.23465,
+    "fuente": "La Victoria, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Coper": {
+    "departamento": "Boyaca",
+    "lat": 5.4758,
+    "lng": -74.04522,
+    "fuente": "Coper, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Albania": {
+    "departamento": "Santander",
+    "lat": 5.75877,
+    "lng": -73.91516,
+    "fuente": "Albania, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Viracacha": {
+    "departamento": "Boyaca",
+    "lat": 5.43502,
+    "lng": -73.29617,
+    "fuente": "Viracachá, Márquez, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Pachavita": {
+    "departamento": "Boyaca",
+    "lat": 5.14054,
+    "lng": -73.39815,
+    "fuente": "Pachavita, Neira, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Berbeo": {
+    "departamento": "Boyaca",
+    "lat": 5.22614,
+    "lng": -73.1265,
+    "fuente": "Berbeo, Lengupá, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "El Peñon": {
+    "departamento": "Santander",
+    "lat": 6.05576,
+    "lng": -73.81499,
+    "fuente": "El Peñón, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Campohermoso": {
+    "departamento": "Boyaca",
+    "lat": 5.03154,
+    "lng": -73.10445,
+    "fuente": "Campohermoso, Lengupá, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Tunungua": {
+    "departamento": "Boyaca",
+    "lat": 5.73002,
+    "lng": -73.93299,
+    "fuente": "Tununguá, Occidente, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  },
+  "Chipata": {
+    "departamento": "Santander",
+    "lat": 6.06248,
+    "lng": -73.63725,
+    "fuente": "Chipatá, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "San Benito": {
+    "departamento": "Santander",
+    "lat": 6.12533,
+    "lng": -73.50973,
+    "fuente": "San Benito, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Aguada": {
+    "departamento": "Santander",
+    "lat": 6.16237,
+    "lng": -73.52157,
+    "fuente": "Aguada, Vélez, Santander, RAP Gran Santander, Colombia",
+    "revisar": false
+  },
+  "Chiquiza": {
+    "departamento": "Boyaca",
+    "lat": 5.60533,
+    "lng": -73.48492,
+    "fuente": "Chíquiza, Centro, Boyacá, RAP (Especial) Central, Colombia",
+    "revisar": false
+  }
+}

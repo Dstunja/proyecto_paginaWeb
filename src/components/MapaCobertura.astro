@@ -1,12 +1,13 @@
 ---
 import { empresa } from '../data/site';
+import { sede } from '../data/municipios';
 
 /**
- * El mapa se arma en el BUILD, no en el navegador.
- * Por defecto usa OpenStreetMap, que no necesita API key.
- * Para usar Google Maps Embed API: definir PUBLIC_MAPS_PROVIDER=google y
- * PUBLIC_GOOGLE_MAPS_EMBED_KEY en .env o en las variables de Cloudflare.
- * Ver .env.example: la key nunca se escribe en el repositorio.
+ * Mapa de la sede principal.
+ *
+ * Se dibuja con Leaflet a nivel de calle sobre la dirección real
+ * (Cra 2 Este #58-79). Las coordenadas salen de src/data/coordenadas.json, que
+ * genera `npm run geocodificar` consultando Nominatim una sola vez.
  */
 interface Props {
   /** true cuando el mapa vive dentro de la rejilla de la home. */
@@ -16,17 +17,7 @@ interface Props {
 
 const { enGrid = true, titulo = 'Dónde estamos' } = Astro.props;
 
-const provider = import.meta.env.PUBLIC_MAPS_PROVIDER ?? 'osm';
-const key = import.meta.env.PUBLIC_GOOGLE_MAPS_EMBED_KEY ?? '';
-const usarGoogle = provider === 'google' && Boolean(key);
-
-const consulta = `${empresa.direccion}, ${empresa.ciudad}, ${empresa.departamento}, Colombia`;
-const bbox = '-74.55,5.35,-72.85,6.85';
-const marcador = '5.5353,-73.3678';
-
-const src = usarGoogle
-  ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(key)}&q=${encodeURIComponent(consulta)}&zoom=8`
-  : `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${encodeURIComponent(marcador)}`;
+const direccionCompleta = `${empresa.direccion}, ${empresa.ciudad}, ${empresa.departamento}`;
 ---
 
 <div class:list={[enGrid && 'col-span-full mt-20']}>
@@ -38,38 +29,20 @@ const src = usarGoogle
       enGrid && 'tablet:grid-cols-[1.35fr_.65fr]',
     ]}
   >
-    <div>
+    <div
+      class="glass-card aspect-square min-h-[280px] overflow-hidden tablet:aspect-[4/3] tablet:min-h-[340px]"
+    >
       <div
-        class="glass relative aspect-square min-h-[260px] overflow-hidden rounded-card
-               tablet:aspect-[4/3] tablet:min-h-[320px]"
+        id="mapa-sede"
+        class="h-full w-full bg-fondo"
+        data-lat={sede.lat}
+        data-lng={sede.lng}
+        data-direccion={direccionCompleta}
+        data-empresa={empresa.nombre}
+        role="application"
+        aria-label={`Mapa de la sede principal en ${direccionCompleta}`}
       >
-        <!-- El embed de OpenStreetMap trae una barra de texto propia sobre el mapa.
-             Se recorta para dejar solo el mapa; la atribución que exige la licencia
-             queda debajo. -->
-        <iframe
-          src={src}
-          title="Mapa de cobertura de Distribuciones Santiago de Tunja"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-          class:list={['block w-full border-0', usarGoogle ? 'h-full' : 'h-[calc(100%+52px)]']}
-        ></iframe>
       </div>
-
-      {
-        !usarGoogle && (
-          <p class="mt-2 text-right text-[11.5px] text-muted/75">
-            Cartografía ©{' '}
-            <a
-              class="underline"
-              href="https://www.openstreetmap.org/copyright"
-              target="_blank"
-              rel="noopener"
-            >
-              OpenStreetMap
-            </a>
-          </p>
-        )
-      }
     </div>
 
     <aside class="glass-card flex h-full flex-col p-8">
@@ -80,9 +53,105 @@ const src = usarGoogle
       <p class="mb-7 font-semibold">
         <a class="hover:text-accent-text" href={`tel:${empresa.telefonoE164}`}>{empresa.telefono}</a>
       </p>
-      <a class="btn btn-secondary mt-auto self-start" href={empresa.mapsUrl} target="_blank" rel="noopener">
+      <a
+        class="btn btn-secondary mt-auto self-start"
+        href={empresa.mapsUrl}
+        target="_blank"
+        rel="noopener"
+      >
         Cómo llegar
       </a>
     </aside>
   </div>
 </div>
+
+<script>
+  import L from 'leaflet';
+  import 'leaflet/dist/leaflet.css';
+
+  const contenedor = document.getElementById('mapa-sede');
+  if (contenedor) {
+    const lat = Number(contenedor.dataset.lat);
+    const lng = Number(contenedor.dataset.lng);
+
+    const mapa = L.map(contenedor, {
+      center: [lat, lng],
+      // Zoom de manzana: se ven las calles alrededor de la bodega.
+      zoom: 16,
+      scrollWheelZoom: false,
+    });
+
+    // Calles de OpenStreetMap: a este nivel de detalle se leen los nombres.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+    }).addTo(mapa);
+
+    L.marker([lat, lng], {
+      icon: L.divIcon({
+        className: 'marcador-sede',
+        html: '<span class="nucleo"></span>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      }),
+      title: contenedor.dataset.empresa,
+      alt: 'Sede principal',
+      keyboard: true,
+    })
+      .addTo(mapa)
+      .bindPopup(
+        `<strong>${contenedor.dataset.empresa}</strong><br>${contenedor.dataset.direccion}`,
+      );
+  }
+</script>
+
+<style>
+  /* Marcador de la sede: punto azul con anillo que late. */
+  :global(#mapa-sede .marcador-sede) {
+    display: grid;
+    place-items: center;
+  }
+
+  :global(#mapa-sede .marcador-sede .nucleo) {
+    position: relative;
+    display: block;
+    height: 16px;
+    width: 16px;
+    border-radius: 9999px;
+    background: var(--color-primary);
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(3, 8, 25, 0.45);
+  }
+
+  :global(#mapa-sede .marcador-sede .nucleo::after) {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-primary);
+    animation: pulso-sede-punto 1.8s ease-out infinite;
+  }
+
+  @keyframes pulso-sede-punto {
+    0% {
+      transform: scale(0.9);
+      opacity: 0.9;
+    }
+    70%,
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+
+  :global(#mapa-sede.leaflet-container) {
+    font-family: var(--font-body);
+    background: var(--color-fondo);
+  }
+
+  :global(#mapa-sede .leaflet-control-zoom a) {
+    color: var(--color-primary) !important;
+    border-radius: 8px !important;
+  }
+</style>

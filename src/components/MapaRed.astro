@@ -1,17 +1,19 @@
 ---
 import Icono from './Icono.astro';
-import { departamentos, municipios, totalOficial } from '../data/municipios';
+import { departamentos, municipios, totalClientes, totalMunicipios } from '../data/municipios';
 
 /**
- * Mapa interactivo de cobertura.
+ * Mapa interactivo de la red comercial.
  *
- * Un punto por municipio, con el color de su departamento, más un marcador
- * pulsante para Tunja (sede principal). Encima del mapa: filtros por
- * departamento y buscador de municipio. Todo se arma en el navegador con
- * Leaflet (paquete instalado en el proyecto, no CDN); las teselas vienen de
- * Esri, con su atribución obligatoria abajo a la derecha.
+ * Dibuja un punto por cliente real: los conteos salen de la base de datos
+ * (src/data/clientes-municipio.ts) y, como no hay dirección exacta de cada
+ * cliente, los puntos se reparten alrededor de la cabecera de su municipio.
+ * Al alejarse, Leaflet.markercluster los agrupa y muestra el total; al acercar,
+ * el grupo se abre hasta ver los puntos uno a uno.
+ *
+ * Los colores son los del departamento, iguales a los de los contadores.
  */
-const cargados = municipios.length;
+const formatoNumero = new Intl.NumberFormat('es-CO');
 ---
 
 <div class="glass-card overflow-hidden">
@@ -19,13 +21,8 @@ const cargados = municipios.length;
   <div
     class="flex flex-col gap-4 border-b border-line px-5 py-4 tablet:flex-row tablet:items-center tablet:justify-between"
   >
-    <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar municipios por departamento">
-      <button
-        type="button"
-        class="filtro-mapa"
-        data-filtro="todos"
-        aria-pressed="true"
-      >
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar clientes por departamento">
+      <button type="button" class="filtro-mapa" data-filtro="todos" aria-pressed="true">
         Todos los municipios
       </button>
       {
@@ -70,13 +67,12 @@ const cargados = municipios.length;
   <div class="relative">
     <div
       id="mapa-red"
-      class="h-[420px] w-full bg-base tablet:h-[520px]"
+      class="h-[440px] w-full bg-fondo tablet:h-[560px]"
       role="application"
-      aria-label="Mapa de los municipios cubiertos"
+      aria-label="Mapa de clientes por municipio"
     >
     </div>
 
-    <!-- Aviso del buscador: aparece sobre el mapa al buscar. -->
     <p
       id="aviso-mapa"
       class="pointer-events-none absolute inset-x-4 top-4 z-[500] m-0 hidden rounded-xl bg-surface px-4 py-2.5 text-[14px] font-medium shadow-[0_8px_24px_rgba(13,44,132,.16)] tablet:inset-x-auto tablet:left-1/2 tablet:-translate-x-1/2"
@@ -86,7 +82,9 @@ const cargados = municipios.length;
   </div>
 
   <!-- LEYENDA -->
-  <div class="flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-line px-5 py-4 text-[13.5px]">
+  <div
+    class="flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-line px-5 py-4 text-[13.5px]"
+  >
     <span class="inline-flex items-center gap-2.5 font-medium">
       <span class="punto-sede" aria-hidden="true"></span>
       Tunja, sede principal — punto pulsante en el mapa
@@ -104,7 +102,7 @@ const cargados = municipios.length;
       ))
     }
     <span class="text-muted">
-      {cargados} de {totalOficial} municipios cargados
+      Un punto por cliente · {formatoNumero.format(totalClientes)} clientes en {totalMunicipios} municipios
     </span>
   </div>
 </div>
@@ -162,17 +160,13 @@ const cargados = municipios.length;
       transform: scale(0.9);
       opacity: 0.9;
     }
-    70% {
-      transform: scale(2.1);
-      opacity: 0;
-    }
+    70%,
     100% {
       transform: scale(2.1);
       opacity: 0;
     }
   }
 
-  /* Marcador de la sede dentro del mapa (lo inserta Leaflet como divIcon) */
   :global(.marcador-sede) {
     display: grid;
     place-items: center;
@@ -198,27 +192,59 @@ const cargados = municipios.length;
     animation: pulso-sede 1.8s ease-out infinite;
   }
 
-  /* Ajustes de Leaflet al estilo del sitio */
-  :global(.leaflet-container) {
-    font-family: var(--font-body);
-    background: var(--color-base);
+  /* --- Grupos de clientes ---
+     El número va dentro de un círculo del color del departamento. */
+  :global(.grupo-clientes) {
+    display: grid;
+    place-items: center;
   }
 
-  :global(.leaflet-control-zoom a) {
+  :global(.grupo-clientes span) {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    width: 100%;
+    border-radius: 9999px;
+    border: 2px solid #fff;
+    color: #fff;
+    font-family: var(--font-display);
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(3, 8, 25, 0.28);
+    transition:
+      transform 0.2s ease-out,
+      box-shadow 0.2s ease-out;
+  }
+
+  :global(.grupo-clientes:hover span) {
+    transform: scale(1.08);
+    box-shadow: 0 8px 20px rgba(3, 8, 25, 0.35);
+  }
+
+  /* Ajustes de Leaflet al estilo del sitio */
+  :global(#mapa-red.leaflet-container) {
+    font-family: var(--font-body);
+    background: var(--color-fondo);
+  }
+
+  :global(#mapa-red .leaflet-control-zoom a) {
     color: var(--color-primary) !important;
     border-radius: 8px !important;
   }
 
-  :global(.leaflet-popup-content-wrapper) {
+  :global(#mapa-red .leaflet-popup-content-wrapper) {
     border-radius: 12px;
   }
 
-  :global(.leaflet-popup-content) {
+  :global(#mapa-red .leaflet-popup-content) {
     margin: 12px 16px;
     font-size: 13.5px;
   }
 
-  :global(.leaflet-popup-content strong) {
+  :global(#mapa-red .leaflet-popup-content strong) {
     font-family: var(--font-display);
     color: var(--color-primary);
   }
@@ -227,21 +253,68 @@ const cargados = municipios.length;
 <script>
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
-  import { municipios, colorDepartamento } from '../data/municipios';
+  import 'leaflet.markercluster/dist/MarkerCluster.css';
+  import { municipios, colorDepartamento, sede, type Municipio } from '../data/municipios';
 
   const contenedor = document.getElementById('mapa-red');
+
   if (contenedor) {
+    // El plugin de agrupación es UMD y busca `L` en el objeto global.
+    (window as unknown as { L: typeof L }).L = L;
+    await import('leaflet.markercluster');
+
+    const formato = new Intl.NumberFormat('es-CO');
+
+    // ---- Puntos por cliente -------------------------------------------------
+    // No existe la dirección de cada cliente, solo cuántos hay por municipio.
+    // Se reparten alrededor de la cabecera con un generador con semilla: así el
+    // mapa se ve igual en cada visita y no "baila" al recargar.
+    function semilla(texto: string): number {
+      let h = 2166136261;
+      for (let i = 0; i < texto.length; i++) {
+        h ^= texto.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function aleatorio(estado: number): () => number {
+      return () => {
+        estado = (estado + 0x6d2b79f5) | 0;
+        let t = Math.imul(estado ^ (estado >>> 15), 1 | estado);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    /** Radio de dispersión en km: entre 1 y 3, según el tamaño del municipio. */
+    const radioKm = (clientes: number) => Math.min(3, Math.max(1, 0.8 + Math.sqrt(clientes) / 25));
+
+    function puntosDe(municipio: Municipio): [number, number][] {
+      const rnd = aleatorio(semilla(municipio.nombre));
+      const radio = radioKm(municipio.clientes);
+      const gradosLat = radio / 111;
+      const gradosLng = radio / (111 * Math.cos((municipio.lat * Math.PI) / 180));
+
+      return Array.from({ length: municipio.clientes }, () => {
+        // Raíz cuadrada del azar = reparto uniforme dentro del círculo.
+        const distancia = Math.sqrt(rnd());
+        const angulo = rnd() * Math.PI * 2;
+        return [
+          municipio.lat + distancia * gradosLat * Math.sin(angulo),
+          municipio.lng + distancia * gradosLng * Math.cos(angulo),
+        ] as [number, number];
+      });
+    }
+
+    // ---- Mapa ---------------------------------------------------------------
     const mapa = L.map(contenedor, {
-      center: [6.1, -73.4],
-      zoom: 7,
-      // La rueda del mouse no debe secuestrar el scroll de la página.
+      center: [5.8, -73.6],
+      zoom: 8,
       scrollWheelZoom: false,
       zoomControl: true,
     });
 
-    // Fondo claro de Esri: deja que los puntos de color sean lo que resalta.
-    // Alternativa sin Esri:
-    //   https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png  (atribución © OpenStreetMap)
     L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
       {
@@ -251,83 +324,121 @@ const cargados = municipios.length;
       },
     ).addTo(mapa);
 
-    /** Una capa por departamento, para poder filtrar. */
-    const capas = new Map<string, L.LayerGroup>();
-    /** Marcador de cada municipio, para centrarlo desde el buscador. */
-    const marcadores = new Map<string, { marcador: L.CircleMarker | L.Marker; nombre: string }>();
+    const normalizar = (texto: string) =>
+      texto
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
+    /** Un grupo por departamento: así el color del grupo siempre es correcto. */
+    const grupos = new Map<string, any>();
+    const fichas = new Map<string, Municipio>();
 
     for (const municipio of municipios) {
-      const capa = capas.get(municipio.departamento) ?? L.layerGroup();
-      capas.set(municipio.departamento, capa);
+      fichas.set(normalizar(municipio.nombre), municipio);
 
-      const popup = `<strong>${municipio.nombre}</strong><br>${municipio.departamento}${
-        municipio.sede ? '<br>Sede principal' : ''
-      }`;
+      const color = colorDepartamento(municipio.departamento);
+      let grupo = grupos.get(municipio.departamento);
 
-      const marcador = municipio.sede
-        ? L.marker([municipio.lat, municipio.lng], {
-            icon: L.divIcon({
-              className: 'marcador-sede',
-              html: '<span class="nucleo"></span>',
-              iconSize: [14, 14],
-              iconAnchor: [7, 7],
-            }),
-            title: `${municipio.nombre} — sede principal`,
-            zIndexOffset: 1000,
-          })
-        : L.circleMarker([municipio.lat, municipio.lng], {
-            radius: 7,
-            color: '#ffffff',
-            weight: 2,
-            fillColor: colorDepartamento(municipio.departamento),
-            fillOpacity: 1,
-          });
-
-      marcador.bindPopup(popup);
-      marcador.bindTooltip(municipio.nombre, { direction: 'top', offset: [0, -8] });
-      marcador.addTo(capa);
-      marcadores.set(normalizar(municipio.nombre), { marcador, nombre: municipio.nombre });
-    }
-
-    capas.forEach((capa) => capa.addTo(mapa));
-
-    /** Encuadra el mapa sobre las capas visibles. */
-    function encuadrar(visibles: L.LayerGroup[]) {
-      const puntos: L.LatLngExpression[] = [];
-      for (const capa of visibles) {
-        capa.eachLayer((m) => {
-          const latlng = (m as L.CircleMarker).getLatLng?.();
-          if (latlng) puntos.push(latlng);
+      if (!grupo) {
+        grupo = (L as any).markerClusterGroup({
+          chunkedLoading: true,
+          maxClusterRadius: 55,
+          spiderfyOnMaxZoom: false,
+          showCoverageOnHover: false,
+          disableClusteringAtZoom: 14,
+          iconCreateFunction: (cluster: any) => {
+            const total = cluster.getChildCount();
+            // El círculo crece con la cantidad de dígitos para que el número
+            // quepa completo: 1.769 necesita más ancho que 60.
+            const lado = total > 9999 ? 76 : total > 999 ? 68 : total > 99 ? 52 : 42;
+            const tamanoLetra = total > 999 ? 12 : 12.5;
+            return L.divIcon({
+              className: 'grupo-clientes',
+              html: `<span style="background:${color};font-size:${tamanoLetra}px">${formato.format(total)}</span>`,
+              iconSize: [lado, lado],
+            });
+          },
         });
+
+        grupo.on('click', (evento: any) => {
+          const nombre = evento.layer?.options?.municipio as string | undefined;
+          const ficha = nombre ? fichas.get(normalizar(nombre)) : undefined;
+          if (!ficha) return;
+          L.popup()
+            .setLatLng(evento.latlng)
+            .setContent(
+              `<strong>${ficha.nombre}</strong><br>${ficha.departamento}<br>${formato.format(ficha.clientes)} clientes`,
+            )
+            .openOn(mapa);
+        });
+
+        grupos.set(municipio.departamento, grupo);
       }
-      if (puntos.length > 1) mapa.fitBounds(L.latLngBounds(puntos).pad(0.12), { maxZoom: 9 });
-      else if (puntos.length === 1) mapa.setView(puntos[0], 10);
+
+      const marcadores = puntosDe(municipio).map(([lat, lng]) =>
+        L.circleMarker([lat, lng], {
+          radius: 4,
+          weight: 1,
+          color: '#ffffff',
+          fillColor: color,
+          fillOpacity: 0.85,
+          // Se guarda el municipio para el globo de información.
+          municipio: municipio.nombre,
+        } as L.CircleMarkerOptions),
+      );
+      grupo.addLayers(marcadores);
     }
 
-    encuadrar([...capas.values()]);
+    grupos.forEach((grupo) => grupo.addTo(mapa));
 
-    // ---- Filtros por departamento ----
+    // Sede principal, siempre encima de los grupos.
+    L.marker([sede.lat, sede.lng], {
+      icon: L.divIcon({
+        className: 'marcador-sede',
+        html: '<span class="nucleo"></span>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      }),
+      title: 'Tunja — sede principal',
+      zIndexOffset: 2000,
+    })
+      .addTo(mapa)
+      .bindPopup('<strong>Tunja</strong><br>Sede principal');
+
+    /** Encuadra el mapa sobre los municipios visibles. */
+    function encuadrar(visibles: string[]) {
+      const puntos = municipios
+        .filter((m) => visibles.includes(m.departamento))
+        .map((m) => [m.lat, m.lng] as [number, number]);
+      if (puntos.length > 1) mapa.fitBounds(L.latLngBounds(puntos).pad(0.12), { maxZoom: 10 });
+      else if (puntos.length === 1) mapa.setView(puntos[0], 11);
+    }
+
+    encuadrar([...grupos.keys()]);
+
+    // ---- Filtros ------------------------------------------------------------
     const botones = document.querySelectorAll<HTMLButtonElement>('[data-filtro]');
     botones.forEach((boton) => {
       boton.addEventListener('click', () => {
         const filtro = boton.dataset.filtro!;
         botones.forEach((b) => b.setAttribute('aria-pressed', String(b === boton)));
 
-        const visibles: L.LayerGroup[] = [];
-        capas.forEach((capa, departamento) => {
-          const mostrar = filtro === 'todos' || filtro === departamento;
-          if (mostrar) {
-            capa.addTo(mapa);
-            visibles.push(capa);
+        const visibles: string[] = [];
+        grupos.forEach((grupo, departamento) => {
+          if (filtro === 'todos' || filtro === departamento) {
+            grupo.addTo(mapa);
+            visibles.push(departamento);
           } else {
-            mapa.removeLayer(capa);
+            mapa.removeLayer(grupo);
           }
         });
         encuadrar(visibles);
       });
     });
 
-    // ---- Buscador ----
+    // ---- Buscador -----------------------------------------------------------
     const formulario = document.getElementById('buscador-mapa') as HTMLFormElement | null;
     const campo = document.getElementById('buscar-municipio') as HTMLInputElement | null;
     const aviso = document.getElementById('aviso-mapa');
@@ -347,30 +458,31 @@ const cargados = municipios.length;
         return;
       }
 
-      const encontrado = marcadores.get(normalizar(valor));
-      if (!encontrado) {
-        mostrarAviso(`Por ahora no tenemos cobertura confirmada en "${valor}". Escríbenos y lo validamos.`, false);
+      const ficha = fichas.get(normalizar(valor));
+      if (!ficha) {
+        mostrarAviso(
+          `Por ahora no tenemos clientes registrados en "${valor}". Escríbenos y lo validamos.`,
+          false,
+        );
         return;
       }
 
-      // Si estaba filtrado por otro departamento, se vuelve a "todos".
+      // Si estaba filtrado por otro departamento, se vuelven a mostrar todos.
       botones.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === 'todos')));
-      capas.forEach((capa) => capa.addTo(mapa));
+      grupos.forEach((grupo) => grupo.addTo(mapa));
 
-      mapa.flyTo(encontrado.marcador.getLatLng(), 11, { duration: 0.8 });
-      encontrado.marcador.openPopup();
-      mostrarAviso(`Sí, llegamos a ${encontrado.nombre}.`, true);
+      mapa.flyTo([ficha.lat, ficha.lng], 13, { duration: 0.8 });
+      mapa.once('moveend', () => {
+        L.popup()
+          .setLatLng([ficha.lat, ficha.lng])
+          .setContent(
+            `<strong>${ficha.nombre}</strong><br>${ficha.departamento}<br>${formato.format(ficha.clientes)} clientes`,
+          )
+          .openOn(mapa);
+      });
+      mostrarAviso(`${ficha.nombre}: ${formato.format(ficha.clientes)} clientes atendidos.`, true);
     });
 
     campo?.addEventListener('input', () => aviso?.classList.add('hidden'));
-  }
-
-  /** Compara sin tildes ni mayúsculas: "chiquinquira" encuentra "Chiquinquirá". */
-  function normalizar(texto: string): string {
-    return texto
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
   }
 </script>
