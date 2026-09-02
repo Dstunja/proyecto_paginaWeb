@@ -29,19 +29,19 @@ const src = usarGoogle
   : `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${encodeURIComponent(marcador)}`;
 ---
 
-<div class:list={[enGrid && 'col-span-full mt-11']}>
-  <h3 class="mb-4 text-xl text-primary">{titulo}</h3>
+<div class:list={[enGrid && 'col-span-full mt-20']}>
+  <h3 class="mb-7 text-xl tablet:text-2xl">{titulo}</h3>
 
   <div
     class:list={[
-      'grid grid-cols-1 items-start gap-7',
+      'grid grid-cols-1 items-start gap-8',
       enGrid && 'tablet:grid-cols-[1.35fr_.65fr]',
     ]}
   >
     <div>
       <div
-        class="relative aspect-square min-h-[260px] overflow-hidden rounded-card border border-line
-               bg-primary-soft tablet:aspect-[4/3] tablet:min-h-[300px]"
+        class="glass relative aspect-square min-h-[260px] overflow-hidden rounded-card
+               tablet:aspect-[4/3] tablet:min-h-[320px]"
       >
         <!-- El embed de OpenStreetMap trae una barra de texto propia sobre el mapa.
              Se recorta para dejar solo el mapa; la atribución que exige la licencia
@@ -72,12 +72,12 @@ const src = usarGoogle
       }
     </div>
 
-    <aside class="flex h-full flex-col rounded-card border border-line bg-surface p-[26px]">
-      <h4 class="mb-3 text-base text-primary">Sede principal</h4>
+    <aside class="glass-card flex h-full flex-col p-8">
+      <h4 class="mb-3 text-base">Sede principal</h4>
       <p class="mb-2.5 text-[15px] text-muted">
         {empresa.direccion}<br />{empresa.ciudad}, {empresa.departamento}
       </p>
-      <p class="mb-[22px] font-semibold">
+      <p class="mb-7 font-semibold">
         <a class="hover:text-accent-text" href={`tel:${empresa.telefonoE164}`}>{empresa.telefono}</a>
       </p>
       <a class="btn btn-secondary mt-auto self-start" href={empresa.mapsUrl} target="_blank" rel="noopener">

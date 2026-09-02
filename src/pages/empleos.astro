@@ -61,33 +61,33 @@ const proceso = [
   />
 
   <!-- VACANTES -->
-  <section class="py-[72px]">
+  <section class="section">
     <div class="wrap">
-      <div class="mb-10 max-w-[56ch]">
+      <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Vacantes</span>
-        <h2 class="text-3xl text-primary">Oportunidades abiertas</h2>
+        <h2 class="text-[28px] tablet:text-[38px]">Oportunidades abiertas</h2>
       </div>
 
       {
         vacantes.length === 0 ? (
-          <p class="rounded-card border border-line bg-surface p-7 text-muted">
+          <p class="glass-card p-8 text-muted">
             En este momento no tenemos vacantes abiertas. Puedes dejarnos tu hoja de vida en el
             formulario de abajo y te contactamos cuando se abra un proceso.
           </p>
         ) : (
-          <div class="grid grid-cols-1 gap-[22px] tablet:grid-cols-3">
+          <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3">
             {vacantes.map((vacante) => (
-              <article class="group flex flex-col rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+              <article class="group glass-card flex flex-col p-8">
                 <span class="icono-chip mb-5 h-12 w-12">
                   <Icono nombre="briefcase" class="h-6 w-6" interactivo={false} />
                 </span>
-                <h3 class="mb-2 text-lg text-primary">{vacante.cargo}</h3>
+                <h3 class="mb-2 text-lg">{vacante.cargo}</h3>
                 <p class="m-0 text-[13px] font-semibold text-accent-text">
                   {vacante.ciudad} · {vacante.tipo}
                 </p>
                 <p class="mt-3 mb-0 text-[14.5px] text-muted">{vacante.resumen}</p>
                 <a
-                  class="mt-6 text-[14.5px] font-semibold text-primary underline"
+                  class="mt-6 text-[14.5px] font-semibold text-secondary-dark underline"
                   href="#postular"
                   data-postular={vacante.cargo}
                 >
@@ -102,23 +102,23 @@ const proceso = [
   </section>
 
   <!-- PROCESO -->
-  <section class="border-y border-line bg-base py-[72px]">
+  <section class="section border-y border-line bg-base/60">
     <div class="wrap">
-      <div class="mb-10 max-w-[56ch]">
+      <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Cómo es el proceso</span>
-        <h2 class="text-3xl text-primary">De la hoja de vida al primer día</h2>
+        <h2 class="text-[28px] tablet:text-[38px]">De la hoja de vida al primer día</h2>
       </div>
-      <div class="grid grid-cols-1 gap-[22px] mob:grid-cols-2 tablet:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
         {
           proceso.map((paso, i) => (
-            <div class="group rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+            <div class="group glass-card p-8">
               <span class="icono-chip mb-5 h-12 w-12">
                 <Icono nombre={paso.icono} class="h-6 w-6" interactivo={false} />
               </span>
               <div class="mb-1.5 font-display text-sm font-semibold text-accent-text">
                 0{i + 1}
               </div>
-              <h3 class="mb-2 text-base text-primary">{paso.titulo}</h3>
+              <h3 class="mb-2 text-base">{paso.titulo}</h3>
               <p class="m-0 text-[14.5px] text-muted">{paso.texto}</p>
             </div>
           ))
@@ -128,11 +128,11 @@ const proceso = [
   </section>
 
   <!-- POSTULACIÓN -->
-  <section id="postular" class="py-[72px]">
-    <div class="wrap grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[.9fr_1.1fr]">
+  <section id="postular" class="section">
+    <div class="wrap grid grid-cols-1 items-start gap-14 tablet:grid-cols-[.9fr_1.1fr]">
       <div>
         <span class="kicker">Postulación</span>
-        <h2 class="text-3xl text-primary">Déjanos tus datos</h2>
+        <h2 class="text-[28px] tablet:text-[38px]">Déjanos tus datos</h2>
         <p class="mt-3 text-muted">
           Completa el formulario y adjunta tu hoja de vida en el correo que se abrirá. También
           puedes escribirnos por WhatsApp si prefieres.
@@ -143,7 +143,7 @@ const proceso = [
         </p>
       </div>
 
-      <div class="rounded-card border border-line bg-surface p-7">
+      <div class="glass-card p-8">
         <FormularioMailto asunto="Postulación de empleo — dstunja.com" boton="Enviar postulación">
           <div>
             <label class="field-label" for="nombre-empleo">Nombre completo *</label>

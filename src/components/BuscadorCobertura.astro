@@ -6,7 +6,7 @@ import Icono from './Icono.astro';
 const municipios = [...MUNICIPIOS].sort((a, b) => a.localeCompare(b, 'es'));
 ---
 
-<div class="rounded-card border border-line bg-surface p-[26px] shadow-[0_8px_24px_rgba(13,44,132,.06)]">
+<div class="glass-card p-7">
   <label class="field-label" for="finder-input">¿Tu municipio está cubierto?</label>
 
   <div class="flex gap-2.5">
@@ -20,7 +20,7 @@ const municipios = [...MUNICIPIOS].sort((a, b) => a.localeCompare(b, 'es'));
     <button
       type="button"
       id="finder-btn"
-      class="group flex items-center gap-2 rounded-lg bg-primary px-[18px] py-3 font-semibold text-white transition-colors duration-200 hover:bg-primary-dark"
+      class="group flex items-center gap-2 rounded-full bg-secondary px-5 py-3 font-semibold text-white transition-all duration-300 hover:bg-[#3b9bef]"
     >
       <Icono nombre="search" class="h-[18px] w-[18px]" />
       <span class="sr-only mob:not-sr-only">Buscar</span>
@@ -38,7 +38,7 @@ const municipios = [...MUNICIPIOS].sort((a, b) => a.localeCompare(b, 'es'));
       municipios.map((m) => (
         <span
           data-muni={m}
-          class="rounded-full bg-primary-soft px-2.5 py-1 text-[12.5px] font-medium text-primary transition-colors duration-200 hover:bg-secondary hover:text-white"
+          class="glass rounded-full px-2.5 py-1 text-[12.5px] font-medium text-ink transition-colors duration-200 hover:bg-secondary hover:text-white"
         >
           {m}
         </span>

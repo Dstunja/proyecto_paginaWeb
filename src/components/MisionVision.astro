@@ -29,8 +29,8 @@ const paneles = [
 ];
 ---
 
-<div class="rounded-2xl border border-line bg-surface p-2.5 shadow-[0_10px_28px_rgba(13,44,132,.06)]" data-mv-tabs>
-  <div class="flex flex-col gap-1.5 rounded-xl bg-primary-soft p-1.5 mob:flex-row" role="tablist" aria-label="Misión y visión">
+<div class="glass-card p-2.5" data-mv-tabs>
+  <div class="flex flex-col gap-1.5 rounded-xl bg-secondary-soft p-1.5 mob:flex-row" role="tablist" aria-label="Misión y visión">
     {
       paneles.map((p, i) => (
         <button
@@ -41,8 +41,8 @@ const paneles = [
           aria-selected={i === 0 ? 'true' : 'false'}
           tabindex={i === 0 ? 0 : -1}
           class="flex-1 rounded-[9px] border-0 bg-transparent px-4 py-3 font-display text-[15.5px]
-                 font-extrabold text-primary transition-all duration-200 hover:bg-white/60
-                 aria-selected:bg-primary aria-selected:text-white
+                 font-extrabold text-ink/70 transition-all duration-200 hover:bg-secondary-soft hover:text-ink
+                 aria-selected:bg-secondary aria-selected:text-white
                  aria-selected:shadow-[0_2px_8px_rgba(23,58,44,.18)]"
         >
           {p.tab}
@@ -62,7 +62,7 @@ const paneles = [
           hidden={i !== 0}
           class="outline-none motion-safe:animate-[mvFade_.24s_ease_both]"
         >
-          <h3 class="mb-3 flex items-center gap-2.5 text-[19px] text-primary tablet:text-[22px]">
+          <h3 class="mb-3 flex items-center gap-2.5 text-[19px] tablet:text-[22px]">
             <span class="icono-chip h-[38px] w-[38px] shrink-0">
               <Icono nombre={p.icono} class="h-5 w-5" interactivo={false} />
             </span>
@@ -71,7 +71,7 @@ const paneles = [
           <p class="m-0 max-w-[70ch] text-base text-muted">{p.texto}</p>
           <ul class="m-0 mt-5 flex list-none flex-wrap gap-2 p-0">
             {p.puntos.map((punto) => (
-              <li class="rounded-full bg-primary-soft px-3.5 py-1.5 text-[13px] font-semibold text-primary transition-colors duration-200 hover:bg-secondary hover:text-white">
+              <li class="glass rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-ink transition-colors duration-200 hover:bg-secondary hover:text-white">
                 {punto}
               </li>
             ))}

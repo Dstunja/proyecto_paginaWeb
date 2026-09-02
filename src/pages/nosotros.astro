@@ -42,10 +42,10 @@ const valores = [
   />
 
   <!-- HISTORIA + CIFRAS -->
-  <section class="py-[72px]">
-    <div class="wrap grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[1.1fr_.9fr]">
+  <section class="section">
+    <div class="wrap grid grid-cols-1 items-start gap-14 tablet:grid-cols-[1.1fr_.9fr]">
       <div>
-        <h2 class="text-3xl text-primary">Nuestra historia</h2>
+        <h2 class="text-[28px] tablet:text-[38px]">Nuestra historia</h2>
         <!-- EDITAR AQUÍ: reemplazar por la historia real (fundación, hitos, crecimiento). -->
         <p class="mt-4 text-muted">
           Distribuciones Santiago de Tunja nació en Tunja con una operación pequeña y una idea
@@ -63,7 +63,7 @@ const valores = [
             cobertura.map((dep) => (
               <div class="flex items-baseline justify-between border-b border-line pb-3.5">
                 <span class="font-medium">{dep.departamento}</span>
-                <span class="font-display text-[26px] font-bold text-primary">
+                <span class="font-display text-[26px] font-bold text-ink">
                   {dep.municipios} municipios
                 </span>
               </div>
@@ -72,16 +72,16 @@ const valores = [
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-6 rounded-2xl bg-primary px-[30px] py-[34px] text-white">
+      <div class="glass-card grid grid-cols-2 gap-6 px-8 py-9 text-ink">
         {
           cifras.map((cifra) => (
             <div class="group flex items-start gap-3">
-              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-accent transition-all duration-200 group-hover:bg-accent group-hover:text-primary">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent transition-all duration-200 group-hover:bg-accent group-hover:text-primary">
                 <Icono nombre={cifra.icono} class="h-5 w-5" />
               </span>
               <div>
                 <div class="font-display text-[28px] leading-none font-bold">{cifra.valor}</div>
-                <div class="mt-1.5 text-[12.5px] text-white/70">{cifra.etiqueta}</div>
+                <div class="mt-1.5 text-[12.5px] text-muted">{cifra.etiqueta}</div>
               </div>
             </div>
           ))
@@ -91,31 +91,31 @@ const valores = [
   </section>
 
   <!-- MISIÓN Y VISIÓN -->
-  <section class="border-y border-line bg-base py-[72px]">
+  <section class="section border-y border-line bg-base/60">
     <div class="wrap">
-      <div class="mb-10 max-w-[56ch]">
+      <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Nuestro norte</span>
-        <h2 class="text-3xl text-primary">Misión y visión</h2>
+        <h2 class="text-[28px] tablet:text-[38px]">Misión y visión</h2>
       </div>
       <MisionVision />
     </div>
   </section>
 
   <!-- VALORES -->
-  <section class="py-[72px]">
+  <section class="section">
     <div class="wrap">
-      <div class="mb-10 max-w-[56ch]">
+      <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Cómo trabajamos</span>
-        <h2 class="text-3xl text-primary">Nuestros valores</h2>
+        <h2 class="text-[28px] tablet:text-[38px]">Nuestros valores</h2>
       </div>
-      <div class="grid grid-cols-1 gap-[22px] mob:grid-cols-2 tablet:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
         {
           valores.map((valor) => (
-            <div class="group rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+            <div class="group glass-card p-8">
               <span class="icono-chip mb-5 h-12 w-12">
                 <Icono nombre={valor.icono} class="h-6 w-6" interactivo={false} />
               </span>
-              <h3 class="mb-2.5 text-lg text-primary">{valor.titulo}</h3>
+              <h3 class="mb-3 text-lg">{valor.titulo}</h3>
               <p class="m-0 text-[14.5px] text-muted">{valor.texto}</p>
             </div>
           ))

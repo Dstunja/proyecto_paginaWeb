@@ -53,16 +53,16 @@ const canales = [
   />
 
   <!-- CANALES -->
-  <section class="py-[72px]">
+  <section class="section">
     <div class="wrap">
-      <div class="grid grid-cols-1 gap-[22px] tablet:grid-cols-3">
+      <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3">
         {
           canales.map((canal) => (
-            <div class="group rounded-card border border-line bg-surface p-7 transition-all duration-200 hover:border-secondary/40 hover:shadow-[0_10px_28px_rgba(13,44,132,.08)]">
+            <div class="group glass-card p-8">
               <span class="icono-chip mb-5 h-12 w-12">
                 <Icono nombre={canal.icono} class="h-6 w-6" interactivo={false} />
               </span>
-              <h2 class="mb-2 text-lg text-primary">{canal.titulo}</h2>
+              <h2 class="mb-2 text-lg">{canal.titulo}</h2>
               <a
                 class="text-[15px] font-semibold text-accent-text underline"
                 href={canal.href}
@@ -76,11 +76,11 @@ const canales = [
         }
       </div>
 
-      <div class="mt-11 grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[1.1fr_.9fr]">
+      <div class="mt-11 grid grid-cols-1 items-start gap-14 tablet:grid-cols-[1.1fr_.9fr]">
         <MapaCobertura enGrid={false} titulo="Nuestra sede" />
 
-        <div class="rounded-card border border-line bg-surface p-7">
-          <h2 class="mb-4 text-lg text-primary">Horario de atención</h2>
+        <div class="glass-card p-8">
+          <h2 class="mb-4 text-lg">Horario de atención</h2>
           <ul class="m-0 flex list-none flex-col gap-3 p-0">
             {
               horario.map((h) => (
@@ -100,22 +100,22 @@ const canales = [
   </section>
 
   <!-- FORMULARIO -->
-  <section class="border-t border-line bg-base py-[72px]">
-    <div class="wrap grid grid-cols-1 items-start gap-[52px] tablet:grid-cols-[.9fr_1.1fr]">
+  <section class="section border-t border-line bg-base/60">
+    <div class="wrap grid grid-cols-1 items-start gap-14 tablet:grid-cols-[.9fr_1.1fr]">
       <div>
         <span class="kicker">Escríbenos</span>
-        <h2 class="text-3xl text-primary">Cuéntanos qué necesitas</h2>
+        <h2 class="text-[28px] tablet:text-[38px]">Cuéntanos qué necesitas</h2>
         <p class="mt-3 text-muted">
           Si eres tendero o negocio y quieres ser atendido por nuestra ruta, déjanos tus datos y un
           asesor de tu zona te contacta.
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
           ¿Es una petición, queja o reclamo formal? Usa el{' '}
-          <a class="font-semibold text-primary underline" href={ruta('/pqrs/')}>formulario de PQRS</a>.
+          <a class="font-semibold text-secondary-dark underline" href={ruta('/pqrs/')}>formulario de PQRS</a>.
         </p>
       </div>
 
-      <div class="rounded-card border border-line bg-surface p-7">
+      <div class="glass-card p-8">
         <FormularioMailto asunto="Contacto desde dstunja.com" boton="Enviar mensaje">
           <div>
             <label class="field-label" for="nombre-contacto">Nombre completo *</label>
