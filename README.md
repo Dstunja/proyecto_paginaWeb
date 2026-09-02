@@ -151,10 +151,10 @@ Los colores de cada departamento se definen una sola vez (`departamentos` en
 
 ## Mapa de la red comercial
 
-La sección "Cobertura nacional" del inicio dibuja **un punto por cliente**: son
-12.286 puntos repartidos en 87 municipios de Boyacá, Santander y Cundinamarca.
-Al alejarse se agrupan y cada grupo muestra su total (por ejemplo 3.658 sobre
-Tunja); al acercar, el grupo se abre hasta ver los puntos uno a uno.
+La sección "Cobertura nacional" del inicio dibuja **un punto por municipio
+atendido**: 87 puntos, con el color de su departamento. El número de clientes no
+se pinta sobre el mapa; aparece al pasar el mouse o al tocar el punto, para que
+el mapa se lea limpio. Tunja lleva además el punto pulsante de sede principal.
 
 De dónde sale cada dato:
 
@@ -171,11 +171,9 @@ segundo y **solo pide lo que falte**: como el resultado queda en
 coordenada quedara mal, se corrige a mano en ese JSON; para volver a pedirla,
 basta con borrar esa entrada.
 
-**Los puntos individuales son aproximados a propósito**: la base de datos tiene
-cuántos clientes hay en cada municipio, no la dirección de cada uno. Por eso los
-puntos se reparten en un radio de 1 a 3 km alrededor de la cabecera, con un
-generador con semilla para que el mapa se vea igual en cada visita. El número de
-cada grupo sí es exacto.
+El tamaño del punto crece un poco con la cantidad de clientes (radio de 6 a
+12 px) para que se vea de un vistazo dónde está el grueso de la red. Para que
+todos midan igual, basta con dejar fijo el radio en `MapaRed.astro`.
 
 Los 4 clientes fuera de la zona (3 en Bogotá y 1 en Medellín) no se dibujan: el
 mapa es el de la red de los tres departamentos.
