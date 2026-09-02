@@ -5,6 +5,7 @@ import { logoMarca } from '../lib/imagenes';
 import PageHero from '../components/PageHero.astro';
 import Icono from '../components/Icono.astro';
 import { empresa } from '../data/site';
+import { productos } from '../data/productos';
 
 /**
  * EDITAR AQUÍ: clasificación y portafolio real.
@@ -111,24 +112,27 @@ const mensajeWhatsapp = encodeURIComponent(
         class="glass-card mt-14 grid grid-cols-1 items-center gap-10 p-9 text-ink tablet:grid-cols-[1.2fr_.8fr] tablet:p-12"
       >
         <div>
-          <h2 class="text-[26px] tablet:text-[32px]">¿Quieres el catálogo completo?</h2>
+          <h2 class="text-[26px] tablet:text-[32px]">¿Listo para pedir?</h2>
           <p class="mt-3 max-w-[52ch] text-muted">
-            Un asesor te comparte el listado de referencias, presentaciones y precios vigentes para
-            tu municipio, y te explica las condiciones de entrega.
+            Arma tu pedido con las {productos.length} referencias del portafolio y envíaselo a tu
+            asesor por WhatsApp; él confirma precios, disponibilidad y condiciones de entrega para
+            tu municipio.
           </p>
         </div>
         <div class="flex flex-wrap gap-3.5">
+          {/* Desde las marcas, el paso natural es elegir las referencias. */}
+          <a class="btn btn-accent" href={ruta('/pedido/')}>
+            Arma tu pedido
+            <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
+          </a>
           <a
-            class="btn btn-accent"
+            class="btn btn-secondary"
             href={`${empresa.whatsapp}?text=${mensajeWhatsapp}`}
             target="_blank"
             rel="noopener"
           >
             Pedir catálogo
             <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
-          </a>
-          <a class="btn btn-secondary" href={ruta('/contactanos/')}>
-            Contactar
           </a>
         </div>
       </div>
