@@ -14,17 +14,19 @@ const canales = [
 ];
 ---
 
-<footer class="bg-ink pt-14 pb-6 text-white/80">
+{/* El pie cierra la pagina con el tono mas profundo de la paleta, un escalon
+    por debajo del fondo, y un filo de luz arriba que lo separa del contenido. */}
+<footer class="relative mt-8 border-t border-line bg-midnight pt-20 pb-8 text-muted">
   <div class="wrap">
-    <div class="grid grid-cols-1 gap-10 border-b border-white/15 pb-9 tablet:grid-cols-[1.4fr_1fr_1fr]">
+    <div class="grid grid-cols-1 gap-14 border-b border-line pb-14 tablet:grid-cols-[1.5fr_1fr_1fr]">
       <div>
         <Logo variante="claro" />
-        <p class="mt-4 max-w-[36ch] text-sm text-white/65">
+        <p class="mt-6 max-w-[38ch] text-[14.5px] text-muted">
           21 años llevando productos de calidad a miles de negocios en Boyacá, Santander y
           Cundinamarca.
         </p>
 
-        <div class="mt-6 flex gap-3">
+        <div class="mt-8 flex gap-3">
           {
             redes.map((red) => (
               <a
@@ -32,9 +34,10 @@ const canales = [
                 target="_blank"
                 rel="noopener"
                 aria-label={red.nombre}
-                class="group flex h-9 w-9 items-center justify-center rounded-full border border-white/25
-                       text-white/75 transition-all duration-200 hover:border-accent hover:bg-accent
-                       hover:text-ink-dark focus-visible:border-accent focus-visible:bg-accent
+                class="glass group flex h-10 w-10 items-center justify-center rounded-full
+                       text-ink/75 transition-all duration-300 hover:-translate-y-0.5
+                       hover:border-accent hover:bg-accent hover:text-ink-dark
+                       focus-visible:border-accent focus-visible:bg-accent
                        focus-visible:text-ink-dark"
               >
                 <Icono nombre={red.icono} class="h-4 w-4" />
@@ -45,13 +48,15 @@ const canales = [
       </div>
 
       <div>
-        <h4 class="mb-4 text-[13px] tracking-wide text-white uppercase">Enlaces rápidos</h4>
-        <ul class="m-0 flex list-none flex-col gap-2.5 p-0">
+        <h4 class="mb-6 text-[12px] font-semibold tracking-[0.14em] text-ink uppercase">
+          Enlaces rápidos
+        </h4>
+        <ul class="m-0 flex list-none flex-col gap-3.5 p-0">
           {
             navegacion.map((item) => (
               <li>
                 <a
-                  class="text-sm text-white/70 transition-colors duration-200 hover:text-accent"
+                  class="text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
                   href={ruta(item.href)}
                 >
                   {item.texto}
@@ -63,13 +68,15 @@ const canales = [
       </div>
 
       <div>
-        <h4 class="mb-4 text-[13px] tracking-wide text-white uppercase">Nuestros canales</h4>
-        <ul class="m-0 flex list-none flex-col gap-3 p-0">
+        <h4 class="mb-6 text-[12px] font-semibold tracking-[0.14em] text-ink uppercase">
+          Nuestros canales
+        </h4>
+        <ul class="m-0 flex list-none flex-col gap-3.5 p-0">
           {
             canales.map((canal) => (
               <li>
                 <a
-                  class="group flex items-center gap-2.5 text-sm text-white/70 transition-colors duration-200 hover:text-accent"
+                  class="group flex items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
                   href={ruta(canal.href)}
                   {...canal.externo ? { target: '_blank', rel: 'noopener' } : {}}
                 >
@@ -81,10 +88,10 @@ const canales = [
           }
         </ul>
 
-        <ul class="m-0 mt-6 flex list-none flex-col gap-3 p-0">
+        <ul class="m-0 mt-8 flex list-none flex-col gap-3.5 p-0">
           <li>
             <a
-              class="group flex items-center gap-2.5 text-sm text-white/70 transition-colors duration-200 hover:text-accent"
+              class="group flex items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
               href={`mailto:${empresa.email}`}
             >
               <Icono nombre="mail" class="h-4 w-4" />
@@ -93,14 +100,14 @@ const canales = [
           </li>
           <li>
             <a
-              class="group flex items-center gap-2.5 text-sm text-white/70 transition-colors duration-200 hover:text-accent"
+              class="group flex items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
               href={`tel:${empresa.telefonoE164}`}
             >
               <Icono nombre="phone" class="h-4 w-4" />
               {empresa.telefono}
             </a>
           </li>
-          <li class="flex items-center gap-2.5 text-sm text-white/70">
+          <li class="flex items-center gap-3 text-[14.5px] text-muted">
             <Icono nombre="map-pin" class="h-4 w-4" interactivo={false} />
             {empresa.direccion}, {empresa.ciudad}
           </li>
@@ -108,9 +115,9 @@ const canales = [
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-3 pt-[22px] text-[13px] text-white/55">
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-8 text-[13px] text-muted/70">
       <span>© {anio} {empresa.razonSocial} Todos los derechos reservados.</span>
-      <span>Boyacá · Santander · Cundinamarca</span>
+      <span class="tracking-[0.08em] uppercase">Boyacá · Santander · Cundinamarca</span>
     </div>
   </div>
 </footer>
