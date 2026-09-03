@@ -1,0 +1,176 @@
+---
+/**
+ * Sección de reseñas de clientes (inicio).
+ *
+ * Los datos vienen de src/data/reseñas.ts, que hoy es un archivo local pero
+ * está modelado igual que la respuesta de la API de Google Places. Por eso el
+ * componente también los acepta por props: cuando se conecte la API, la página
+ * consulta en el build y hace <Resenas resenas={...} resumen={...} /> sin que
+ * haya que cambiar nada de aquí. Ver el comentario largo de src/data/reseñas.ts.
+ */
+import Icono from './Icono.astro';
+import { resenas as resenasLocales, resumenResenas, type Resena, type ResumenResenas } from '../data/reseñas';
+
+interface Props {
+  resenas?: Resena[];
+  resumen?: ResumenResenas;
+}
+
+const { resenas = resenasLocales, resumen = resumenResenas } = Astro.props;
+
+/** '4,8' con la coma decimal que se usa en Colombia. */
+const promedio = new Intl.NumberFormat('es-CO', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+}).format(resumen.promedio);
+
+/** Estrellas llenas de la calificación promedio (4,8 -> 5). */
+const estrellasPromedio = Math.round(resumen.promedio);
+
+const ESTRELLAS = [0, 1, 2, 3, 4];
+
+/** Iniciales para el avatar cuando la reseña no trae foto de perfil. */
+const iniciales = (nombre: string) =>
+  nombre
+    .trim()
+    .split(/\s+/)
+    .map((parte) => parte[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+/* Google entrega como máximo 5 reseñas: con 4 o más caben cuatro por fila, y
+   con 3 la rejilla se ajusta para no dejar un hueco. */
+const columnas = resenas.length >= 4 ? 'tablet:grid-cols-4' : 'tablet:grid-cols-3';
+---
+
+{
+  resenas.length > 0 && (
+    <section id="resenas" class="section">
+      <div class="wrap">
+        <div class="mb-12 flex flex-col gap-8 tablet:flex-row tablet:items-end tablet:justify-between">
+          <div>
+            <span class="kicker">Lo que dicen nuestros clientes</span>
+            <h2 class="text-[28px] tablet:text-[38px]">Reseñas reales en Google</h2>
+            <p class="mt-3 max-w-[46ch] text-muted">
+              Opiniones de tenderos y negocios que ya trabajan con nosotros, publicadas en
+              nuestra ficha de Google Maps.
+            </p>
+          </div>
+
+          {/* Resumen: promedio, estrellas y total de calificaciones. */}
+          <div class="glass-card flex shrink-0 items-center gap-6 px-7 py-6">
+            <div class="text-center">
+              <p class="m-0 font-display text-[42px] leading-none font-bold text-primary">
+                {promedio}
+              </p>
+              <div
+                class="mt-2 flex justify-center gap-0.5"
+                role="img"
+                aria-label={`${promedio} de 5 estrellas en promedio`}
+              >
+                {ESTRELLAS.map((i) => (
+                  <Icono
+                    nombre="star"
+                    class={
+                      i < estrellasPromedio
+                        ? 'h-[15px] w-[15px] text-accent [&_svg]:fill-current'
+                        : 'h-[15px] w-[15px] text-line'
+                    }
+                    interactivo={false}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div class="border-l border-line pl-6">
+              <p class="m-0 font-display text-[15px] font-semibold text-ink">
+                {resumen.total} calificaciones
+              </p>
+              <p class="m-0 text-[12.5px] text-muted">en Google Maps</p>
+              <a
+                class="group mt-2 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-secondary-dark"
+                href={resumen.url}
+                target="_blank"
+                rel="noopener"
+              >
+                Ver todas las reseñas
+                <Icono nombre="arrow-right" class="h-4 w-4" interactivo={false} />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class:list={['grid grid-cols-1 gap-6 mob:grid-cols-2', columnas]}>
+          {resenas.map((resena) => (
+            <article class="glass-card flex flex-col p-7">
+              <div
+                class="mb-4 flex gap-0.5"
+                role="img"
+                aria-label={`${resena.estrellas} de 5 estrellas`}
+              >
+                {ESTRELLAS.map((i) => (
+                  <Icono
+                    nombre="star"
+                    class={
+                      i < resena.estrellas
+                        ? 'h-[17px] w-[17px] text-accent [&_svg]:fill-current'
+                        : 'h-[17px] w-[17px] text-line'
+                    }
+                    interactivo={false}
+                  />
+                ))}
+              </div>
+
+              <blockquote class="m-0 flex-1 text-[14.5px] leading-relaxed text-muted">
+                «{resena.texto}»
+              </blockquote>
+
+              <footer class="mt-6 flex items-center gap-3 border-t border-line pt-5">
+                {resena.foto ? (
+                  /* La foto de perfil llega desde Google (authorAttribution.photoUri). */
+                  <img
+                    src={resena.foto}
+                    alt=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer"
+                    class="h-11 w-11 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft font-display text-[15px] font-bold text-primary">
+                    {iniciales(resena.autor)}
+                  </span>
+                )}
+
+                <div class="min-w-0">
+                  <p class="m-0 truncate font-display text-[14.5px] font-semibold text-ink">
+                    {resena.url ? (
+                      <a class="hover:text-secondary-dark" href={resena.url} target="_blank" rel="noopener">
+                        {resena.autor}
+                      </a>
+                    ) : (
+                      resena.autor
+                    )}
+                  </p>
+                  <p class="m-0 text-[12.5px] text-muted">{resena.fecha}</p>
+                </div>
+              </footer>
+            </article>
+          ))}
+        </div>
+
+        <p class="mt-8 text-center text-[13.5px] text-muted">
+          ¿Ya eres cliente?{' '}
+          <a
+            class="font-semibold text-secondary-dark underline underline-offset-4"
+            href={resumen.url}
+            target="_blank"
+            rel="noopener"
+          >
+            Cuéntanos tu experiencia en Google
+          </a>
+        </p>
+      </div>
+    </section>
+  )
+}

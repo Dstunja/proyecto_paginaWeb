@@ -6,6 +6,7 @@ import MapaRed from '../components/MapaRed.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
 import Testimonio from '../components/Testimonio.astro';
+import Resenas from '../components/Resenas.astro';
 import {
   cifras,
   marcas,
@@ -250,6 +251,9 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
       <Testimonio />
     </div>
   </section>
+
+  <!-- RESEÑAS DE GOOGLE -->
+  <Resenas />
 
   <!-- HAZ TU PEDIDO -->
   <section id="haz-tu-pedido" class="section border-y border-line bg-fondo">
