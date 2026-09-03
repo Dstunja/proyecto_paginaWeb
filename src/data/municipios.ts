@@ -114,20 +114,6 @@ export const departamentos = (Object.keys(COLORES) as Departamento[]).map((nombr
 export const totalMunicipios = municipios.length;
 export const totalClientes = municipios.reduce((suma, m) => suma + m.clientes, 0);
 
-/** Cuántos municipios se dibujan en el mapa de la home. */
-export const TOTAL_DESTACADOS = 18;
-
-/**
- * Municipios principales por volumen de clientes.
- *
- * El mapa de la home solo dibuja estos: con los 87 puntos el mapa se lee como
- * una mancha y no se distingue nada. La cobertura completa ya se comunica con
- * los contadores por departamento que van encima del mapa.
- */
-export const municipiosDestacados: Municipio[] = [...municipios]
-  .sort((a, b) => b.clientes - a.clientes)
-  .slice(0, TOTAL_DESTACADOS);
-
 /** Ubicación exacta de la sede (Cra 2 Este #58-79), geocodificada aparte. */
 export const sede = {
   nombre: 'Tunja',
