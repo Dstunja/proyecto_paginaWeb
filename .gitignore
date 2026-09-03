@@ -5,3 +5,7 @@ dist/
 .env
 .env.local
 *.bak
+
+# Material de trabajo que no se publica: demos, comprimidos y borradores que
+# se integran al proyecto y luego no hacen falta en el repositorio.
+recursos/
