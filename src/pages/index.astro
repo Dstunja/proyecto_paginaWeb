@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
 import { logoMarca } from '../lib/imagenes';
 import MapaRed from '../components/MapaRed.astro';
+import EspecialesMes from '../components/EspecialesMes.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
 import Testimonio from '../components/Testimonio.astro';
@@ -123,6 +124,9 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
       </div>
     </div>
   </section>
+
+  <!-- ESPECIALES DEL MES -->
+  <EspecialesMes />
 
   <!-- MARCAS -->
   <div class="border-y border-line bg-fondo py-16">

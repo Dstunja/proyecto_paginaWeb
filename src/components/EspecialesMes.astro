@@ -1,0 +1,117 @@
+---
+import Icono from './Icono.astro';
+import { ruta } from '../lib/rutas';
+import { imagenOMarcador } from '../lib/imagenes';
+import { productosTemporada, periodoTemporada, hayEspecialesDelMes } from '../data/temporada';
+
+/**
+ * "Especiales del mes": las ediciones especiales y colaboraciones vigentes.
+ *
+ * Es la única franja del inicio en tono naranja de marca. El resto del sitio
+ * es blanco y gris con el azul de la marca, así que el naranja —el color de
+ * las llamadas destacadas— alcanza para que se lea como contenido de
+ * temporada, distinto del catálogo permanente, sin inventarse un estilo aparte.
+ *
+ * El contenido vive en src/data/temporada.ts y cambia mes a mes. Si ahí no
+ * queda ningún producto, este componente no dibuja nada: se prefiere que la
+ * sección desaparezca antes que dejar un título con un hueco debajo.
+ *
+ * Las fotos salen de public/img/temporada/; mientras no existan, se muestra un
+ * marcador de posición con el nombre del producto (ver src/lib/imagenes.ts).
+ */
+const productos = productosTemporada.map((producto) => ({
+  ...producto,
+  ...imagenOMarcador(producto.imagen, producto.nombre, 1000, 625),
+}));
+
+/**
+ * La rejilla se adapta a cuántos productos haya, porque la lista cambia cada
+ * mes: una sola tarjeta a lo ancho de la página se vería desproporcionada, y
+ * cuatro en dos columnas quedarían demasiado grandes.
+ */
+const columnas =
+  productos.length === 1
+    ? 'max-w-[440px]'
+    : productos.length === 2
+      ? 'mob:grid-cols-2'
+      : 'mob:grid-cols-2 tablet:grid-cols-3';
+---
+
+{
+  hayEspecialesDelMes && (
+    <section id="especiales" class="section border-y border-line bg-accent-soft">
+      <div class="wrap">
+        <div class="mb-12 flex flex-col gap-6 tablet:flex-row tablet:items-end tablet:justify-between">
+          <div class="max-w-[54ch]">
+            <span class="kicker">Especiales del mes</span>
+            <h2 class="text-[28px] tablet:text-[38px]">Ediciones especiales que están sonando</h2>
+            <p class="mt-3 mb-0 text-muted">
+              Cada mes traemos las colaboraciones y ediciones de temporada de nuestras marcas.
+              Pregúntale a tu asesor por la disponibilidad en tu zona.
+            </p>
+          </div>
+
+          {/* El mes va en una píldora blanca: deja claro de un vistazo que
+              esto es contenido que rota, no una sección fija del catálogo. */}
+          <p class="m-0 inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-accent/40 bg-surface px-4 py-2 font-display text-[13px] font-semibold text-accent-text tablet:self-auto">
+            <Icono nombre="calendar" class="h-4 w-4" interactivo={false} />
+            {periodoTemporada}
+          </p>
+        </div>
+
+        <div class:list={['grid gap-6 tablet:gap-8', columnas]}>
+          {productos.map((producto) => (
+            <article class="glass-card relative flex flex-col overflow-hidden">
+              {/* Filo naranja permanente: en las tarjetas del resto del sitio
+                  este filo solo aparece al pasar el mouse, así que dejarlo
+                  fijo aquí marca la diferencia sin cambiar el lenguaje. */}
+              <span class="h-1 shrink-0 bg-accent" aria-hidden="true" />
+
+              <div class="relative">
+                <img
+                  src={producto.src}
+                  alt={producto.esMarcador ? '' : `${producto.nombre} — ${producto.descripcion}`}
+                  width="1000"
+                  height="625"
+                  loading="lazy"
+                  class="aspect-[16/10] w-full bg-primary-soft object-cover"
+                />
+
+                <span class="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 font-display text-[12px] font-semibold text-ink-dark shadow-[0_6px_16px_rgba(245,166,35,.4)]">
+                  <Icono nombre="sparkles" class="h-3.5 w-3.5" interactivo={false} />
+                  Especial del mes
+                </span>
+
+                {producto.etiqueta && (
+                  <span class="absolute top-4 right-4 rounded-full bg-surface/95 px-3 py-1.5 font-display text-[12px] font-semibold text-accent-text shadow-[0_4px_12px_rgba(13,44,132,.14)]">
+                    {producto.etiqueta}
+                  </span>
+                )}
+              </div>
+
+              <div class="flex flex-1 flex-col p-7">
+                <p class="m-0 text-[12px] font-semibold tracking-[0.12em] text-secondary-dark uppercase">
+                  {producto.marca}
+                </p>
+                <h3 class="mt-2 text-[20px]">{producto.nombre}</h3>
+                <p class="mt-2 mb-0 text-[14.5px] text-muted">{producto.descripcion}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <a
+          class="group mt-10 inline-flex items-center gap-2 font-display text-[15px] font-semibold text-primary transition-colors duration-200 hover:text-secondary-dark"
+          href={ruta('/catalogo/')}
+        >
+          Ver todo el catálogo
+          <Icono
+            nombre="arrow-right"
+            class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+            interactivo={false}
+          />
+        </a>
+      </div>
+    </section>
+  )
+}
