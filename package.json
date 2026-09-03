@@ -13,7 +13,8 @@
     "og": "node scripts/build-og.mjs",
     "deploy": "astro build && wrangler deploy",
     "favicon": "node scripts/build-favicon.mjs",
-    "iconos": "npm run favicon && npm run og"
+    "iconos": "npm run favicon && npm run og",
+    "verificar:analitica": "node scripts/verificar-analitica.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
