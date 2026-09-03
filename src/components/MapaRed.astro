@@ -70,21 +70,35 @@ const listaDepartamentos =
   </div>
 
   <!-- MAPA -->
-  <div class="relative">
-    <div
-      id="mapa-red"
-      class="h-[260px] w-full bg-fondo tablet:h-[340px]"
-      role="application"
-      aria-label="Mapa de los municipios con cobertura"
-    >
-    </div>
+  <!--
+    La cobertura es un corredor norte-sur: los 18 puntos ocupan 1,02 grados de
+    latitud por apenas 0,71 de longitud, así que a lo ancho de la tarjeta el
+    mapa quedaba con mucho terreno vacío a los lados. En escritorio se le pone
+    un ancho máximo y se centra, y el aire que queda se trata como marco —el
+    mapa lleva esquinas redondeadas y un filete— para que se lea como una
+    figura encuadrada y no como un mapa recortado. En móvil no se toca: sigue
+    a sangre y a ancho completo, que ahí la proporción ya funciona.
 
-    <p
-      id="aviso-mapa"
-      class="pointer-events-none absolute inset-x-4 top-4 z-[500] m-0 hidden rounded-xl bg-surface px-4 py-2.5 text-[14px] font-medium shadow-[0_8px_24px_rgba(13,44,132,.16)] tablet:inset-x-auto tablet:left-1/2 tablet:-translate-x-1/2"
-      role="status"
-    >
-    </p>
+    El límite de ancho va en este contenedor y no en el mapa, para que el aviso
+    del buscador se centre sobre el mapa visible.
+  -->
+  <div class="tablet:px-6 tablet:py-6">
+    <div class="relative mx-auto w-full tablet:max-w-[620px]">
+      <div
+        id="mapa-red"
+        class="h-[260px] w-full overflow-hidden bg-fondo tablet:h-[340px] tablet:rounded-2xl tablet:ring-1 tablet:ring-line"
+        role="application"
+        aria-label="Mapa de los municipios con cobertura"
+      >
+      </div>
+
+      <p
+        id="aviso-mapa"
+        class="pointer-events-none absolute inset-x-4 top-4 z-[500] m-0 hidden rounded-xl bg-surface px-4 py-2.5 text-[14px] font-medium shadow-[0_8px_24px_rgba(13,44,132,.16)] tablet:inset-x-auto tablet:left-1/2 tablet:-translate-x-1/2"
+        role="status"
+      >
+      </p>
+    </div>
   </div>
 
   <!-- LEYENDA -->
