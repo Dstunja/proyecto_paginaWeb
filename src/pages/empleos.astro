@@ -210,6 +210,8 @@ const proceso = [
 </BaseLayout>
 
 <script>
+  import { registrarEvento } from '../lib/analitica';
+
   const select = () => document.getElementById('cargo-empleo') as HTMLSelectElement | null;
 
   /** Elige una opción del select solo si ese cargo existe en la lista. */
@@ -223,7 +225,10 @@ const proceso = [
   // Al pulsar "Postularme a esta vacante" el formulario queda con ese cargo elegido.
   document.querySelectorAll<HTMLAnchorElement>('[data-postular]').forEach((enlace) => {
     enlace.addEventListener('click', () => {
-      if (enlace.dataset.postular) elegirCargo(enlace.dataset.postular);
+      const cargo = enlace.dataset.postular;
+      if (!cargo) return;
+      elegirCargo(cargo);
+      registrarEvento('vacante_postular', { vacante: cargo });
     });
   });
 

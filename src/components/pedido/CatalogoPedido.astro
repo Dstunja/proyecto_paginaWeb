@@ -131,11 +131,13 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     cantidadDe,
     guardarPedido,
     leerPedido,
+    obtenerProducto,
     registrarProductos,
     sumarCantidad,
     type ProductoPedido,
   } from '../../lib/carrito';
   import { CANTIDAD_MAXIMA, TAMANO_TANDA } from '../../data/pedido';
+  import { limpiarTermino, registrarEvento } from '../../lib/analitica';
 
   const contenedor = document.querySelector<HTMLElement>('[data-resultados]');
   const buscador = document.querySelector<HTMLInputElement>('[data-buscador]');
@@ -373,16 +375,33 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     };
 
     // --- Interacción --------------------------------------------------------
+    /**
+      * Busqueda: el evento se manda cuando la persona deja de escribir, no en
+      * cada tecla. Si no, "chocolate" llegaria a GA4 como diez busquedas
+      * distintas y el informe seria ilegible.
+      */
+    let temporizadorBusqueda: number | undefined;
+
     buscador.addEventListener('input', () => {
       consulta = buscador.value;
       tandas.clear();
       render();
+
+      window.clearTimeout(temporizadorBusqueda);
+      temporizadorBusqueda = window.setTimeout(() => {
+        const termino = limpiarTermino(consulta);
+        // Menos de tres letras no dice nada util y son casi todo tecleo a medias.
+        if (termino.length >= 3) registrarEvento('catalogo_buscar', { termino });
+      }, 900);
     });
 
     selectorCategoria.addEventListener('change', () => {
       categoriaFiltro = selectorCategoria.value;
       tandas.clear();
       render();
+      registrarEvento('catalogo_filtrar_categoria', {
+        categoria: categoriaFiltro || 'todas',
+      });
     });
 
     barraMarcas.addEventListener('click', (e) => {
@@ -394,6 +413,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       });
       tandas.clear();
       render();
+      registrarEvento('catalogo_filtrar_marca', { marca: marcaFiltro || 'todas' });
     });
 
     contenedor.addEventListener('click', (e) => {
@@ -449,6 +469,15 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       if (objetivo.closest('[data-agregar]')) {
         pedido = sumarCantidad(pedido, id, cantidadEnTarjeta(id));
         guardarPedido(pedido);
+
+        // Que referencias se agregan mas. No viaja ningun dato del cliente.
+        const producto = obtenerProducto(id);
+        if (producto) {
+          registrarEvento('pedido_agregar', {
+            codigo_sap: producto.codigo,
+            marca: producto.marca,
+          });
+        }
         // La tarjeta vuelve a 1 para que agregar dos veces no repita la última
         // cantidad escrita sin querer.
         cantidades.set(id, 1);

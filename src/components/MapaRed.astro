@@ -228,6 +228,7 @@ const cargados = municipios.length;
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
   import { municipios, colorDepartamento } from '../data/municipios';
+  import { limpiarTermino, registrarEvento } from '../lib/analitica';
 
   const contenedor = document.getElementById('mapa-red');
   if (contenedor) {
@@ -348,6 +349,15 @@ const cargados = municipios.length;
       }
 
       const encontrado = marcadores.get(normalizar(valor));
+
+      /* Que municipios busca la gente y cuales todavia no tenemos cargados:
+         es la lista de por donde conviene ampliar la cobertura. El termino se
+         limpia por si alguien escribe ahi un correo o un telefono. */
+      registrarEvento('cobertura_buscar', {
+        municipio: limpiarTermino(valor),
+        encontrado: Boolean(encontrado),
+      });
+
       if (!encontrado) {
         mostrarAviso(`Por ahora no tenemos cobertura confirmada en "${valor}". Escríbenos y lo validamos.`, false);
         return;
