@@ -1,0 +1,562 @@
+---
+/**
+ * Panel del pedido: la lista que el cliente arma y los datos con los que se la
+ * manda al asesor.
+ *
+ * En escritorio es un cajón que entra por la derecha; en móvil, una hoja que
+ * sube desde abajo. Es el mismo elemento: solo cambia de qué lado entra (ver
+ * el bloque <style>).
+ *
+ * No hay servidor: el pedido se entrega por WhatsApp con el texto ya escrito,
+ * y el botón "Copiar pedido" deja la misma lista en el portapapeles para
+ * pegarla donde haga falta (un correo, otro chat).
+ */
+import { municipios } from '../../data/municipios';
+import { AVISO_PRECIOS } from '../../data/pedido';
+import { empresa } from '../../data/site';
+import Icono from '../Icono.astro';
+
+/** Municipios cargados hoy, como sugerencia. El campo admite escribir otro. */
+const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
+  a.localeCompare(b, 'es'),
+);
+---
+
+{/* Botón flotante: barra ancha en móvil, píldora en escritorio. Aparece solo
+    cuando hay algo en el pedido; con el pedido vacío, la puerta de entrada es
+    el carrito de la barra superior. */}
+<button
+  type="button"
+  class="btn btn-primary fixed right-4 bottom-4 left-4 z-[150] hidden shadow-[0_14px_34px_rgba(13,44,132,.34)] tablet:left-auto"
+  data-abrir-pedido
+  data-flotante
+  aria-haspopup="dialog"
+>
+  <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
+  Ver mi pedido
+  <span
+    class="ml-1 rounded-full bg-white/20 px-2.5 py-0.5 text-[13px] font-bold"
+    data-total-flotante>0</span
+  >
+</button>
+
+{/* Velo: oscurece la página y cierra el panel al tocarlo. */}
+<div class="velo-pedido" data-velo hidden></div>
+
+<aside
+  class="panel-pedido flex flex-col bg-surface"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="titulo-pedido"
+  data-panel
+  data-abierto="false"
+>
+  {/* --- Cabecera --- */}
+  <header class="flex items-center gap-4 border-b border-line px-6 py-5">
+    <h2 id="titulo-pedido" class="m-0 flex-1 text-[19px]">Mi pedido</h2>
+    <p class="m-0 text-[13px] text-muted" data-resumen>0 unidades</p>
+    <button
+      type="button"
+      class="grid h-10 w-10 place-items-center rounded-full text-ink transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
+      data-cerrar-pedido
+      aria-label="Cerrar el panel del pedido"
+    >
+      <Icono nombre="close" class="h-5 w-5" />
+    </button>
+  </header>
+
+  {/* --- Lista de referencias --- */}
+  <div class="min-h-0 flex-1 overflow-y-auto px-6">
+    <p class="hidden py-12 text-center text-[14.5px] text-muted" data-vacio>
+      Todavía no has agregado productos. Busca en el catálogo y toca
+      <strong class="text-ink">Agregar</strong>.
+    </p>
+    <ul class="m-0 list-none p-0" data-lista></ul>
+  </div>
+
+  {/* --- Datos del negocio y envío --- */}
+  <form class="border-t border-line px-6 py-5" data-formulario novalidate>
+    <div class="grid grid-cols-1 gap-3 mob:grid-cols-2">
+      <div class="mob:col-span-2">
+        <label class="field-label" for="pedido-negocio">Nombre del negocio *</label>
+        <input
+          class="field"
+          id="pedido-negocio"
+          name="negocio"
+          type="text"
+          required
+          autocomplete="organization"
+          data-campo="negocio"
+        />
+      </div>
+
+      <div>
+        <label class="field-label" for="pedido-municipio">Municipio *</label>
+        <input
+          class="field"
+          id="pedido-municipio"
+          name="municipio"
+          type="text"
+          required
+          list="municipios-cobertura"
+          autocomplete="address-level2"
+          data-campo="municipio"
+        />
+        <datalist id="municipios-cobertura">
+          {sugerencias.map((m) => <option value={m} />)}
+        </datalist>
+      </div>
+
+      <div>
+        <label class="field-label" for="pedido-contacto">Nombre de contacto *</label>
+        <input
+          class="field"
+          id="pedido-contacto"
+          name="contacto"
+          type="text"
+          required
+          autocomplete="name"
+          data-campo="contacto"
+        />
+      </div>
+
+      <div class="mob:col-span-2">
+        <label class="field-label" for="pedido-telefono">Teléfono (opcional)</label>
+        <input
+          class="field"
+          id="pedido-telefono"
+          name="telefono"
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel"
+          data-campo="telefono"
+        />
+      </div>
+    </div>
+
+    <p class="mt-4 mb-0 text-[13px] text-muted">{AVISO_PRECIOS}</p>
+
+    <p
+      class="mt-3 mb-0 hidden text-[13.5px] font-semibold"
+      role="status"
+      aria-live="polite"
+      data-aviso
+    >
+    </p>
+
+    <div class="mt-4 flex flex-col gap-2.5">
+      <button type="submit" class="btn btn-whatsapp w-full" data-enviar>
+        Enviar pedido por WhatsApp
+        <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
+      </button>
+
+      <div class="flex gap-2.5">
+        <button type="button" class="btn btn-secondary flex-1 !px-4" data-copiar>
+          <Icono nombre="copy" class="h-4 w-4" />
+          Copiar pedido
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary !px-4 !text-[13px] text-muted"
+          data-vaciar
+          aria-label="Vaciar el pedido"
+        >
+          <Icono nombre="trash" class="h-4 w-4" />
+          Vaciar
+        </button>
+      </div>
+    </div>
+
+    <p class="mt-4 mb-0 text-center text-[13px] text-muted">
+      ¿Prefieres que te lo tomen por chat?
+      <a
+        class="font-semibold text-secondary-dark underline"
+        href={empresa.whatsapp}
+        target="_blank"
+        rel="noopener">Escríbenos sin pedido armado</a
+      >.
+    </p>
+  </form>
+</aside>
+
+<style>
+  /* Velo detrás del panel. Se deja montado y solo se desvanece, para que la
+     transición se vea igual al abrir y al cerrar. */
+  .velo-pedido {
+    position: fixed;
+    inset: 0;
+    z-index: 190;
+    background: rgba(13, 44, 132, 0.38);
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+  }
+
+  .velo-pedido[data-visible='true'] {
+    opacity: 1;
+  }
+
+  /* Móvil: hoja que sube desde abajo, sin tapar del todo la página. */
+  .panel-pedido {
+    position: fixed;
+    z-index: 200;
+    inset: auto 0 0 0;
+    max-height: 88vh;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -18px 50px rgba(13, 44, 132, 0.22);
+    transform: translateY(100%);
+    /* Oculto también para el teclado y los lectores de pantalla mientras está
+       cerrado: `visibility` saca su contenido del orden de tabulación.
+       El cambio de `visibility` no se interpola (0s): al cerrar se aplaza hasta
+       que termine el desplazamiento, y al abrir ocurre de inmediato. Si se
+       animara, el panel seguiría contando como oculto durante la transición y
+       el navegador rechazaría el foco que se le da al abrirlo. */
+    visibility: hidden;
+    transition:
+      transform 0.3s ease-out,
+      visibility 0s linear 0.3s;
+  }
+
+  /* Escritorio: cajón lateral de alto completo. */
+  @media (min-width: 900px) {
+    .panel-pedido {
+      inset: 0 0 0 auto;
+      width: min(440px, 100vw);
+      max-height: none;
+      border-radius: 0;
+      box-shadow: -18px 0 50px rgba(13, 44, 132, 0.18);
+      transform: translateX(100%);
+    }
+  }
+
+  .panel-pedido[data-abierto='true'] {
+    transform: none;
+    visibility: visible;
+    transition:
+      transform 0.3s ease-out,
+      visibility 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel-pedido,
+    .velo-pedido {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  import {
+    alCambiarPedido,
+    enlaceWhatsapp,
+    fijarCantidad,
+    guardarPedido,
+    leerPedido,
+    mensajeParaUrl,
+    mensajePedido,
+    obtenerProducto,
+    sumarCantidad,
+    totalUnidades,
+    vaciarPedido,
+    type Pedido,
+  } from '../../lib/carrito';
+  import { CANTIDAD_MAXIMA } from '../../data/pedido';
+
+  const panel = document.querySelector<HTMLElement>('[data-panel]');
+  const velo = document.querySelector<HTMLElement>('[data-velo]');
+  const lista = document.querySelector<HTMLUListElement>('[data-lista]');
+  const vacio = document.querySelector<HTMLElement>('[data-vacio]');
+  const resumen = document.querySelector<HTMLElement>('[data-resumen]');
+  const formulario = document.querySelector<HTMLFormElement>('[data-formulario]');
+  const aviso = document.querySelector<HTMLElement>('[data-aviso]');
+  const flotante = document.querySelector<HTMLElement>('[data-flotante]');
+
+  if (panel && velo && lista && vacio && resumen && formulario && aviso && flotante) {
+    let pedido: Pedido = leerPedido();
+    /** A quién se le devuelve el foco al cerrar. */
+    let origenFoco: HTMLElement | null = null;
+
+    const esc = (v: string) =>
+      v.replace(
+        /[&<>"']/g,
+        (c) =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
+      );
+
+    const unidades = (n: number) => `${n} ${n === 1 ? 'unidad' : 'unidades'}`;
+
+    // --- Lista --------------------------------------------------------------
+    const pintarLista = () => {
+      const activo = document.activeElement;
+      const foco = activo instanceof HTMLElement ? activo.dataset.foco : undefined;
+
+      lista.innerHTML = pedido.items
+        .map((item) => {
+          const p = obtenerProducto(item.id);
+          const nombre = p ? `${p.nombre} (${p.presentacion})` : item.id;
+          const marca = p?.marca ?? '';
+
+          return `
+            <li class="flex gap-3 border-b border-line py-4" data-item="${esc(item.id)}">
+              <div class="min-w-0 flex-1">
+                ${marca ? `<p class="m-0 font-display text-[11px] font-semibold tracking-[0.1em] text-secondary-dark uppercase">${esc(marca)}</p>` : ''}
+                <p class="m-0 text-[14.5px] leading-snug font-semibold text-ink">${esc(p?.nombre ?? item.id)}</p>
+                <p class="m-0 text-[13px] text-muted">${esc(p?.presentacion ?? '')}</p>
+              </div>
+
+              <div class="flex shrink-0 flex-col items-end gap-2">
+                <div class="flex items-center overflow-hidden rounded-full border border-line">
+                  <button type="button" class="paso" data-item-paso="-1" data-foco="p-menos:${esc(item.id)}"
+                          aria-label="Quitar una unidad de ${esc(nombre)}">
+                    <span aria-hidden="true">&minus;</span>
+                  </button>
+                  <input type="number" class="campo-cantidad" value="${item.cantidad}" min="1" step="1"
+                         max="${CANTIDAD_MAXIMA}" inputmode="numeric" data-item-cantidad data-foco="p-campo:${esc(item.id)}"
+                         aria-label="Cantidad de unidades de ${esc(nombre)}" />
+                  <button type="button" class="paso" data-item-paso="1" data-foco="p-mas:${esc(item.id)}"
+                          aria-label="Agregar una unidad de ${esc(nombre)}">
+                    <span aria-hidden="true">+</span>
+                  </button>
+                </div>
+                <button type="button" class="text-[12.5px] font-semibold text-muted underline transition-colors duration-200 hover:text-primary"
+                        data-quitar data-foco="p-quitar:${esc(item.id)}"
+                        aria-label="Quitar ${esc(nombre)} del pedido">Quitar</button>
+              </div>
+            </li>`;
+        })
+        .join('');
+
+      const total = totalUnidades(pedido);
+      const referencias = pedido.items.length;
+      resumen.textContent = referencias
+        ? `${referencias} ${referencias === 1 ? 'referencia' : 'referencias'} · ${unidades(total)}`
+        : 'Vacío';
+      vacio.classList.toggle('hidden', referencias > 0);
+
+      // Botón flotante. Al quitarle `hidden`, la clase .btn le devuelve el
+      // display que le corresponde. El contador de la barra superior lo pinta
+      // Header.astro, que escucha el mismo evento.
+      flotante.classList.toggle('hidden', referencias === 0);
+      const contadorFlotante = flotante.querySelector<HTMLElement>('[data-total-flotante]');
+      if (contadorFlotante) contadorFlotante.textContent = String(total);
+
+      if (foco) {
+        panel.querySelector<HTMLElement>(`[data-foco="${CSS.escape(foco)}"]`)?.focus();
+      }
+    };
+
+    // --- Abrir y cerrar -----------------------------------------------------
+    const enfocables = () =>
+      [
+        ...panel.querySelectorAll<HTMLElement>(
+          'a[href], button:not(:disabled), input:not(:disabled), select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ].filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+    const abrir = (origen?: HTMLElement) => {
+      origenFoco = origen ?? (document.activeElement as HTMLElement | null);
+      panel.dataset.abierto = 'true';
+      velo.hidden = false;
+      document.body.style.overflow = 'hidden';
+      // Todo lo demás espera al cuadro siguiente: la opacidad del velo necesita
+      // un cuadro para animar, y el foco solo se acepta cuando el navegador ya
+      // recalculó el `visibility: visible` del panel.
+      requestAnimationFrame(() => {
+        velo.setAttribute('data-visible', 'true');
+        enfocables()[0]?.focus();
+      });
+    };
+
+    const cerrar = () => {
+      if (panel.dataset.abierto !== 'true') return;
+      panel.dataset.abierto = 'false';
+      velo.removeAttribute('data-visible');
+      document.body.style.overflow = '';
+      window.setTimeout(() => {
+        if (panel.dataset.abierto !== 'true') velo.hidden = true;
+      }, 300);
+      origenFoco?.focus();
+      origenFoco = null;
+    };
+
+    document.addEventListener('click', (e) => {
+      const abridor = (e.target as HTMLElement).closest<HTMLElement>('[data-abrir-pedido]');
+      if (!abridor) return;
+      // En /pedido/ el carrito de la barra abre el panel en vez de recargar.
+      e.preventDefault();
+      abrir(abridor);
+    });
+
+    velo.addEventListener('click', cerrar);
+    panel.querySelector('[data-cerrar-pedido]')?.addEventListener('click', cerrar);
+
+    document.addEventListener('keydown', (e) => {
+      if (panel.dataset.abierto !== 'true') return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        cerrar();
+        return;
+      }
+
+      // El foco no debe salirse del panel mientras está abierto (aria-modal).
+      if (e.key === 'Tab') {
+        const candidatos = enfocables();
+        if (candidatos.length === 0) return;
+        const primero = candidatos[0]!;
+        const ultimo = candidatos[candidatos.length - 1]!;
+        if (e.shiftKey && document.activeElement === primero) {
+          e.preventDefault();
+          ultimo.focus();
+        } else if (!e.shiftKey && document.activeElement === ultimo) {
+          e.preventDefault();
+          primero.focus();
+        }
+      }
+    });
+
+    // --- Edición de la lista ------------------------------------------------
+    lista.addEventListener('click', (e) => {
+      const fila = (e.target as HTMLElement).closest<HTMLElement>('[data-item]');
+      if (!fila) return;
+      const id = fila.dataset.item ?? '';
+
+      const paso = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-item-paso]');
+      if (paso) {
+        pedido = sumarCantidad(pedido, id, Number(paso.dataset.itemPaso));
+        guardarPedido(pedido);
+        return;
+      }
+
+      if ((e.target as HTMLElement).closest('[data-quitar]')) {
+        pedido = fijarCantidad(pedido, id, 0);
+        guardarPedido(pedido);
+        avisar('');
+      }
+    });
+
+    // Se confirma al salir del campo o con Enter, no en cada tecla: así la
+    // lista no se repinta mientras se está escribiendo el número.
+    lista.addEventListener('change', (e) => {
+      const campo = (e.target as HTMLElement).closest<HTMLInputElement>('[data-item-cantidad]');
+      const fila = campo?.closest<HTMLElement>('[data-item]');
+      if (!campo || !fila) return;
+      pedido = fijarCantidad(pedido, fila.dataset.item ?? '', Number(campo.value));
+      guardarPedido(pedido);
+    });
+
+    panel.querySelector('[data-vaciar]')?.addEventListener('click', () => {
+      if (pedido.items.length === 0) return;
+      if (!window.confirm('¿Quitar todas las referencias del pedido?')) return;
+      pedido = vaciarPedido(pedido);
+      guardarPedido(pedido);
+      avisar('Pedido vacío.', 'ok');
+    });
+
+    // --- Datos del negocio --------------------------------------------------
+    const campos = panel.querySelectorAll<HTMLInputElement>('[data-campo]');
+
+    /** Vuelca en los campos lo que se haya guardado en una visita anterior. */
+    const pintarCliente = () => {
+      campos.forEach((campo) => {
+        const clave = campo.dataset.campo as keyof typeof pedido.cliente;
+        campo.value = pedido.cliente[clave] ?? '';
+      });
+    };
+
+    campos.forEach((campo) => {
+      campo.addEventListener('input', () => {
+        const clave = campo.dataset.campo as keyof typeof pedido.cliente;
+        // Se guarda sin avisar al resto de la página: los datos del negocio no
+        // cambian la lista, y repintarla movería el cursor de sitio.
+        pedido = { ...pedido, cliente: { ...pedido.cliente, [clave]: campo.value } };
+        guardarPedido(pedido, false);
+        campo.setAttribute('aria-invalid', 'false');
+      });
+    });
+
+    // --- Avisos -------------------------------------------------------------
+    const avisar = (texto: string, tono: 'ok' | 'error' = 'ok') => {
+      aviso.textContent = texto;
+      aviso.classList.toggle('hidden', texto === '');
+      aviso.classList.toggle('text-ok', tono === 'ok');
+      aviso.classList.toggle('text-accent-text', tono === 'error');
+    };
+
+    /** Comprueba lo mínimo y marca el primer campo que falta. */
+    const validar = (): boolean => {
+      if (pedido.items.length === 0) {
+        avisar('Agrega al menos un producto antes de enviar.', 'error');
+        return false;
+      }
+
+      for (const campo of campos) {
+        if (!campo.required) continue;
+        if (campo.value.trim() !== '') continue;
+        campo.setAttribute('aria-invalid', 'true');
+        campo.focus();
+        avisar('Completa los datos del negocio para que el asesor sepa a quién atender.', 'error');
+        return false;
+      }
+
+      return true;
+    };
+
+    const copiarAlPortapapeles = async (texto: string): Promise<boolean> => {
+      try {
+        await navigator.clipboard.writeText(texto);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    // --- Enviar y copiar ----------------------------------------------------
+    formulario.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!validar()) return;
+
+      const { texto, recortado, omitidas } = mensajeParaUrl(pedido);
+      // La ventana se abre dentro del propio clic: si se esperara a que
+      // terminara de copiarse el texto, el navegador la bloquearía.
+      window.open(enlaceWhatsapp(texto), '_blank', 'noopener');
+
+      if (recortado) {
+        void copiarAlPortapapeles(mensajePedido(pedido)).then((copiado) => {
+          avisar(
+            copiado
+              ? `El pedido no cabía en un solo mensaje: van las primeras referencias y las otras ${omitidas} quedaron copiadas. Pégalas como segundo mensaje.`
+              : `El pedido no cabía en un solo mensaje: se enviaron las primeras referencias. Usa "Copiar pedido" y pega el resto.`,
+            'error',
+          );
+        });
+      } else {
+        avisar('Abrimos WhatsApp con tu pedido listo para enviar.', 'ok');
+      }
+    });
+
+    panel.querySelector('[data-copiar]')?.addEventListener('click', () => {
+      if (pedido.items.length === 0) {
+        avisar('El pedido está vacío.', 'error');
+        return;
+      }
+      void copiarAlPortapapeles(mensajePedido(pedido)).then((copiado) => {
+        avisar(
+          copiado
+            ? 'Pedido copiado. Ya puedes pegarlo donde lo necesites.'
+            : 'Tu navegador no dejó copiar. Selecciona el texto del pedido a mano.',
+          copiado ? 'ok' : 'error',
+        );
+      });
+    });
+
+    // --- Arranque -----------------------------------------------------------
+    alCambiarPedido((nuevo) => {
+      pedido = nuevo;
+      pintarLista();
+    });
+
+    pintarCliente();
+    pintarLista();
+  }
+</script>

@@ -1,11 +1,23 @@
 ---
-import { navegacion, empresa } from '../data/site';
+import { navegacion } from '../data/site';
 import Logo from './Logo.astro';
 import Icono from './Icono.astro';
 import { ruta, esActual } from '../lib/rutas';
 
 /** Ruta actual, para marcar el enlace activo (descuenta el `base`). */
 const actual = Astro.url.pathname;
+
+/**
+ * El botón "Haz tu pedido" lleva a /pedido/, no a WhatsApp: ahora existe una
+ * página que hace exactamente lo que promete, y desde ella se sigue llegando a
+ * WhatsApp con la lista ya escrita. WhatsApp directo queda a un toque en el
+ * botón flotante y en el pie de página.
+ *
+ * El carrito no se suma a `navegacion` a propósito: el menú horizontal aparece
+ * a 1100 px y con siete enlaces ya va justo. Va como botón de ícono, que
+ * además es donde se espera encontrar el contador y se ve igual en móvil.
+ */
+const enPedido = esActual('/pedido/', actual);
 ---
 
 {/* Barra fija de vidrio esmerilado: el contenido se desliza por debajo.
@@ -13,19 +25,6 @@ const actual = Astro.url.pathname;
 <header class="barra-fija fixed inset-x-0 top-0 z-[100]">
   <div class="wrap flex h-[var(--nav-h)] items-center justify-between gap-6">
     <Logo href={ruta('/')} />
-
-    <button
-      type="button"
-      id="nav-toggle"
-      class="group flex flex-col gap-[5px] rounded-full p-2.5 transition-colors duration-200 hover:bg-secondary-soft nav:hidden"
-      aria-label="Abrir menú"
-      aria-expanded="false"
-      aria-controls="main-nav"
-    >
-      <span class="block h-0.5 w-[22px] rounded-full bg-ink transition-colors duration-200"></span>
-      <span class="block h-0.5 w-[22px] rounded-full bg-ink transition-colors duration-200"></span>
-      <span class="block h-0.5 w-[22px] rounded-full bg-ink transition-colors duration-200"></span>
-    </button>
 
     <nav
       id="main-nav"
@@ -58,21 +57,65 @@ const actual = Astro.url.pathname;
           );
         })
       }
+
+      {/* En el menú desplegable el pedido va con su nombre completo: el botón
+          de ícono de la barra no dice a dónde lleva. */}
+      <a
+        href={ruta('/pedido/')}
+        class="btn btn-primary w-full !py-2.5 !text-[12.5px] tracking-[0.08em] uppercase nav:hidden"
+      >
+        <Icono nombre="shopping-cart" class="h-4 w-4" />
+        Arma tu pedido
+      </a>
     </nav>
 
-    <a
-      class="btn btn-primary hidden whitespace-nowrap !px-5 !py-2.5 !text-[12.5px] tracking-[0.08em] uppercase nav:inline-flex"
-      href={empresa.whatsapp}
-      target="_blank"
-      rel="noopener"
-    >
-      Haz tu pedido
-      <Icono nombre="whatsapp" class="h-4 w-4" />
-    </a>
+    <div class="flex items-center gap-1.5 nav:gap-3">
+      {/* Carrito con el total de unidades. Se ve en todos los anchos: es el
+          único indicador de que hay un pedido a medio armar. En /pedido/ el
+          script del panel intercepta el clic y lo abre sin recargar. */}
+      <a
+        href={ruta('/pedido/')}
+        data-abrir-pedido={enPedido ? '' : undefined}
+        aria-haspopup={enPedido ? 'dialog' : undefined}
+        class="group relative grid h-11 w-11 place-items-center rounded-full text-ink transition-colors duration-200 hover:bg-secondary-soft hover:text-primary"
+        aria-label="Ver mi pedido"
+      >
+        <Icono nombre="shopping-cart" class="h-[22px] w-[22px]" />
+        <span
+          class="absolute -top-0.5 -right-0.5 min-w-[20px] rounded-full bg-accent px-1.5 py-0.5 text-center font-display text-[11px] leading-tight font-bold text-ink-dark"
+          data-total-unidades
+          data-contador-barra
+          hidden>0</span
+        >
+      </a>
+
+      <a
+        class="btn btn-primary hidden whitespace-nowrap !px-5 !py-2.5 !text-[12.5px] tracking-[0.08em] uppercase nav:inline-flex"
+        href={ruta('/pedido/')}
+      >
+        Haz tu pedido
+        <Icono nombre="arrow-right" class="h-4 w-4" />
+      </a>
+
+      <button
+        type="button"
+        id="nav-toggle"
+        class="group flex flex-col gap-[5px] rounded-full p-2.5 transition-colors duration-200 hover:bg-secondary-soft nav:hidden"
+        aria-label="Abrir menú"
+        aria-expanded="false"
+        aria-controls="main-nav"
+      >
+        <span class="block h-0.5 w-[22px] rounded-full bg-ink transition-colors duration-200"></span>
+        <span class="block h-0.5 w-[22px] rounded-full bg-ink transition-colors duration-200"></span>
+        <span class="block h-0.5 w-[22px] rounded-full bg-ink transition-colors duration-200"></span>
+      </button>
+    </div>
   </div>
 </header>
 
 <script>
+  import { alCambiarPedido, leerPedido, totalUnidades, type Pedido } from '../lib/carrito';
+
   const toggle = document.getElementById('nav-toggle');
   const nav = document.getElementById('main-nav');
 
@@ -99,5 +142,29 @@ const actual = Astro.url.pathname;
         toggle.focus();
       }
     });
+  }
+
+  /**
+   * Contador del carrito. Vive en la barra, así que se actualiza en todas las
+   * páginas: el pedido se guarda en el navegador y sigue ahí al navegar.
+   */
+  const contador = document.querySelector<HTMLElement>('[data-contador-barra]');
+  const enlaceCarrito = contador?.closest('a');
+
+  if (contador && enlaceCarrito) {
+    const pintar = (pedido: Pedido) => {
+      const total = totalUnidades(pedido);
+      contador.textContent = String(total);
+      contador.hidden = total === 0;
+      enlaceCarrito.setAttribute(
+        'aria-label',
+        total === 0
+          ? 'Ver mi pedido (vacío)'
+          : `Ver mi pedido: ${total} ${total === 1 ? 'unidad' : 'unidades'}`,
+      );
+    };
+
+    pintar(leerPedido());
+    alCambiarPedido(pintar);
   }
 </script>

@@ -1,0 +1,56 @@
+---
+/**
+ * "Arma tu pedido": el catálogo completo convertido en una lista que el
+ * tendero le manda a su asesor por WhatsApp.
+ *
+ * Aquí no hay precios. El sitio es estático y no consulta inventario ni lista
+ * de precios: quien confirma valores y disponibilidad es el asesor, y así se
+ * advierte tanto en pantalla como en el mensaje que se envía.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import CatalogoPedido from '../components/pedido/CatalogoPedido.astro';
+import PanelPedido from '../components/pedido/PanelPedido.astro';
+import Icono from '../components/Icono.astro';
+import { empresa } from '../data/site';
+import { AVISO_PRECIOS } from '../data/pedido';
+import { productos, MARCAS } from '../data/productos';
+
+const mensajeDirecto = encodeURIComponent(
+  'Hola, quiero hacer un pedido y necesito que un asesor me acompañe.',
+);
+---
+
+<BaseLayout
+  title="Arma tu pedido — Distribuciones Santiago de Tunja"
+  description="Elige las referencias que necesita tu negocio, indica las cantidades y envíale la lista a tu asesor por WhatsApp. Sin registro y sin compromiso."
+>
+  <PageHero
+    kicker="Arma tu pedido"
+    titulo="Elige lo que necesita tu negocio"
+    texto={`Busca entre ${productos.length} referencias de ${MARCAS.length} marcas, marca las cantidades y envíale la lista a tu asesor por WhatsApp. ${AVISO_PRECIOS}`}
+  />
+
+  <section class="section pt-10 tablet:pt-12">
+    <div class="wrap">
+      {/* Salida rápida para quien prefiere que se lo tomen por chat. */}
+      <p class="mb-8 text-[14.5px] text-muted">
+        ¿Prefieres hablar con una persona?
+        <a
+          class="ml-1 inline-flex items-center gap-1.5 font-semibold text-secondary-dark underline"
+          href={`${empresa.whatsapp}?text=${mensajeDirecto}`}
+          target="_blank"
+          rel="noopener"
+        >
+          Escríbenos directo por WhatsApp
+          <Icono nombre="whatsapp" class="h-4 w-4" interactivo={false} />
+        </a>
+        y un asesor te toma el pedido.
+      </p>
+
+      <CatalogoPedido />
+    </div>
+  </section>
+
+  <PanelPedido />
+</BaseLayout>

@@ -1,0 +1,497 @@
+---
+/**
+ * Catálogo del armador de pedidos: filtros, buscador y grilla de tarjetas.
+ *
+ * CÓMO LLEGAN LOS PRODUCTOS AL NAVEGADOR
+ * --------------------------------------
+ * Las 709 referencias no se imprimen como HTML: eso serían más de medio mega
+ * de marcado y unos 700 campos de formulario en el árbol de accesibilidad,
+ * cuando de entrada solo se ven unas pocas decenas. En su lugar se emite un
+ * bloque JSON (~20 KB comprimidos) y el script pinta únicamente lo que se está
+ * mirando: la marca abierta, de a tandas.
+ *
+ * Del producto solo viajan los campos que se usan. `codigoParcial`, `embalaje`
+ * y `paginaPdf` son notas internas y se quedan en el servidor; el `codigo` SAP
+ * viaja porque va en el mensaje que recibe el asesor, no porque se muestre.
+ *
+ * Sin JavaScript no hay listado (todo el armador lo es): el `<noscript>` manda
+ * al catálogo de marcas y a WhatsApp.
+ */
+import { productos, MARCAS, CATEGORIAS } from '../../data/productos';
+import { logoMarca } from '../../lib/imagenes';
+import { ruta } from '../../lib/rutas';
+import Icono from '../Icono.astro';
+
+/** Lo que se le manda al navegador de cada producto. */
+const catalogo = productos.map((p) => ({
+  id: p.id,
+  marca: p.marca,
+  categoria: p.categoria,
+  nombre: p.nombre,
+  presentacion: p.presentacion,
+  codigo: p.codigo,
+  // El campo `imagen` viene vacío hoy. Si algún día se llena con una ruta de
+  // public/, aquí se le antepone el `base` y la tarjeta la usa sola.
+  ...(p.imagen ? { imagen: ruta(p.imagen) } : {}),
+}));
+
+/**
+ * Logotipo de cada marca, si ya está subido a public/img/marcas/.
+ * Hoy la carpeta está vacía, así que todas caen en el marcador de iniciales;
+ * al dejar los archivos, las tarjetas los toman sin tocar el código.
+ */
+const logos = Object.fromEntries(MARCAS.map((marca) => [marca, logoMarca(marca)]));
+
+/** Solo las categorías que efectivamente tienen productos. */
+const categoriasUsadas = CATEGORIAS.filter((c) => productos.some((p) => p.categoria === c));
+
+/**
+ * JSON dentro de un `<script>`: hay que neutralizar `<` para que un texto no
+ * pueda cerrar la etiqueta antes de tiempo.
+ */
+const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c');
+---
+
+<script type="application/json" id="datos-catalogo" set:html={aJson(catalogo)} is:inline></script>
+<script type="application/json" id="datos-marcas" set:html={aJson(logos)} is:inline></script>
+
+{/* ---- Filtros: quedan pegados bajo la barra fija al desplazar ---- */}
+<div
+  class="barra-fija sticky top-[var(--nav-h)] z-40 -mx-6 mb-10 px-6 py-4 mob:-mx-8 mob:px-8"
+  data-filtros
+>
+  <div class="mx-auto flex w-full max-w-[var(--container-site)] flex-col gap-4">
+    <div class="flex flex-col gap-3 tablet:flex-row tablet:items-center">
+      <div class="relative flex-1">
+        <span
+          class="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted"
+          aria-hidden="true"
+        >
+          <Icono nombre="search" class="h-[18px] w-[18px]" interactivo={false} />
+        </span>
+        <label class="sr-only" for="buscador">Buscar producto por nombre o presentación</label>
+        <input
+          id="buscador"
+          type="search"
+          class="field !pl-11"
+          placeholder="Buscar producto o presentación…"
+          autocomplete="off"
+          data-buscador
+        />
+      </div>
+
+      <div class="tablet:w-[280px]">
+        <label class="sr-only" for="filtro-categoria">Filtrar por categoría</label>
+        <select id="filtro-categoria" class="field" data-categoria>
+          <option value="">Todas las categorías</option>
+          {categoriasUsadas.map((c) => <option value={c}>{c}</option>)}
+        </select>
+      </div>
+    </div>
+
+    {/* Marcas como píldoras: en móvil se desplazan de lado. */}
+    <div
+      class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+      role="group"
+      aria-label="Filtrar por marca"
+      data-marcas
+    >
+      <button type="button" class="chip-filtro" data-marca="" aria-pressed="true">Todas</button>
+      {
+        MARCAS.map((marca) => (
+          <button type="button" class="chip-filtro" data-marca={marca} aria-pressed="false">
+            {marca}
+          </button>
+        ))
+      }
+    </div>
+  </div>
+</div>
+
+{/* ---- Resultados ---- */}
+<p class="mb-6 text-[14.5px] text-muted" role="status" aria-live="polite" data-conteo></p>
+
+<div data-resultados class="min-h-[40vh]"></div>
+
+<noscript>
+  <div class="glass-card p-8">
+    <h2 class="text-xl">Necesitas activar JavaScript</h2>
+    <p class="mt-3 text-muted">
+      El armador de pedidos funciona en tu navegador, sin enviar nada a un servidor. Si prefieres,
+      mira <a class="font-semibold text-secondary-dark underline" href={ruta('/catalogo/')}
+        >el catálogo de marcas</a
+      > o escríbenos directamente por WhatsApp y un asesor te toma el pedido.
+    </p>
+  </div>
+</noscript>
+
+<script>
+  import {
+    alCambiarPedido,
+    cantidadDe,
+    guardarPedido,
+    leerPedido,
+    registrarProductos,
+    sumarCantidad,
+    type ProductoPedido,
+  } from '../../lib/carrito';
+  import { CANTIDAD_MAXIMA, TAMANO_TANDA } from '../../data/pedido';
+
+  const contenedor = document.querySelector<HTMLElement>('[data-resultados]');
+  const buscador = document.querySelector<HTMLInputElement>('[data-buscador]');
+  const selectorCategoria = document.querySelector<HTMLSelectElement>('[data-categoria]');
+  const barraMarcas = document.querySelector<HTMLElement>('[data-marcas]');
+  const conteo = document.querySelector<HTMLElement>('[data-conteo]');
+
+  if (contenedor && buscador && selectorCategoria && barraMarcas && conteo) {
+    const leerJson = <T,>(id: string, porDefecto: T): T => {
+      const nodo = document.getElementById(id);
+      if (!nodo?.textContent) return porDefecto;
+      try {
+        return JSON.parse(nodo.textContent) as T;
+      } catch {
+        return porDefecto;
+      }
+    };
+
+    const catalogo = leerJson<ProductoPedido[]>('datos-catalogo', []);
+    const logos = leerJson<Record<string, string | null>>('datos-marcas', {});
+    registrarProductos(catalogo);
+
+    /** Texto normalizado (sin tildes) para que "saltin" encuentre "Saltín". */
+    const normalizar = (v: string) =>
+      v
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // quita las tildes que deja NFD
+        .toLowerCase();
+
+    const indice = new Map<string, string>();
+    for (const p of catalogo) {
+      indice.set(p.id, normalizar(`${p.marca} ${p.nombre} ${p.presentacion} ${p.categoria}`));
+    }
+
+    /** Marcas en el orden en que aparecen, con su listado de productos. */
+    const porMarca = new Map<string, ProductoPedido[]>();
+    for (const p of catalogo) {
+      const lista = porMarca.get(p.marca);
+      if (lista) lista.push(p);
+      else porMarca.set(p.marca, [p]);
+    }
+    const marcas = [...porMarca.keys()];
+
+    // --- Estado de la vista -------------------------------------------------
+    let consulta = '';
+    let marcaFiltro = '';
+    let categoriaFiltro = '';
+    /** Marcas desplegadas en la vista por secciones. */
+    const abiertas = new Set<string>(marcas.slice(0, 1));
+    /** Cuántas tarjetas se están mostrando en cada lista (clave: marca o ''). */
+    const tandas = new Map<string, number>();
+    /** Cantidad escrita en cada tarjeta, todavía sin agregar. */
+    const cantidades = new Map<string, number>();
+
+    let pedido = leerPedido();
+
+    // --- Utilidades ---------------------------------------------------------
+    const esc = (v: string) =>
+      v.replace(
+        /[&<>"']/g,
+        (c) =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
+      );
+
+    /** Dos iniciales de la marca, para el marcador cuando no hay logotipo. */
+    const iniciales = (marca: string) =>
+      marca
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((p) => p[0] ?? '')
+        .join('')
+        .toUpperCase();
+
+    const unidades = (n: number) => `${n} ${n === 1 ? 'unidad' : 'unidades'}`;
+
+    const cantidadEnTarjeta = (id: string) => cantidades.get(id) ?? 1;
+
+    const filtrar = (): ProductoPedido[] => {
+      const q = normalizar(consulta.trim());
+      return catalogo.filter((p) => {
+        if (marcaFiltro && p.marca !== marcaFiltro) return false;
+        if (categoriaFiltro && p.categoria !== categoriaFiltro) return false;
+        if (q && !indice.get(p.id)?.includes(q)) return false;
+        return true;
+      });
+    };
+
+    /** Sin ningún filtro el catálogo se recorre por marcas; con filtro, plano. */
+    const hayFiltro = () => Boolean(consulta.trim() || marcaFiltro || categoriaFiltro);
+
+    // --- Plantillas ---------------------------------------------------------
+    const tarjeta = (p: ProductoPedido): string => {
+      const logo = logos[p.marca];
+      const enPedido = cantidadDe(pedido, p.id);
+      const cantidad = cantidadEnTarjeta(p.id);
+      const nombre = esc(`${p.nombre} ${p.presentacion}`);
+
+      const medio = p.imagen
+        ? `<img src="${esc(p.imagen)}" alt="" loading="lazy" class="h-full w-full object-contain p-1" />`
+        : logo
+          ? `<img src="${esc(logo)}" alt="" loading="lazy" class="h-full w-full object-contain p-2" />`
+          : `<span class="font-display text-lg font-bold text-primary/60" aria-hidden="true">${esc(iniciales(p.marca))}</span>`;
+
+      return `
+        <article class="glass-card flex gap-4 p-4 ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${esc(p.id)}">
+          <div class="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-primary-soft">
+            ${medio}
+          </div>
+
+          <div class="flex min-w-0 flex-1 flex-col gap-2">
+            <div class="min-w-0">
+              <p class="m-0 font-display text-[11px] font-semibold tracking-[0.1em] text-secondary-dark uppercase">${esc(p.marca)}</p>
+              <h3 class="m-0 text-[15px] leading-snug">${esc(p.nombre)}</h3>
+              <p class="m-0 text-[13px] text-muted">${esc(p.presentacion)}</p>
+            </div>
+
+            <div class="mt-auto flex flex-wrap items-center gap-2">
+              <div class="flex items-center overflow-hidden rounded-full border border-line bg-surface">
+                <button type="button" class="paso" data-paso="-1" data-foco="menos:${esc(p.id)}"
+                        aria-label="Quitar una unidad de ${nombre}" ${cantidad <= 1 ? 'disabled' : ''}>
+                  <span aria-hidden="true" class="text-lg leading-none">&minus;</span>
+                </button>
+                <input type="number" class="campo-cantidad" value="${cantidad}" min="1" step="1"
+                       max="${CANTIDAD_MAXIMA}" inputmode="numeric" data-cantidad data-foco="campo:${esc(p.id)}"
+                       aria-label="Cantidad de unidades de ${nombre}" />
+                <button type="button" class="paso" data-paso="1" data-foco="mas:${esc(p.id)}"
+                        aria-label="Agregar una unidad de ${nombre}" ${cantidad >= CANTIDAD_MAXIMA ? 'disabled' : ''}>
+                  <span aria-hidden="true" class="text-lg leading-none">+</span>
+                </button>
+              </div>
+
+              <button type="button" class="btn btn-primary !px-5 !py-2 !text-[13px]"
+                      data-agregar data-foco="agregar:${esc(p.id)}">Agregar</button>
+            </div>
+
+            <p class="m-0 text-[12.5px] font-semibold text-ok ${enPedido ? '' : 'hidden'}" data-en-pedido>
+              En tu pedido: ${unidades(enPedido)}
+            </p>
+          </div>
+        </article>`;
+    };
+
+    /** Grilla + botón "Ver más" de una lista. `clave` identifica su tanda. */
+    const grilla = (lista: ProductoPedido[], clave: string): string => {
+      const visibles = Math.min(tandas.get(clave) ?? TAMANO_TANDA, lista.length);
+      const tarjetas = lista.slice(0, visibles).map(tarjeta).join('');
+      const restantes = lista.length - visibles;
+      const mas =
+        restantes > 0
+          ? `<div class="mt-6 flex justify-center">
+               <button type="button" class="btn btn-secondary" data-mas="${esc(clave)}" data-foco="mas-lista:${esc(clave)}">
+                 Ver ${Math.min(restantes, TAMANO_TANDA)} más
+                 <span class="text-muted">(faltan ${restantes})</span>
+               </button>
+             </div>`
+          : '';
+
+      return `<div class="grid grid-cols-1 gap-4 tablet:grid-cols-2 nav:grid-cols-3">${tarjetas}</div>${mas}`;
+    };
+
+    const seccionMarca = (marca: string): string => {
+      const lista = porMarca.get(marca) ?? [];
+      const abierta = abiertas.has(marca);
+      const idCuerpo = `seccion-${marca.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`;
+      const logo = logos[marca];
+
+      const emblema = logo
+        ? `<img src="${esc(logo)}" alt="" class="h-8 w-auto max-w-[92px] object-contain" />`
+        : `<span class="grid h-9 w-9 place-items-center rounded-xl bg-primary-soft font-display text-[13px] font-bold text-primary" aria-hidden="true">${esc(iniciales(marca))}</span>`;
+
+      return `
+        <section class="mb-4">
+          <h2 class="m-0">
+            <button type="button" class="glass-card flex w-full items-center gap-4 p-4 text-left"
+                    aria-expanded="${abierta}" aria-controls="${idCuerpo}"
+                    data-seccion="${esc(marca)}" data-foco="seccion:${esc(marca)}">
+              ${emblema}
+              <span class="flex-1 font-display text-[17px] font-semibold text-primary">${esc(marca)}</span>
+              <span class="text-[13px] text-muted">${lista.length} ${lista.length === 1 ? 'referencia' : 'referencias'}</span>
+              <span class="text-primary transition-transform duration-300 ${abierta ? 'rotate-180' : ''}" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </button>
+          </h2>
+          <div id="${idCuerpo}" class="pt-4" ${abierta ? '' : 'hidden'}>
+            ${abierta ? grilla(lista, marca) : ''}
+          </div>
+        </section>`;
+    };
+
+    // --- Pintado ------------------------------------------------------------
+    const render = () => {
+      // Al reconstruir el HTML se pierde el foco del teclado: se anota qué
+      // control estaba activo y se le devuelve al elemento equivalente.
+      const activo = document.activeElement;
+      const foco = activo instanceof HTMLElement ? activo.dataset.foco : undefined;
+
+      if (hayFiltro()) {
+        const lista = filtrar();
+        conteo.textContent = lista.length
+          ? `${lista.length} ${lista.length === 1 ? 'producto' : 'productos'}`
+          : 'Ningún producto coincide con la búsqueda.';
+        contenedor.innerHTML = lista.length
+          ? grilla(lista, '')
+          : `<div class="glass-card p-8 text-center">
+               <p class="m-0 text-muted">Prueba con otro nombre, otra marca o quita los filtros.</p>
+               <button type="button" class="btn btn-secondary mt-5" data-limpiar>Quitar filtros</button>
+             </div>`;
+      } else {
+        conteo.textContent = `${catalogo.length} referencias en ${marcas.length} marcas. Abre una marca para ver sus productos.`;
+        contenedor.innerHTML = marcas.map(seccionMarca).join('');
+      }
+
+      if (foco) {
+        contenedor.querySelector<HTMLElement>(`[data-foco="${CSS.escape(foco)}"]`)?.focus();
+      }
+    };
+
+    /**
+     * Refresca solo lo que depende del pedido (el aviso "En tu pedido" y el
+     * borde de la tarjeta). Se evita repintar toda la grilla para no
+     * interrumpir a quien está escribiendo una cantidad.
+     */
+    const refrescarEstados = () => {
+      contenedor.querySelectorAll<HTMLElement>('[data-tarjeta]').forEach((tarjeta) => {
+        const id = tarjeta.dataset.tarjeta ?? '';
+        const n = cantidadDe(pedido, id);
+        const aviso = tarjeta.querySelector<HTMLElement>('[data-en-pedido]');
+        if (aviso) {
+          aviso.textContent = `En tu pedido: ${unidades(n)}`;
+          aviso.classList.toggle('hidden', n === 0);
+        }
+        tarjeta.classList.toggle('!border-secondary/60', n > 0);
+      });
+    };
+
+    // --- Interacción --------------------------------------------------------
+    buscador.addEventListener('input', () => {
+      consulta = buscador.value;
+      tandas.clear();
+      render();
+    });
+
+    selectorCategoria.addEventListener('change', () => {
+      categoriaFiltro = selectorCategoria.value;
+      tandas.clear();
+      render();
+    });
+
+    barraMarcas.addEventListener('click', (e) => {
+      const boton = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-marca]');
+      if (!boton) return;
+      marcaFiltro = boton.dataset.marca ?? '';
+      barraMarcas.querySelectorAll<HTMLButtonElement>('[data-marca]').forEach((b) => {
+        b.setAttribute('aria-pressed', String((b.dataset.marca ?? '') === marcaFiltro));
+      });
+      tandas.clear();
+      render();
+    });
+
+    contenedor.addEventListener('click', (e) => {
+      const objetivo = e.target as HTMLElement;
+
+      const seccion = objetivo.closest<HTMLButtonElement>('[data-seccion]');
+      if (seccion) {
+        const marca = seccion.dataset.seccion ?? '';
+        if (abiertas.has(marca)) abiertas.delete(marca);
+        else abiertas.add(marca);
+        render();
+        return;
+      }
+
+      const verMas = objetivo.closest<HTMLButtonElement>('[data-mas]');
+      if (verMas) {
+        const clave = verMas.dataset.mas ?? '';
+        tandas.set(clave, (tandas.get(clave) ?? TAMANO_TANDA) + TAMANO_TANDA);
+        render();
+        return;
+      }
+
+      if (objetivo.closest('[data-limpiar]')) {
+        consulta = '';
+        marcaFiltro = '';
+        categoriaFiltro = '';
+        buscador.value = '';
+        selectorCategoria.value = '';
+        barraMarcas.querySelectorAll<HTMLButtonElement>('[data-marca]').forEach((b) => {
+          b.setAttribute('aria-pressed', String((b.dataset.marca ?? '') === ''));
+        });
+        tandas.clear();
+        render();
+        buscador.focus();
+        return;
+      }
+
+      const tarjeta = objetivo.closest<HTMLElement>('[data-tarjeta]');
+      if (!tarjeta) return;
+      const id = tarjeta.dataset.tarjeta ?? '';
+      const campo = tarjeta.querySelector<HTMLInputElement>('[data-cantidad]');
+
+      const paso = objetivo.closest<HTMLButtonElement>('[data-paso]');
+      if (paso && campo) {
+        const delta = Number(paso.dataset.paso);
+        const nueva = Math.min(Math.max(cantidadEnTarjeta(id) + delta, 1), CANTIDAD_MAXIMA);
+        cantidades.set(id, nueva);
+        campo.value = String(nueva);
+        actualizarPasos(tarjeta, nueva);
+        return;
+      }
+
+      if (objetivo.closest('[data-agregar]')) {
+        pedido = sumarCantidad(pedido, id, cantidadEnTarjeta(id));
+        guardarPedido(pedido);
+        // La tarjeta vuelve a 1 para que agregar dos veces no repita la última
+        // cantidad escrita sin querer.
+        cantidades.set(id, 1);
+        if (campo) campo.value = '1';
+        actualizarPasos(tarjeta, 1);
+      }
+    });
+
+    /** Habilita o deshabilita − y + según el valor del campo. */
+    const actualizarPasos = (tarjeta: HTMLElement, valor: number) => {
+      const menos = tarjeta.querySelector<HTMLButtonElement>('[data-paso="-1"]');
+      const mas = tarjeta.querySelector<HTMLButtonElement>('[data-paso="1"]');
+      if (menos) menos.disabled = valor <= 1;
+      if (mas) mas.disabled = valor >= CANTIDAD_MAXIMA;
+    };
+
+    contenedor.addEventListener('input', (e) => {
+      const campo = (e.target as HTMLElement).closest<HTMLInputElement>('[data-cantidad]');
+      const tarjeta = campo?.closest<HTMLElement>('[data-tarjeta]');
+      if (!campo || !tarjeta) return;
+      const id = tarjeta.dataset.tarjeta ?? '';
+      const valor = Math.min(Math.max(Math.floor(Number(campo.value)) || 1, 1), CANTIDAD_MAXIMA);
+      cantidades.set(id, valor);
+      actualizarPasos(tarjeta, valor);
+    });
+
+    // Al salir del campo se corrige lo que se haya escrito de más o de menos.
+    contenedor.addEventListener(
+      'blur',
+      (e) => {
+        const campo = (e.target as HTMLElement).closest<HTMLInputElement>('[data-cantidad]');
+        const tarjeta = campo?.closest<HTMLElement>('[data-tarjeta]');
+        if (!campo || !tarjeta) return;
+        campo.value = String(cantidadEnTarjeta(tarjeta.dataset.tarjeta ?? ''));
+      },
+      true,
+    );
+
+    alCambiarPedido((nuevo) => {
+      pedido = nuevo;
+      refrescarEstados();
+    });
+
+    render();
+  }
+</script>

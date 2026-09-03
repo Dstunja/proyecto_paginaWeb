@@ -383,6 +383,57 @@
     @apply mb-2 block text-sm font-semibold text-ink;
   }
 
+  /* --- Píldora de filtro -------------------------------------------------
+     Chips de marca del armador de pedidos. Mismo lenguaje que los botones:
+     píldora, Montserrat SemiBold y azul de marca cuando está activa. El
+     estado se declara con `aria-pressed`, así que la lectura por teclado y
+     por lector de pantalla es la misma que se ve. */
+  .chip-filtro {
+    @apply inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-surface
+           px-4 py-2 font-display text-[13.5px] font-semibold whitespace-nowrap text-muted
+           transition-all duration-200 ease-out;
+  }
+
+  .chip-filtro:hover,
+  .chip-filtro:focus-visible {
+    @apply border-secondary text-primary;
+  }
+
+  .chip-filtro[aria-pressed='true'] {
+    @apply border-transparent bg-primary text-white;
+  }
+
+  /* --- Control de cantidad (− / campo / +) --------------------------------
+     Lo usan las tarjetas del catálogo y la lista del panel del pedido. Va
+     dentro de un contenedor con `rounded-full border border-line`. */
+  .paso {
+    @apply flex h-10 w-9 shrink-0 items-center justify-center font-display text-lg
+           leading-none text-ink transition-colors duration-200;
+  }
+
+  .paso:hover:not(:disabled),
+  .paso:focus-visible:not(:disabled) {
+    @apply bg-primary-soft text-primary;
+  }
+
+  .paso:disabled {
+    @apply cursor-not-allowed text-muted/40;
+  }
+
+  /* Las flechas nativas del campo numérico no caben en 44 px de ancho. */
+  .campo-cantidad {
+    @apply h-10 w-11 border-x border-line bg-transparent text-center font-display text-[15px]
+           font-semibold text-ink;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .campo-cantidad::-webkit-outer-spin-button,
+  .campo-cantidad::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   /* ---- Micro-interacción compartida por todos los íconos ----
      Se activa con el mouse y también con foco de teclado, para que la
      retroalimentación sea la misma con cualquier forma de navegación.
