@@ -21,6 +21,7 @@ import { productos, MARCAS, CATEGORIAS } from '../../data/productos';
 import { logoMarca } from '../../lib/imagenes';
 import { ruta } from '../../lib/rutas';
 import Icono from '../Icono.astro';
+import LoaderDST from '../LoaderDST.astro';
 
 /** Lo que se le manda al navegador de cada producto. */
 const catalogo = productos.map((p) => ({
@@ -111,7 +112,17 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 {/* ---- Resultados ---- */}
 <p class="mb-6 text-[14.5px] text-muted" role="status" aria-live="polite" data-conteo></p>
 
-<div data-resultados class="min-h-[40vh]"></div>
+{/* Espera real: el navegador tiene que leer las 709 referencias del bloque
+    JSON, indexarlas y pintar la primera tanda de tarjetas. Hasta que render()
+    corre, aqui solo habria un hueco en blanco. Lo reemplaza el propio
+    render(), asi que no hace falta quitarlo a mano. */}
+<div data-resultados class="min-h-[40vh]">
+  {/* `pt-24`: la barra de filtros es `sticky` y, sin ese aire, el logotipo de
+      la espera queda medio tapado detras de las pildoras de marca. */}
+  <div class="grid min-h-[40vh] place-items-center pt-24 pb-12">
+    <LoaderDST texto="Cargando el catálogo…" />
+  </div>
+</div>
 
 <noscript>
   <div class="glass-card p-8">

@@ -1,5 +1,6 @@
 ---
 import Icono from './Icono.astro';
+import LoaderDST from './LoaderDST.astro';
 import { departamentos, municipios, totalOficial } from '../data/municipios';
 
 /**
@@ -74,6 +75,13 @@ const cargados = municipios.length;
       role="application"
       aria-label="Mapa de los municipios cubiertos"
     >
+    </div>
+
+    {/* Espera real: Leaflet se descarga, arma los 87 puntos y pide las teselas
+        al servidor de mapas. Hasta que eso termina, aqui solo habria un
+        rectangulo gris. */}
+    <div class="dst-capa-carga" data-cargando-mapa>
+      <LoaderDST texto="Cargando el mapa…" />
     </div>
 
     <!-- Aviso del buscador: aparece sobre el mapa al buscar. -->
@@ -243,7 +251,7 @@ const cargados = municipios.length;
     // Fondo claro de Esri: deja que los puntos de color sean lo que resalta.
     // Alternativa sin Esri:
     //   https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png  (atribución © OpenStreetMap)
-    L.tileLayer(
+    const teselas = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
       {
         maxZoom: 16,
@@ -251,6 +259,22 @@ const cargados = municipios.length;
           'Teselas &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a> — Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
       },
     ).addTo(mapa);
+
+    // ---- Retirada de la animacion de carga ----
+    const capaCarga = document.querySelector<HTMLElement>('[data-cargando-mapa]');
+
+    /** Se retira con un fundido de 250 ms y luego se quita del arbol. */
+    const ocultarCarga = () => {
+      if (!capaCarga || capaCarga.dataset.fuera === 'true') return;
+      capaCarga.dataset.fuera = 'true';
+      window.setTimeout(() => capaCarga.remove(), 260);
+    };
+
+    // Cuando terminan de llegar las teselas visibles el mapa ya se ve entero.
+    teselas.on('load', ocultarCarga);
+    // Red lenta o servidor de teselas caido: el mapa igual es utilizable con
+    // los puntos y el fondo gris, asi que la capa nunca se queda pegada.
+    window.setTimeout(ocultarCarga, 6000);
 
     /** Una capa por departamento, para poder filtrar. */
     const capas = new Map<string, L.LayerGroup>();

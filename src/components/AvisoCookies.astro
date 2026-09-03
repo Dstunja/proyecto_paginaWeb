@@ -13,16 +13,18 @@
 import { ruta } from '../lib/rutas';
 ---
 
+{/* `tablet:pr-24` deja libre la esquina del boton flotante de WhatsApp, que
+    vive en el mismo rincon y quedaria medio tapado. */}
 <div
-  class="aviso-cookies fixed inset-x-0 bottom-0 z-[180] px-4 pb-4"
+  class="aviso-cookies fixed inset-x-0 bottom-0 z-[180] px-4 pb-4 tablet:pr-24"
   data-aviso-cookies
   role="region"
   aria-label="Aviso sobre cookies"
   hidden
 >
   <div
-    class="glass mx-auto flex w-full max-w-[var(--container-site)] flex-col gap-4 rounded-card
-           bg-surface/95 px-6 py-5 shadow-[0_18px_44px_rgba(13,44,132,.18)]
+    class="aviso-cookies-panel mx-auto flex w-full max-w-[var(--container-site)] flex-col
+           gap-4 rounded-card border border-line px-6 py-5 shadow-[0_18px_44px_rgba(13,44,132,.18)]
            tablet:flex-row tablet:items-center tablet:gap-8"
   >
     <p class="m-0 flex-1 text-[14px] text-muted">
@@ -49,6 +51,14 @@ import { ruta } from '../lib/rutas';
 </div>
 
 <style>
+  /* Fondo opaco, no vidrio esmerilado. El resto del sitio usa `glass` para
+     paneles decorativos, pero aqui detras hay un titular de 60 px que se
+     transparentaba justo encima del texto legal, que es lo unico que la
+     persona tiene que poder leer para decidir. */
+  .aviso-cookies-panel {
+    background-color: var(--color-surface);
+  }
+
   /* Entra deslizándose desde abajo, una sola vez. */
   .aviso-cookies:not([hidden]) {
     animation: dst-aviso-entra 0.35s ease-out;

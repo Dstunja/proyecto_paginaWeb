@@ -1,5 +1,6 @@
 ---
 import { empresa } from '../data/site';
+import LoaderDST from './LoaderDST.astro';
 
 /**
  * El mapa se arma en el BUILD, no en el navegador.
@@ -52,7 +53,14 @@ const src = usarGoogle
           loading="lazy"
           referrerpolicy="no-referrer-when-downgrade"
           class:list={['block w-full border-0', usarGoogle ? 'h-full' : 'h-[calc(100%+52px)]']}
+          data-mapa-sede
         ></iframe>
+
+        {/* El mapa viene de un servidor ajeno: hasta que responde, el marco
+            esta en blanco. */}
+        <div class="dst-capa-carga" data-cargando-sede>
+          <LoaderDST tamano={72} texto="Cargando el mapa…" />
+        </div>
       </div>
 
       {
@@ -86,3 +94,57 @@ const src = usarGoogle
     </aside>
   </div>
 </div>
+
+<script>
+  /* Retirada de la animacion de carga del mapa de la sede.
+   *
+   * El mapa es un iframe de un servidor ajeno y con `loading="lazy"`, y eso
+   * complica saber cuando esta listo de verdad:
+   *
+   *   - `contentDocument.readyState` no sirve: mientras el iframe no se acerca
+   *     a la pantalla contiene un about:blank que ya dice "complete".
+   *   - El evento `load` tampoco basta por si solo: el navegador lo dispara
+   *     tambien por ese about:blank de relleno, antes de pedir nada a la red.
+   *
+   * Con cualquiera de los dos, la capa desapareceria al instante y se veria un
+   * marco vacio. Asi que se espera al primer `load` posterior a que el iframe
+   * se acerque a la pantalla, que es cuando la carga diferida arranca de
+   * verdad.
+   */
+  const marco = document.querySelector<HTMLIFrameElement>('[data-mapa-sede]');
+  const capa = document.querySelector<HTMLElement>('[data-cargando-sede]');
+
+  if (marco && capa) {
+    const ocultar = () => {
+      if (capa.dataset.fuera === 'true') return;
+      capa.dataset.fuera = 'true';
+      window.setTimeout(() => capa.remove(), 260);
+    };
+
+    let cargaIniciada = false;
+
+    if ('IntersectionObserver' in window) {
+      // Margen amplio: el navegador arranca la carga diferida antes de que el
+      // iframe entre en pantalla, y aqui hay que enterarse todavia antes.
+      const observador = new IntersectionObserver(
+        (entradas) => {
+          if (!entradas.some((entrada) => entrada.isIntersecting)) return;
+          cargaIniciada = true;
+          observador.disconnect();
+        },
+        { rootMargin: '600px' },
+      );
+      observador.observe(marco);
+    } else {
+      cargaIniciada = true; // sin observador, se confia en el `load`
+    }
+
+    marco.addEventListener('load', () => {
+      if (cargaIniciada) ocultar();
+    });
+
+    // Bloqueadores de contenido de terceros o servidor de mapas caido: la capa
+    // no debe quedarse pegada tapando el hueco para siempre.
+    window.setTimeout(ocultar, 8000);
+  }
+</script>
