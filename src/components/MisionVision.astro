@@ -1,30 +1,14 @@
 ---
 import Icono from './Icono.astro';
+import { panelesMisionVision as paneles } from '../data/misionVision';
 
 /**
  * Pestañas de Misión / Visión: funcionan con clic y con teclado
  * (flechas, Home, End). No dependen de :hover, así que sirven en móvil.
+ *
+ * El texto vive en src/data/misionVision.ts (ahí está la nota de qué falta
+ * reemplazar); aquí solo está la interacción y la presentación.
  */
-const paneles = [
-  {
-    id: 'mision',
-    tab: 'Misión',
-    titulo: 'Nuestra misión',
-    icono: 'target',
-    texto:
-      'Ser la principal empresa distribuidora de productos de consumo masivo ofreciendo a nuestros clientes la mejor variedad y calidad, mientras generamos oportunidades de crecimiento y desarrollo para todas las partes interesadas.',
-    puntos: ['Variedad y calidad', 'Crecimiento compartido', 'Servicio al cliente'],
-  },
-  {
-    id: 'vision',
-    tab: 'Visión',
-    titulo: 'Nuestra visión',
-    icono: 'eye',
-    texto:
-      'Convertirnos en el referente de excelencia en distribución, siendo reconocidos por la eficiencia operativa, la satisfacción del cliente y el compromiso con el bienestar de nuestra comunidad.',
-    puntos: ['Eficiencia operativa', 'Satisfacción del cliente', 'Compromiso con la comunidad'],
-  },
-];
 ---
 
 <div class="glass-card p-2.5" data-mv-tabs>

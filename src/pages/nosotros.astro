@@ -5,6 +5,25 @@ import PageHero from '../components/PageHero.astro';
 import MisionVision from '../components/MisionVision.astro';
 import Icono from '../components/Icono.astro';
 import { cifras, cobertura } from '../data/site';
+import { equipo } from '../data/equipo';
+import { imagenOMarcador } from '../lib/imagenes';
+
+/* Fotos del equipo: mientras el archivo no esté en public/img/equipo/ se usa
+   un marcador de posición con las iniciales de la persona. */
+const equipoConFoto = equipo.map((persona) => ({
+  ...persona,
+  ...imagenOMarcador(persona.foto, iniciales(persona.nombre), 400, 400),
+}));
+
+/** 'Nombre Apellido' -> 'NA', para el marcador de posición de la foto. */
+function iniciales(nombre: string): string {
+  return nombre
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase() ?? '')
+    .join('');
+}
 
 // EDITAR AQUÍ: valores corporativos oficiales de la empresa.
 const valores = [
@@ -99,6 +118,46 @@ const valores = [
         <h2 class="text-[28px] tablet:text-[38px]">Misión y visión</h2>
       </div>
       <MisionVision />
+    </div>
+  </section>
+
+  <!-- EQUIPO DIRECTIVO -->
+  <section class="section border-b border-line">
+    <div class="wrap">
+      <div class="mb-14 max-w-[56ch]">
+        <span class="kicker">Quiénes lideran</span>
+        <h2 class="text-[28px] tablet:text-[38px]">Nuestro equipo directivo</h2>
+        <p class="mt-4 text-muted">
+          Detrás de cada entrega hay un equipo que conoce el territorio, el portafolio y el negocio
+          de cada cliente.
+        </p>
+      </div>
+
+      {/* EDITAR AQUÍ: reemplazar con fotos y datos reales del equipo directivo
+          (los nombres, cargos y frases viven en src/data/equipo.ts). */}
+      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
+        {
+          equipoConFoto.map((persona) => (
+            <div class="group glass-card flex flex-col items-center p-8 text-center">
+              <img
+                src={persona.src}
+                alt={persona.esMarcador ? '' : `${persona.nombre}, ${persona.cargo}`}
+                loading="lazy"
+                width="400"
+                height="400"
+                class="h-28 w-28 rounded-full border-4 border-surface object-cover shadow-[0_10px_28px_rgba(13,44,132,.14)] transition-transform duration-300 group-hover:scale-105"
+              />
+              <h3 class="mt-6 mb-1 text-[17px]">{persona.nombre}</h3>
+              <p class="m-0 font-display text-[13px] font-semibold tracking-[0.08em] text-accent-text uppercase">
+                {persona.cargo}
+              </p>
+              {persona.frase && (
+                <p class="mt-4 mb-0 text-[14px] text-muted">«{persona.frase}»</p>
+              )}
+            </div>
+          ))
+        }
+      </div>
     </div>
   </section>
 
