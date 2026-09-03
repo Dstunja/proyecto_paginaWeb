@@ -1,15 +1,21 @@
 ---
 import Icono from './Icono.astro';
-import { departamentos, municipios, totalMunicipios } from '../data/municipios';
+import { departamentos, municipios, totalMunicipios, TOTAL_DESTACADOS } from '../data/municipios';
 
 /**
- * Mapa de cobertura: un punto por municipio atendido.
+ * Mapa de cobertura: una pieza visual fija, no un mapa para explorar.
+ *
+ * Solo se dibujan los municipios con más clientes (TOTAL_DESTACADOS): con los
+ * 87 puntos el mapa quedaba hecho una mancha. La cobertura completa ya la
+ * comunican los contadores por departamento que van encima del mapa.
+ *
+ * El mapa no se arrastra ni hace zoom con la rueda; el encuadre es siempre el
+ * mismo. Lo único interactivo es la ficha con el conteo de clientes que sale
+ * al pasar el mouse o tocar un punto, más los filtros y el buscador de arriba.
  *
  * Los municipios y su número de clientes salen de la base de datos real
  * (src/data/clientes-municipio.ts) y las coordenadas de la caché de
- * src/data/coordenadas.json. El conteo de clientes no se dibuja sobre el mapa:
- * aparece al pasar el mouse o al tocar el punto, para que el mapa se lea
- * limpio.
+ * src/data/coordenadas.json.
  */
 const nombresDepartamentos = departamentos.map((d) => d.nombre);
 const listaDepartamentos =
@@ -67,7 +73,7 @@ const listaDepartamentos =
   <div class="relative">
     <div
       id="mapa-red"
-      class="h-[440px] w-full bg-fondo tablet:h-[560px]"
+      class="h-[260px] w-full bg-fondo tablet:h-[340px]"
       role="application"
       aria-label="Mapa de los municipios con cobertura"
     >
@@ -102,7 +108,9 @@ const listaDepartamentos =
       ))
     }
     <span class="text-muted">
-      Cobertura en {totalMunicipios} municipios de {listaDepartamentos}
+      En el mapa, los {TOTAL_DESTACADOS} municipios con más clientes &middot; cobertura en {
+        totalMunicipios
+      } municipios de {listaDepartamentos}
     </span>
   </div>
 </div>
@@ -203,9 +211,15 @@ const listaDepartamentos =
     filter: drop-shadow(0 1px 2px rgba(3, 8, 25, 0.45));
   }
 
-  :global(#mapa-red .leaflet-control-zoom a) {
-    color: var(--color-primary) !important;
-    border-radius: 8px !important;
+  /* Sin arrastre ni zoom: el cursor no debe insinuar que el mapa se mueve. */
+  :global(#mapa-red.leaflet-container),
+  :global(#mapa-red .leaflet-tile-pane) {
+    cursor: default;
+  }
+
+  /* Los puntos sí son clicables (abren la ficha del municipio). */
+  :global(#mapa-red .leaflet-interactive) {
+    cursor: pointer;
   }
 
   :global(#mapa-red .leaflet-popup-content-wrapper),
@@ -238,7 +252,13 @@ const listaDepartamentos =
 <script>
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
-  import { municipios, colorDepartamento, sede, type Municipio } from '../data/municipios';
+  import {
+    municipios,
+    municipiosDestacados,
+    colorDepartamento,
+    sede,
+    type Municipio,
+  } from '../data/municipios';
   import { FONDO } from '../lib/mapa-base';
 
   const contenedor = document.getElementById('mapa-red');
@@ -246,12 +266,23 @@ const listaDepartamentos =
   if (contenedor) {
     const formato = new Intl.NumberFormat('es-CO');
 
+    // Encuadre fijo: el mapa es una ilustración de la red, no un mapa para
+    // explorar. Se apagan arrastre, rueda, doble clic, pellizco y teclado para
+    // que no compita con el scroll de la página ni se pueda dejar descuadrado.
     const mapa = L.map(contenedor, {
       center: [5.8, -73.6],
       zoom: 8,
-      // La rueda del mouse no debe secuestrar el scroll de la página.
+      dragging: false,
       scrollWheelZoom: false,
-      zoomControl: true,
+      doubleClickZoom: false,
+      touchZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      zoomControl: false,
+      // Zoom fraccionado: la red es un corredor norte-sur y la franja del mapa
+      // es ancha y baja, así que con saltos de un nivel entero el encuadre se
+      // quedaba corto y los puntos se perdían en el centro.
+      zoomSnap: 0.25,
     });
 
     // Fondo a color de OpenStreetMap (ver src/lib/mapa-base.ts).
@@ -271,18 +302,23 @@ const listaDepartamentos =
       }`;
 
     /**
-     * Tamaño del punto: crece un poco con la cantidad de clientes, entre 6 y
-     * 12 px de radio. No pretende ser una escala exacta, solo dejar ver de un
+     * Tamaño del punto: crece un poco con la cantidad de clientes, entre 5 y
+     * 11 px de radio. No pretende ser una escala exacta, solo dejar ver de un
      * vistazo dónde está el grueso de la red.
      */
-    const radio = (clientes: number) => Math.min(12, Math.max(6, 5 + Math.sqrt(clientes) / 6));
+    const radio = (clientes: number) => Math.min(11, Math.max(5, 4 + Math.sqrt(clientes) / 6));
 
     /** Una capa por departamento, para poder filtrar. */
     const capas = new Map<string, L.LayerGroup>();
-    /** Punto de cada municipio, para centrarlo desde el buscador. */
+    /** Punto dibujado de cada municipio destacado, para realzarlo al buscarlo. */
     const puntos = new Map<string, { marcador: L.CircleMarker; municipio: Municipio }>();
+    /**
+     * Los 87 municipios, dibujados o no. El buscador responde sobre esta lista:
+     * que un municipio pequeño no tenga punto no significa que no lo atendamos.
+     */
+    const todos = new Map<string, Municipio>(municipios.map((m) => [normalizar(m.nombre), m]));
 
-    for (const municipio of municipios) {
+    for (const municipio of municipiosDestacados) {
       const capa = capas.get(municipio.departamento) ?? L.layerGroup();
       capas.set(municipio.departamento, capa);
 
@@ -332,19 +368,12 @@ const listaDepartamentos =
         }`,
       );
 
-    /** Encuadra el mapa sobre los departamentos visibles. */
-    function encuadrar(visibles: string[]) {
-      const coordenadas = municipios
-        .filter((m) => visibles.includes(m.departamento))
-        .map((m) => [m.lat, m.lng] as [number, number]);
-      if (coordenadas.length > 1) {
-        mapa.fitBounds(L.latLngBounds(coordenadas).pad(0.12), { maxZoom: 10 });
-      } else if (coordenadas.length === 1) {
-        mapa.setView(coordenadas[0], 11);
-      }
-    }
-
-    encuadrar([...capas.keys()]);
+    // Encuadre único sobre toda la red. Los filtros solo prenden y apagan
+    // puntos: el mapa nunca se mueve, así la sección no salta al filtrar.
+    mapa.fitBounds(
+      L.latLngBounds(municipiosDestacados.map((m) => [m.lat, m.lng] as [number, number])),
+      { paddingTopLeft: [24, 24], paddingBottomRight: [24, 34], maxZoom: 10 },
+    );
 
     // ---- Filtros ------------------------------------------------------------
     const botones = document.querySelectorAll<HTMLButtonElement>('[data-filtro]');
@@ -353,16 +382,13 @@ const listaDepartamentos =
         const filtro = boton.dataset.filtro!;
         botones.forEach((b) => b.setAttribute('aria-pressed', String(b === boton)));
 
-        const visibles: string[] = [];
         capas.forEach((capa, departamento) => {
           if (filtro === 'todos' || filtro === departamento) {
             capa.addTo(mapa);
-            visibles.push(departamento);
           } else {
             mapa.removeLayer(capa);
           }
         });
-        encuadrar(visibles);
       });
     });
 
@@ -386,8 +412,9 @@ const listaDepartamentos =
         return;
       }
 
-      const encontrado = puntos.get(normalizar(valor));
-      if (!encontrado) {
+      const clave = normalizar(valor);
+      const municipio = todos.get(clave);
+      if (!municipio) {
         mostrarAviso(
           `Por ahora no tenemos cobertura confirmada en "${valor}". Escríbenos y lo validamos.`,
           false,
@@ -395,24 +422,28 @@ const listaDepartamentos =
         return;
       }
 
+      mostrarAviso(
+        `Sí, llegamos a ${municipio.nombre}: ${formato.format(municipio.clientes)} clientes atendidos.`,
+        true,
+      );
+
+      // Solo los municipios destacados tienen punto dibujado. Si el buscado es
+      // uno de ellos se realza un momento; el resto se responde con el aviso.
+      const encontrado = puntos.get(clave);
+      if (!encontrado) return;
+
       // Si estaba filtrado por otro departamento, se vuelven a mostrar todos.
       botones.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === 'todos')));
       capas.forEach((capa) => capa.addTo(mapa));
 
-      const { marcador, municipio } = encontrado;
-      mapa.flyTo(marcador.getLatLng(), 11, { duration: 0.8 });
-      mapa.once('moveend', () => marcador.openPopup());
+      const { marcador } = encontrado;
+      marcador.openPopup();
 
       // Realce temporal para que el punto buscado se distinga de los demás.
       marcador.setStyle({ weight: 5, radius: radio(municipio.clientes) + 3 });
       window.setTimeout(
         () => marcador.setStyle({ weight: 3, radius: radio(municipio.clientes) }),
         2500,
-      );
-
-      mostrarAviso(
-        `Sí, llegamos a ${municipio.nombre}: ${formato.format(municipio.clientes)} clientes atendidos.`,
-        true,
       );
     });
 
