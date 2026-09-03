@@ -6,7 +6,15 @@ import MapaRed from '../components/MapaRed.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
 import Testimonio from '../components/Testimonio.astro';
-import { cifras, marcas, valorAgregado, beneficios, empresa, HERO_IMAGEN } from '../data/site';
+import {
+  cifras,
+  marcas,
+  valorAgregado,
+  beneficios,
+  empresa,
+  HERO_IMAGEN,
+  HERO_IMAGEN_ALT,
+} from '../data/site';
 import { departamentos, totalClientes } from '../data/municipios';
 
 const formatoNumero = new Intl.NumberFormat('es-CO');
@@ -50,15 +58,20 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
         </div>
 
         {
+          /* EDITAR AQUÍ: reemplazar cuando se suba la foto real de
+             [bodega/equipo/flota]. No se toca este bloque: la ruta y el texto
+             alternativo salen de HERO_IMAGEN y HERO_IMAGEN_ALT en
+             src/data/site.ts. El object-cover recorta cualquier foto al mismo
+             formato 5:4, así que sirve tanto horizontal como vertical. */
           HERO_IMAGEN ? (
             <img
               src={ruta(HERO_IMAGEN)}
-              alt="La mascota de Distribuciones Santiago de Tunja al volante del camión de reparto, cargado con el portafolio"
+              alt={HERO_IMAGEN_ALT}
               class="aspect-[5/4] w-full rounded-[28px] object-cover shadow-[0_28px_60px_rgba(13,44,132,.22)]"
             />
           ) : (
             /* Sin foto todavía: panel de marca. Al definir HERO_IMAGEN en
-               src/data/site.ts se reemplaza por la foto real del camión. */
+               src/data/site.ts se reemplaza por la foto real. */
             <div class="sobre-oscuro relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[28px] bg-gradient-to-br from-primary to-primary-dark shadow-[0_28px_60px_rgba(13,44,132,.22)]">
               <div class="absolute -top-20 -right-16 h-72 w-72 rounded-full bg-secondary/25 blur-2xl" />
               <div class="absolute -bottom-24 -left-12 h-64 w-64 rounded-full bg-accent/10 blur-2xl" />
@@ -176,7 +189,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
           <h2 class="text-[28px] tablet:text-[38px]">Cobertura nacional</h2>
           <p class="mt-3 text-muted">
             Atendemos {formatoNumero.format(totalClientes)} clientes en 87 municipios de tres
-            departamentos. Cada punto del mapa es un cliente real de la red.
+            departamentos. En el mapa marcamos los municipios donde se concentra la red.
           </p>
         </div>
 

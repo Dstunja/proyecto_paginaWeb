@@ -77,13 +77,23 @@ export const cobertura = [
 export const PIDEKY_URL = '';
 
 /**
- * Imagen principal del hero: la mascota de la empresa (el búho conductor)
- * sobre el camión de reparto con el portafolio.
+ * Imagen principal del hero (portada). Hoy muestra la ilustración de la mascota
+ * de la empresa (el búho conductor) sobre el camión de reparto.
  *
- * EDITAR AQUÍ: para cambiarla, deja el archivo en public/img/marca/ y pon aquí
- * su ruta. Si se deja vacío, el hero vuelve al panel de marca con el isotipo.
+ * EDITAR AQUÍ: reemplazar cuando se suba la foto real de [bodega/equipo/flota].
+ * Basta con dejar el archivo en public/img/marca/ y cambiar estas dos constantes
+ * (la ruta y su texto alternativo): el hero de src/pages/index.astro las lee de
+ * aquí y no hay que tocar el maquetado. Si HERO_IMAGEN se deja vacío, el hero
+ * vuelve al panel de marca con el isotipo.
  */
 export const HERO_IMAGEN = '/img/marca/mascota-camion.jpg';
+
+/**
+ * Texto alternativo de la imagen del hero. Debe describir la foto que esté
+ * puesta en HERO_IMAGEN, así que se actualiza junto con ella.
+ */
+export const HERO_IMAGEN_ALT =
+  'La mascota de Distribuciones Santiago de Tunja al volante del camión de reparto, cargado con el portafolio';
 
 /** Valor agregado (home). */
 export const valorAgregado = [
