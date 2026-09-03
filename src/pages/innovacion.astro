@@ -100,14 +100,35 @@ const novedades = [
 
                 <article class="glass-card overflow-hidden">
                   <div class="grid grid-cols-1 items-stretch tablet:grid-cols-[.85fr_1.15fr]">
-                    <img
-                      src={novedad.src}
-                      alt=""
-                      width="1200"
-                      height="675"
-                      loading="lazy"
-                      class="aspect-[16/9] h-full w-full bg-primary-soft object-cover tablet:aspect-auto"
-                    />
+                    {novedad.esEspecial ? (
+                      /* Foto de producto: puede ser vertical u horizontal, así
+                         que se encaja completa sobre una copia desenfocada de
+                         sí misma en vez de recortarla (igual que en el inicio). */
+                      <div class="relative aspect-[16/9] overflow-hidden bg-surface-2 tablet:aspect-auto tablet:min-h-[260px]">
+                        <div
+                          class="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-xl"
+                          style={`background-image:url('${novedad.src}')`}
+                          aria-hidden="true"
+                        />
+                        <img
+                          src={novedad.src}
+                          alt=""
+                          width="1200"
+                          height="675"
+                          loading="lazy"
+                          class="absolute inset-0 h-full w-full object-contain p-4"
+                        />
+                      </div>
+                    ) : (
+                      <img
+                        src={novedad.src}
+                        alt=""
+                        width="1200"
+                        height="675"
+                        loading="lazy"
+                        class="aspect-[16/9] h-full w-full bg-primary-soft object-cover tablet:aspect-auto"
+                      />
+                    )}
 
                     <div class="p-7 tablet:p-9">
                       <div class="flex flex-wrap items-center gap-3">

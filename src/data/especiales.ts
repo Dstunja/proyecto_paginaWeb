@@ -28,14 +28,17 @@
  *
  * IMÁGENES
  * --------
- * `imagen` apunta a un archivo dentro de public/img/temporada/. Mientras el
- * archivo no exista, el sitio muestra un marcador de posición azul de
- * placehold.co con el nombre del producto, así que la sección se puede
+ * `imagen` es una ruta dentro de public/ (hoy las fotos reales están en
+ * public/img/innovacion/ y las pendientes apuntan a public/img/temporada/).
+ * Mientras el archivo no exista, el sitio muestra un marcador de posición azul
+ * de placehold.co con el nombre del producto, así que la sección se puede
  * publicar antes de tener las fotos. Al dejar la foto real en su carpeta, la
  * siguiente compilación la toma sin tocar el código.
  *
- * Formato recomendado: JPG o WebP en 16:10 (por ejemplo 1000x625), con el
- * empaque centrado y fondo claro.
+ * Las fotos deben ir LIMPIAS: sin precio, sin oferta, sin tabla de datos.
+ * Sirve cualquier proporción (vertical u horizontal): la tarjeta encaja la
+ * foto completa sin recortarla y rellena el resto con un desenfoque de la
+ * misma imagen.
  */
 
 export interface ProductoEspecial {
@@ -66,6 +69,62 @@ export const periodoEspeciales = 'Septiembre 2026';
  * conviene confirmarlos con el material oficial de la marca antes de publicar.
  */
 export const especialesDelMes: ProductoEspecial[] = [
+  /* ------------------------------------------------------------------------
+     Con foto real. Los siete están confirmados con cobertura NACIONAL (para
+     todos los clientes), así que no llevan restricción de zona. Las fotos
+     están en public/img/innovacion/, ya limpias: sin precio ni texto de
+     oferta. Van primero para que el carrusel abra con fotos y no con
+     marcadores de posición.
+     ------------------------------------------------------------------------ */
+  {
+    nombre: 'Jumbo Pistacho Dubai Style',
+    marca: 'Jumbo',
+    descripcion: 'Chocolatina con relleno de crema de pistacho estilo Dubái, barra de 90 g.',
+    etiqueta: 'Nuevo',
+    imagen: '/img/innovacion/jumbo-pistacho-dubai.jpg',
+  },
+  {
+    nombre: 'Jet Pistacho Dubai Style',
+    marca: 'Jet',
+    descripcion: 'Chocolatina Jet con relleno de pistacho estilo Dubái, caja de 8 unidades.',
+    etiqueta: 'Nuevo',
+    imagen: '/img/innovacion/jet-pistacho-dubai.jpg',
+  },
+  {
+    nombre: 'Jet Burbujas Pistacho Dubai',
+    marca: 'Jet',
+    descripcion: 'Chocolate aireado con relleno de pistacho estilo Dubái, caja de 4 unidades.',
+    etiqueta: 'Nuevo',
+    imagen: '/img/innovacion/jet-burbujas-pistacho-dubai.jpg',
+  },
+  {
+    nombre: 'Bénet Magnesio Gomas',
+    marca: 'Bénet',
+    descripcion: 'Gomas de citrato de magnesio sabor arándano azul, frasco de 48 gomas.',
+    imagen: '/img/innovacion/benet-magnesio.jpg',
+  },
+  {
+    nombre: 'Badia Ajo Fino Picado con Limón y Albahaca',
+    marca: 'Badia',
+    descripcion: 'Ajo finamente picado con limón y albahaca, frasco de 226,7 g.',
+    imagen: '/img/innovacion/badia-ajo-limon-albahaca.jpg',
+  },
+  {
+    nombre: 'Badia Ajo Fino Picado con Pimienta Roja',
+    marca: 'Badia',
+    descripcion: 'Ajo finamente picado con pimienta roja, frasco de 226,7 g.',
+    imagen: '/img/innovacion/badia-ajo-pimienta-roja.jpg',
+  },
+  {
+    nombre: 'Badia Ajo Negro Picado en Agua',
+    marca: 'Badia',
+    descripcion: 'Ajo negro finamente picado en agua, frasco de 226,7 g.',
+    imagen: '/img/innovacion/badia-ajo-negro.jpg',
+  },
+
+  /* ------------------------------------------------------------------------
+     Colaboraciones todavía sin foto: se muestran con marcador de posición.
+     ------------------------------------------------------------------------ */
   {
     nombre: 'Galletas Festival',
     marca: 'Festival',
