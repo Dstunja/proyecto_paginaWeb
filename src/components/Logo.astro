@@ -5,7 +5,9 @@ import { empresa } from '../data/site';
  * Logo oficial de la marca.
  *
  * - `completo`: logotipo horizontal original. Es el que va en la barra, sobre
- *   el fondo blanco del sitio.
+ *   el fondo blanco del sitio. Sus alturas van atadas a `--nav-h` (global.css):
+ *   44 px mientras la barra mide 64 px y 56 px cuando sube a 80 px, para que
+ *   siempre quede aire arriba y abajo. Si cambia una, revisar la otra.
  * - `claro`: el isotipo dentro de una pastilla blanca (conserva sus colores de
  *   marca) más el nombre en Montserrat blanco y la línea naranja del logo.
  *   Para fondos oscuros, como el pie de página: ahí el logotipo horizontal no
@@ -42,14 +44,14 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
           alt={empresa.razonSocial}
           width="183"
           height="180"
-          class="icono-int h-12 w-12 object-contain mob:hidden"
+          class="icono-int h-11 w-11 object-contain mob:hidden"
         />
         <img
           src={LOGOTIPO}
           alt={empresa.razonSocial}
           width="3821"
           height="1441"
-          class="icono-int hidden h-[72px] w-auto object-contain mob:block"
+          class="icono-int hidden h-11 w-auto object-contain mob:block tablet:h-14"
         />
       </>
     )

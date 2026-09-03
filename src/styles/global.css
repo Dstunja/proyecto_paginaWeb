@@ -91,14 +91,19 @@
 @layer base {
   :root {
     /* Altura de la barra fija. `main` reserva este espacio y los anclajes lo
-       descuentan, para que nada quede escondido debajo de la barra. */
-    --nav-h: 5rem;
+       descuentan, para que nada quede escondido debajo de la barra.
+
+       La barra se mantiene delgada para no comerse la primera pantalla, sobre
+       todo en móvil: 64 px alcanzan para el isotipo (44 px) y el carrito
+       (44 px) con 10 px de aire arriba y abajo. El logo acompaña la altura en
+       Logo.astro, así que si se cambia uno hay que revisar el otro. */
+    --nav-h: 4rem;
   }
 
   @media (min-width: 900px) {
     :root {
-      /* Alto suficiente para el logotipo horizontal sin que quede apretado. */
-      --nav-h: 6.25rem;
+      /* Alto suficiente para el logotipo horizontal (56 px) sin apretarlo. */
+      --nav-h: 5rem;
     }
   }
 
