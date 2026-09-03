@@ -8,6 +8,7 @@ import Icono from '../components/Icono.astro';
 import Testimonio from '../components/Testimonio.astro';
 import Temporada from '../components/Temporada.astro';
 import RedesSociales from '../components/RedesSociales.astro';
+import AnaliticaSecciones from '../components/AnaliticaSecciones.astro';
 import { cifras, marcas, valorAgregado, beneficios, empresa, HERO_IMAGEN } from '../data/site';
 import { departamentos } from '../data/municipios';
 
@@ -21,7 +22,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   description="Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. 21 años de experiencia, 87 municipios cubiertos, 1 punto de venta."
 >
   <!-- HERO -->
-  <section class="relative overflow-hidden pt-14 pb-0 tablet:pt-24">
+  <section class="relative overflow-hidden pt-14 pb-0 tablet:pt-24" data-seccion="hero">
     <div class="wrap">
       <div class="grid grid-cols-1 items-center gap-14 tablet:grid-cols-[1.05fr_.95fr] tablet:gap-16">
         <div>
@@ -83,7 +84,10 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
       </div>
 
       <!-- BARRA DE CIFRAS -->
-      <div class="sobre-oscuro mt-20 rounded-[24px] bg-primary px-6 py-9 shadow-[0_18px_44px_rgba(13,44,132,.22)] tablet:px-10">
+      <div
+        class="sobre-oscuro mt-20 rounded-[24px] bg-primary px-6 py-9 shadow-[0_18px_44px_rgba(13,44,132,.22)] tablet:px-10"
+        data-seccion="cifras"
+      >
         <dl class="grid grid-cols-2 gap-y-9 tablet:grid-cols-4">
           {
             cifras.map((cifra, i) => (
@@ -109,7 +113,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   </section>
 
   <!-- MARCAS -->
-  <div class="border-y border-line bg-base py-16">
+  <div class="border-y border-line bg-base py-16" data-seccion="marcas">
     <div class="wrap">
       <p class="mb-8 text-center text-[12.5px] font-semibold tracking-[0.14em] text-muted uppercase">
         Marcas que distribuimos
@@ -141,7 +145,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   <Temporada />
 
   <!-- VALOR AGREGADO -->
-  <section class="section">
+  <section class="section" data-seccion="valor_agregado">
     <div class="wrap">
       <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Nuestro valor agregado</span>
@@ -169,7 +173,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   </section>
 
   <!-- COBERTURA -->
-  <section id="cobertura" class="section border-y border-line bg-base">
+  <section id="cobertura" class="section border-y border-line bg-base" data-seccion="cobertura">
     <div class="wrap">
       <div class="mb-10 flex flex-col gap-8 tablet:flex-row tablet:items-end tablet:justify-between">
         <div class="max-w-[52ch]">
@@ -207,7 +211,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   </section>
 
   <!-- PARA TU NEGOCIO -->
-  <section class="section">
+  <section class="section" data-seccion="para_tu_negocio">
     <div class="wrap">
       <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Para tu negocio</span>
@@ -228,12 +232,19 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
         }
       </div>
 
-      <Testimonio />
+      {/* La resena va envuelta para poder medirla aparte de la seccion que la contiene. */}
+      <div data-seccion="resenas">
+        <Testimonio />
+      </div>
     </div>
   </section>
 
   <!-- HAZ TU PEDIDO -->
-  <section id="haz-tu-pedido" class="section border-y border-line bg-base">
+  <section
+    id="haz-tu-pedido"
+    class="section border-y border-line bg-base"
+    data-seccion="haz_tu_pedido"
+  >
     <div class="wrap">
       <div class="mx-auto mb-14 max-w-[46ch] text-center">
         <span class="kicker">Haz tu pedido</span>
@@ -284,7 +295,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   </section>
 
   <!-- CTA: EMPLEOS + PQRS -->
-  <section class="section">
+  <section class="section" data-seccion="empleos_pqrs">
     <div class="wrap grid grid-cols-1 gap-6 tablet:grid-cols-2">
       <div class="glass-card p-8">
         <h3 class="mb-3 text-[19px]">Únete a nuestro equipo</h3>
@@ -305,4 +316,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
   </section>
   <!-- SÍGUENOS -->
   <RedesSociales />
+
+  {/* Mide que secciones de esta pagina se llegan a ver (evento seccion_vista). */}
+  <AnaliticaSecciones />
 </BaseLayout>

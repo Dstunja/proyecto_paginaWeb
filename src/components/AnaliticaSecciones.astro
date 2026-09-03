@@ -1,0 +1,53 @@
+---
+/**
+ * Evento `seccion_vista`: qué partes del inicio alcanza a ver la gente.
+ *
+ * Es la respuesta a "¿qué secciones consultan más?". Un solo
+ * IntersectionObserver vigila los elementos con `data-seccion` y dispara el
+ * evento UNA vez por sección y visita, cuando esa sección se ve de verdad.
+ *
+ * SOLO SE USA EN EL INICIO. El armador de pedidos ya usa `data-seccion` para
+ * los acordeones de marca (src/components/pedido/CatalogoPedido.astro); si
+ * este observador viviera en el layout, contaría cada marca desplegada como si
+ * fuera una sección del sitio.
+ */
+---
+
+<script>
+  import { registrarEvento } from '../lib/analitica';
+
+  const secciones = document.querySelectorAll<HTMLElement>('[data-seccion]');
+
+  if (secciones.length > 0 && 'IntersectionObserver' in window) {
+    const vistas = new Set<string>();
+
+    /**
+     * "Vista" = la mitad de la sección está en pantalla O la sección ocupa ya
+     * media pantalla. La segunda condición es la que importa: una sección más
+     * alta que la ventana nunca llega a un ratio de 0,5 y, sin ella, las
+     * secciones largas jamás se contarían.
+     */
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        for (const entrada of entradas) {
+          if (!entrada.isIntersecting) continue;
+
+          const suficiente =
+            entrada.intersectionRatio >= 0.5 ||
+            entrada.intersectionRect.height >= window.innerHeight * 0.5;
+          if (!suficiente) continue;
+
+          const nombre = (entrada.target as HTMLElement).dataset.seccion ?? '';
+          observador.unobserve(entrada.target); // una vez por visita
+          if (nombre === '' || vistas.has(nombre)) continue;
+
+          vistas.add(nombre);
+          registrarEvento('seccion_vista', { seccion: nombre });
+        }
+      },
+      { threshold: [0, 0.25, 0.5, 0.75, 1] },
+    );
+
+    secciones.forEach((seccion) => observador.observe(seccion));
+  }
+</script>
