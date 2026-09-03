@@ -233,15 +233,31 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       const cantidad = cantidadEnTarjeta(p.id);
       const nombre = esc(`${p.nombre} ${p.presentacion}`);
 
-      const medio = p.imagen
-        ? `<img src="${esc(p.imagen)}" alt="" loading="lazy" class="h-full w-full object-contain p-1" />`
-        : logo
-          ? `<img src="${esc(logo)}" alt="" loading="lazy" class="h-full w-full object-contain p-2" />`
-          : `<span class="font-display text-lg font-bold text-primary/60" aria-hidden="true">${esc(iniciales(p.marca))}</span>`;
+      /*
+       * La imagen llena el cuadro de 80x80 sin padding: antes se le dejaba p-1
+       * o p-2 y, sumado al margen que ya traen los archivos por dentro, la
+       * figura quedaba flotando en medio de un marco vacío.
+       *
+       * Se usa object-contain y no object-cover a propósito. Hoy ningún
+       * producto tiene foto propia (el campo `imagen` está vacío en las 709
+       * referencias), así que lo que se ve en el cuadro es el logo de la
+       * marca, y recortarlo lo mutilaría. Cuando lleguen las fotos reales de
+       * producto conviene volver a mirarlo: si vienen encuadradas y de buena
+       * calidad, object-cover llena mejor el cuadro; contain mantiene el
+       * empaque completo, que para un catálogo de pedidos suele importar más.
+       *
+       * El cuadro va en blanco cuando hay imagen —los archivos de marca traen
+       * fondo blanco y así se funden con la ficha— y en azul suave cuando solo
+       * quedan las iniciales, para que el texto tenga contraste.
+       */
+      const hayImagen = Boolean(p.imagen || logo);
+      const medio = hayImagen
+        ? `<img src="${esc((p.imagen || logo) as string)}" alt="" loading="lazy" class="h-full w-full object-contain" />`
+        : `<span class="font-display text-lg font-bold text-primary/60" aria-hidden="true">${esc(iniciales(p.marca))}</span>`;
 
       return `
         <article class="glass-card flex gap-4 p-4 ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${esc(p.id)}">
-          <div class="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-primary-soft">
+          <div class="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border ${hayImagen ? 'border-line bg-white' : 'border-transparent bg-primary-soft'}">
             ${medio}
           </div>
 
