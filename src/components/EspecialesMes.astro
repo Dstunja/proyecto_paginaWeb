@@ -2,7 +2,7 @@
 import Icono from './Icono.astro';
 import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
-import { productosTemporada, periodoTemporada, hayEspecialesDelMes } from '../data/temporada';
+import { especialesDelMes, periodoEspeciales, hayEspecialesDelMes } from '../data/especiales';
 
 /**
  * "Especiales del mes": las ediciones especiales y colaboraciones vigentes.
@@ -12,14 +12,18 @@ import { productosTemporada, periodoTemporada, hayEspecialesDelMes } from '../da
  * las llamadas destacadas— alcanza para que se lea como contenido de
  * temporada, distinto del catálogo permanente, sin inventarse un estilo aparte.
  *
- * El contenido vive en src/data/temporada.ts y cambia mes a mes. Si ahí no
+ * El contenido vive en src/data/especiales.ts y cambia mes a mes. Si ahí no
  * queda ningún producto, este componente no dibuja nada: se prefiere que la
  * sección desaparezca antes que dejar un título con un hueco debajo.
+ *
+ * Ojo: no es la misma sección que Temporada.astro. Esa muestra la temporada
+ * comercial vigente (Amor y Amistad, Halloween, Navidad) y se activa por
+ * fecha; esta muestra las colaboraciones de marca del mes, elegidas a mano.
  *
  * Las fotos salen de public/img/temporada/; mientras no existan, se muestra un
  * marcador de posición con el nombre del producto (ver src/lib/imagenes.ts).
  */
-const productos = productosTemporada.map((producto) => ({
+const productos = especialesDelMes.map((producto) => ({
   ...producto,
   ...imagenOMarcador(producto.imagen, producto.nombre, 1000, 625),
 }));
@@ -55,7 +59,7 @@ const columnas =
               esto es contenido que rota, no una sección fija del catálogo. */}
           <p class="m-0 inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-accent/40 bg-surface px-4 py-2 font-display text-[13px] font-semibold text-accent-text tablet:self-auto">
             <Icono nombre="calendar" class="h-4 w-4" interactivo={false} />
-            {periodoTemporada}
+            {periodoEspeciales}
           </p>
         </div>
 

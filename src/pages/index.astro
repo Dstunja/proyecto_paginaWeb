@@ -7,7 +7,9 @@ import EspecialesMes from '../components/EspecialesMes.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
 import Testimonio from '../components/Testimonio.astro';
+import Temporada from '../components/Temporada.astro';
 import Resenas from '../components/Resenas.astro';
+import RedesSociales from '../components/RedesSociales.astro';
 import {
   cifras,
   marcas,
@@ -125,7 +127,8 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
     </div>
   </section>
 
-  <!-- ESPECIALES DEL MES -->
+  <!-- ESPECIALES DEL MES: colaboraciones y ediciones especiales de marca,
+       elegidas a mano (ver src/data/especiales.ts). -->
   <EspecialesMes />
 
   <!-- MARCAS -->
@@ -156,6 +159,10 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
           reemplaza estos nombres por <img> con los archivos en public/marcas/. */}
     </div>
   </div>
+
+  <!-- ESPECIALES DE TEMPORADA: se muestra solo mientras corre una temporada
+       comercial (Amor y Amistad, Halloween, Navidad; ver src/data/temporada.ts). -->
+  <Temporada />
 
   <!-- VALOR AGREGADO -->
   <section class="section">
@@ -330,6 +337,8 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
       </div>
     </div>
   </section>
+  <!-- SÍGUENOS -->
+  <RedesSociales />
 </BaseLayout>
 
 <script>

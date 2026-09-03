@@ -1,0 +1,89 @@
+---
+/**
+ * Franja "Síguenos": los canales sociales en grande, con el logotipo y el
+ * color de cada red. Es la versión visible de los mismos enlaces que están en
+ * el pie de página (`redes` en src/data/site.ts): si allí se agrega o cambia
+ * una red, aquí aparece sola.
+ *
+ * COLORES
+ * -------
+ * Cada tarjeta usa el color corporativo de su red (el azul de Facebook, el
+ * verde de WhatsApp...). Ese color reconocible queda fuera de la restricción
+ * de la paleta de marca, igual que el botón de WhatsApp del resto del sitio:
+ * es parte de cómo se identifica el canal de un vistazo.
+ */
+import Icono from './Icono.astro';
+import { redes } from '../data/site';
+
+/** Color de marca de cada red y qué se publica en ella. */
+const DETALLE: Record<string, { color: string; sobreColor: string; nota: string }> = {
+  facebook: {
+    color: '#1877F2',
+    sobreColor: '#ffffff',
+    nota: 'Novedades, campañas y lanzamientos de la empresa.',
+  },
+  instagram: {
+    color: '#E4405F',
+    sobreColor: '#ffffff',
+    nota: 'El portafolio y el día a día de nuestro equipo.',
+  },
+  x: {
+    color: '#000000',
+    sobreColor: '#ffffff',
+    nota: 'Anuncios cortos y noticias de la operación.',
+  },
+  whatsapp: {
+    color: '#25D366',
+    sobreColor: '#1a2327',
+    nota: 'Canal de difusión con ofertas y promociones.',
+  },
+};
+
+const canales = redes.map((red) => ({
+  ...red,
+  ...(DETALLE[red.icono] ?? { color: '#0d2c84', sobreColor: '#ffffff', nota: '' }),
+}));
+---
+
+<section id="siguenos" class="section border-y border-line bg-fondo">
+  <div class="wrap">
+    <div class="mx-auto mb-12 max-w-[52ch] text-center">
+      <span class="kicker">Síguenos</span>
+      <h2 class="text-[28px] tablet:text-[38px]">Estamos en tus redes</h2>
+      <p class="mt-4 text-lg text-muted">
+        Ofertas de la quincena, novedades del portafolio y lo que pasa dentro de la empresa. Elige
+        la red que uses y síguenos.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
+      {
+        canales.map((canal) => (
+          <a
+            href={canal.url}
+            target="_blank"
+            rel="noopener"
+            style={`--marca:${canal.color};--marca-texto:${canal.sobreColor}`}
+            class="group glass-card flex flex-col items-center p-8 text-center
+                   hover:border-[var(--marca)] focus-visible:border-[var(--marca)]"
+          >
+            <span
+              class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--marca)]/12
+                     text-[var(--marca)] transition-all duration-300 group-hover:scale-105
+                     group-hover:bg-[var(--marca)] group-hover:text-[var(--marca-texto)]
+                     group-focus-visible:bg-[var(--marca)] group-focus-visible:text-[var(--marca-texto)]"
+            >
+              <Icono nombre={canal.icono} class="h-8 w-8" interactivo={false} />
+            </span>
+            <h3 class="mt-6 text-lg">{canal.nombre}</h3>
+            <p class="mt-2 mb-5 text-[14px] text-muted">{canal.nota}</p>
+            <span class="mt-auto inline-flex items-center gap-2 font-display text-[14px] font-semibold text-primary">
+              Seguir
+              <Icono nombre="arrow-right" class="h-4 w-4" />
+            </span>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>

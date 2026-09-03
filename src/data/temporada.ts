@@ -1,80 +1,166 @@
 /**
- * Especiales del mes: productos con una colaboración o una edición de
- * temporada. Alimentan la sección "Especiales del mes" del inicio.
+ * "Especiales del mes": productos destacados según la temporada o fecha
+ * especial que esté corriendo (Amor y Amistad, Halloween, Navidad...).
  *
- * ESTA LISTA SE CAMBIA MES A MES. Es contenido de temporada, no catálogo: aquí
- * solo van las ediciones especiales, colaboraciones y lanzamientos que están
- * sonando ahora. El catálogo permanente vive en src/data/productos.ts y no se
- * toca desde aquí.
+ * Es contenido que se cambia cada cierto tiempo, no una sección fija del
+ * menú: el bloque del inicio aparece solo mientras haya una temporada
+ * vigente y desaparece por completo cuando ninguna lo está, así que nunca
+ * queda un espacio vacío en la página.
  *
- * CÓMO ACTUALIZARLA CADA MES
- * --------------------------
- *  1. Cambiar `periodoTemporada` al mes que se está mostrando.
- *  2. Dejar en `productosTemporada` solo los productos vigentes.
+ * NO CONFUNDIR CON src/data/especiales.ts
+ * ---------------------------------------
+ * Este archivo son las TEMPORADAS COMERCIALES del año, que se prenden y
+ * apagan solas por fecha. Las COLABORACIONES y ediciones especiales de marca
+ * (Festival con KPop Demon Hunters, Jumbo con Ryan Castro) van en
+ * especiales.ts, se curan a mano y no dependen del calendario. Las dos
+ * secciones conviven en el inicio.
  *
- * Si el arreglo queda VACÍO, la sección entera desaparece del inicio: no queda
- * un bloque vacío ni un título sin nada debajo (ver EspecialesMes.astro). Ese
- * es el comportamiento correcto cuando no hay nada especial que mostrar.
+ * FECHAS
+ * ------
+ * `inicio` y `fin` van en formato 'MM-DD' (mes y día, sin año) porque estas
+ * fechas se repiten cada año. El rango incluye los dos extremos y puede
+ * cruzar el fin de año (por ejemplo Navidad: '11-15' → '01-06').
  *
  * IMÁGENES
  * --------
- * `imagen` apunta a un archivo dentro de public/img/temporada/. Mientras el
- * archivo no exista, el sitio muestra un marcador de posición azul de
- * placehold.co con el nombre del producto, así que la sección se puede
- * publicar antes de tener las fotos. Al dejar la foto real en su carpeta, la
- * siguiente compilación la toma sin tocar el código.
- *
- * Formato recomendado: JPG o WebP en 16:10 (por ejemplo 1000x625), con el
- * empaque centrado y fondo claro.
+ * `imagen` es una ruta dentro de public/img/temporada/. Mientras el archivo
+ * no exista se muestra un marcador de posición de placehold.co con el nombre
+ * del producto (ver `imagenOMarcador` en src/lib/imagenes.ts).
  */
 
 export interface ProductoTemporada {
-  /** Nombre del producto tal como se quiere leer en la tarjeta. */
   nombre: string;
-  /** Marca a la que pertenece: 'Festival', 'Jumbo'… */
-  marca: string;
-  /** Descripción corta, de una o dos líneas: 'Edición especial X'. */
-  descripcion: string;
-  /** Ruta dentro de public/. Si el archivo no existe, se usa un marcador. */
+  /** Ruta dentro de public/. Vacío = marcador de posición. */
   imagen: string;
-  /** Etiqueta corta opcional: 'Nuevo', 'Edición limitada'… */
-  etiqueta?: string;
+  marca: string;
+  /** Opcional: frase corta de venta debajo del nombre. */
+  nota?: string;
+}
+
+export interface Temporada {
+  /** Nombre visible de la temporada, por ejemplo 'Amor y Amistad'. */
+  nombre: string;
+  /** Frase corta que acompaña al título. */
+  descripcion: string;
+  /** 'MM-DD' — primer día en que se muestra la sección. */
+  inicio: string;
+  /** 'MM-DD' — último día en que se muestra (incluido). */
+  fin: string;
+  productos: ProductoTemporada[];
 }
 
 /**
- * Mes o temporada que se está mostrando, tal como se quiere leer.
+ * EDITAR AQUÍ: actualizar productos según la temporada activa.
  *
- * EDITAR AQUÍ: actualizarlo cada vez que cambien los productos de abajo, para
- * que la sección no anuncie un mes que ya pasó.
+ * Cada mes basta con cambiar los productos de la temporada que viene, o
+ * agregar una temporada nueva a esta lista con sus fechas. Los productos de
+ * abajo son de ejemplo y usan imágenes de marcador de posición.
  */
-export const periodoTemporada = 'Septiembre 2026';
-
-/**
- * EDITAR AQUÍ: los productos de temporada vigentes.
- *
- * Los textos de abajo son los datos que se tienen hoy de cada colaboración;
- * conviene confirmarlos con el material oficial de la marca antes de publicar.
- */
-export const productosTemporada: ProductoTemporada[] = [
+export const temporadas: Temporada[] = [
   {
-    nombre: 'Galletas Festival',
-    marca: 'Festival',
-    descripcion: 'Edición especial de la colaboración con KPop Demon Hunters.',
-    etiqueta: 'Edición limitada',
-    // EDITAR AQUÍ: reemplazar con imagen real del producto
-    // -> public/img/temporada/festival-kpop-demon-hunters.jpg
-    imagen: '/img/temporada/festival-kpop-demon-hunters.jpg',
+    nombre: 'Amor y Amistad',
+    descripcion: 'Surte tu tienda para el mes de los detalles: chocolates, dulces y galletas.',
+    inicio: '09-01',
+    fin: '09-30',
+    productos: [
+      {
+        nombre: 'Chocolatina Jet surtida',
+        imagen: '/img/temporada/jet-surtida.jpg',
+        marca: 'Jet',
+        nota: 'La caja que nunca falta en el detalle.',
+      },
+      {
+        nombre: 'Bombonbum surtido',
+        imagen: '/img/temporada/bombonbum.jpg',
+        marca: 'Colombina',
+        nota: 'Ideal para armar anchetas y sorpresas.',
+      },
+      {
+        nombre: 'Galletas Ducales familiar',
+        imagen: '/img/temporada/ducales-familiar.jpg',
+        marca: 'Ducales',
+        nota: 'Presentación grande para compartir.',
+      },
+    ],
   },
   {
-    nombre: 'Chocolatina Jumbo Bombie',
-    marca: 'Jumbo',
-    descripcion: 'Edición especial de la colaboración con Ryan Castro.',
-    etiqueta: 'Nuevo',
-    // EDITAR AQUÍ: reemplazar con imagen real del producto
-    // -> public/img/temporada/jumbo-bombie-ryan-castro.jpg
-    imagen: '/img/temporada/jumbo-bombie-ryan-castro.jpg',
+    nombre: 'Halloween',
+    descripcion: 'Dulces y confites para la noche de brujas, listos para la vitrina.',
+    inicio: '10-15',
+    fin: '11-02',
+    productos: [
+      {
+        nombre: 'Confites surtidos',
+        imagen: '/img/temporada/confites-surtidos.jpg',
+        marca: 'Colombina',
+        nota: 'Bolsa grande para repartir.',
+      },
+      {
+        nombre: 'Chocolatinas Jet mini',
+        imagen: '/img/temporada/jet-mini.jpg',
+        marca: 'Jet',
+        nota: 'El clásico del "dulce o truco".',
+      },
+    ],
+  },
+  {
+    nombre: 'Navidad',
+    descripcion: 'El portafolio de la novena: galletas, café y chocolate de mesa.',
+    inicio: '11-15',
+    fin: '01-06',
+    productos: [
+      {
+        nombre: 'Surtido navideño Noel',
+        imagen: '/img/temporada/surtido-noel.jpg',
+        marca: 'Noel',
+        nota: 'La caja de galletas de la temporada.',
+      },
+      {
+        nombre: 'Café Sello Rojo 500 g',
+        imagen: '/img/temporada/sello-rojo.jpg',
+        marca: 'Sello Rojo',
+        nota: 'Para las novenas y la mesa de diciembre.',
+      },
+      {
+        nombre: 'Chocolate Corona pastilla',
+        imagen: '/img/temporada/corona-pastilla.jpg',
+        marca: 'Corona',
+        nota: 'Chocolate de mesa, alta rotación en diciembre.',
+      },
+    ],
   },
 ];
 
-/** ¿Hay algo de temporada que mostrar? Si no, la sección no se dibuja. */
-export const hayEspecialesDelMes = productosTemporada.length > 0;
+/** Convierte 'MM-DD' en un número comparable (0901 -> 901). */
+function aNumero(mmdd: string): number {
+  const [mes, dia] = mmdd.split('-').map(Number);
+  return (mes ?? 0) * 100 + (dia ?? 0);
+}
+
+/** ¿La fecha cae dentro del rango, contando los rangos que cruzan el año? */
+function estaVigente(temporada: Temporada, hoy: number): boolean {
+  const inicio = aNumero(temporada.inicio);
+  const fin = aNumero(temporada.fin);
+  return inicio <= fin ? hoy >= inicio && hoy <= fin : hoy >= inicio || hoy <= fin;
+}
+
+/**
+ * Temporada que corresponde a la fecha dada, o `null` si ninguna está
+ * vigente (en cuyo caso la sección del inicio no se muestra).
+ *
+ * Si dos rangos se solapan gana el primero de la lista.
+ */
+export function temporadaActiva(fecha: Date = new Date()): Temporada | null {
+  const hoy = (fecha.getMonth() + 1) * 100 + fecha.getDate();
+  return temporadas.find((t) => estaVigente(t, hoy)) ?? null;
+}
+
+/** Rango en texto para mostrarlo junto al título: '1 sep – 30 sep'. */
+export function rangoLegible(temporada: Temporada): string {
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const legible = (mmdd: string) => {
+    const [mes, dia] = mmdd.split('-').map(Number);
+    return `${dia} ${MESES[(mes ?? 1) - 1]}`;
+  };
+  return `${legible(temporada.inicio)} – ${legible(temporada.fin)}`;
+}
