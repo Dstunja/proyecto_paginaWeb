@@ -11,6 +11,9 @@ import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WhatsappFlotante from '../components/WhatsappFlotante.astro';
+import Analitica from '../components/Analitica.astro';
+import AnaliticaEnlaces from '../components/AnaliticaEnlaces.astro';
+import AvisoCookies from '../components/AvisoCookies.astro';
 import { empresa, redes } from '../data/site';
 
 interface Props {
@@ -79,6 +82,9 @@ const jsonLd = {
     <meta name="twitter:image" content={ogUrl} />
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+
+    {/* Estadisticas de uso. No se inyecta nada sin PUBLIC_GA_ID ni en desarrollo. */}
+    <Analitica />
   </head>
 
   <body>
@@ -96,5 +102,7 @@ const jsonLd = {
 
     <Footer />
     <WhatsappFlotante />
+    <AvisoCookies />
+    <AnaliticaEnlaces />
   </body>
 </html>

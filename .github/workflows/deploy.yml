@@ -38,6 +38,13 @@ jobs:
       # y sube dist/ como artefacto de Pages.
       - name: Compilar el sitio con Astro
         uses: withastro/action@v3
+        # El ID de Google Analytics no vive en el codigo: se guarda como
+        # secreto del repositorio (Settings > Secrets and variables > Actions)
+        # y solo existe durante la compilacion. Si el secreto no esta definido
+        # la variable llega vacia y el sitio se publica sin analitica, sin
+        # fallar. Ver docs/ANALITICA.md.
+        env:
+          PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
         with:
           node-version: 22
           package-manager: npm
