@@ -88,3 +88,39 @@ export const especialesDelMes: ProductoEspecial[] = [
 
 /** ¿Hay alguna edición especial que mostrar? Si no, la sección no se dibuja. */
 export const hayEspecialesDelMes = especialesDelMes.length > 0;
+
+const MESES = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+/**
+ * `periodoEspeciales` convertido a 'AAAA-MM', que es el formato con el que la
+ * línea de tiempo de /innovacion/ ordena sus entradas (el campo `orden` de
+ * src/data/innovaciones.ts).
+ *
+ * Se deriva del texto en vez de pedir una segunda fecha escrita a mano: al
+ * cambiar de mes solo se toca `periodoEspeciales` y los especiales se
+ * recolocan solos entre las novedades de la empresa.
+ *
+ * Si el texto no tiene la forma 'Mes AAAA' —porque alguien escribió algo como
+ * 'Temporada escolar'— se devuelve un valor que ordena por encima de todo: los
+ * especiales son lo vigente, y quedar arriba es mejor que hundirse al final de
+ * la línea de tiempo.
+ */
+export const ordenEspeciales: string = (() => {
+  const [mes, anio] = periodoEspeciales.trim().toLowerCase().split(/\s+/);
+  const numeroMes = MESES.indexOf(mes ?? '') + 1;
+  if (!numeroMes || !/^\d{4}$/.test(anio ?? '')) return '9999-99';
+  return `${anio}-${String(numeroMes).padStart(2, '0')}`;
+})();

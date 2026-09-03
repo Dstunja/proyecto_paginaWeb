@@ -4,21 +4,65 @@ import PageHero from '../components/PageHero.astro';
 import Icono from '../components/Icono.astro';
 import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
-import { innovacionesOrdenadas } from '../data/innovaciones';
+import { innovaciones, type Innovacion } from '../data/innovaciones';
+import { especialesDelMes, periodoEspeciales, ordenEspeciales } from '../data/especiales';
 import { empresa } from '../data/site';
 
 /**
  * Línea de tiempo de innovaciones y novedades.
  *
- * El contenido vive en src/data/innovaciones.ts. Cada novedad muestra su
- * imagen desde public/img/innovacion/; mientras el archivo no exista se usa un
- * marcador de posición con el título, para poder publicar la novedad antes de
- * tener la foto.
+ * Se arma con DOS fuentes, y ninguna se copia a mano aquí:
+ *
+ *   - src/data/innovaciones.ts  las novedades de la operación (Pideky, la
+ *                               flota, la formación del equipo).
+ *   - src/data/especiales.ts    los especiales del mes, los mismos productos
+ *                               que salen en el inicio. Si allí cambian los
+ *                               productos, esta página cambia sola; si la
+ *                               lista queda vacía, simplemente no aportan
+ *                               entradas y la línea de tiempo sigue igual.
+ *
+ * Cada novedad muestra su imagen desde public/img/; mientras el archivo no
+ * exista se usa un marcador de posición con el título, para poder publicar la
+ * novedad antes de tener la foto.
  */
-const novedades = innovacionesOrdenadas.map((novedad) => ({
-  ...novedad,
-  ...imagenOMarcador(novedad.imagen, novedad.titulo, 1200, 675),
+
+/**
+ * Una entrada de la línea de tiempo. `esEspecial` solo sirve para pintarla:
+ * los especiales del mes llevan la etiqueta naranja con la que ya se
+ * reconocen en el inicio, en vez de la azul de las novedades de la empresa.
+ */
+type EntradaLinea = Innovacion & { esEspecial: boolean };
+
+/** Cada especial del mes, visto como una entrada más de la línea de tiempo. */
+const especialesComoNovedad: EntradaLinea[] = especialesDelMes.map((producto) => ({
+  fecha: periodoEspeciales,
+  orden: ordenEspeciales,
+  etiqueta: 'Especial del mes',
+  titulo: producto.nombre,
+  descripcion: producto.descripcion,
+  imagen: producto.imagen,
+  esEspecial: true,
 }));
+
+/**
+ * Las dos fuentes van mezcladas por fecha, no los especiales en un bloque
+ * aparte: la página es una línea de tiempo, y partirla en dos rompería la
+ * lectura. Con `orden` en formato 'AAAA-MM' las dos son comparables, así que
+ * un especial de septiembre queda por encima de una novedad de marzo y por
+ * debajo de una de octubre, sin que nadie tenga que reordenar nada.
+ *
+ * Los especiales van primeros en la mezcla para que, cuando compartan mes con
+ * una novedad de la empresa, se lean antes: son lo que está vigente ahora.
+ */
+const novedades = [
+  ...especialesComoNovedad,
+  ...innovaciones.map((novedad): EntradaLinea => ({ ...novedad, esEspecial: false })),
+]
+  .sort((a, b) => b.orden.localeCompare(a.orden))
+  .map((novedad) => ({
+    ...novedad,
+    ...imagenOMarcador(novedad.imagen, novedad.titulo, 1200, 675),
+  }));
 ---
 
 <BaseLayout
@@ -71,11 +115,17 @@ const novedades = innovacionesOrdenadas.map((novedad) => ({
                           <Icono nombre="calendar" class="h-4 w-4" interactivo={false} />
                           {novedad.fecha}
                         </p>
-                        {novedad.etiqueta && (
-                          <span class="rounded-full bg-primary-soft px-3 py-1 text-[12px] font-semibold text-primary">
-                            {novedad.etiqueta}
-                          </span>
-                        )}
+                        {novedad.etiqueta &&
+                          (novedad.esEspecial ? (
+                            <span class="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[12px] font-semibold text-ink-dark">
+                              <Icono nombre="sparkles" class="h-3.5 w-3.5" interactivo={false} />
+                              {novedad.etiqueta}
+                            </span>
+                          ) : (
+                            <span class="rounded-full bg-primary-soft px-3 py-1 text-[12px] font-semibold text-primary">
+                              {novedad.etiqueta}
+                            </span>
+                          ))}
                       </div>
 
                       <h2 class="mt-3 text-[22px] tablet:text-[26px]">{novedad.titulo}</h2>
