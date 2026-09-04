@@ -1,6 +1,7 @@
 ---
 import LoaderDST from './LoaderDST.astro';
 import { departamentos, totalMunicipios } from '../data/municipios';
+import { empresa } from '../data/site';
 
 /**
  * Mapa de cobertura: una pieza visual fija, no un mapa para explorar.
@@ -25,9 +26,26 @@ import { departamentos, totalMunicipios } from '../data/municipios';
 const nombresDepartamentos = departamentos.map((d) => d.nombre);
 const listaDepartamentos =
   nombresDepartamentos.slice(0, -1).join(', ') + ' y ' + nombresDepartamentos.at(-1);
+
+/**
+ * La dirección de la leyenda enlaza a `empresa.mapsUrl` (src/data/site.ts), que
+ * se arma con la coordenada exacta de `__sede__` en src/data/coordenadas.json.
+ * Se usa la constante compartida y no una URL propia para que este enlace y el
+ * del mapa de la sede (MapaCobertura.astro) no puedan separarse.
+ */
+const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
 ---
 
-<div class="glass-card overflow-hidden">
+<!--
+  `isolate` (isolation: isolate) no es decorativo: crea un contexto de
+  apilamiento en la tarjeta. Leaflet posiciona sus paneles con z-index propios
+  que llegan a 1000 (teselas 200, puntos 400 y 600, fichas 650, atribución
+  1000), y sin contexto propio esos valores compiten en la raíz del documento,
+  donde ganaban a la barra superior (z-100), al botón de WhatsApp (z-150), al
+  menú móvil (z-160) y al aviso de cookies (z-180): el mapa se montaba encima al
+  hacer scroll. Con el contexto, todo eso queda encerrado dentro de la tarjeta.
+-->
+<div class="glass-card isolate overflow-hidden">
   <!-- CONTROLES -->
   <div
     class="flex flex-col gap-4 border-b border-line px-5 py-4 tablet:flex-row tablet:items-center tablet:justify-between"
@@ -100,9 +118,26 @@ const listaDepartamentos =
   <div
     class="flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-line px-5 py-4 text-[13.5px]"
   >
-    <span class="inline-flex items-center gap-2.5 font-medium">
-      <span class="punto-sede" aria-hidden="true"></span>
-      Tunja, sede principal — punto pulsante en el mapa
+    <span class="inline-flex items-start gap-2.5 font-medium">
+      <span class="punto-sede mt-[7px] shrink-0" aria-hidden="true"></span>
+      <span class="flex flex-col gap-0.5">
+        {/* La razón social va encima de la dirección como etiqueta de contexto:
+            sin ella el punto pulsante es una dirección suelta y no se sabe de
+            quién es la sede. Discreta a propósito —no compite con los títulos
+            de la sección—, en el mismo estilo de kicker que ya usa el sitio. */}
+        <span class="text-[11.5px] font-semibold tracking-[0.06em] text-muted uppercase">
+          {empresa.razonSocial}
+        </span>
+        <span>Tunja, sede principal — punto pulsante en el mapa</span>
+        <a
+          class="font-semibold text-secondary-dark underline decoration-secondary-dark/40 underline-offset-2 transition-colors hover:decoration-secondary-dark"
+          href={empresa.mapsUrl}
+          target="_blank"
+          rel="noopener"
+        >
+          {direccionSede}
+        </a>
+      </span>
     </span>
     {
       departamentos.map((dep) => (

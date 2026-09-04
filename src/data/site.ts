@@ -2,6 +2,21 @@
  * Fuente única de verdad del sitio: datos de la empresa, navegación, marcas y
  * cobertura. Editar aquí en vez de tocar cada página.
  */
+import coordenadas from './coordenadas.json';
+
+/**
+ * Coordenada exacta de la sede, leída de la misma caché que usa el mapa
+ * (src/data/coordenadas.json, entrada `__sede__`).
+ *
+ * NO se escribe a mano aquí: ese valor se midió sobre la puerta de la oficina
+ * porque el geocodificador solo resolvía la carrera y dejaba el punto corrido
+ * unas cuadras. Si algún día se corrige, se corrige en un solo sitio y con él
+ * todos los enlaces de ubicación del sitio.
+ *
+ * El respaldo repite el de src/data/municipios.ts: si la entrada desaparece,
+ * el enlace sigue apuntando al centro de Tunja en vez de romperse.
+ */
+const SEDE = coordenadas.__sede__ ?? { lat: 5.5353, lng: -73.3678 };
 
 export const empresa = {
   nombre: 'Distribuciones Santiago de Tunja',
@@ -17,8 +32,14 @@ export const empresa = {
   ciudad: 'Tunja',
   departamento: 'Boyacá',
   pais: 'CO',
-  mapsUrl:
-    'https://www.google.com/maps/search/?api=1&query=Cra%202%20Este%2058-79%2C%20Tunja%2C%20Boyac%C3%A1',
+  /**
+   * Enlace a Google Maps sobre la COORDENADA de la sede, no sobre el texto de
+   * la dirección. Antes era una búsqueda por texto ("Cra 2 Este 58-79, Tunja,
+   * Boyacá") y Google la resolvía de forma aproximada, cayendo en la carrera y
+   * no en la puerta. Lo usan el mapa de la sede (MapaCobertura.astro) y la
+   * leyenda del mapa de cobertura (MapaRed.astro).
+   */
+  mapsUrl: `https://www.google.com/maps/search/?api=1&query=${SEDE.lat},${SEDE.lng}`,
 } as const;
 
 export const redes = [
