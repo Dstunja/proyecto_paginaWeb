@@ -4,15 +4,24 @@ import { empresa } from '../data/site';
 /**
  * Logo oficial de la marca.
  *
- * - `completo`: logotipo horizontal original. Es el que va en la barra, sobre
- *   el fondo blanco del sitio. Sus alturas van atadas a `--nav-h` (global.css):
- *   44 px mientras la barra mide 64 px y 56 px cuando sube a 80 px, para que
- *   siempre quede aire arriba y abajo. Si cambia una, revisar la otra.
+ * - `iso`: solo el isotipo. Es el que va en la barra. El nombre de la empresa
+ *   NO se dibuja a su lado a propósito: el logotipo horizontal trae el texto
+ *   dentro de la imagen y a 44 px de alto quedaba ilegible. El nombre sigue
+ *   estando en el sitio como texto real —el <title> de cada página, los datos
+ *   estructurados de BaseLayout.astro y el pie— que es donde de verdad cuenta
+ *   para SEO y para un lector de pantalla. Sus alturas van atadas a `--nav-h`
+ *   (global.css): 48 px mientras la barra mide 64 px y 56 px cuando sube a
+ *   80 px, para que siempre quede aire arriba y abajo. Si cambia una, revisar
+ *   la otra.
  * - `claro`: el isotipo dentro de una pastilla blanca (conserva sus colores de
  *   marca) más el nombre en Montserrat blanco y la línea naranja del logo.
  *   Para fondos oscuros, como el pie de página: ahí el logotipo horizontal no
- *   serviría, porque su texto es azul oscuro #0D2C84.
- * - `iso`: solo el isotipo, para espacios donde el logo completo no cabe.
+ *   serviría, porque su texto es azul oscuro #0D2C84. El nombre de aquí es
+ *   texto de verdad, no parte de una imagen, así que se lee bien y es el que
+ *   mantiene la razón social visible en todas las páginas.
+ * - `completo`: logotipo horizontal original, con el nombre dentro de la
+ *   imagen. Hoy no lo usa nadie: se conserva por ser el archivo oficial de
+ *   marca, para piezas donde haya espacio de sobra y el texto se lea.
  *
  * Las rutas respetan el `base` configurado en astro.config.mjs.
  */
@@ -64,7 +73,7 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
         alt={empresa.razonSocial}
         width="183"
         height="180"
-        class="icono-int h-11 w-11 object-contain"
+        class="icono-int h-12 w-12 object-contain tablet:h-14 tablet:w-14"
       />
     )
   }
