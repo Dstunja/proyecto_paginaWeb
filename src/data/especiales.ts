@@ -2,20 +2,14 @@
  * Especiales del mes: productos con una colaboración o una edición especial de
  * marca. Alimentan la sección "Especiales del mes" del inicio.
  *
- * NO CONFUNDIR CON src/data/temporada.ts
- * --------------------------------------
- * Son dos cosas distintas y las dos están vivas en el inicio:
+ * QUÉ ENTRA AQUÍ
+ * --------------
+ * Las COLABORACIONES y ediciones especiales de las marcas —Festival con KPop
+ * Demon Hunters, Jumbo con Ryan Castro—. Se curan a mano y se cambian mes a
+ * mes: no dependen del calendario, sino de qué lanzó la marca.
  *
- *   - Este archivo (especiales.ts) son las COLABORACIONES y ediciones
- *     especiales de las marcas —Festival con KPop Demon Hunters, Jumbo con
- *     Ryan Castro—. Se curan a mano y se cambian mes a mes: no dependen del
- *     calendario, sino de qué lanzó la marca.
- *
- *   - temporada.ts son las TEMPORADAS COMERCIALES del año (Amor y Amistad,
- *     Halloween, Navidad), cada una con su rango de fechas, y se prenden y
- *     apagan solas según el día en que se visite el sitio.
- *
- * El catálogo permanente, aparte de las dos, vive en src/data/productos.ts.
+ * Es la única fuente de destacados del inicio. El catálogo permanente vive
+ * aparte, en src/data/productos.ts.
  *
  * CÓMO ACTUALIZAR ESTA LISTA CADA MES
  * -----------------------------------
