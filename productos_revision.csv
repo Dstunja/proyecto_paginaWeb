@@ -1,0 +1,793 @@
+﻿nombre;marca;categoria;sap;precio;paginaPdf;todasLasPaginas;notaPrecio
+Badia Ajo Finamente Picado con Limón y Albahaca 226,7 g;Badia;Ajo picado;2034008;22000;206;206;PSP
+Badia Ajo Finamente Picado con Pimienta Roja 226,7 g;Badia;Ajo picado;2034009;22000;207;207;PSP
+Badia Ajo Finamente Picado con Sazón Completa 226,7 g;Badia;Ajo picado;2034331;22000;208;208;PSP
+Badia Ajo Negro Finamente Picado en Agua 226,7 g;Badia;Ajo picado;2034015;32950;209;209;PSP
+Badia Ajo Picado en Aceite de Oliva 226 g;Badia;Ajo picado;2017467;;228;228;columna VALOR = precio de lista, no PSP
+Badia Leche de Coco 400 ml;Badia;Conservas;2017340;;229;229;columna VALOR = precio de lista, no PSP
+Badia Ajo en Polvo 297,7 g;Badia;Especias;2017272;;215;215;
+Badia Ajo en Polvo 453,6 g;Badia;Especias;2017392;;215;215;
+Badia Ajo en Polvo 85 g;Badia;Especias;2017237;;215;215;precio sin etiquetar en la página
+Badia Ajo y Perejil 141,7 g;Badia;Especias;2017291;;224;224;columna VALOR = precio de lista, no PSP
+Badia Ajo y Perejil 42 g;Badia;Especias;2017194;;224;224;columna VALOR = precio de lista, no PSP
+Badia Albahaca 14 g;Badia;Especias;2017181;;221;221 223;columna VALOR = precio de lista, no PSP
+Badia Albahaca 21,3 g;Badia;Especias;2017219;;221;221 223;columna VALOR = precio de lista, no PSP
+Badia Canela en Polvo 453,6 g;Badia;Especias;2017379;;215;215;precio sin etiquetar en la página
+Badia Canela en Polvo 56,7 g;Badia;Especias;2017228;;215;215;precio sin etiquetar en la página
+Badia Canela en Rama 14,2 g;Badia;Especias;2017188;;215;215;
+Badia Cebolla en Polvo 78 g;Badia;Especias;2017244;;217;217;
+Badia Cilantro 56,6 g;Badia;Especias;2017378;;224;224;columna VALOR = precio de lista, no PSP
+Badia Cilantro 7,1 g;Badia;Especias;2017186;;221;221 224;columna VALOR = precio de lista, no PSP
+Badia Clavos de Olor;Badia;Especias;2017189;;214;214;la página no indica el gramaje
+Badia Curry en Polvo 28 g;Badia;Especias;2017193;;224;224;columna VALOR = precio de lista, no PSP
+Badia Curry en Polvo 56,7 g;Badia;Especias;2017235;;224;224;columna VALOR = precio de lista, no PSP
+Badia Cúrcuma Molida 453,6 g;Badia;Especias;2017425;;216;216;
+Badia Cúrcuma Orgánica 56,7 g;Badia;Especias;2017451;;216;216;
+Badia Estragón 14,2 g;Badia;Especias;2017261;;221;221 226;columna VALOR = precio de lista, no PSP
+Badia Jengibre Cristalizado 42,5 g;Badia;Especias;2017449;;229;229;columna VALOR = precio de lista, no PSP
+Badia Jengibre Molido 21 g;Badia;Especias;2017196;;214;214;
+Badia Jengibre Molido 42,5 g;Badia;Especias;2017239;;214;214;
+Badia Mezcla de Pimientas con Molino 56,7 g;Badia;Especias;2017263;;228;228;columna VALOR = precio de lista, no PSP
+Badia Mostaza Seca Orgánica 56,7 g;Badia;Especias;2017456;;214;214 216;
+Badia Nuez Moscada 56,7 g;Badia;Especias;2017243;;217;217;
+Badia Nuez Moscada Molida 14,2 g;Badia;Especias;2017198;;217;217;
+Badia Nuez Moscada Molida 56,7 g;Badia;Especias;2017242;;217;217;
+Badia Orégano 14,2 g;Badia;Especias;2017202;;221;221 223;columna VALOR = precio de lista, no PSP
+Badia Orégano 155,9 g;Badia;Especias;2017403;;221;221 223;columna VALOR = precio de lista, no PSP
+Badia Orégano 28,3 g;Badia;Especias;2017246;;221;221 223;"columna VALOR = precio de lista, no PSP; la tabla dice 14,2 g pero el empaque muestra 28,3 g"
+Badia Orégano Orgánico 21,2 g;Badia;Especias;2017455;;223;223;columna VALOR = precio de lista, no PSP
+Badia Pimentón (Paprika) 28 g;Badia;Especias;2017203;;217;217;
+Badia Pimentón (Paprika) 456,3 g;Badia;Especias;2017405;;217;217;
+Badia Pimentón (Paprika) 56,7 g;Badia;Especias;2017247;;217;217;
+Badia Pimienta Blanca Molida;Badia;Especias;2017207;;220;220;la página no indica el gramaje
+Badia Pimienta Negra con Molino 63,8 g;Badia;Especias;2017262;;219;219;
+Badia Pimienta Negra Entera 14,2 g;Badia;Especias;2017208;;219;219;
+Badia Pimienta Negra Molida 14,2 g;Badia;Especias;2017206;;219;219;
+Badia Pimienta Negra Molida 56,7 g;Badia;Especias;2017249;;219;219;
+Badia Pimienta Roja Cayena 453,6 g;Badia;Especias;2017413;;218;218;
+Badia Pimienta Roja Cayena 49,6 g;Badia;Especias;2017251;;218;218;
+Badia Pimienta Roja Cayena Orgánica 49,5 g;Badia;Especias;2017452;;218;218;
+Badia Pimienta Roja Cayena Orgánica triturada 35,5 g;Badia;Especias;2017460;;218;218;
+Badia Pimienta Roja Triturada 14,2 g;Badia;Especias;2017205;;219;219;
+Badia Polvo de Chili 70,8 g;Badia;Especias;2017225;;226;226;columna VALOR = precio de lista, no PSP
+Badia Romero 14,2 g;Badia;Especias;2017210;;225;225;columna VALOR = precio de lista, no PSP
+Badia Sal Cilantro Limón 226,6 g;Badia;Especias;2017317;;228;228;columna VALOR = precio de lista, no PSP
+Badia Sal de Ajo 127,6 g;Badia;Especias;2017238;;230;230;columna VALOR = precio de lista, no PSP
+Badia Sal de Ajo 453,6 g;Badia;Especias;2017273;;230;230;columna VALOR = precio de lista, no PSP
+Badia Sal de Cebolla 127,8 g;Badia;Especias;2017245;;230;230;columna VALOR = precio de lista, no PSP
+Badia Sal Rosada del Himalaya Grinder 127,6 g;Badia;Especias;2012154;;119;119;"la página muestra un precio sin etiquetar; no se pudo confirmar que sea PSP"
+Badia Sazonador Fajita 78 g;Badia;Especias;2017363;;226;226;columna VALOR = precio de lista, no PSP
+Badia Sazón (color y achiote) 85 g;Badia;Especias;2017258;;226;226;columna VALOR = precio de lista, no PSP
+Badia Sazón Completa 340,2 g;Badia;Especias;2017268;;222;222;columna VALOR = precio de lista, no PSP
+Badia Sazón Completa 49,6 g;Badia;Especias;2017190;;222;222;columna VALOR = precio de lista, no PSP
+Badia Sazón Completa 793,8 g;Badia;Especias;2017383;;222;222;columna VALOR = precio de lista, no PSP
+Badia Sazón Completa 99,2 g;Badia;Especias;2017232;;222;222;columna VALOR = precio de lista, no PSP
+Badia Sazón Italiana 141,8 g;Badia;Especias;2017428;;220;220;
+Badia Sazón Italiana 35,4 g;Badia;Especias;2017296;;220;220;
+Badia Tomillo 14,2 g;Badia;Especias;2017213;;225;225;columna VALOR = precio de lista, no PSP
+Badia Almendras Rebanadas 21,3 g;Badia;Frutos secos;2017179;;214;214 225;columna VALOR = precio de lista, no PSP
+Badia Rainbow Sprinkles (chispas de colores) 680,4 g;Badia;Repostería;2017421;;220;220;
+Badia Chimichurri Steak Sauce con aceite de oliva 226,8 g;Badia;Salsas y marinadas;2017330;;229;229;columna VALOR = precio de lista, no PSP
+Badia Mojo Marinado 295,7 ml;Badia;Salsas y marinadas;2017346;;227;227;columna VALOR = precio de lista, no PSP
+Badia Salsa Chipotle 155 ml;Badia;Salsas y marinadas;2017343;;227;227;columna VALOR = precio de lista, no PSP
+Badia Salsa Picante Chili 295,7 ml;Badia;Salsas y marinadas;2017344;;227;227;"columna VALOR = precio de lista, no PSP; la tabla dice 295,7 ml y el empaque 155 ml"
+Badia Salsa Picante Habanero 155 ml;Badia;Salsas y marinadas;2017345;;228;228;columna VALOR = precio de lista, no PSP
+Badia Salsa Sriracha chile con ajo 500 ml;Badia;Salsas y marinadas;2017342;;227;227;columna VALOR = precio de lista, no PSP
+Badia Té de Hierbas Naturales 18 bolsas;Badia;Tés y aromáticas;2020748;;213;213;columna VALOR = precio de lista, no PSP
+CMU 12 Té Hierbas Naturales Badia 1,5 g;Badia;Tés y aromáticas;1069127;;62;62;
+CMU 3 Té Hierbas Naturales Badia 1,5 g;Badia;Tés y aromáticas;1069117;;60;60;
+CMU 6 Té Hierbas Naturales Badia 1,5 g;Badia;Tés y aromáticas;1069118;;61;61;
+Bénet Alimento en Polvo display 3 sobres x 50 g;Bénet;Bienestar;1060021;;142;142;columna VALOR sin especificar tipo de precio
+Bénet Alimento en Polvo Fresa tarro 400 g;Bénet;Bienestar;1068443;;142;142;columna VALOR sin especificar tipo de precio
+Bénet Alimento en Polvo Vainilla Ahorrapack 400 g;Bénet;Bienestar;1060078;;142;142 143;columna VALOR sin especificar tipo de precio
+Bénet Alimento en Polvo Vainilla doypack 250 g;Bénet;Bienestar;1058787;;142;142;columna VALOR sin especificar tipo de precio
+Bénet Alimento en Polvo Vainilla tarro 300 g;Bénet;Bienestar;1068442;;142;142;columna VALOR sin especificar tipo de precio
+Bénet Colágeno Hidrolizado en polvo 18 sobres 104,4 g;Bénet;Bienestar;1059262;;134;134;precio sin etiquetar en la página
+Cápsulas Bénet Calcio + Magnesio + Vitamina D3 x 30 cápsulas;Bénet;Bienestar;1078795;;130;130;
+Cápsulas Bénet Colágeno Hidrolizado + Biotina + Vitamina C x 60 cápsulas;Bénet;Bienestar;2019772;21900;126;126 130;PSP (precio por porción $730)
+Cápsulas Bénet Mujer multivitamínico x 30 cápsulas blandas;Bénet;Bienestar;1080785;36900;111;111;PSP
+Cápsulas Bénet Vitamina E + Selenio x 30 cápsulas blandas;Bénet;Bienestar;2008565;;130;130;
+Gomas Bénet Citrato de Magnesio 48 gomas 144 g;Bénet;Bienestar;2037218;36500;125;125;PSP
+Gomas Bénet Colágeno + Selenio + Vitaminas A y E 60 gomas 150 g;Bénet;Bienestar;1072792;45900;70;70;PSP por unidad (CMU P2 LL3 $146.700)
+Gomas Bénet Colágeno + Selenio + Vitaminas A y E 60 gomas 150 g;Bénet;Bienestar;2019271;;128;128 129 133;"la página muestra un precio sin etiquetar; no se pudo confirmar que sea PSP"
+Gomas Bénet Kids Citrato de Magnesio 48 gomas 144 g;Bénet;Bienestar;1080149;42900;112;112;PSP
+Gomas Bénet Kids Multivitaminas + Minerales 45 gomas;Bénet;Bienestar;2018640;;133;133;columna VALOR sin especificar tipo de precio
+Gomas Bénet Kids Omega 3 + Zinc 40 gomas 100 g;Bénet;Bienestar;2020557;;132;132;"la página muestra precios sin etiquetar; no se pudo confirmar que sean PSP"
+Gomas Bénet Kids Vitamina C + Zinc 48 gomas;Bénet;Bienestar;2018639;;133;133;columna VALOR sin especificar tipo de precio
+Gomas Bénet Magnesio 48 gomas 144 g;Bénet;Bienestar;1080145;48900;69;69;PSP por unidad (CMU 2 un. $97.800)
+Gomas Bénet Omega 3 + Zinc 40 gomas 100 g;Bénet;Bienestar;2023030;;129;129;
+Gomas Bénet Vinagre de Manzana 48 gomas 144 g;Bénet;Bienestar;1080144;48900;68;68;PSP por unidad (CMU 2 un. $97.800)
+Gomas Bénet Vinagre de Manzana 48 gomas 144 g;Bénet;Bienestar;2037217;36500;124;124;PSP
+Gomas Bénet Vitaminas y Minerales 60 gomas 150 g;Bénet;Bienestar;2019269;;129;129;
+Gomas Bénet Zinc + Vitamina C 60 gomas;Bénet;Bienestar;2019270;;133;133;columna VALOR sin especificar tipo de precio
+Gomas Bénet Zinc + Vitamina C 60 gomas 150 g;Bénet;Bienestar;1071985;45900;71;71;PSP por unidad (CMU P2 LL3 $146.700)
+Kola Granulada Bénet Fresa 300 g;Bénet;Bienestar;1079620;18900;113;113;PSP
+Kola Granulada Bénet multivitamínico (CMU P5 LL6);Bénet;Bienestar;1089426;18900;72;72;PSP por unidad (CMU $113.400). La página muestra dos códigos: 1089426 en el título y 1072793 en el cuerpo
+Kola Granulada Bénet multivitamínico 300 g (CMU P2 LL3);Bénet;Bienestar;1083485;18900;73;73;PSP por unidad (CMU $56.700)
+Tabletas Bénet Complejo B + Vitamina C + Calcio + Zinc x 60 tabletas;Bénet;Bienestar;1078796;;130;130;
+Tabletas Bénet Vitamina D3 2.000 UI x 60 tabletas;Bénet;Bienestar;2019773;15900;127;127 129;PSP (precio por porción $265)
+Bénet Active Proteína bebida lista 250 ml café capuccino;Bénet;Proteína;1064829;;141;141;precio sin etiquetar en la página
+Bénet Active Proteína bebida lista 250 ml café capuccino (pack x 3);Bénet;Proteína;1065136;;141;141;precio sin etiquetar en la página
+Bénet Active Proteína bebida lista 250 ml frutos rojos;Bénet;Proteína;1064827;;139;139;precio sin etiquetar en la página
+Bénet Active Proteína bebida lista 250 ml frutos rojos (pack x 3);Bénet;Proteína;1065126;;139;139;precio sin etiquetar en la página
+Bénet Active Proteína bebida lista 250 ml vainilla banano;Bénet;Proteína;1064828;;140;140;precio sin etiquetar en la página
+Bénet Active Proteína bebida lista 250 ml vainilla banano (pack x 3);Bénet;Proteína;1065135;;140;140;precio sin etiquetar en la página
+Proteína Bénet Active en polvo Café Capuccino 340 g;Bénet;Proteína;1068387;;143;143;precio sin etiquetar en la página
+Proteína Bénet Active en polvo Vainilla 340 g;Bénet;Proteína;1058789;;143;143;precio sin etiquetar en la página
+Proteína Bénet Active en polvo Vainilla doypack 154 g;Bénet;Proteína;1059215;;143;143;precio sin etiquetar en la página
+Proteína Bénet Colágeno Whey Protein frutos rojos 375 g;Bénet;Proteína;1071401;;136;136;
+Proteína Bénet Whey Protein helado de vainilla 595 g;Bénet;Proteína;1076417;129900;137;137;PSP
+Carve Proteína Vegetal de Soya bolsa 200 g;Carve;Proteína vegetal;1001642;;203;203;precio sin etiquetar en la página
+Carve Proteína Vegetal de Soya caja 165 g;Carve;Proteína vegetal;1001639;;203;203;precio sin etiquetar en la página
+Carve Proteína Vegetal de Soya caja 335 g;Carve;Proteína vegetal;1001640;;203;203;precio sin etiquetar en la página
+Chocolisto Chocolate 200 g;Chocolisto;Bebidas achocolatadas;1076738;;249;249;precio sin etiquetar en la página
+Chocolisto Chocolate 4 x 90 g;Chocolisto;Bebidas achocolatadas;1075620;;249;249;precio sin etiquetar en la página
+Chocolisto Chocolate 90 g (unidad);Chocolisto;Bebidas achocolatadas;1075398;;249;249;precio sin etiquetar en la página
+Chocolisto Chocolate Ahorrapack doypack 1.500 g;Chocolisto;Bebidas achocolatadas;1076652;;250;250;precio sin etiquetar en la página
+Chocolisto Chocolate Ahorrapack doypack 440 g;Chocolisto;Bebidas achocolatadas;1076743;;250;250;precio sin etiquetar en la página
+Chocolisto Chocolate Ahorrapack doypack 600 g;Chocolisto;Bebidas achocolatadas;1076653;;251;251;precio sin etiquetar en la página
+Chocolisto Chocolate Ahorrapack tarro 900 g;Chocolisto;Bebidas achocolatadas;1075622;;250;250;"precio sin etiquetar; el texto dice 900 g y el empaque 1.000 g"
+Chocolisto Chocolate tarro 300 g;Chocolisto;Bebidas achocolatadas;1076740;;250;250;precio sin etiquetar en la página
+Chocolisto Chocolate tira x 12 unidades;Chocolisto;Bebidas achocolatadas;1075623;;249;249;precio sin etiquetar en la página
+Chocolisto Chocolate tira x 18 unidades;Chocolisto;Bebidas achocolatadas;1075624;;249;249;precio sin etiquetar en la página
+Chocolisto Crocante 100 g;Chocolisto;Bebidas achocolatadas;1038973;;251;251;precio sin etiquetar en la página
+Chocolisto Crocante 250 g;Chocolisto;Bebidas achocolatadas;1038974;;251;251;precio sin etiquetar en la página
+Chocolisto Sin Azúcar 180 g;Chocolisto;Bebidas achocolatadas;1053337;;251;251;precio sin etiquetar en la página
+CMU Chocolisto Chocolate 200 g Paga 5 Lleve 6;Chocolisto;Bebidas achocolatadas;1078981;48000;34;34;VENDE
+CMU Chocolisto Chocolate 5 un x 90 g;Chocolisto;Bebidas achocolatadas;1078982;20000;33;33;VENDE
+CMU 1 Ristra Colcafé Liofilizado 18 g;Colcafé;Café;1090703;24000;8;8;VENDE
+CMU 2 Ristras Colcafé Clásico 8 g;Colcafé;Café;1089902;36000;9;9;VENDE
+Colcafé 3 en 1 caja 12 sobres x 16 g (192 g);Colcafé;Café;1064803;;262;262;columna Precio = precio de lista, no PSP
+Colcafé 3 en 1 Light tarro 310 g;Colcafé;Café;1064969;;262;262;columna Precio = precio de lista, no PSP
+Colcafé 3 en 1 tarro 380 g;Colcafé;Café;1064801;;262;262;columna Precio = precio de lista, no PSP
+Colcafé Balanceado Liofilizado 170 g;Colcafé;Café;1074254;;260;260;columna Precio = precio de lista, no PSP
+Colcafé Balanceado Liofilizado 47 g;Colcafé;Café;1074284;;260;260;precio sin etiquetar en la página
+Colcafé Balanceado Liofilizado 85 g;Colcafé;Café;1074283;;260;260;columna Precio = precio de lista, no PSP
+Colcafé Bastiyá Balanceado Granulado 500 g;Colcafé;Café;1030756;;255;255 260;"columna Precio = precio de lista, no PSP; la tabla dice 300 GR y el título 500 g (revisar)"
+Colcafé Café con Leche bolsa 880 g;Colcafé;Café;1064059;;263;263;columna Precio = precio de lista, no PSP
+Colcafé Café con Leche caja 6 sobres x 22 g (132 g);Colcafé;Café;1063532;;263;263;columna Precio = precio de lista, no PSP
+Colcafé Café con Leche doypack 220 g;Colcafé;Café;1063531;;263;263;columna Precio = precio de lista, no PSP
+Colcafé Café con Leche tarro 396 g;Colcafé;Café;1078708;;262;262;columna Precio = precio de lista, no PSP
+Colcafé Cappuccino Caramelo caja 6 sobres;Colcafé;Café;1066754;;266;266;columna VALOR = precio de lista, no PSP
+Colcafé Cappuccino Clásico caja 6 sobres;Colcafé;Café;1065439;;265;265;columna VALOR = precio de lista, no PSP
+Colcafé Cappuccino Clásico Más Ahorro bolsa 500 g;Colcafé;Café;1066702;;266;266;"columna VALOR = precio de lista, no PSP; la tabla dice 50G y el empaque 500 g"
+Colcafé Cappuccino Clásico tarro 270 g;Colcafé;Café;1065448;;264;264;columna VALOR = precio de lista, no PSP
+Colcafé Cappuccino Mocca caja 6 sobres;Colcafé;Café;1066758;;265;265;columna VALOR = precio de lista, no PSP
+Colcafé Cappuccino Mocca tarro 270 g;Colcafé;Café;1066759;;264;264;columna VALOR = precio de lista, no PSP
+Colcafé Cappuccino Vainilla caja 6 sobres;Colcafé;Café;1065742;;265;265;columna VALOR = precio de lista, no PSP
+Colcafé Cappuccino Vainilla doypack 144 g;Colcafé;Café;1065744;;264;264;columna VALOR = precio de lista, no PSP
+Colcafé Cappuccino Vainilla tarro 270 g;Colcafé;Café;1065743;;264;264;columna VALOR = precio de lista, no PSP
+Colcafé Caramelo frasco 50 g;Colcafé;Café;1003377;;259;259;columna VALOR = precio de lista, no PSP
+Colcafé Clásico doypack 25 g x 6 unidades;Colcafé;Café;1002807;;258;258;columna VALOR = precio de lista, no PSP
+Colcafé Clásico frasco 42 g;Colcafé;Café;1043503;;258;258;columna VALOR = precio de lista, no PSP
+Colcafé Clásico frasco 50 g;Colcafé;Café;1003355;;258;258;columna VALOR = precio de lista, no PSP
+Colcafé Clásico frasco 85 g;Colcafé;Café;1003354;;258;258;columna VALOR = precio de lista, no PSP
+Colcafé Clásico frasco PET 170 g;Colcafé;Café;1003353;;258;258;columna VALOR = precio de lista, no PSP
+Colcafé Clásico Más Ahorro bolsa 500 g;Colcafé;Café;1003359;;259;259;columna VALOR = precio de lista, no PSP
+Colcafé Clásico Más Ahorro frasco 250 g;Colcafé;Café;1003350;;258;258;columna VALOR = precio de lista, no PSP
+Colcafé Clásico plegadiza 50 sobres x 8 g;Colcafé;Café;1079572;1500;257;257;PSP por sobre de 8 g
+Colcafé Clásico ristra 12 sobres x 8 g;Colcafé;Café;1079625;1500;256;256;PSP por sobre de 8 g
+Colcafé Clásico sobres 1,5 g x 48 (caja 72 g);Colcafé;Café;1056678;;255;255;columna VALOR = precio de lista, no PSP
+Colcafé Intenso Granulado 170 g;Colcafé;Café;1014991;;254;254;columna Precio = precio de lista, no PSP
+Colcafé Intenso Granulado 50 g;Colcafé;Café;1014989;;254;254;columna Precio = precio de lista, no PSP
+Colcafé Intenso Granulado 85 g;Colcafé;Café;1014990;;254;254;columna Precio = precio de lista, no PSP
+Colcafé Intenso Granulado Más Ahorro 300 g;Colcafé;Café;1014992;;255;255;columna Precio = precio de lista, no PSP
+Colcafé Intenso sobres 1,5 g x 40 (caja 60 g);Colcafé;Café;1056679;;255;255;columna Precio = precio de lista, no PSP
+Colcafé Ligero Descafeinado frasco 40 g;Colcafé;Café;1059907;;259;259;columna Precio = precio de lista, no PSP
+Colcafé Ligero Descafeinado frasco 90 g;Colcafé;Café;1059909;;259;259;columna Precio = precio de lista, no PSP
+Colcafé Vainilla frasco 50 g;Colcafé;Café;1003351;;259;259;columna VALOR = precio de lista, no PSP
+CMU 4 Spaghetti 250 g + 3 Fideos 250 g Comarrico + 1 gratis;Comarrico;Pastas;1079528;;57;57;
+CMU 6 Unidades Fideo Comarrico 250 g;Comarrico;Pastas;1078664;;59;59;
+CMU 6 Unidades Spaghetti Comarrico 250 g;Comarrico;Pastas;1078665;;58;58;
+CMU 8 Spaghetti Doria 250 g + 4 Spaghetti Comarrico 250 g + 2 gratis;Comarrico;Pastas;1093060;;56;56;
+Comarrico Argollitas / Ojo de Perdiz 250 g;Comarrico;Pastas;1056753;1800;201;201;PRECIO SUGERIDO 250 g declarado en la pág. 199 para la línea Comarrico
+Comarrico Caracol 250 g;Comarrico;Pastas;1005135;1800;202;202;PRECIO SUGERIDO 250 g declarado en la pág. 199 para la línea Comarrico
+Comarrico Caracol 900 g;Comarrico;Pastas;1089907;;202;202;columna Precio = precio de lista, no PSP
+Comarrico Coditos 250 g;Comarrico;Pastas;1005144;1800;201;201;PRECIO SUGERIDO 250 g declarado en la pág. 199 para la línea Comarrico
+Comarrico Conchitas 250 g;Comarrico;Pastas;1005145;1800;201;201;PRECIO SUGERIDO 250 g declarado en la pág. 199 para la línea Comarrico
+Comarrico Corbatas 250 g;Comarrico;Pastas;1005141;1800;201;201;PRECIO SUGERIDO 250 g declarado en la pág. 199 para la línea Comarrico
+Comarrico Fideo 250 g;Comarrico;Pastas;1005133;1800;200;200;PRECIO SUGERIDO 250 g declarado en la pág. 199 para la línea Comarrico
+Comarrico Fideo 454 g;Comarrico;Pastas;1033420;;200;200;columna precio = precio de lista, no PSP
+Comarrico Fideo 900 g;Comarrico;Pastas;1089906;;200;200;columna precio = precio de lista, no PSP
+Comarrico Macarrón Corto 250 g;Comarrico;Pastas;1005134;1800;200;200;PRECIO SUGERIDO 250 g declarado en la pág. 199 para la línea Comarrico
+Comarrico Macarrón Corto 454 g;Comarrico;Pastas;1038954;;200;200 202;"columna Precio = precio de lista, no PSP; la pág. 202 asigna este código al Caracol 454 g — revisar"
+Comarrico Macarrón Corto 900 g;Comarrico;Pastas;;;200;200;la tabla muestra el código como 0 (dato faltante en la página)
+Comarrico Macarrón Grueso 900 g;Comarrico;Pastas;1082863;;202;202;columna Precio = precio de lista, no PSP
+Comarrico Spaghetti 250 g;Comarrico;Pastas;1005136;1800;200;200;PRECIO SUGERIDO 250 g declarado en la pág. 199 para la línea Comarrico
+Comarrico Spaghetti Tamaño Familiar 454 g;Comarrico;Pastas;1033421;;200;200;columna precio = precio de lista, no PSP
+Comarrico Spaghetti Tamaño Familiar 900 g;Comarrico;Pastas;1089905;;200;200;columna precio = precio de lista, no PSP
+Comarrico Tornillo 250 g;Comarrico;Pastas;1005153;1800;202;202;PRECIO SUGERIDO 250 g declarado en la pág. 199 para la línea Comarrico
+Comarrico Tornillo 900 g;Comarrico;Pastas;1089908;;202;202;columna Precio = precio de lista, no PSP
+Copelia Arequipe y Coco 15 g x 10 unidades x 20 bolsas;Copelia;Dulces;1081971;;116;116;
+Copelia Panelitas Cocadas 15 g (plegadiza);Copelia;Dulces;1080494;;116;116;
+Copelia Panelitas de Arequipe con Coco 15 g x 22 unidades (bolsa);Copelia;Dulces;1080444;;116;116;
+Copelia Panelitas de Arequipe con Coco 15 g x 6 unidades (plegadiza);Copelia;Dulces;1080443;;116;116;
+Cordillera Chocubierta Blanca 4 kg;Cordillera;Chocubiertas;1059259;;396;396;precio sin etiquetar en la página
+Cordillera Chocubierta Semiamarga 1 kg;Cordillera;Chocubiertas;1059198;;395;395;precio sin etiquetar en la página
+Cordillera Chocubierta Semiamarga 4 kg;Cordillera;Chocubiertas;1059258;;395;395 396;precio sin etiquetar en la página
+CMU Chocubierta Cordillera caneca x 4 kg + Chips Cordillera;Cordillera;Coberturas;1091956;;38;38;
+Cordillera Barras de Cobertura de Chocolate Semiamargo 43% Cacao 1 kg;Cordillera;Coberturas;1049872;;393;393;precio sin etiquetar en la página
+Cordillera Chips Blancos 1 kg;Cordillera;Coberturas;1056397;;394;394;precio sin etiquetar en la página
+Cordillera Chips Semiamargos 1 kg;Cordillera;Coberturas;1056399;;394;394;precio sin etiquetar en la página
+Cordillera Chocolate Chunks Semiamargo 47% Cacao 1 kg;Cordillera;Coberturas;1049869;;385;385;precio sin etiquetar en la página
+Cordillera Chocolate de Origen Colombia Amargo 59% Cacao 5 kg;Cordillera;Coberturas;1041781;;388;388;precio sin etiquetar en la página
+Cordillera Chocolate de Origen Colombia Amargo 65% Cacao 5 kg;Cordillera;Coberturas;1041780;;389;389;precio sin etiquetar en la página
+Cordillera Chocolate de Origen Colombia Amargo 70% Cacao 5 kg;Cordillera;Coberturas;1041779;;389;389;precio sin etiquetar en la página
+Cordillera Chocolate de Origen Colombia Dark Amargo 65% Cacao 1 kg;Cordillera;Coberturas;1041789;;386;386;precio sin etiquetar en la página
+Cordillera Chocolate de Origen Colombia Semiamargo 53% Cacao 1 kg;Cordillera;Coberturas;1041788;;386;386;precio sin etiquetar en la página
+Cordillera Chocolate de Origen Colombia Semiamargo 53% Cacao 5 kg;Cordillera;Coberturas;1041782;;388;388;precio sin etiquetar en la página
+Cordillera Chocolate de Origen Colombia Semiamargo 53% Cacao 500 g;Cordillera;Coberturas;1068011;;380;380 386;precio sin etiquetar en la página
+Cordillera Cobertura de Chocolate Semiamargo 43% Cacao 1 kg;Cordillera;Coberturas;1048887;;385;385;precio sin etiquetar en la página
+Cordillera Cobertura de Chocolate Semiamargo 43% Cacao bloque 5 kg;Cordillera;Coberturas;1049834;;385;385;precio sin etiquetar en la página
+Cordillera Cobertura LPU para helados sabor a chocolate semiamargo 10 kg;Cordillera;Coberturas;1059831;;397;397;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Blanco 1 kg;Cordillera;Coberturas;1059257;;384;384;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Blanco 500 g;Cordillera;Coberturas;1068010;;379;379 384;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Blanco bloque 1 kg;Cordillera;Coberturas;1059200;;384;384;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Blanco bloque 5 kg;Cordillera;Coberturas;1059036;;384;384;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Dulce 1 kg;Cordillera;Coberturas;1059176;;383;383;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Dulce 500 g;Cordillera;Coberturas;1068008;;379;379 383;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Dulce bloque 1 kg;Cordillera;Coberturas;1059175;;383;383;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Semiamargo 1 kg;Cordillera;Coberturas;1059178;;382;382;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Semiamargo 500 g;Cordillera;Coberturas;1068009;;380;380 382;precio sin etiquetar en la página
+Cordillera Cobertura sabor a Chocolate Semiamargo bloque 5 kg;Cordillera;Coberturas;1059034;;382;382;precio sin etiquetar en la página
+Cordillera Crema de Avellana con sabor a chocolate semiamargo 1 kg;Cordillera;Coberturas;1059196;;395;395;precio sin etiquetar en la página
+Cordillera Crema de Avellana con sabor a chocolate semiamargo 4,5 kg;Cordillera;Coberturas;1059829;;396;396;precio sin etiquetar en la página
+Cordillera Milk Chocolate con Leche 32% Cacao 5 kg;Cordillera;Coberturas;1041795;;388;388;precio sin etiquetar en la página
+Cordillera presentación institucional en caja (la página no especifica la referencia);Cordillera;Coberturas;1003875;;392;392;"precio sin etiquetar; la página no identifica el producto asociado a este código"
+Cordillera White Chocolate Blanco 30% Cacao 1 kg;Cordillera;Coberturas;1041799;;387;387;precio sin etiquetar en la página
+Cordillera Cocoa Natural cacao en polvo 14-16% manteca de cacao 1 kg;Cordillera;Cocoa;1049870;;389;389;precio sin etiquetar en la página
+CMU 4 un Chantilly Cordillera x 1 kg + gratis Crumble con chocolate;Cordillera;Repostería;1091955;;39;39;
+Cordillera Mezcla en Polvo para Crema Chantilly 1 kg;Cordillera;Repostería;1059174;;381;381;precio sin etiquetar en la página
+Cordillera Mezcla en Polvo para Crema Chantilly 300 g;Cordillera;Repostería;1068107;;379;379 381;precio sin etiquetar en la página
+Cordillera Chips de Colores sabor a Tutti Frutti 500 g;Cordillera;Toppings;1057721;;391;391 394;precio sin etiquetar en la página
+Cordillera Chips de Colores Vitamina 5 kg;Cordillera;Toppings;1059878;;392;392;precio sin etiquetar en la página
+Cordillera Grageas de Chocolate Confitadas 500 g;Cordillera;Toppings;1057724;;391;391;precio sin etiquetar en la página
+Cordillera Lluvia sabor a Chocolate 500 g;Cordillera;Toppings;1057723;;391;391;precio sin etiquetar en la página
+Cordillera Maní Tostado 3 mm 800 g;Cordillera;Toppings;1060216;;392;392;precio sin etiquetar en la página
+Cordillera Perlas de Chocolate Crocante 500 g;Cordillera;Toppings;1057720;;391;391;precio sin etiquetar en la página
+Chocolate Corona Baileys Instantáneo 400 g;Corona;Bebidas achocolatadas;1084520;15500;80;80;PSP
+Corona Instantáneo Clavos y Canela 300 g;Corona;Bebidas achocolatadas;;;237;237;código SAP recortado en la página (solo se ve ...70791)
+Corona Instantáneo Clavos y Canela display;Corona;Bebidas achocolatadas;;;237;237;código SAP recortado en la página (solo se ve ...70794)
+Corona Instantáneo Tradicional 300 g;Corona;Bebidas achocolatadas;;;237;237;código SAP recortado en la página (solo se ve ...70924)
+Corona Instantáneo Tradicional 500 g;Corona;Bebidas achocolatadas;;;237;237;código SAP recortado en la página (solo se ve ...70925)
+Chocolate Corona Bogotano 18 pastillas 450 g;Corona;Chocolate de mesa;;;239;239;código SAP recortado en la página (solo se ve ...74118)
+Chocolate Corona Clavos y Canela 18 pastillas 450 g;Corona;Chocolate de mesa;;;239;239;código SAP recortado en la página (solo se ve ...74117)
+Chocolate Corona Clavos y Canela 8 pastillas 200 g;Corona;Chocolate de mesa;;;240;240;código SAP recortado en la página (solo se ve ...74161)
+Chocolate Corona Delicatto 142 g;Corona;Chocolate de mesa;;;238;238;código SAP recortado en la página (solo se ve ...53148)
+Chocolate Corona Delicatto caja (54% menos azúcar);Corona;Chocolate de mesa;;;238;238;código SAP recortado en la página (solo se ve ...53147)
+Chocolate Corona Stevia 166,4 g;Corona;Chocolate de mesa;;;238;238;código SAP recortado en la página (solo se ve ...59172)
+Chocolate Corona Stevia caja 1.664 g;Corona;Chocolate de mesa;;;238;238;código SAP recortado en la página (solo se ve ...59171)
+Chocolate Corona Tradicional 18 pastillas 450 g;Corona;Chocolate de mesa;;;239;239;código SAP recortado en la página (solo se ve ...74116)
+Chocolate Corona Tradicional 4 pastillas 100 g;Corona;Chocolate de mesa;;;240;240;código SAP recortado en la página (solo se ve ...74076)
+Chocolate Corona Tradicional 8 pastillas 200 g;Corona;Chocolate de mesa;;;240;240;código SAP recortado en la página (solo se ve ...74160)
+Chocolate Corona Tradicional pastillas individuales 40 un x 25 g (1.000 g);Corona;Chocolate de mesa;1075731;;236;236;precio sin etiquetar en la página
+Chocolate Corona Vainilla 18 pastillas 450 g;Corona;Chocolate de mesa;;;239;239;código SAP recortado en la página (solo se ve ...74119)
+Chocolate Corona Vainilla 8 pastillas 200 g;Corona;Chocolate de mesa;;;240;240;código SAP recortado en la página (solo se ve ...74162)
+CMU 5 Corona Tradicional 450 g x 18 pastillas x 50 barras;Corona;Chocolate de mesa;1078281;78000;37;37;PSP
+CMU Corona Tradicional 25 g x 40 pastillas x 10 display P74 LL80;Corona;Chocolate de mesa;1092682;80000;35;35;PSP
+Corona Repostería Cobertura Blanca 500 g;Corona;Coberturas;1037498;;374;374;columna VALOR = precio de lista, no PSP
+Corona Repostería Cobertura de Leche 500 g;Corona;Coberturas;1037497;;374;374;columna VALOR = precio de lista, no PSP
+CMU 5 Cocoa Corona 230 g;Corona;Cocoa;1089413;71000;18;18 36;PSP
+Corona Cocoa Superior 100 g;Corona;Cocoa;1079737;;241;241;columna Precio = precio de lista, no PSP
+Corona Cocoa Superior 230 g;Corona;Cocoa;1079789;;241;241;columna Precio = precio de lista, no PSP
+Corona Mezcla lista Brownies 350 g;Corona;Repostería;1037208;;375;375;columna VALOR = precio de lista, no PSP
+Corona Mezcla lista Pancakes 320 g;Corona;Repostería;1037209;;376;376;columna VALOR = precio de lista, no PSP
+Corona Mezcla lista Pancakes 600 g;Corona;Repostería;1037210;;376;376;columna VALOR = precio de lista, no PSP
+Corona Mezcla lista Torta de Chocolate 450 g;Corona;Repostería;1037206;;375;375;columna VALOR = precio de lista, no PSP
+Corona Mezcla lista Torta de Vainilla veteada de Chocolate 450 g;Corona;Repostería;1037207;;375;375;columna VALOR = precio de lista, no PSP
+Corona Repostería Chantilly en Polvo caja 12 unidades x 80 g (960 g);Corona;Repostería;1008490;;375;375;columna VALOR = precio de lista, no PSP
+Corona Repostería Chips con sabor a chocolate 250 g;Corona;Repostería;1003876;;374;374;columna VALOR = precio de lista, no PSP
+Corona Repostería Crema Chantilly Instantánea 80 g x 3;Corona;Repostería;1049712;;373;373;precio sin etiquetar en la página
+Corona Repostería Salsa de Chocolate 250 g;Corona;Toppings;1078165;;376;376;columna VALOR = precio de lista, no PSP
+Chocolate Cruz sin azúcar pastillas individuales 200 g;Cruz;Chocolate de mesa;1079429;;243;243;"columna Precio = precio de lista, no PSP; el gramaje aparece escrito como 20c0 GR"
+Doria Ancestral Ajonjolí en Grano 250 g;Doria;Granos y semillas;2018931;;197;197;columna VALOR = precio de lista, no PSP
+Doria Ancestral Chía en Grano 250 g;Doria;Granos y semillas;2018930;;198;198;columna VALOR = precio de lista, no PSP
+Doria Ancestral Linaza Molida 250 g;Doria;Granos y semillas;2018929;;198;198;columna VALOR = precio de lista, no PSP
+Doria Ancestral Quinua en Grano 300 g;Doria;Granos y semillas;2010147;;197;197;columna VALOR = precio de lista, no PSP
+Doria Ancestral Quinua en Hojuelas 200 g;Doria;Granos y semillas;2010148;;197;197;columna VALOR = precio de lista, no PSP
+CMU 10 Spaghetti + 11 Fideos Doria 250 g + 3 gratis;Doria;Pastas;1089232;;50;50;
+CMU 12 Spaghetti Doria 1000 g + 1 gratis;Doria;Pastas;1041604;;49;49;
+CMU 15 Fideo Doria 250 g + 2 gratis;Doria;Pastas;1079901;;53;53;
+CMU 15 Spaghetti Doria 250 g + 2 gratis;Doria;Pastas;1079890;;52;52;
+CMU 6 Spaghetti Doria 1000 g (descuento 10%);Doria;Pastas;1081659;;51;51;
+CMU Doria 2 Spaghetti + 1 Fideo x 250 g;Doria;Pastas;1090005;;48;48;
+Doria Argollitas 250 g;Doria;Pastas;1001447;;193;193;columna VALOR = precio de lista, no PSP
+Doria Bucatini 250 g;Doria;Pastas;1001451;;191;191;columna VALOR = precio de lista, no PSP
+Doria Cabello de Ángel 250 g;Doria;Pastas;1001440;;190;190;columna VALOR = precio de lista, no PSP
+Doria Cabello de Ángel 500 g;Doria;Pastas;1001453;;190;190;columna VALOR = precio de lista, no PSP
+Doria Codos 250 g;Doria;Pastas;1001448;;192;192;columna VALOR = precio de lista, no PSP
+Doria Conchas 1.000 g;Doria;Pastas;1001467;;190;190;columna VALOR = precio de lista, no PSP
+Doria Conchas 200 g;Doria;Pastas;1010275;;190;190;columna VALOR = precio de lista, no PSP
+Doria Conchas 250 g;Doria;Pastas;1001442;;190;190;columna VALOR = precio de lista, no PSP
+Doria Conchas 500 g;Doria;Pastas;1001455;;190;190;columna VALOR = precio de lista, no PSP
+Doria Conchitas 250 g;Doria;Pastas;1001445;;190;190;columna VALOR = precio de lista, no PSP
+Doria Corbatines 250 g;Doria;Pastas;1001444;;193;193;columna VALOR = precio de lista, no PSP
+Doria Fideos 200 g;Doria;Pastas;1010276;;190;190;columna VALOR = precio de lista, no PSP
+Doria Fideos 205 g;Doria;Pastas;1001439;;190;190;columna VALOR = precio de lista, no PSP
+Doria Fideos 500 g;Doria;Pastas;1001452;;190;190;columna VALOR = precio de lista, no PSP
+Doria Fideos sabor Ranchero 250 g;Doria;Pastas;1015183;;194;194;columna VALOR = precio de lista, no PSP
+Doria Lasagna precocida 200 g;Doria;Pastas;1060378;;189;189;columna VALOR sin especificar tipo de precio
+Doria Lasagna precocida 400 g;Doria;Pastas;1039990;;189;189;columna VALOR sin especificar tipo de precio
+Doria Letras 250 g;Doria;Pastas;1001446;;192;192;columna VALOR = precio de lista, no PSP
+Doria Macarrones con Queso 210 g;Doria;Pastas;1015974;;188;188;columna VALOR sin especificar tipo de precio
+Doria Macarrón 200 g;Doria;Pastas;1010273;;192;192;columna VALOR = precio de lista, no PSP
+Doria Macarrón 250 g;Doria;Pastas;1001441;;192;192;columna VALOR = precio de lista, no PSP
+Doria Macarrón 500 g;Doria;Pastas;1001454;;192;192;columna VALOR = precio de lista, no PSP
+Doria Macarrón Largo 250 g;Doria;Pastas;1001469;;191;191;columna VALOR = precio de lista, no PSP
+Doria Rigatoni 250 g;Doria;Pastas;1001449;;193;193;columna VALOR = precio de lista, no PSP
+Doria Spaghetti 200 g;Doria;Pastas;1010274;;191;191;columna VALOR = precio de lista, no PSP
+Doria Spaghetti 250 g;Doria;Pastas;1001438;;191;191;columna VALOR = precio de lista, no PSP
+Doria Spaghetti 500 g;Doria;Pastas;1001462;;191;191;columna VALOR = precio de lista, no PSP
+Doria Spaghetti Integral Multicereal 500 g;Doria;Pastas;1001470;;196;196;columna VALOR = precio de lista, no PSP
+Doria Spaghetti sabor Chorizo 250 g;Doria;Pastas;1022145;;195;195;columna VALOR = precio de lista, no PSP
+Doria Spaghetti sabor Mantequilla 250 g;Doria;Pastas;1001500;;195;195;columna VALOR = precio de lista, no PSP
+Doria Spaghetti sabor Pollo Asado 250 g;Doria;Pastas;1024635;;194;194;columna VALOR = precio de lista, no PSP
+Doria Spaghetti sabor Ranchero 250 g;Doria;Pastas;1014738;;194;194;columna VALOR = precio de lista, no PSP
+Doria Spaghetti Tamaño Familiar 1.000 g;Doria;Pastas;1001464;;191;191;columna VALOR = precio de lista, no PSP
+Doria Tallarín 250 g;Doria;Pastas;1001465;;191;191;columna VALOR = precio de lista, no PSP
+Doria Tallarín 500 g;Doria;Pastas;1001463;;191;191;columna VALOR = precio de lista, no PSP
+Doria Tornillos 250 g;Doria;Pastas;1001450;;192;192;columna VALOR = precio de lista, no PSP
+Doria Tornillos con Verduras 250 g;Doria;Pastas;1001492;;195;195;columna VALOR = precio de lista, no PSP
+Doria Tornillos con Verduras 500 g;Doria;Pastas;1001491;;195;195;columna VALOR = precio de lista, no PSP
+Doria Ravioli con Carne 250 g;Doria;Pastas rellenas;2014848;10234;186;186 188;PVSP
+Doria Ravioli con Pollo 250 g;Doria;Pastas rellenas;2014849;10234;184;184;PVSP
+Doria Ravioli con Queso 250 g;Doria;Pastas rellenas;2014851;10234;185;185 188;PVSP
+Doria Spaghetti Sin Gluten con Quinoa y Chía 250 g;Doria;Pastas sin gluten;2008860;;196;196;columna VALOR = precio de lista, no PSP
+Doria Spaghetti Sin Gluten pasta de arroz 250 g;Doria;Pastas sin gluten;2006350;;196;196;columna VALOR = precio de lista, no PSP
+Doria Tallarín Sin Gluten pasta de arroz 400 g;Doria;Pastas sin gluten;2026248;;180;180;"precio sin etiquetar; la página repite el código 2026248 para dos referencias (revisar)"
+Doria Tornillos Sin Gluten pasta de arroz 250 g;Doria;Pastas sin gluten;2006351;;196;196;columna VALOR = precio de lista, no PSP
+Doria Vermicelli Sin Gluten pasta de arroz 200 g;Doria;Pastas sin gluten;2026249;7500;180;180;"PSP tomado de la pág. 181 (comparativo de precios). La pág. 180 muestra el código 2026248 para el Vermicelli y el mismo 2026248 para el Tallarín; la tabla de la misma página lista el Vermicelli 200 g como 2026249 (revisar)"
+Ducales 294 g x 4 unidades;Ducales;Galletas;1064121;;320;320;columna VALOR = precio de lista, no PSP
+Ducales 294 g x 9 unidades;Ducales;Galletas;1064111;;320;320;columna VALOR = precio de lista, no PSP
+Ducales 9 paquetes 243 g;Ducales;Galletas;1055665;;318;318;columna VALOR = precio de lista, no PSP
+Ducales Más Ahorro 3 Tacos 315 g;Ducales;Galletas;1058808;;320;320;columna VALOR = precio de lista, no PSP
+Ducales Más Ahorro 4 Tacos 430 g;Ducales;Galletas;1064302;;320;320;columna VALOR = precio de lista, no PSP
+Ducales Más Ahorro 5 Tacos 500 g;Ducales;Galletas;1064906;;321;321;columna VALOR = precio de lista, no PSP
+Ducales Más Ahorro 6 Tacos 882 g;Ducales;Galletas;1001579;;320;320;columna VALOR = precio de lista, no PSP
+Ducales taco 120 g x 8 unidades;Ducales;Galletas;1077345;;320;320;columna VALOR = precio de lista, no PSP
+Ducales taco 120 g — oferta Pague 23 Lleve 24;Ducales;Galletas;1077403;3000;319;319;PVP Ducales taco x1 (la página da el total de venta de la oferta P23LL24)
+Ducales taco 120 g — paquete x 12 unidades;Ducales;Galletas;1077312;3000;319;319;PVP Ducales taco x1 (la página da el total de venta del paquete de 12)
+Ducales taco 120 g — paquete x 14 unidades;Ducales;Galletas;1077399;3000;319;319;PVP Ducales taco x1 (la página da el total de venta del paquete de 14)
+Ducales taco 120 g — paquete x 8 unidades;Ducales;Galletas;1077350;3000;319;319;PVP Ducales taco x1 (la página da el total de venta del paquete de 8)
+Ducales Taco Día 120 g — CMU 11 tacos + 3 gratis;Ducales;Galletas;1092497;3200;46;46;"PVP Ducales taco x1; la página también da el total de venta del combo"
+Ducales Taco Día 120 g — CMU 13 tacos + 1 gratis;Ducales;Galletas;1092496;3200;46;46;PVP Ducales taco x1
+Ducales Tentación 156 g;Ducales;Galletas;1005858;;318;318;columna VALOR = precio de lista, no PSP
+CMU Dux Caramelo Salado + Dux Integral + Saltín Noel gratis;Dux;Galletas;1090708;;47;47;
+CMU Dux Caramelo Salado + Dux Original + Saltín Noel gratis;Dux;Galletas;1090707;;47;47;
+Combo Bom-ba-zo Dux 1 Original + 1 Integral + 1 Ducales XL;Dux;Galletas;1092323;;47;47;
+Dux Integral 9 paquetes 250 g;Dux;Galletas;1055642;;313;313;columna VALOR = precio de lista, no PSP
+Dux Original 9 paquetes 250 g;Dux;Galletas;1055641;;313;313;columna VALOR = precio de lista, no PSP
+Dux Rellena Caramelo Salado bolsa 6x4;Dux;Galletas;1084633;9600;101;101 312;"PSP tiendas (la página también muestra PSP cadenas y autoservicios $9.600 y mayoristas $7.500; precio individual x4 galletas $1.600)"
+Dux Rellenas sabor Queso Blanco 6 x 4 216 g;Dux;Galletas;1029564;;312;312;columna Precio = precio de lista, no PSP
+Dux Rellenas sabor Ranchera Queso Fundido & Chipotle bolsa 6x4;Dux;Galletas;1077768;9950;117;117 312;"VENDE autoservicios y cadenas (mayoristas $7.500; individual x4 galletas $1.700)"
+Dux Saladitas 16 galletas redondas 52,8 g;Dux;Galletas;1074890;;311;311;precio sin etiquetar en la página
+CMU Festival 3 bolsas 12x4 (vainilla, limón, chocolate) Pague 30 Lleve 36;Festival;Galletas;1053082;;44;44;
+Festival Chips 6 paquetes 240 g;Festival;Galletas;1043732;;305;305;columna VALOR = precio de lista, no PSP
+Festival Chocolate 12 unidades 403 g;Festival;Galletas;1001574;;301;301;columna VALOR = precio de lista, no PSP
+Festival Chocolate 600 g (12 porciones);Festival;Galletas;1001513;;302;302;precio sin etiquetar en la página
+Festival Chocolate multiempaque 6x4;Festival;Galletas;1081810;;43;43;
+Festival F6 Combo Milagro (limón, chocolate, vainilla, fresa);Festival;Galletas;1079246;;42;42;
+Festival Fresa 12 unidades 403 g;Festival;Galletas;1001573;;301;301;columna VALOR = precio de lista, no PSP
+Festival Fresa 600 g (12 porciones);Festival;Galletas;1001510;;302;302;precio sin etiquetar en la página
+Festival Fresa multiempaque 6x4;Festival;Galletas;1082572;;43;43;
+Festival Limón 12 unidades 403 g;Festival;Galletas;1001572;;301;301;columna VALOR = precio de lista, no PSP
+Festival Limón 600 g (12 porciones);Festival;Galletas;1001511;;302;302;precio sin etiquetar en la página
+Festival Limón 8 galletas 67,2 g;Festival;Galletas;1080730;1500;300;300;PSV
+Festival Limón multiempaque 6x4;Festival;Galletas;1082571;;43;43;
+Festival Malteada de Mora multiempaque 6x4;Festival;Galletas;1081641;6200;81;43 81;PSP
+Festival MiniChips 12 paquetes 420 g;Festival;Galletas;1049449;;305;305;columna VALOR = precio de lista, no PSP
+Festival MiniChips tira 12 unidades;Festival;Galletas;1071234;;305;305;columna VALOR = precio de lista, no PSP
+Festival Recreo 10 x 4;Festival;Galletas;;;304;304;código SAP recortado en la página (solo se ve ...77758)
+Festival Recreo 12 x 6 432 g;Festival;Galletas;1038784;;303;303;columna Precio = precio de lista, no PSP
+Festival Recreo 6 galletas;Festival;Galletas;;;304;304;código SAP recortado en la página (solo se ve ...43681)
+Festival Surtido (vainilla, fresa, chocolate) 12 x 6 600 g;Festival;Galletas;1011172;;303;303;columna Precio = precio de lista, no PSP
+Festival Vainilla 12 unidades 403 g;Festival;Galletas;1001571;;301;301;columna VALOR = precio de lista, no PSP
+Festival Vainilla 600 g (12 porciones);Festival;Galletas;1001512;;302;302;precio sin etiquetar en la página
+Festival Vainilla 8 galletas 67,2 g;Festival;Galletas;1080729;1500;300;300;PSV
+Festival Vainilla multiempaque 6x4;Festival;Galletas;1081811;;43;43;
+Festival Recreo Triturada 1.000 g;Festival;Repostería;1050318;;317;317;columna Precio = precio de lista, no PSP
+CMU Gol 31 g x 24 unidades P20 LL24;Gol;Chocolates;1089843;36000;31;31;VENDE
+CMU Gol plegadiza x 15 un + bandeja Gol Gogos x 3 un;Gol;Chocolates;1092740;28000;32;32;VENDE
+Gol 31 g plegadiza x 15 unidades;Gol;Chocolates;1081627;;364;364;columna VALOR = precio de lista, no PSP
+Gol 31 g plegadiza x 24 unidades;Gol;Chocolates;1081626;;364;364;columna VALOR = precio de lista, no PSP
+Gol Coco 31 g plegadiza x 18 unidades;Gol;Chocolates;1020022;;365;365;columna VALOR = precio de lista, no PSP
+Gol Leche Condensada 31 g;Gol;Chocolates;1089767;1600;92;92;PSP por unidad (PSP plegadiza x15 $24.000)
+Gol Mega 53 g plegadiza x 8 unidades;Gol;Chocolates;1068277;;365;365;columna VALOR = precio de lista, no PSP
+Gol Mini 14 g plegadiza x 24 unidades;Gol;Chocolates;1068250;;364;364;columna VALOR = precio de lista, no PSP
+CMU Haka Ritual Descanso (Agua de Linos Lavanda 200 ml + Aceite Esencial Lavanda 10 ml);Haka;Aromaterapia;1077990;69800;74;74;VENDE
+Haka Aceite Esencial Eucalipto 10 ml;Haka;Aromaterapia;1065842;;152;152;precio sin etiquetar (verificado que NO es el PSP)
+Haka Agua de Linos Aire Puro (eucalipto, menta y lavanda) 200 ml;Haka;Aromaterapia;2020874;;153;153;precio sin etiquetar (verificado que NO es el PSP)
+Haka Agua de Linos Descanso (lavanda, limón y bergamota) 200 ml;Haka;Aromaterapia;2020875;;153;153;precio sin etiquetar (verificado que NO es el PSP)
+Haka Agua de Linos Felicidad (bergamota, té verde y lavanda) 200 ml;Haka;Aromaterapia;2020873;;153;153;precio sin etiquetar (verificado que NO es el PSP)
+Cocoa Melena de León Haka 120 g;Haka;Bienestar;1082933;39990;110;110;PSP
+Haka Crema Corporal Almendras y Cacao 400 ml;Haka;Dermocosmética;2025488;;155;155;"precio sin etiquetar; la página muestra un solo código junto a dos productos (crema corporal 400 ml y jabón líquido 250 ml)"
+Haka Crema para Piernas centella asiática y castaño de indias 200 ml;Haka;Dermocosmética;2025071;;154;154;precio sin etiquetar (verificado que NO es el PSP)
+Haka Esencia Floral Control de Emociones 30 ml;Haka;Esencias florales;2024665;;151;151;precio sin etiquetar (verificado que NO es el PSP)
+Haka Esencia Floral Deseo 30 ml;Haka;Esencias florales;2024664;;151;151;precio sin etiquetar (verificado que NO es el PSP)
+Haka Esencia Floral Enfoque 30 ml;Haka;Esencias florales;2024663;;151;151;precio sin etiquetar (verificado que NO es el PSP)
+CMU Haka Extracto de Passiflora 60 ml P2 LL3;Haka;Fitoterapia;1083246;74700;75;75;VENDE
+Haka Cápsulas Castaño de Indias x 60 cápsulas;Haka;Fitoterapia;1089250;;147;147;precio sin etiquetar (verificado que NO es el PSP)
+Haka Cápsulas de Arándanos x 60 cápsulas;Haka;Fitoterapia;1064569;;148;148;precio sin etiquetar (verificado que NO es el PSP)
+Haka Extracto de Caléndula 60 ml;Haka;Fitoterapia;1065836;;150;150;precio sin etiquetar (verificado que NO es el PSP)
+Haka Extracto de Passiflora 60 ml;Haka;Fitoterapia;1065837;;149;149;precio sin etiquetar (verificado que NO es el PSP)
+Haka Tabletas de Alcachofa x 60 tabletas;Haka;Fitoterapia;1089228;;146;146;precio sin etiquetar (verificado que NO es el PSP)
+Vinagre de Sidra de Manzana Haka con la Madre 500 ml;Haka;Vinagres;2033332;24900;120;120;PSP
+Burbu Jet Cookies & Cream plegadiza x 4 unidades;Jet;Chocolates;1042138;;362;362;columna Precio = precio de lista, no PSP
+Burbu Jet Cruji Vainilla plegadiza x 6 unidades;Jet;Chocolates;1036847;;362;362;columna Precio = precio de lista, no PSP
+CMU 2 Bolsas Jet Burbujas Arequipe;Jet;Chocolates;1093012;24000;29;29;VENDE
+CMU Bolsa Jet Burbujas Arequipe (televentas);Jet;Chocolates;1093013;12000;30;30;VENDE
+CMU Jet Burbujas Cookies & Cream bolsa + bandeja C&C 11 g;Jet;Chocolates;1089986;22000;28;28;VENDE
+Cruji Jet Blanca 24 g;Jet;Chocolates;1092083;3600;89;89;PSP por unidad (PSP plegadiza x18 $64.800)
+Cruji Jet Blanca plegadiza x 18 unidades;Jet;Chocolates;1004068;;360;360;columna Precio = precio de lista, no PSP
+Jet #1 chocolatina 11 g bandeja x 12 unidades;Jet;Chocolates;1092010;12000;88;88;PSP bandeja x 12
+Jet Burbujas 14 g (bolsa x 12 un);Jet;Chocolates;1025339;1000;354;354;Precio Público por unidad
+Jet Burbujas bolsa x 12 unidades 168 g;Jet;Chocolates;1079697;;357;357;columna Precio = precio de lista, no PSP
+Jet Burbujas Cookies & Cream bolsa x 10 unidades;Jet;Chocolates;1079698;;357;357;columna Precio = precio de lista, no PSP
+Jet Burbujas Pistacho Dubai Style plegadiza x 4 unidades;Jet;Chocolates;1089476;8000;106;106;PSP
+Jet Caramel bolsa x 18 unidades 180 g;Jet;Chocolates;1078305;400;349;349;PVP por unidad
+Jet ChocoVeteada 150 g;Jet;Chocolates;1058579;12000;87;87;PSP por unidad — REVISAR: las cifras de PSP de la plegadiza en esta página son inconsistentes
+Jet Cookies & Cream 11 g (bandeja x 12 un);Jet;Chocolates;1024738;1000;354;354;Precio Público por unidad
+Jet Cookies & Cream 11 g (plegadiza x 24 un);Jet;Chocolates;1024739;1000;354;354 361;Precio Público por unidad
+Jet Cookies & Cream plegadiza x 10 unidades 270 g;Jet;Chocolates;1032475;;361;361;columna Precio = precio de lista, no PSP
+Jet Cookies & Cream plegadiza x 6 unidades 300 g;Jet;Chocolates;1021370;;361;361;columna Precio = precio de lista, no PSP
+Jet Cruji 11 g (bandeja x 12 un);Jet;Chocolates;1015383;1000;354;354 355;Precio Público por unidad
+Jet Cruji 11 g (plegadiza x 24 un);Jet;Chocolates;1013554;1000;354;354 358;Precio Público por unidad
+Jet Fresas con Crema 29 g caja x 12 unidades;Jet;Chocolates;1064641;;350;350;columna Precio = precio de lista, no PSP
+Jet Gool bolitas de chocolate bolsa x 100 unidades;Jet;Chocolates;1078325;;356;356;columna Precio = precio de lista, no PSP
+Jet Gool bolitas de chocolate bolsa x 18 unidades 90 g;Jet;Chocolates;1078324;;356;356;columna Precio = precio de lista, no PSP
+Jet Gool bolitas de chocolate bolsa x 48 unidades;Jet;Chocolates;1078326;;356;356;columna Precio = precio de lista, no PSP
+Jet Leche 11 g (plegadiza x 24 un, 12 plegadizas);Jet;Chocolates;1066742;1000;354;354 359;Precio Público por unidad
+Jet Leche 11 g (plegadiza x 50 un, 30 plegadizas);Jet;Chocolates;1066740;1000;354;354 359;Precio Público por unidad
+Jet Leche 11 g exhibidor (bandeja x 12 un);Jet;Chocolates;1065773;1000;354;354 355;Precio Público por unidad
+Jet Leche 25 g plegadiza x 16 unidades;Jet;Chocolates;1066729;;360;360;columna Precio = precio de lista, no PSP
+Jet Leche bolsa x 24 unidades 144 g;Jet;Chocolates;1004071;;356;356;columna Precio = precio de lista, no PSP
+Jet Leche plegadiza x 35 unidades;Jet;Chocolates;1066731;;360;360;columna Precio = precio de lista, no PSP
+Jet Leche y Calcio 12 g (bandeja x 12 un);Jet;Chocolates;1015400;1000;354;354 355;Precio Público por unidad
+Jet Leche y Calcio 12 g (plegadiza x 24 un);Jet;Chocolates;1003844;1000;354;354 358;Precio Público por unidad
+Jet Mini Wafer 6 g bolsa x 20 unidades;Jet;Chocolates;1078040;500;348;348;PSP por unidad (PSP bolsa x20 $10.000)
+Jet N.º 3 barra 45 g (plegadiza x 16 unidades);Jet;Chocolates;1075970;5000;359;359;PSP por unidad (PSP plegadiza x16 $80.000)
+Jet Postres Pistacho Dubai Style 29 g;Jet;Chocolates;1089477;3500;107;107;PSP por unidad (PSP plegadiza x8 $28.000)
+Jet Sabores Surtidos bolsa x 24 unidades 144 g;Jet;Chocolates;1004077;;357;357;columna Precio = precio de lista, no PSP
+Jet Sabores Surtidos plegadiza x 35 unidades;Jet;Chocolates;1066730;;360;360;columna Precio = precio de lista, no PSP
+Jet Wafer bolsa x 10 unidades 220 g;Jet;Chocolates;1027118;;356;356;columna Precio = precio de lista, no PSP
+Jet Wafer Sabores Surtidos plegadiza x 20 unidades;Jet;Chocolates;1027117;;363;363;columna Precio = precio de lista, no PSP
+Jet Wafer Vainilla bolsa x 10 unidades;Jet;Chocolates;1003907;;363;363;columna Precio = precio de lista, no PSP
+Jet Wafer Vainilla plegadiza x 20 unidades;Jet;Chocolates;1003905;;363;363;columna Precio = precio de lista, no PSP
+Jet Crema sticks display x 12 unidades;Jet;Untables;1036562;;351;351;columna Precio = precio de lista, no PSP
+Jet Crema untable 140 g;Jet;Untables;1047512;;351;351;columna Precio = precio de lista, no PSP
+Jet Crema untable 350 g;Jet;Untables;1029440;;351;351;columna Precio = precio de lista, no PSP
+CMU Jumbo Flow Mini Blanca + Leche P15 LL20;Jumbo;Chocolates;1092210;28000;25;25;VENDE
+CMU Jumbo Maní Minis bandeja 17 g x 10 un;Jumbo;Chocolates;1093015;15000;27;27;VENDE
+CMU Jumbo Maní Minis plegadiza 17 g x 24 un;Jumbo;Chocolates;1093014;36000;26;26;VENDE
+Jumbo Bombones 100 g plegadiza x 12 unidades;Jumbo;Chocolates;1020434;;370;370;columna VALOR = precio de lista, no PSP
+Jumbo Dots plegadiza x 12 unidades;Jumbo;Chocolates;1023503;;370;370;columna VALOR = precio de lista, no PSP
+Jumbo Flow 48 g plegadiza x 12 unidades;Jumbo;Chocolates;1019468;;371;371;columna VALOR = precio de lista, no PSP
+Jumbo Flow Blanco 48 g plegadiza x 12 unidades;Jumbo;Chocolates;1019466;;371;371;columna VALOR = precio de lista, no PSP
+Jumbo Flow Mini 18 g plegadiza x 10 unidades;Jumbo;Chocolates;1038111;;371;371;columna VALOR = precio de lista, no PSP
+Jumbo Flow Mini Blanco 18 g plegadiza x 10 unidades;Jumbo;Chocolates;1038112;;371;371;columna VALOR = precio de lista, no PSP
+Jumbo Flow XS Surtido 9 g bolsa x 14 unidades;Jumbo;Chocolates;1071158;500;368;368;PSP por unidad (PSP bolsa x14 $7.000)
+Jumbo Maní 35 g bolsa x 6 unidades;Jumbo;Chocolates;1068584;;369;369;columna VALOR = precio de lista, no PSP
+Jumbo Maní 35 g plegadiza x 12 unidades;Jumbo;Chocolates;1068583;;369;369;columna VALOR = precio de lista, no PSP
+Jumbo Maní 35 g plegadiza x 24 unidades;Jumbo;Chocolates;1068582;;369;369;columna VALOR = precio de lista, no PSP
+Jumbo Maní 90 g bolsa x 2 unidades;Jumbo;Chocolates;1068270;;369;369;columna VALOR = precio de lista, no PSP
+Jumbo Maní 90 g plegadiza x 12 unidades;Jumbo;Chocolates;1068268;;369;369;columna VALOR = precio de lista, no PSP
+Jumbo Maní 90 g plegadiza x 6 unidades;Jumbo;Chocolates;1068269;;369;369;columna VALOR = precio de lista, no PSP
+Jumbo Maní Mini 17 g bandeja x 10 unidades;Jumbo;Chocolates;1068578;;369;369;columna VALOR = precio de lista, no PSP
+Jumbo Maní Mini 17 g plegadiza x 24 unidades;Jumbo;Chocolates;1068576;;369;369;columna VALOR = precio de lista, no PSP
+Jumbo Mix 60 g plegadiza x 12 unidades;Jumbo;Chocolates;1015160;;370;370;columna VALOR = precio de lista, no PSP
+Jumbo Pistacho Dubai Style 90 g;Jumbo;Chocolates;1089478;9500;105;105;PSP por unidad (PSP plegadiza x6 $57.000)
+Jumbo Ryan Castro 2.0 Blondie 170 g (plegadiza x 3);Jumbo;Chocolates;1092006;14500;86;86;PSP por unidad (PSP plegadiza x3 $43.500)
+Jumbo Ryan Castro 2.0 Blondie 170 g (plegadiza x 6);Jumbo;Chocolates;1092005;14500;86;86;PSP por unidad (PSP plegadiza x6 $87.000)
+Jumbo Ryan Castro 2.0 Morena 170 g (plegadiza x 3);Jumbo;Chocolates;1079449;14500;85;85;PSP por unidad (PSP plegadiza x3 $43.500)
+Jumbo Ryan Castro 2.0 Morena 170 g (plegadiza x 6);Jumbo;Chocolates;1079450;14500;85;85;PSP por unidad (PSP plegadiza x6 $87.000)
+Jumbo Ryan Castro 2.0 Surtido 90 g (plegadiza x 6);Jumbo;Chocolates;1092007;8500;84;84;PSP por unidad (PSP plegadiza $51.000)
+Café La Bastilla bolsa 10 sobres x 40 g;La Bastilla;Café;1079772;;272;272;columna Precio = precio de lista, no PSP
+Café La Bastilla Tostado y Molido 110 g;La Bastilla;Café;1079670;;272;272;columna Precio = precio de lista, no PSP
+Café La Bastilla Tostado y Molido 2.500 g;La Bastilla;Café;1029255;;272;272;columna Precio = precio de lista, no PSP
+Café La Bastilla Tostado y Molido 200 g;La Bastilla;Café;1079672;;272;272;columna Precio = precio de lista, no PSP
+Café La Bastilla Tostado y Molido 390 g;La Bastilla;Café;1069703;;272;272;columna Precio = precio de lista, no PSP
+CMU 3 La Bastilla 2500 g;La Bastilla;Café;1083137;;10;10;
+Chocolate La Especial Ahorramax Tradicional 200 g (8 pastillas);La Especial;Chocolate de mesa;1076958;4500;244;244;PSP
+Chocolate La Especial Ahorramax Tradicional 400 g (16 pastillas);La Especial;Chocolate de mesa;1076959;8500;244;244;PSP
+Chocolate La Especial Ahorramax Tradicional pastilla 25 g (plegadiza x 40);La Especial;Chocolate de mesa;1076960;600;244;244;PSP por pastilla (PSP plegadiza x40 $24.000)
+Chocolate La Especial Clavos y Canela barra 500 g;La Especial;Chocolate de mesa;1080600;10900;109;109 247;PSP por unidad
+Chocolate La Especial Tradicional 500 g;La Especial;Chocolate de mesa;1089481;;247;247;precio sin etiquetar en la página
+Chocolate La Especial Tradicional barra 400 g (16 pastillas);La Especial;Chocolate de mesa;1080673;10500;246;246;PSP por unidad (PSP por taza $438)
+Chocolate La Especial Tradicional caja 40 pastillas 1.120 g;La Especial;Chocolate de mesa;1080674;;245;245;precio sin etiquetar en la página
+Chocolate La Especial Vainilla barra 500 g;La Especial;Chocolate de mesa;1080406;10900;108;108 247;PSP por unidad
+CMU 7 La Especial Tradicional 500 g + 8 Ahorramax 400 g + 3 Tradicional 500 g gratis;La Especial;Chocolate de mesa;1092692;173000;11;11;PSP
+CMU Chocolate La Especial Clavos y Canela 400 g x 16 P10 LL12;La Especial;Chocolate de mesa;1080299;163200;14;14;PSP
+CMU Chocolate La Especial Vainilla 400 g x 16 P10 LL12;La Especial;Chocolate de mesa;1080298;163200;13;13;PSP
+CMU La Especial Tradicional 500 g P18 LL20;La Especial;Chocolate de mesa;1092691;210000;12;12;PSP
+CMU La Especial Kraks 12 un x 25 g P11 LL12;La Especial;Frutos secos;1058123;;20;20;
+CMU La Especial Manicero con Sal 12 un x 21 g P11 LL12;La Especial;Frutos secos;1089880;;21;21;
+CMU La Especial Maní con Sal P11 LL12;La Especial;Frutos secos;1093011;;24;24;
+CMU La Especial Mezcla Arándanos 12 un x 40 g P11 LL12;La Especial;Frutos secos;1058236;;22;22;
+CMU La Especial Mix Pasas P20 LL24;La Especial;Frutos secos;1092693;;23;23;
+CMU Maní Águila Arándano P20 LL24;La Especial;Frutos secos;1092877;;19;19;
+La Especial Choco Arándanos plegadiza x 9 unidades;La Especial;Frutos secos;1038076;2000;330;330;PSP unidad
+La Especial con Tajín doypack 150 g;La Especial;Frutos secos;;;333;333;código SAP recortado en la página (solo se ve ...73433)
+La Especial Kraks Limón plegadiza x 12 unidades;La Especial;Frutos secos;1054080;2000;329;329 336;PSP unidad
+La Especial Kraks plegadiza x 12 unidades;La Especial;Frutos secos;1042889;1500;329;329 336;PSP unidad
+La Especial Kraks plegadiza x 24 unidades;La Especial;Frutos secos;1043432;1500;329;329 336;PSP unidad
+La Especial Manicero Arándanos plegadiza x 9 unidades;La Especial;Frutos secos;1070495;1700;329;329;PSP unidad
+La Especial Manicero Limón y Pimienta plegadiza x 9 unidades;La Especial;Frutos secos;1071159;1700;329;329;PSP unidad
+La Especial Manicero Maní con Sal plegadiza x 12 unidades;La Especial;Frutos secos;1070489;1200;329;329 335;PSP unidad
+La Especial Manicero Maní con Sal plegadiza x 24 unidades;La Especial;Frutos secos;1070494;1200;329;329 335;PSP unidad
+La Especial Maní con Limón y Pimienta plegadiza x 12 unidades;La Especial;Frutos secos;1040776;3000;330;330 335;PSP unidad
+La Especial Maní con Limón y Pimienta plegadiza x 24 unidades;La Especial;Frutos secos;1040777;3000;330;330 335;PSP unidad
+La Especial Maní con Sal 40 g x 12 unidades;La Especial;Frutos secos;1070904;;335;335;columna VALOR = precio de lista, no PSP
+La Especial Maní con Sal 40 g x 24 unidades;La Especial;Frutos secos;1070903;;335;335;columna VALOR = precio de lista, no PSP
+La Especial Maní con Sal doypack 180 g;La Especial;Frutos secos;1046484;;335;335;columna VALOR = precio de lista, no PSP
+La Especial Maní Kraks doypack 140 g;La Especial;Frutos secos;1050215;;336;336;columna VALOR = precio de lista, no PSP
+La Especial Maní Kraks Limón doypack 132 g;La Especial;Frutos secos;1054081;;336;336;columna VALOR = precio de lista, no PSP
+La Especial Maní Limón y Pimienta doypack 150 g;La Especial;Frutos secos;1036367;;335;335;columna VALOR = precio de lista, no PSP
+La Especial Mix Arándanos doypack 180 g;La Especial;Frutos secos;1028143;;333;333;columna VALOR = precio de lista, no PSP
+La Especial Mix Arándanos plegadiza x 12 unidades;La Especial;Frutos secos;1046875;3300;330;330 333;PSP unidad
+La Especial Mix Arándanos plegadiza x 24 unidades;La Especial;Frutos secos;1044449;3300;330;330 333;PSP unidad
+La Especial Mix Nueces 40 g x 12 unidades;La Especial;Frutos secos;1046876;;334;334;columna VALOR = precio de lista, no PSP
+La Especial Mix Nueces 40 g x 24 unidades;La Especial;Frutos secos;1046879;;334;334;columna VALOR = precio de lista, no PSP
+La Especial Mix Nueces doypack 180 g;La Especial;Frutos secos;1028144;;334;334;columna VALOR = precio de lista, no PSP
+La Especial Mix Pasas 35 g x 12 unidades;La Especial;Frutos secos;1071447;;333;333;columna VALOR = precio de lista, no PSP
+La Especial Mix Pasas 35 g x 24 unidades;La Especial;Frutos secos;1071446;;333;333;columna VALOR = precio de lista, no PSP
+La Especial Mix Pasas doypack 180 g;La Especial;Frutos secos;1046485;;333;333;columna VALOR = precio de lista, no PSP
+La Especial Mix Yogurt doypack 150 g;La Especial;Frutos secos;1056823;;333;333;columna VALOR = precio de lista, no PSP
+La Especial Mix Yogurt plegadiza x 12 unidades;La Especial;Frutos secos;1059085;3000;330;330 333;PSP unidad
+La Especial Mix Yogurt plegadiza x 24 unidades;La Especial;Frutos secos;1056824;3000;330;330 333;PSP unidad
+La Especial Snack de Película Caramelo Salado 180 g;La Especial;Frutos secos;;;332;332;código SAP recortado en la página (solo se ve ...78495)
+La Especial Snack de Película Caramelo Salado plegadiza x 12 unidades;La Especial;Frutos secos;1078496;3000;331;331;PSP unidad
+La Especial Snack de Película Mantequilla Pop 150 g;La Especial;Frutos secos;;;332;332;código SAP recortado en la página (solo se ve ...78848)
+La Especial Snack de Película Mantequilla Pop plegadiza x 12 unidades;La Especial;Frutos secos;1078849;3000;331;331;"PSP unidad; la página imprime el código con 8 dígitos (10788849), se registró como 1078849 — verificar"
+La Especial x Tajín maní con sabor a Tajín plegadiza x 24 unidades;La Especial;Frutos secos;1075211;3000;331;331;PSP unidad
+Maní La Especial Águila Limón Pimienta Doypack 160 g;La Especial;Frutos secos;1089471;10500;94;94;PSP
+Maní La Especial Águila Limón Pimienta Doypack 380 g;La Especial;Frutos secos;1089472;16900;93;93;PSP
+Maní La Especial Águila On The Go 35 g (plegadiza x 12);La Especial;Frutos secos;1089473;3000;83;83;PSP por unidad (PSP plegadiza x12 $36.000)
+Maní La Especial Águila On The Go 35 g (plegadiza x 24);La Especial;Frutos secos;1089474;3000;83;83;PSP por unidad (PSP plegadiza x24 $72.000)
+CMU Lyne Clásico 120 g P6 LL7 (doypack);Lyne;Bebidas achocolatadas;1079798;91000;16;16;VENDE
+CMU Lyne Endulzado 120 g P6 LL7 (doypack);Lyne;Bebidas achocolatadas;1079797;93800;15;15;VENDE
+CMU Lyne Endulzado 40 g P5 LL6 (plegadiza x 6);Lyne;Bebidas achocolatadas;1092681;4500;17;17;PSP por unidad (PSP plegadiza $27.000)
+Chocolate Lyne Clavos y Canela sin endulzar 120 g;Lyne;Chocolate de mesa;1064388;;233;233;precio sin etiquetar en la página
+Chocolate Lyne Clavos y Canela sin endulzar 200 g;Lyne;Chocolate de mesa;1063537;;233;233;precio sin etiquetar en la página
+Chocolate Lyne Clásico caja 1.664 g (160 porciones);Lyne;Chocolate de mesa;1079871;;234;234;precio sin etiquetar en la página
+Chocolate Lyne Clásico endulzado 120 g;Lyne;Chocolate de mesa;1063536;;233;233 234;"precio sin etiquetar; la página repite el código 1063536 para las presentaciones de 120 g y 200 g (revisar)"
+Chocolate Lyne Clásico endulzado 120 g;Lyne;Chocolate de mesa;1064379;;234;234;precio sin etiquetar en la página
+Chocolate Lyne Clásico sin endulzar 120 g;Lyne;Chocolate de mesa;1064389;;235;235;precio sin etiquetar en la página
+Chocolate Lyne Clásico sin endulzar 200 g;Lyne;Chocolate de mesa;1063538;;235;235;precio sin etiquetar en la página
+Chocolyne Clavos y Canela 166,4 g;Lyne;Chocolate de mesa;1079912;;234;234;precio sin etiquetar en la página
+Chocolyne Clásico 166,4 g;Lyne;Chocolate de mesa;1079913;;234;234;precio sin etiquetar en la página
+Lyne Barra Chocolate Blanco con Avellanas 60 g (plegadiza x 10);Lyne;Chocolates;1063349;;341;341;precio sin etiquetar en la página
+Lyne Barra Chocolate Blanco con Avellanas 60 g granel;Lyne;Chocolates;1064067;;341;341;precio sin etiquetar en la página
+Lyne Barra Chocolate con Leche y Almendras 60 g (plegadiza x 10);Lyne;Chocolates;1063350;;341;341;precio sin etiquetar en la página
+Lyne Barra Chocolate con Leche y Almendras 60 g granel;Lyne;Chocolates;1064066;;341;341;precio sin etiquetar en la página
+Lyne Bombones 12 g doypack x 8 unidades;Lyne;Chocolates;1063348;;341;341;precio sin etiquetar en la página
+Lyne Chocolatinas Leche 25 g plegadiza x 12 unidades;Lyne;Chocolates;1063338;45374;340;340;PSP plegadiza x 12
+Lyne Chocolatinas Leche 25 g plegadiza x 6 unidades;Lyne;Chocolates;1063337;22687;340;340;PSP plegadiza x 6
+Lyne Chocolatinas Leche 6 g bolsa x 18 unidades;Lyne;Chocolates;1063339;13750;340;340;PSP bolsa x 18
+Café Matiz Baileys Crema Irlandesa 05 Balanceado 240 g;Matiz;Café;1064019;;269;269;precio sin etiquetar en la página
+Café Matiz Escarlata 07 Intenso en grano 500 g;Matiz;Café;1035481;;270;270;precio sin etiquetar en la página
+Café Matiz Escarlata 07 Intenso tostado y molido;Matiz;Café;1034653;;268;268;precio sin etiquetar en la página
+Café Matiz Marfil 02 Suave tostado y molido;Matiz;Café;1034651;;268;268;precio sin etiquetar en la página
+Café Matiz Premium Liofilizado 170 g;Matiz;Café;1065335;;269;269 270;precio sin etiquetar en la página
+Café Matiz Premium Liofilizado 85 g;Matiz;Café;1065297;;270;270;precio sin etiquetar en la página
+Café Matiz Ámbar 05 Balanceado en grano 500 g;Matiz;Café;1035480;;270;270;precio sin etiquetar en la página
+Café Matiz Ámbar 05 Balanceado tostado y molido;Matiz;Café;1034652;;268;268;precio sin etiquetar en la página
+Café Matiz Ébano 09 tostado y molido;Matiz;Café;1034654;;268;268;precio sin etiquetar en la página
+Montblanc Baileys Chocolate Blanco con Crema Irlandesa display;Montblanc;Chocolates;1056484;;342;342;precio sin etiquetar en la página
+Montblanc Baileys Nueces Selectas caja 480 g;Montblanc;Chocolates;1079604;;344;344;precio sin etiquetar en la página
+Montblanc Bombones Rellenos x 3 unidades 80 g;Montblanc;Chocolates;1037211;;345;345;precio sin etiquetar en la página
+Montblanc Bombones Sabores Surtidos x 12 unidades;Montblanc;Chocolates;1050315;;345;345;precio sin etiquetar en la página
+Montblanc Bombones Sabores Surtidos x 18 unidades;Montblanc;Chocolates;1037153;;345;345;precio sin etiquetar en la página
+Montblanc Bombones Sabores Surtidos x 7 unidades 94 g;Montblanc;Chocolates;1050314;;345;345;precio sin etiquetar en la página
+Montblanc Chocolate Blanco con Almendras bolsa 180 g;Montblanc;Chocolates;1050313;;344;344;precio sin etiquetar en la página
+Montblanc Chocolate Blanco con Almendras display (barras pequeñas);Montblanc;Chocolates;1052278;;342;342;precio sin etiquetar en la página
+Montblanc Chocolate Blanco con Almendras display (barras);Montblanc;Chocolates;1037154;;342;342;precio sin etiquetar en la página
+Montblanc Chocolate Blanco con Trozos de Fresa Liofilizada 80 g;Montblanc;Chocolates;1039804;;343;343;precio sin etiquetar en la página
+Montblanc x JP. Chenet barra 60 g sabor sangría rosé;Montblanc;Chocolates;1091879;8700;90;90;PSP por unidad (PSP plegadiza x10 $87.000)
+Montblanc x JP. Chenet bombones estuche sabor sangría rosé;Montblanc;Chocolates;1091880;10000;91;91;PSP
+Monticello Aceite de Aguacate Extra Virgen 250 ml;Monticello;Aceites;2019814;;176;176;columna VALOR sin especificar tipo de precio
+Monticello Aceite de Coco Extra Virgen 360 ml;Monticello;Aceites;2019815;;176;176;columna VALOR sin especificar tipo de precio
+Monticello Aceite de Oliva con Ajo 250 ml;Monticello;Aceites;2018029;;178;178;precio sin etiquetar en la página
+Monticello Aceite de Oliva Virgen Extra 1.000 ml;Monticello;Aceites;2018288;;176;176;columna VALOR sin especificar tipo de precio
+Monticello Aceite de Oliva Virgen Extra 100 ml;Monticello;Aceites;2030793;;177;177;precio sin etiquetar en la página
+Monticello Aceite de Oliva Virgen Extra 250 ml;Monticello;Aceites;2008862;;176;176;columna VALOR sin especificar tipo de precio
+Monticello Aceitunas Negras Deshuesadas 340 g;Monticello;Conservas;2015860;;175;175;columna VALOR sin especificar tipo de precio
+CMU 4 Spaghetti 250 g + 4 Fusilli 250 g Monticello;Monticello;Pastas;1082776;;55;55;
+CMU 4 Unidades Spaghetti Monticello 250 g;Monticello;Pastas;1092395;;54;54;
+Monticello Fettuccine n.º 6 500 g;Monticello;Pastas;1019997;;172;172;columna VALOR sin especificar tipo de precio
+Monticello Fusilli n.º 35 500 g;Monticello;Pastas;1001483;;173;173;columna VALOR sin especificar tipo de precio
+Monticello Lasagna 400 g;Monticello;Pastas;1060375;;171;171;columna VALOR sin especificar tipo de precio
+Monticello Linguine n.º 7 500 g;Monticello;Pastas;1080264;;172;172;columna VALOR sin especificar tipo de precio
+Monticello Penne Rigate Integral n.º 42 500 g;Monticello;Pastas;1080269;;173;173;columna VALOR sin especificar tipo de precio
+Monticello Penne Rigate n.º 42 500 g;Monticello;Pastas;1080266;;173;173;columna VALOR sin especificar tipo de precio
+Monticello Risotto Carnaroli Formaggio 210 g;Monticello;Pastas;2020140;;171;171;columna VALOR sin especificar tipo de precio
+Monticello Spaghetti Integral n.º 5 500 g;Monticello;Pastas;1080263;;172;172 173;columna VALOR sin especificar tipo de precio
+Monticello Spaghetti n.º 5 1.000 g;Monticello;Pastas;1080267;;172;172;columna VALOR sin especificar tipo de precio
+Monticello Spaghetti n.º 5 250 g;Monticello;Pastas;1001486;;172;172;columna VALOR sin especificar tipo de precio
+Monticello Vermicelli n.º 3 500 g;Monticello;Pastas;1080265;;172;172;columna VALOR sin especificar tipo de precio
+Monticello Ricati n.º 122 Gluten Free 400 g;Monticello;Pastas sin gluten;1037302;;171;171;columna VALOR sin especificar tipo de precio
+Monticello Pesto alla Genovese 190 g;Monticello;Salsas;2006354;;174;174;columna VALOR sin especificar tipo de precio
+Monticello Salsa Alfredo 410 g;Monticello;Salsas;2016782;;175;175;columna VALOR sin especificar tipo de precio
+Monticello Salsa Bolognese 420 g;Monticello;Salsas;2010300;;175;175;columna VALOR sin especificar tipo de precio
+Monticello Salsa Napoletana 400 g;Monticello;Salsas;2006353;;174;174;columna VALOR sin especificar tipo de precio
+Monticello Aceto Balsámico di Modena I.G.P. 250 ml;Monticello;Vinagres;2012326;;175;175;columna VALOR sin especificar tipo de precio
+Fibra Vegetal Naturela con sábila y spirulina bolsa x 120 g;Naturela;Bienestar;1065340;;76;76;
+Cúrcuma en Polvo 100% Naturela 60 g;Naturela;Especias;1048822;;78;78;
+SpiruTé Naturela surtido 3 sabores x 20 unidades;Naturela;Tés y aromáticas;1077744;;77;77;
+SpiruTé Purificante Naturela 14 unidades x 21 g;Naturela;Tés y aromáticas;1070410;;79;79;
+Noel Galletas Finas Chocolate 120 g;Noel;Galletas;1031562;;314;314;columna Precio = precio de lista, no PSP
+Noel Galletas Finas Cobertura Blanca 125 g;Noel;Galletas;1042882;;315;315;columna Precio = precio de lista, no PSP
+Noel Galletas Finas Cobertura Oscura 125 g;Noel;Galletas;1042883;;315;315;columna Precio = precio de lista, no PSP
+Noel Galletas Finas Crema de Chocolate 165 g;Noel;Galletas;2011542;;316;316;columna Precio = precio de lista, no PSP
+Noel Galletas Finas Crema de Yogur 165 g;Noel;Galletas;2011543;;316;316;columna Precio = precio de lista, no PSP
+Noel Galletas Finas Mantequilla 300 g;Noel;Galletas;1031564;;315;315;columna Precio = precio de lista, no PSP
+Noel Galletas Finas Rellenas de Chocolate 160 g;Noel;Galletas;2010180;;316;316;columna Precio = precio de lista, no PSP
+Noel Galletas Finas Vainilla 170 g;Noel;Galletas;1031563;;314;314;columna Precio = precio de lista, no PSP
+Noel Sultana 12 paquetes x 4 galletas 440 g;Noel;Galletas;1001528;;309;309;columna Precio = precio de lista, no PSP
+Noel Sultana taco 220 g;Noel;Galletas;1001585;;309;309;columna Precio = precio de lista, no PSP
+Noel Tipo Leche 21 unidades 321 g;Noel;Galletas;1002712;;309;309;columna Precio = precio de lista, no PSP
+Noel Wafer Baileys bolsa x 6 porciones 144 g;Noel;Galletas;1083504;10500;114;114 308;"VENDE segmentos GC/AU (mayoristas $8.900; el segmento CET aparece con $1.800). La bolsa trae 6 porciones individuales"
+Noel Wafer Combi Limón + Vainilla bolsa 12x2;Noel;Galletas;1080129;7990;115;115 308;PVP (porción individual $700)
+Noel Wafers Chocolate Doble Crema 12 x 2;Noel;Galletas;1080295;;307;307;columna Precio = precio de lista, no PSP
+Noel Wafers Coco Doble Crema bolsa 12x2 264 g;Noel;Galletas;1075718;8400;118;118 307;"VENDE canal tradicional (autoservicios $7.990; porción individual $700)"
+Noel Wafers Fresa Doble Crema 12 x 2;Noel;Galletas;1080296;;307;307;columna Precio = precio de lista, no PSP
+Noel Wafers Vainilla 18 paquetes 396 g;Noel;Galletas;1001588;;307;307;columna Precio = precio de lista, no PSP
+Noel Sultana Triturada 1.000 g;Noel;Repostería;1008035;;317;317;columna Precio = precio de lista, no PSP
+Rica Salchicha Viena 150 g x 7 unidades;Rica;Cárnicos enlatados;1001069;;160;160;precio sin etiquetar en la página
+Rica Salchicha Viena paquete económico 3 x 150 g;Rica;Cárnicos enlatados;1000044;;160;160;precio sin etiquetar en la página
+Saltín Noel Integral 136 g x 1 unidad;Saltín Noel;Galletas;1033596;;324;324;columna Precio = precio de lista, no PSP
+Saltín Noel Integral 216 g (9 porciones);Saltín Noel;Galletas;1055640;;325;325;precio sin etiquetar en la página
+Saltín Noel Integral 3 Tacos 415 g;Saltín Noel;Galletas;1082974;;327;327;columna Precio = precio de lista, no PSP
+Saltín Noel Integral x 7 unidades;Saltín Noel;Galletas;1064141;;324;324;columna Precio = precio de lista, no PSP
+Saltín Noel Menos Sodio 200 g (2 tacos);Saltín Noel;Galletas;1075780;;324;324;columna Precio = precio de lista, no PSP
+Saltín Noel Menos Sodio combo x 6;Saltín Noel;Galletas;1064144;;324;324;columna Precio = precio de lista, no PSP
+Saltín Noel Queso y Mantequilla 2 Tacos;Saltín Noel;Galletas;1067946;;327;327;columna Precio = precio de lista, no PSP
+Saltín Noel Queso y Mantequilla 216 g (9 porciones);Saltín Noel;Galletas;1001578;;325;325;precio sin etiquetar en la página
+Saltín Noel Queso y Mantequilla 3 Tacos 338 g;Saltín Noel;Galletas;1059013;;327;327;columna Precio = precio de lista, no PSP
+Saltín Noel Queso y Mantequilla 4 Tacos 412 g;Saltín Noel;Galletas;1008616;;327;327;columna Precio = precio de lista, no PSP
+Saltín Noel Queso y Mantequilla taco — oferta Pague 23 Lleve 24;Saltín Noel;Galletas;1064196;3100;323;323;PVP Saltín Queso y Mantequilla taco x1 (la página da el total de venta de la oferta P23LL24)
+Saltín Noel Queso y Mantequilla taco — paquete x 8 unidades;Saltín Noel;Galletas;1080196;3100;323;323;PVP Saltín Queso y Mantequilla taco x1 (la página da el total de venta del paquete de 8)
+Saltín Noel Queso y Mantequilla x 4 unidades;Saltín Noel;Galletas;1064127;;324;324;columna Precio = precio de lista, no PSP
+Saltín Noel Queso y Mantequilla x 7 unidades;Saltín Noel;Galletas;1064128;;324;324;columna Precio = precio de lista, no PSP
+Saltín Noel Tradicional 110 g x 12 unidades;Saltín Noel;Galletas;1075439;;324;324;columna Precio = precio de lista, no PSP
+Saltín Noel Tradicional 110 g x 6 unidades;Saltín Noel;Galletas;1075436;;324;324;columna Precio = precio de lista, no PSP
+Saltín Noel Tradicional 216 g (9 porciones);Saltín Noel;Galletas;1055671;;325;325;precio sin etiquetar en la página
+Saltín Noel Tradicional 3 Tacos 300 g;Saltín Noel;Galletas;1001568;;326;326;columna Precio = precio de lista, no PSP
+Saltín Noel Tradicional Más Ahorro 4 Tacos 354 g;Saltín Noel;Galletas;1017968;;326;326;columna Precio = precio de lista, no PSP
+Saltín Noel Tradicional Más Ahorro 6 Tacos;Saltín Noel;Galletas;1025395;;326;326;columna Precio = precio de lista, no PSP
+Saltín Noel Tradicional Más Ahorro 8 Tacos 706 g;Saltín Noel;Galletas;1075075;;326;326;columna Precio = precio de lista, no PSP
+Saltín Noel Tradicional taco 110 g — paquete x 14 unidades;Saltín Noel;Galletas;1075428;2000;323;323;PVP Saltín Tradicional taco x1 (la página da el total de venta del paquete de 14)
+Saltín Noel Tradicional Taco Día 110 g — CMU 16 tacos + 4 gratis;Saltín Noel;Galletas;1092524;2200;40;40;PVP Saltín Noel taco x1 (la página también da el total de venta del combo)
+Saltín Noel Tradicional Taco Día 110 g — CMU 23 tacos + 1 gratis;Saltín Noel;Galletas;1075216;2200;40;40 323;"PVP Saltín Noel taco x1; la pág. 323 muestra $2.000 para esta misma referencia — revisar"
+Saltín Noel Tradicional Taco x4 (Más Ahorro) — CMU 5 tacos + 1 gratis;Saltín Noel;Galletas;1092525;7500;41;41;"PVP Saltín Noel Taco x4 (unidad); la página también da el total de venta del combo"
+Saltín Noel Tradicional Taco x4 (Más Ahorro) — CMU 6 tacos;Saltín Noel;Galletas;1084630;7500;41;41;PVP Saltín Noel Taco x4 (unidad)
+Chocolate Santander 65% Cacao Dark Amargo 70 g;Santander;Chocolates;1004079;;338;338;precio sin etiquetar en la página
+Café Sello Rojo Descafeinado 250 g;Sello Rojo;Café;1035463;;276;276;columna VALOR = precio de lista, no PSP
+Café Sello Rojo Espresso en grano 500 g;Sello Rojo;Café;1006557;;276;276;columna VALOR = precio de lista, no PSP
+Café Sello Rojo Institucional 2.500 g;Sello Rojo;Café;1029257;;275;275;columna VALOR = precio de lista, no PSP
+Café Sello Rojo Mocca 120 g;Sello Rojo;Café;1011384;;275;275;columna VALOR = precio de lista, no PSP
+Café Sello Rojo sabor a Ron 120 g;Sello Rojo;Café;1079628;9500;275;275;PSV
+Café Sello Rojo Tradicional 110 g;Sello Rojo;Café;1079676;;274;274;columna VALOR = precio de lista, no PSP
+Café Sello Rojo Tradicional 212 g;Sello Rojo;Café;1063612;;274;274;columna VALOR = precio de lista, no PSP
+Café Sello Rojo Tradicional 425 g;Sello Rojo;Café;1063620;;274;274;columna VALOR = precio de lista, no PSP
+Café Sello Rojo Tradicional bolsa 10 sobres x 50 g (500 g);Sello Rojo;Café;1079648;;274;274;"columna VALOR = precio de lista, no PSP; la tabla dice 40G y el empaque 500 g"
+Café Sello Rojo Vainilla 120 g;Sello Rojo;Café;1011383;;275;275;columna VALOR = precio de lista, no PSP
+Café Sello Rojo Vive 450 g;Sello Rojo;Café;1036046;;276;276;columna VALOR = precio de lista, no PSP
+CMU 10 Sello Rojo Café 40 g x 10 sobres;Sello Rojo;Café;1092449;250000;7;7;PSP
+Setas de Cuivá Champiñones a la Griega 235 g;Setas de Cuivá;Champiñones;1058319;;169;169;precio sin etiquetar en la página
+Setas de Cuivá Champiñones a la Napolitana 235 g;Setas de Cuivá;Champiñones;1058318;;169;169;precio sin etiquetar en la página
+Setas de Cuivá Champiñones Tajados 3.000 g;Setas de Cuivá;Champiñones;1004945;;169;169;precio sin etiquetar en la página
+Setas de Cuivá Champiñones Teriyaki 235 g;Setas de Cuivá;Champiñones;1058317;;169;169;precio sin etiquetar en la página
+Chocolate Tesalia Clavos y Canela sin azúcar pastillas individuales 125 g;Tesalia;Chocolate de mesa;1046580;;241;241 242;columna Precio = precio de lista, no PSP
+Tikys Golochips gotitas de chocolate sabor tutti frutti caja x 24 unidades 480 g;Tikys;Chocolates;1069494;1600;372;372;PVP por unidad
+Tosh Barras de Cereal Arándanos y Nueces x 6 unidades;Tosh;Barras de cereal;1044674;;289;289;columna Precio = precio de lista, no PSP
+Tosh Barras de Cereal Chocolate x 6 unidades;Tosh;Barras de cereal;1044671;;288;288;columna Precio = precio de lista, no PSP
+Tosh Barras de Cereal Fresa x 6 unidades;Tosh;Barras de cereal;1044670;;288;288;columna Precio = precio de lista, no PSP
+Tosh Barras de Cereal Lyne x 6 unidades;Tosh;Barras de cereal;1044672;;288;288;columna Precio = precio de lista, no PSP
+Tosh Barras de Cereal Maní y Pasas x 6 unidades;Tosh;Barras de cereal;1044673;;288;288;columna Precio = precio de lista, no PSP
+Tosh Barras de Cereal Yogurt Griego x 6 unidades;Tosh;Barras de cereal;1024486;;289;289;columna Precio = precio de lista, no PSP
+Tosh Barras Original sin azúcar x 24 unidades;Tosh;Barras de cereal;1044846;;290;290;columna Precio = precio de lista, no PSP
+Tosh Barras Surtidas (arándanos y nueces, Lyne, fresa) x 24 unidades;Tosh;Barras de cereal;1044676;;290;290;columna Precio = precio de lista, no PSP
+Tosh Barras Surtidas x 10 unidades;Tosh;Barras de cereal;1071865;;289;289;columna Precio = precio de lista, no PSP
+Tosh Barras Surtidas x 24 unidades;Tosh;Barras de cereal;1044776;;290;290;columna Precio = precio de lista, no PSP
+Tosh Barras Surtidas x 6 unidades;Tosh;Barras de cereal;1071863;;289;289;columna Precio = precio de lista, no PSP
+Tosh Bebida de Almendras sin azúcar 1.000 ml;Tosh;Bebidas vegetales;2020120;;286;286;precio sin etiquetar en la página
+Tosh Bebida de Cacao y Almendra sin azúcar 1.000 ml;Tosh;Bebidas vegetales;2020123;;286;286;precio sin etiquetar en la página
+Tosh Bebida de Coco sin azúcar 1.000 ml;Tosh;Bebidas vegetales;2020121;;286;286;precio sin etiquetar en la página
+Tosh Bebida Tres Nueces sin azúcar 1.000 ml;Tosh;Bebidas vegetales;2020122;;286;286;precio sin etiquetar en la página
+Tosh Avena en Hojuelas Chocolate;Tosh;Cereales y granolas;1054665;;283;283;precio sin etiquetar en la página
+Tosh Avena en Hojuelas Frutos Rojos;Tosh;Cereales y granolas;1054664;;283;283;precio sin etiquetar en la página
+Tosh Granola Avena Pop 300 g;Tosh;Cereales y granolas;1060186;;285;285;precio sin etiquetar en la página
+Tosh Granola Avena y Pasas 300 g;Tosh;Cereales y granolas;1060184;;285;285;precio sin etiquetar en la página
+Tosh Granola Crunchy Almendras 300 g;Tosh;Cereales y granolas;2020384;;284;284;"precio sin etiquetar; la página muestra dos códigos (2020384 y 2020385) sin asociar explícitamente cada uno a su gramaje"
+Tosh Granola Crunchy Almendras 500 g;Tosh;Cereales y granolas;2020385;;284;284;"precio sin etiquetar; la página muestra dos códigos (2020384 y 2020385) sin asociar explícitamente cada uno a su gramaje"
+Tosh Granola Crunchy Chocolate 300 g;Tosh;Cereales y granolas;2020371;;284;284;"precio sin etiquetar; la página muestra dos códigos (2020371 y 2020372) sin asociar explícitamente cada uno a su gramaje"
+Tosh Granola Crunchy Chocolate 500 g;Tosh;Cereales y granolas;2020372;;284;284;"precio sin etiquetar; la página muestra dos códigos (2020371 y 2020372) sin asociar explícitamente cada uno a su gramaje"
+Tosh Granola Crunchy Fresa 500 g;Tosh;Cereales y granolas;2020369;;284;284;precio sin etiquetar en la página
+Tosh Granola Crunchy Frutos del Bosque y sabor a Yogurt Griego 300 g;Tosh;Cereales y granolas;2020383;;285;285;precio sin etiquetar en la página
+Tosh Granola Crunchy Pasas 300 g;Tosh;Cereales y granolas;2020373;;284;284;precio sin etiquetar en la página
+Tosh Granola Semillas y Chía 300 g;Tosh;Cereales y granolas;1060185;;285;285;precio sin etiquetar en la página
+CMU Tosh 2 Crackers Miel + Fusión de Cereales (3 bolsas);Tosh;Galletas;1079856;;45;45;
+CMU Tosh Crackers Miel + Fusión de Cereales (2 bolsas);Tosh;Galletas;1079853;;45;45;
+Tosh Avena Ajonjolí y Miel bolsa 6 x 2;Tosh;Galletas;1045205;;293;293;columna Precio = precio de lista, no PSP
+Tosh Avena Chocolate bolsa 6 x 2;Tosh;Galletas;1045207;;293;293;columna Precio = precio de lista, no PSP
+Tosh Avena Manzana y Maní bolsa 6 x 2;Tosh;Galletas;1045206;;293;293;columna Precio = precio de lista, no PSP
+Tosh Cremadas Mousse de Naranja bolsa 6 x 2;Tosh;Galletas;1015524;;292;292;columna Precio = precio de lista, no PSP
+Tosh Cremadas Surtidas 12 unidades;Tosh;Galletas;1036319;;293;293;columna Precio = precio de lista, no PSP
+Tosh Cremadas Vainilla bolsa 6 x 2;Tosh;Galletas;1001563;;292;292;columna Precio = precio de lista, no PSP
+Tosh Cremadas Yogurt y Fresas bolsa 6 x 2;Tosh;Galletas;1009631;;292;292;columna Precio = precio de lista, no PSP
+Tosh Galleta con Salvado y Ajonjolí 9 unidades 225 g;Tosh;Galletas;1078164;;295;295;columna Precio = precio de lista, no PSP
+Tosh Galleta con Salvado y Miel 2 tacos 418 g;Tosh;Galletas;1078184;;296;296;columna Precio = precio de lista, no PSP
+Tosh Galleta con Salvado y Miel 9 unidades 243 g;Tosh;Galletas;1078185;;295;295;columna Precio = precio de lista, no PSP
+Tosh Galleta con Salvado y Miel taco 209 g;Tosh;Galletas;1062133;;291;291 295 296;columna Precio = precio de lista, no PSP
+Tosh Galleta Fusión de 4 Cereales 9 unidades 229,5 g;Tosh;Galletas;1064999;;295;295;columna Precio = precio de lista, no PSP
+Tosh Galleta Fusión de Cereales 2 tacos 388 g;Tosh;Galletas;1059668;;296;296;columna Precio = precio de lista, no PSP
+Tosh Wafer Cacao sin azúcar bolsa x 6;Tosh;Galletas;1051746;;294;294;columna Precio = precio de lista, no PSP
+Tosh Wafer Coco sin azúcar bolsa x 6;Tosh;Galletas;1035439;;294;294;columna Precio = precio de lista, no PSP
+Tosh Wafer Kiwi sin azúcar añadido bolsa x 6;Tosh;Galletas;1035440;;294;294;columna Precio = precio de lista, no PSP
+Tosh Wafer Yogurt, Fresa y Açaí sin azúcar bolsa x 6;Tosh;Galletas;1041295;;294;294;columna Precio = precio de lista, no PSP
+Tosh Zero Casera bolsa x 6 144 g;Tosh;Galletas;1086484;;103;103;
+Tosh Ajonjolí en Grano 180 g;Tosh;Granos y semillas;2042650;13600;98;98;PSP
+Tosh Chía en Grano 250 g;Tosh;Granos y semillas;2042649;22000;99;99;PSP
+Tosh Linaza Molida 250 g;Tosh;Granos y semillas;2042648;10800;100;100;PSP
+Tosh Quinua en Grano 250 g;Tosh;Granos y semillas;2042652;12000;96;96;PSP
+Tosh Quinua en Hojuelas 200 g;Tosh;Granos y semillas;2042651;13900;97;97;PSP
+Tosh Chips de Coco deshidratado bolsa x 6;Tosh;Snacks;2017501;;298;298;columna Precio = precio de lista, no PSP
+Tosh Pita Chips Cebolla Caramelizada 6 unidades;Tosh;Snacks;1046489;;297;297;columna Precio = precio de lista, no PSP
+Tosh Pop Chips sabor Canela Caramelo 6 unidades 120 g;Tosh;Snacks;2018171;;298;298;columna Precio = precio de lista, no PSP
+Tosh Pop Chips sabor Queso Mozarella 6 unidades 120 g;Tosh;Snacks;2018169;;298;298;columna Precio = precio de lista, no PSP
+Tosh Rosquitas Queso, Finas Hierbas y Chía 8 unidades;Tosh;Snacks;2010274;;297;297;columna Precio = precio de lista, no PSP
+Tosh Rosquitas Queso, Tomate y Quinua Roja bolsa x 8 paquetes;Tosh;Snacks;2010275;;297;297;columna Precio = precio de lista, no PSP
+Tosh Armonía Infusión de Manzanilla, Cidrón, Jengibre y Maca 20 unidades 30 g;Tosh;Tés y aromáticas;2030246;;280;280;precio sin etiquetar en la página
+Tosh Aromática Manzanilla y Limoncillo 18 sobres 19,8 g;Tosh;Tés y aromáticas;2032676;5900;122;122 277;PVSP
+Tosh Aromática Manzanilla, Anís y Menta 20 unidades 20 g;Tosh;Tés y aromáticas;2039110;;280;280;precio sin etiquetar en la página
+Tosh Aromática Manzanilla, Jengibre, Limón y Miel 20 unidades 22 g;Tosh;Tés y aromáticas;2031414;;280;280;precio sin etiquetar en la página
+Tosh Bienestar Momento de Calma 20 unidades 24 g;Tosh;Tés y aromáticas;2031417;;281;281;precio sin etiquetar en la página
+Tosh Bienestar Momento Ligero 20 unidades 24 g;Tosh;Tés y aromáticas;2038964;;280;280;precio sin etiquetar en la página
+Tosh Frutal Frutos Rojos (presentación no especificada);Tosh;Tés y aromáticas;2031415;;279;279;"precio sin etiquetar; la página no aclara a qué presentación corresponde este código"
+Tosh Frutal Frutos Rojos 10 unidades 12 g;Tosh;Tés y aromáticas;2031245;;279;279;"precio sin etiquetar; la página lista dos códigos (2031245 y 2031415) junto a la misma imagen sin aclarar la presentación de cada uno"
+Tosh Frutal Frutos Rojos 20 unidades;Tosh;Tés y aromáticas;2031244;;279;279;precio sin etiquetar en la página
+Tosh Frutal Frutos Rojos tira x 12 unidades;Tosh;Tés y aromáticas;1059929;;279;279;precio sin etiquetar en la página
+Tosh Frutal Mango Coco 20 unidades 24 g;Tosh;Tés y aromáticas;2031247;;281;281;precio sin etiquetar en la página
+Tosh Té Negro 20 unidades 32 g;Tosh;Tés y aromáticas;1053045;;281;281;precio sin etiquetar en la página
+Tosh Té Verde con Flor de Jamaica 20 unidades 24 g;Tosh;Tés y aromáticas;2026757;;279;279;precio sin etiquetar en la página
+Tosh Té Verde Piña 20 unidades 24 g;Tosh;Tés y aromáticas;2031249;;281;281;precio sin etiquetar en la página
+Tosh Crema de Almendras 290 g;Tosh;Untables;1059256;;283;283;precio sin etiquetar en la página
+Tosh Crema de Maní 100% maní tostado sin sal;Tosh;Untables;1051111;;283;283;precio sin etiquetar en la página
+CMU Trozos de Atún en Aceite de Girasol Zenú 140 g Pague 6 Lleve 7;Zenú;Atún;1093157;;64;64;
+CMU Trozos de Atún en Agua Zenú 140 g Pague 6 Lleve 7;Zenú;Atún;1093156;;63;63;
+Zenú Lomos de Atún en Aceite de Girasol 160 g;Zenú;Atún;2015885;;162;162;columna VALOR sin especificar tipo de precio
+Zenú Lomos de Atún en Aceite de Girasol 3 x 80 g;Zenú;Atún;2015883;;162;162;columna VALOR sin especificar tipo de precio
+Zenú Lomos de Atún en Aceite de Oliva 3 x 80 g;Zenú;Atún;2015882;;162;162;columna VALOR sin especificar tipo de precio
+Zenú Lomos de Atún en Agua 160 g;Zenú;Atún;2015886;;162;162;columna VALOR sin especificar tipo de precio
+Zenú Lomos de Atún en Agua 3 x 80 g;Zenú;Atún;2015884;;162;162;columna VALOR sin especificar tipo de precio
+Zenú Trozos de Atún en Aceite de Girasol 140 g;Zenú;Atún;1082110;;161;161;columna Precio sin especificar tipo
+Zenú Trozos de Atún en Aceite de Oliva 140 g;Zenú;Atún;2036109;;163;163;
+CMU 6 Salchichas Viena Zenú 150 g;Zenú;Cárnicos enlatados;1071623;;67;67;
+Zenú Albóndigas de Cerdo en Salsa Napolitana 162 g;Zenú;Cárnicos enlatados;1034555;;157;157 167;columna Precio sin especificar tipo
+Zenú Carne de Diablo 80 g;Zenú;Cárnicos enlatados;;;157;157;código SAP no visible en la página
+Zenú Jamoneta 180 g;Zenú;Cárnicos enlatados;;;157;157;código SAP no visible en la página
+Zenú Jamoneta 370 g;Zenú;Cárnicos enlatados;1004446;;157;157;
+Zenú Pollo con Cebollines a la Mayonesa 160 g;Zenú;Cárnicos enlatados;1038799;;167;167;columna Precio sin especificar tipo
+Zenú Pollo con Champiñones al Vino 160 g;Zenú;Cárnicos enlatados;1038798;;167;167;columna Precio sin especificar tipo
+Zenú Pollo con Champiñones al Vino 160 g;Zenú;Cárnicos enlatados;;;159;159;código SAP recortado en la página (solo se ve ...38798)
+Zenú Salchichas Frankfurt 150 g x 7 unidades;Zenú;Cárnicos enlatados;;;159;159;código SAP recortado en la página (solo se ve ...11774)
+Zenú Salchichas Viena 150 g x 7 unidades;Zenú;Cárnicos enlatados;;;158;158;código SAP recortado en la página (solo se ve ...0855)
+Zenú Salchichas Viena 3 x 150 g (precio especial);Zenú;Cárnicos enlatados;;;158;158;código SAP recortado en la página (solo se ve ...14868)
+Zenú Salchichas Viena de Pollo 150 g x 6 unidades;Zenú;Cárnicos enlatados;;;159;159;código SAP recortado en la página (solo se ve ...0792)
+Zenú Salchichas Viena sabor Limón 150 g x 6 unidades;Zenú;Cárnicos enlatados;;;159;159;código SAP recortado en la página (solo se ve ...20082)
+CMU 3 Maíz Dulce Zenú 241 g;Zenú;Vegetales enlatados;1046289;;65;65;
+CMU Frijoles Zenú 300 g x 4 un;Zenú;Vegetales enlatados;1080668;;66;66;
+Zenú Arvejas al Natural 300 g;Zenú;Vegetales enlatados;1000080;;165;165;columna VALOR sin especificar tipo de precio
+Zenú Arvejas al Natural 580 g;Zenú;Vegetales enlatados;1000081;;165;165;columna VALOR sin especificar tipo de precio
+Zenú Arvejas con Zanahoria 300 g;Zenú;Vegetales enlatados;1000083;;165;165;columna VALOR sin especificar tipo de precio
+Zenú Arvejas con Zanahoria 580 g;Zenú;Vegetales enlatados;1000084;;165;165;columna VALOR sin especificar tipo de precio
+Zenú Ensalada con Maíz y Champiñones 220 g;Zenú;Vegetales enlatados;1000307;;166;166;columna VALOR sin especificar tipo de precio
+Zenú Ensalada de Vegetales 300 g;Zenú;Vegetales enlatados;1000305;;166;166;columna VALOR sin especificar tipo de precio
+Zenú Ensalada de Vegetales 580 g;Zenú;Vegetales enlatados;1000306;;166;166;columna VALOR sin especificar tipo de precio
+Zenú Fríjoles 300 g;Zenú;Vegetales enlatados;1078791;;168;168;columna Precio sin especificar tipo
+Zenú Fríjoles Antioqueños 580 g;Zenú;Vegetales enlatados;1037897;;168;168;columna Precio sin especificar tipo
+Zenú Garbanzos al Natural 180 g;Zenú;Vegetales enlatados;1046735;;168;168;columna Precio sin especificar tipo
+Zenú Garbanzos al Natural 440 g;Zenú;Vegetales enlatados;1046672;;168;168;columna Precio sin especificar tipo
+Zenú Lentejas con Papa y Zanahoria 310 g;Zenú;Vegetales enlatados;1050030;;167;167;columna Precio sin especificar tipo
+Zenú Maíz Dulce 241 g;Zenú;Vegetales enlatados;2011706;;164;164;columna VALOR sin especificar tipo de precio
+Zenú Maíz Dulce 425 g;Zenú;Vegetales enlatados;2020368;;164;164;columna VALOR sin especificar tipo de precio
