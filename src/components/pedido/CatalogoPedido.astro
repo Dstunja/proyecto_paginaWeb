@@ -323,8 +323,8 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
      src/lib/plantillasCatalogo.ts, así que nunca llevan el atributo de
      ámbito que Astro le pondría a un <style> normal.
 
-     LA CAJA: 4:3 A SANGRE
-     ---------------------
+     LA CAJA: 4:3 A SANGRE, 16:10 EN UNA SOLA COLUMNA
+     -----------------------------------------------
      La foto llena el ancho completo de la tarjeta -que es la que lleva el
      `overflow-hidden` y le recorta las esquinas redondeadas- y la caja fija
      su alto con `aspect-ratio`. Al declararlo aquí y no depender de que la
@@ -334,13 +334,40 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
      `object-fit: cover` es lo que garantiza que no queden franjas blancas ni
      huecos, sea cual sea la proporción del archivo: el navegador recorta lo
      que sobre por el lado largo. El fondo blanco de la caja es la red de
-     seguridad para el instante anterior a que la foto pinte. */
+     seguridad para el instante anterior a que la foto pinte.
+
+     POR QUÉ LA PROPORCIÓN CAMBIA EN MÓVIL
+     -------------------------------------
+     Con 4:3 y una sola columna la foto se lleva 293 px de alto en una
+     pantalla de 390, la tarjeta entera pasa de 500 px y por el armador se
+     avanza de dos en dos referencias. En 16:10 la foto baja a 244 px: se
+     ganan unos 50 px por tarjeta sin que el producto se vea apretado, porque
+     el recorte extra sale del pie de la foto, que es justo donde el
+     desvanecido de abajo ya estaba tapando la franja publicitaria del
+     empaque. En cuanto la grilla pasa a dos columnas la tarjeta deja de ser
+     ancha y el 4:3 vuelve a ser el encuadre correcto.
+
+     EL CORTE VA EN 900 px, y no es una elección aparte: es
+     `--breakpoint-tablet`, el mismo punto donde la grilla pasa de una a dos
+     columnas (`tablet:grid-cols-2` en `grilla`, src/lib/plantillasCatalogo.ts).
+     La proporción sigue al NÚMERO DE COLUMNAS, no al nombre del aparato: una
+     tableta en vertical también cae aquí, y ahí la tarjeta es igual de ancha
+     y de alta que en un teléfono. Va con `max-width` en píxeles y no con
+     `width <` para no depender de la sintaxis de rangos, que Safari solo
+     entiende desde la 16.4. Si algún día se mueve el punto de quiebre en
+     global.css, hay que moverlo también aquí. */
   .tarjeta-foto {
     position: relative;
     width: 100%;
     aspect-ratio: 4 / 3;
     overflow: hidden;
     background-color: var(--color-surface);
+  }
+
+  @media (max-width: 899.98px) {
+    .tarjeta-foto {
+      aspect-ratio: 16 / 10;
+    }
   }
 
   /* EL ENCUADRE
