@@ -33,10 +33,22 @@ export interface ProductoPedido {
   id: string;
   marca: string;
   categoria: string;
+  /**
+   * Segundo nivel de la categoría. Viaja porque el filtro de subcategorías
+   * corre en el navegador; las categorías que no lo tienen -hoy solo
+   * "Untables"- llegan sin el campo.
+   */
+  subcategoria?: string;
   nombre: string;
   presentacion: string;
   codigo: string;
   imagen?: string;
+  /**
+   * PSP en pesos, solo en las referencias cuya página del deck lo declara.
+   * Se muestra en la tarjeta del catálogo; no entra en el mensaje al asesor,
+   * que sigue siendo una lista de referencias y cantidades.
+   */
+  precio?: number;
 }
 
 /** Datos de contacto que acompañan al pedido. */

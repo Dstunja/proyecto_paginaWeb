@@ -20,8 +20,12 @@ import {
   empresa,
   HERO_IMAGEN,
   HERO_IMAGEN_ALT,
+  resumenCobertura,
 } from '../data/site';
-import { departamentos, totalClientes } from '../data/municipios';
+// De municipios.ts sale el dato real (cuántos municipios cubre cada
+// departamento y su color); las cifras de clientes que se muestran son las
+// comunicadas y salen de resumenCobertura (ver src/data/site.ts).
+import { departamentos } from '../data/municipios';
 
 const formatoNumero = new Intl.NumberFormat('es-CO');
 
@@ -200,7 +204,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
           Soluciones integrales para hacer crecer a nuestros aliados comerciales
         </h2>
       </div>
-      <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3">
+      <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3" data-revelar-grupo>
         {
           valorAgregado.map((item) => (
             <div class="group glass-card p-8">
@@ -227,8 +231,8 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
           <span class="kicker">Nuestra red</span>
           <h2 class="text-[28px] tablet:text-[38px]">Cobertura nacional</h2>
           <p class="mt-3 text-muted">
-            Atendemos {formatoNumero.format(totalClientes)} clientes en 87 municipios de tres
-            departamentos. En el mapa marcamos los municipios donde se concentra la red.
+            Atendemos {formatoNumero.format(resumenCobertura.totalClientes)} clientes en 87 municipios
+            de tres departamentos. En el mapa marcamos los municipios donde se concentra la red.
           </p>
         </div>
 
@@ -248,7 +252,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
                   {dep.total}
                 </dd>
                 <dd class="mt-1 m-0 text-[12.5px] text-muted">
-                  {formatoNumero.format(dep.clientes)} clientes
+                  {formatoNumero.format(resumenCobertura.clientesPorDepartamento[dep.nombre])} clientes
                 </dd>
               </div>
             ))
@@ -268,7 +272,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
         <h2 class="text-[28px] tablet:text-[38px]">Impulsa tu negocio con nuestro respaldo</h2>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4" data-revelar-grupo>
         {
           beneficios.map((b) => (
             <a class="tarjeta-int flex flex-col p-8" href={ruta(b.enlace)}>

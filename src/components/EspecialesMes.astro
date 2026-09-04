@@ -98,6 +98,13 @@ const columnas =
           </div>
         </div>
 
+        {/*
+          Revelado al hacer scroll: en rejilla cada tarjeta entra por su cuenta
+          y escalonada; en carrusel no, porque las tarjetas que quedan fuera por
+          la derecha nunca llegarían a entrar en pantalla y se quedarían
+          invisibles para siempre, así que se revela la pista completa de una
+          vez. Ver src/lib/revelado.ts.
+        */}
         <div
           class:list={[
             esCarrusel
@@ -107,6 +114,8 @@ const columnas =
                 'pista-carrusel -mx-6 flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth px-6 pb-3 mob:-mx-8 mob:scroll-pl-8 mob:px-8 tablet:mx-0 tablet:gap-8 tablet:scroll-pl-0 tablet:px-0 motion-reduce:scroll-auto'
               : ['grid gap-6 tablet:gap-8', columnas],
           ]}
+          data-revelar-grupo={esCarrusel ? undefined : ''}
+          data-revelar={esCarrusel ? '' : undefined}
           data-pista={esCarrusel ? '' : undefined}
           data-carrusel={esCarrusel ? '' : undefined}
           role={esCarrusel ? 'region' : undefined}

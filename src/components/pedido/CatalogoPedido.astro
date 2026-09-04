@@ -4,46 +4,114 @@
  *
  * CÓMO LLEGAN LOS PRODUCTOS AL NAVEGADOR
  * --------------------------------------
- * Las 709 referencias no se imprimen como HTML: eso serían más de medio mega
- * de marcado y unos 700 campos de formulario en el árbol de accesibilidad,
- * cuando de entrada solo se ven unas pocas decenas. En su lugar se emite un
- * bloque JSON (~20 KB comprimidos) y el script pinta únicamente lo que se está
- * mirando: la marca abierta, de a tandas.
+ * En dos tiempos, y a propósito.
+ *
+ * 1. LA PRIMERA PANTALLA SE IMPRIME EN EL BUILD. Las secciones de las 34
+ *    marcas y las primeras 24 tarjetas (la marca que abre desplegada) salen
+ *    del servidor como HTML de verdad, con `vistaPorMarcas`. Se ven apenas
+ *    llega el documento: sin esperar a que se descargue, se analice y se
+ *    ejecute el JavaScript, y también si el JavaScript nunca llega -conexión
+ *    mala, script bloqueado, navegador con JS desactivado-. Antes el
+ *    contenedor salía vacío y la página no servía para nada hasta que
+ *    arrancaba el script.
+ *
+ * 2. EL RESTO SE PINTA EN EL NAVEGADOR. Las 709 referencias no se imprimen
+ *    como HTML: eso serían más de medio mega de marcado y unos 700 campos de
+ *    formulario en el árbol de accesibilidad, cuando de entrada solo se ven
+ *    unas pocas decenas. En su lugar se emite un bloque JSON (~20 KB
+ *    comprimidos) y el script pinta lo que se esté mirando: la marca abierta,
+ *    de a tandas.
+ *
+ * Las dos etapas usan las MISMAS plantillas (src/lib/plantillasCatalogo.ts),
+ * así que el HTML del build y el que pinta el script son idénticos: cuando el
+ * script arranca no repinta nada, adopta lo que ya está en pantalla y solo le
+ * aplica el pedido guardado. Por eso no hay parpadeo ni salto de la grilla.
  *
  * Del producto solo viajan los campos que se usan. `codigoParcial`, `embalaje`
  * y `paginaPdf` son notas internas y se quedan en el servidor; el `codigo` SAP
  * viaja porque va en el mensaje que recibe el asesor, no porque se muestre.
+ * `precio` viaja solo cuando la referencia lo tiene: hoy son 107 de las 709, y
+ * las demás tarjetas simplemente no muestran renglón de precio.
  *
- * Sin JavaScript no hay listado (todo el armador lo es): el `<noscript>` manda
- * al catálogo de marcas y a WhatsApp.
+ * Sin JavaScript quedan el listado de marcas y las primeras tarjetas, pero no
+ * el buscador, los filtros ni el carrito: esos controles se ocultan (no sirve
+ * de nada un buscador que no busca) y en su lugar aparece un aviso con la
+ * salida por WhatsApp.
  */
-import { productos, MARCAS, CATEGORIAS } from '../../data/productos';
 import { getImage } from 'astro:assets';
+import { productos, MARCAS, CATEGORIAS, SUBCATEGORIAS } from '../../data/productos';
 import { imagenSiExiste, logoMarcaImagen } from '../../lib/imagenes';
 import { ruta } from '../../lib/rutas';
+import { TAMANO_TANDA } from '../../data/pedido';
+import {
+  agruparPorMarca,
+  conteoSinFiltro,
+  vistaPorMarcas,
+  type EstadoCatalogo,
+} from '../../lib/plantillasCatalogo';
 import Icono from '../Icono.astro';
-import LoaderDST from '../LoaderDST.astro';
+import { empresa } from '../../data/site';
 
 /**
  * Lo que se le manda al navegador de cada producto.
  *
  * `imagen` solo viaja cuando la referencia tiene foto propia Y el archivo
- * existe de verdad en public/ (`imagenSiExiste` ya le antepone el `base`).
- * Hoy son las siete referencias confirmadas contra su código SAP; el resto
- * llega sin el campo y la tarjeta cae en el logotipo de la marca. Conectar
- * una foto nueva es entonces solo llenar `imagen` en src/data/productos.ts:
- * aquí y en la tarjeta no hay que tocar nada.
+ * existe de verdad (ver `fotoDe`, que ya le antepone el `base`). El resto
+ * llega sin el campo y la tarjeta cae en el logotipo de la marca. Conectar una
+ * foto nueva es entonces solo dejar el archivo en src/assets/productos/ con el
+ * código SAP por nombre y nombrarlo en `imagen` dentro de
+ * src/data/productos.ts: aquí y en la tarjeta no hay que tocar nada.
  */
+/**
+ * Fotos oficiales del fabricante, descargadas de la tienda de Nutresa y
+ * guardadas en src/assets/productos/ con el CODIGO SAP por nombre de archivo.
+ *
+ * Van por src/assets/ y no por public/ a proposito: los originales son de
+ * 1000-1200 px y pesan entre 20 y 300 KB cada uno, pero en la tarjeta se ven a
+ * menos de 200 px. Al pasar por `getImage` el navegador recibe un WebP de
+ * 400 px -una fraccion del peso- y el original nunca se publica. Por public/
+ * habria que servir los 466 archivos tal cual.
+ */
+const archivosFoto = import.meta.glob<{ default: ImageMetadata }>(
+  '../../assets/productos/*.{png,jpg,jpeg,webp}',
+  { eager: true },
+);
+const fotos: Record<string, string> = {};
+for (const [rutaArchivo, modulo] of Object.entries(archivosFoto)) {
+  const nombre = rutaArchivo.split('/').pop() as string;
+  fotos[nombre] = (await getImage({ src: modulo.default, width: 400, format: 'webp' })).src;
+}
+
+/**
+ * Resuelve el campo `imagen` de una referencia, que admite dos formas:
+ *
+ *  - nombre de archivo suelto ("1078187.png"): foto oficial en
+ *    src/assets/productos/, optimizada arriba.
+ *  - ruta absoluta ("/img/innovacion/...jpg"): las fotos que ya estaban en
+ *    public/, de las referencias de innovacion.
+ *
+ * Devuelve null si el archivo no existe, y entonces la tarjeta cae en el
+ * logotipo de la marca. Esa red de seguridad es la que evita que una ruta mal
+ * escrita saque una imagen rota en el armador.
+ */
+function fotoDe(imagen: string | undefined): string | null {
+  if (!imagen) return null;
+  if (imagen.startsWith('/')) return imagenSiExiste(imagen);
+  return fotos[imagen] ?? null;
+}
+
 const catalogo = productos.map((p) => {
-  const imagen = imagenSiExiste(p.imagen);
+  const imagen = fotoDe(p.imagen);
   return {
     id: p.id,
     marca: p.marca,
     categoria: p.categoria,
+    ...(p.subcategoria ? { subcategoria: p.subcategoria } : {}),
     nombre: p.nombre,
     presentacion: p.presentacion,
     codigo: p.codigo,
     ...(imagen ? { imagen } : {}),
+    ...(typeof p.precio === 'number' ? { precio: p.precio } : {}),
   };
 });
 
@@ -86,21 +154,166 @@ const logos = Object.fromEntries(
 const categoriasUsadas = CATEGORIAS.filter((c) => productos.some((p) => p.categoria === c));
 
 /**
+ * SUBCATEGORÍAS: EL SEGUNDO NIVEL DEL FILTRO
+ * ------------------------------------------
+ * Las 14 categorías son los chips de la barra; las subcategorías NO lo son.
+ * Poner los dos niveles en la misma tira daría 65 chips en fila y borraría la
+ * jerarquía, que es justamente lo que se quiso arreglar. Van entonces dentro
+ * del panel de "Filtros", como un segundo nivel que solo aparece cuando ya se
+ * eligió la categoría a la que pertenecen.
+ *
+ * Se imprimen los 14 grupos en el build y el script muestra el que toque. Es
+ * marcado de sobra -51 casillas- pero evita tener que armar el panel con
+ * plantillas en el navegador cada vez que se toca un chip, y deja el estado
+ * inicial correcto sin esperar al script.
+ */
+const conteoSub = new Map<string, number>();
+for (const p of productos) {
+  if (p.subcategoria) {
+    const clave = `${p.categoria}|${p.subcategoria}`;
+    conteoSub.set(clave, (conteoSub.get(clave) ?? 0) + 1);
+  }
+}
+
+/** Categorías con subcategorías, ya en el orden en que se ofrecen. */
+const gruposSub = categoriasUsadas
+  .map((c) => ({ categoria: c, subs: SUBCATEGORIAS[c] ?? [] }))
+  .filter((g) => g.subs.length > 0);
+
+/**
+ * Cuántas referencias tiene cada marca, y las marcas que tienen alguna.
+ *
+ * El número va al lado del nombre en el panel de filtros: sirve para saber de
+ * antemano si vale la pena marcarla, y de paso deja claro que el portafolio no
+ * está repartido en partes iguales (Noel pesa mucho más que Copelia).
+ */
+const conteoMarca = new Map<string, number>();
+for (const p of productos) conteoMarca.set(p.marca, (conteoMarca.get(p.marca) ?? 0) + 1);
+const marcasUsadas = MARCAS.filter((m) => conteoMarca.has(m));
+
+/**
+ * LA PRIMERA PANTALLA, PINTADA EN EL BUILD
+ * ----------------------------------------
+ * Es exactamente el estado inicial que tendría el script recién arrancado: sin
+ * pedido guardado (el localStorage no existe en el servidor), sin ninguna tanda
+ * ampliada y con la primera marca del catálogo desplegada. Al coincidir campo
+ * por campo con lo que el navegador pintaría, el script puede quedarse con este
+ * HTML en vez de reemplazarlo.
+ *
+ * `ansiosas` deja las seis primeras fotos sin `loading="lazy"`: son las que
+ * caen sobre la línea de flotación, así que diferirlas solo retrasaría la
+ * imagen que mide el LCP.
+ */
+const porMarca = agruparPorMarca(catalogo);
+const marcas = [...porMarca.keys()];
+const primeraMarca = marcas[0];
+
+const estadoInicial: EstadoCatalogo = {
+  logos,
+  enPedido: () => 0,
+  cantidad: () => 1,
+  visibles: () => TAMANO_TANDA,
+  abierta: (marca) => marca === primeraMarca,
+  ansiosas: 6,
+};
+
+const htmlInicial = vistaPorMarcas(porMarca, estadoInicial);
+const conteoInicial = conteoSinFiltro(catalogo.length, marcas.length);
+const productosVisibles = Math.min(porMarca.get(primeraMarca ?? '')?.length ?? 0, TAMANO_TANDA);
+
+const mensajeSinJs = encodeURIComponent(
+  'Hola, quiero hacer un pedido y necesito que un asesor me acompañe.',
+);
+
+/**
  * JSON dentro de un `<script>`: hay que neutralizar `<` para que un texto no
  * pueda cerrar la etiqueta antes de tiempo.
  */
 const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c');
 ---
 
+{/*
+  Marca el documento como "con JavaScript" antes de que se pinte nada más, para
+  que los controles que solo funcionan con script no lleguen a verse en un
+  navegador que lo tiene desactivado, y para que el aviso de "activando…" no le
+  aparezca a quien nunca lo va a ver desaparecer. Va en línea y sin `type` a
+  propósito: tiene que ejecutarse en el acto, no cuando llegue el módulo.
+
+  El temporizador es la red de seguridad del caso feo: el JavaScript está
+  activo pero el módulo del catálogo nunca llega (red caída a mitad, script
+  bloqueado por la red de la tienda, error de sintaxis). Ahí el aviso se
+  quedaría girando para siempre, así que a los diez segundos se convierte en
+  una explicación con salida por WhatsApp. Las tarjetas ya impresas siguen ahí.
+*/}
+<script is:inline>
+  document.documentElement.dataset.js = '1';
+  setTimeout(function () {
+    var aviso = document.querySelector('[data-cargando]');
+    if (aviso) aviso.dataset.cargando = 'falló';
+  }, 10000);
+</script>
+
+<style is:global>
+  /*
+   * Sin JavaScript: fuera el buscador, los filtros y el aviso de carga. Lo que
+   * queda -las marcas y las primeras tarjetas- se lee perfectamente, y para lo
+   * demás está el bloque <noscript>.
+   */
+  html:not([data-js]) [data-solo-js] {
+    display: none !important;
+  }
+
+  /*
+   * Los controles del pedido (cantidad, "Agregar") y el botón "Ver más" van
+   * dentro de la grilla que imprime el build, así que sin JavaScript quedarían
+   * a la vista sin hacer absolutamente nada. Es mejor no ofrecerlos: lo que
+   * queda es un catálogo para mirar, que es justo lo que anuncia el <noscript>.
+   */
+  html:not([data-js]) [data-controles],
+  html:not([data-js]) [data-mas-caja] {
+    display: none !important;
+  }
+
+  /* El aviso de carga tiene dos textos y se muestra el que toque. */
+  [data-cargando] [data-falla],
+  [data-cargando='falló'] [data-espera] {
+    display: none;
+  }
+  [data-cargando='falló'] [data-falla] {
+    display: block;
+  }
+</style>
+
 <script type="application/json" id="datos-catalogo" set:html={aJson(catalogo)} is:inline></script>
 <script type="application/json" id="datos-marcas" set:html={aJson(logos)} is:inline></script>
 
-{/* ---- Filtros: quedan pegados bajo la barra fija al desplazar ---- */}
+{/* ---- Filtros: quedan pegados bajo la barra fija al desplazar ----
+
+     ORDEN DE LECTURA, DE LO MÁS USADO A LO MENOS USADO
+     --------------------------------------------------
+      1. BUSCADOR, siempre a la vista: es el atajo de quien ya sabe qué
+         quiere ("saltín", "café 500").
+      2. CATEGORÍAS en chips, también a la vista: es como se recorre el
+         surtido de una tienda. Son 38, así que por defecto van en una sola
+         fila que se desplaza de lado y el botón de la derecha las abre todas.
+      3. MARCAS dentro del panel plegado. Son 34 y se llevaban una tira
+         entera de la barra fija para el filtro que menos se usa; ahora se
+         piden a propósito y el botón "Filtros" dice cuántas hay puestas.
+
+     Sin JavaScript la barra entera desaparece (`data-solo-js`): no filtra
+     nada, y unos controles muertos confunden más de lo que ayudan. La oculta
+     una regla de CSS que depende del `data-js` que pone el script en línea de
+     arriba, no el módulo del catálogo: así aparece en el primer pintado, sin
+     el salto que daría la grilla si la barra se encendiera al terminar de
+     cargar.
+*/}
 <div
-  class="barra-fija sticky top-[var(--nav-h)] z-40 -mx-6 mb-10 px-6 py-4 mob:-mx-8 mob:px-8"
+  class="barra-fija sticky top-[var(--nav-h)] z-40 -mx-6 mb-8 px-6 py-4 mob:-mx-8 mob:px-8"
   data-filtros
+  data-solo-js
 >
-  <div class="mx-auto flex w-full max-w-[var(--container-site)] flex-col gap-4">
+  <div class="mx-auto flex w-full max-w-[var(--container-site)] flex-col gap-3">
+    {/* --- 1. Buscador, con el acceso al panel de marcas al lado --- */}
     <div class="flex flex-col gap-3 tablet:flex-row tablet:items-center">
       <div class="relative flex-1">
         <span
@@ -120,60 +333,224 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
         />
       </div>
 
-      <div class="tablet:w-[280px]">
-        <label class="sr-only" for="filtro-categoria">Filtrar por categoría</label>
-        <select id="filtro-categoria" class="field" data-categoria>
-          <option value="">Todas las categorías</option>
-          {categoriasUsadas.map((c) => <option value={c}>{c}</option>)}
-        </select>
+      <div class="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          class="chip-filtro group !py-2.5"
+          aria-expanded="false"
+          aria-controls="panel-marcas"
+          data-abrir-panel
+        >
+          <Icono nombre="sliders" class="h-[17px] w-[17px]" interactivo={false} />
+          <span>Filtros</span>
+          {/* El número de marcas puestas; el script lo muestra y lo oculta. */}
+          <span class="conteo-filtro hidden" data-conteo-marcas>0</span>
+          <Icono
+            nombre="chevron-down"
+            class="h-4 w-4 transition-transform duration-300 group-aria-expanded:rotate-180"
+            interactivo={false}
+          />
+        </button>
+
+        {/* Un solo botón deja el catálogo como estaba: sin texto, sin
+            categorías y sin marcas. Solo aparece cuando hay algo que quitar. */}
+        <button type="button" class="chip-filtro hidden !py-2.5" data-limpiar>
+          <Icono nombre="close" class="h-4 w-4" interactivo={false} />
+          <span>Limpiar filtros</span>
+        </button>
       </div>
     </div>
 
-    {/* Marcas como píldoras: en móvil se desplazan de lado. */}
-    <div
-      class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-      role="group"
-      aria-label="Filtrar por marca"
-      data-marcas
-    >
-      <button type="button" class="chip-filtro" data-marca="" aria-pressed="true">Todas</button>
-      {
-        MARCAS.map((marca) => (
-          <button type="button" class="chip-filtro" data-marca={marca} aria-pressed="false">
-            {marca}
-          </button>
-        ))
-      }
+    {/* --- 2. Categorías: chips de selección múltiple --- */}
+    <div class="flex items-start gap-2">
+      <div
+        class="tira-categorias"
+        id="tira-categorias"
+        data-abierta="no"
+        role="group"
+        aria-label="Filtrar por categoría"
+        data-categorias
+      >
+        <button type="button" class="chip-filtro" data-categoria="" aria-pressed="true">
+          Todas
+        </button>
+        {
+          categoriasUsadas.map((c) => (
+            <button type="button" class="chip-filtro" data-categoria={c} aria-pressed="false">
+              {c}
+            </button>
+          ))
+        }
+      </div>
+
+      {/* Este botón hace dos cosas a la vez: abre la tira completa y lleva el
+          contador de categorías activas, que si no quedaría fuera de vista
+          apenas la tira se desplaza un poco. */}
+      <button
+        type="button"
+        class="chip-filtro group"
+        aria-expanded="false"
+        aria-controls="tira-categorias"
+        data-ver-categorias
+      >
+        <span>Categorías</span>
+        <span class="conteo-filtro hidden" data-conteo-categorias>0</span>
+        <Icono
+          nombre="chevron-down"
+          class="h-4 w-4 transition-transform duration-300 group-aria-expanded:rotate-180"
+          interactivo={false}
+        />
+      </button>
     </div>
-  </div>
-</div>
 
-{/* ---- Resultados ---- */}
-<p class="mb-6 text-[14.5px] text-muted" role="status" aria-live="polite" data-conteo></p>
+    {/* --- 3. Panel de filtros (subcategorías y marcas), plegado de entrada --- */}
+    <div class="hidden" id="panel-marcas" data-panel-marcas>
+      <div class="flex flex-col gap-3">
+      {/* Subcategorías: el segundo nivel. Cada grupo está oculto hasta que se
+          elige su categoría, y el bloque entero desaparece si ninguna de las
+          categorías elegidas tiene subcategorías. */}
+      <fieldset class="hidden rounded-card border border-line bg-fondo p-4" data-caja-subs>
+        <legend class="sr-only">Afinar dentro de la categoría</legend>
 
-{/* Espera real: el navegador tiene que leer las 709 referencias del bloque
-    JSON, indexarlas y pintar la primera tanda de tarjetas. Hasta que render()
-    corre, aqui solo habria un hueco en blanco. Lo reemplaza el propio
-    render(), asi que no hace falta quitarlo a mano. */}
-<div data-resultados class="min-h-[40vh]">
-  {/* `pt-24`: la barra de filtros es `sticky` y, sin ese aire, el logotipo de
-      la espera queda medio tapado detras de las pildoras de marca. */}
-  <div class="grid min-h-[40vh] place-items-center pt-24 pb-12">
-    <LoaderDST texto="Cargando el catálogo…" />
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <p
+            class="m-0 font-display text-[12px] font-semibold tracking-[0.12em] text-muted uppercase"
+          >
+            Dentro de la categoría
+          </p>
+          <button
+            type="button"
+            class="hidden text-[13px] font-semibold text-secondary-dark underline"
+            data-limpiar-subs
+          >
+            Quitar subcategorías
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          {
+            gruposSub.map((g) => (
+              <div class="hidden" data-grupo-sub={g.categoria}>
+                <p class="m-0 mb-1.5 text-[13px] font-semibold">{g.categoria}</p>
+                <div class="grid grid-cols-1 gap-1 mob:grid-cols-2 tablet:grid-cols-3">
+                  {g.subs.map((s) => (
+                    <label class="opcion-marca">
+                      <input
+                        type="checkbox"
+                        value={s}
+                        data-sub
+                        data-sub-categoria={g.categoria}
+                      />
+                      <span class="truncate">{s}</span>
+                      <span class="ml-auto text-[12px] font-normal text-muted">
+                        {conteoSub.get(`${g.categoria}|${s}`)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </fieldset>
+
+      <fieldset class="rounded-card border border-line bg-fondo p-4">
+        <legend class="sr-only">Filtrar por marca</legend>
+
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <p
+            class="m-0 font-display text-[12px] font-semibold tracking-[0.12em] text-muted uppercase"
+          >
+            Marcas ({marcasUsadas.length})
+          </p>
+          <button
+            type="button"
+            class="hidden text-[13px] font-semibold text-secondary-dark underline"
+            data-limpiar-marcas
+          >
+            Quitar marcas
+          </button>
+        </div>
+
+        {/* Rejilla con tope de alto: el panel no puede empujar los resultados
+            fuera de la pantalla, así que a partir de cierto punto se desplaza
+            por dentro. */}
+        <div
+          class="grid max-h-[min(320px,38vh)] grid-cols-1 gap-1 overflow-y-auto mob:grid-cols-2 tablet:grid-cols-3 nav:grid-cols-4"
+        >
+          {
+            marcasUsadas.map((m) => (
+              <label class="opcion-marca">
+                <input type="checkbox" value={m} data-marca />
+                <span class="truncate">{m}</span>
+                <span class="ml-auto text-[12px] font-normal text-muted">{conteoMarca.get(m)}</span>
+              </label>
+            ))
+          }
+        </div>
+      </fieldset>
+      </div>
+    </div>
   </div>
 </div>
 
 <noscript>
-  <div class="glass-card p-8">
-    <h2 class="text-xl">Necesitas activar JavaScript</h2>
+  <div class="glass-card mb-10 p-6">
+    <h2 class="m-0 text-lg">Estás viendo el catálogo sin JavaScript</h2>
     <p class="mt-3 text-muted">
-      El armador de pedidos funciona en tu navegador, sin enviar nada a un servidor. Si prefieres,
-      mira <a class="font-semibold text-secondary-dark underline" href={ruta('/catalogo/')}
-        >el catálogo de marcas</a
-      > o escríbenos directamente por WhatsApp y un asesor te toma el pedido.
+      Abajo tienes las {marcas.length} marcas y las primeras {productosVisibles} referencias, pero el
+      buscador, los filtros y el armador de pedidos necesitan JavaScript para funcionar. Actívalo
+      para armar tu lista, mira <a
+        class="font-semibold text-secondary-dark underline"
+        href={ruta('/catalogo/')}>el catálogo de marcas</a
+      > o
+      <a
+        class="font-semibold text-secondary-dark underline"
+        href={`${empresa.whatsapp}?text=${mensajeSinJs}`}
+        target="_blank"
+        rel="noopener">escríbenos por WhatsApp</a
+      > y un asesor te toma el pedido.
     </p>
   </div>
 </noscript>
+
+{/* ---- Resultados ---- */}
+<p class="mb-6 text-[14.5px] text-muted" role="status" aria-live="polite" data-conteo>
+  {conteoInicial}
+</p>
+
+{/*
+  Aviso del PASO 2: las tarjetas de abajo ya están, lo que falta es el resto
+  del catálogo y los controles. Lo quita el script en cuanto termina de
+  engancharse, y nunca se muestra si el navegador no tiene JavaScript.
+
+  Va ENCIMA de la grilla y no debajo: debajo quedaría al final de las 34
+  secciones de marca, a varias pantallas de distancia, y un aviso de "esto
+  todavía está cargando" que hay que ir a buscar no le sirve a nadie.
+*/}
+<p
+  class="mb-6 flex items-center gap-3 text-[14px] text-muted"
+  data-cargando=""
+  data-solo-js
+  role="status"
+  aria-live="polite"
+>
+  <span
+    class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-line border-t-secondary"
+    aria-hidden="true"></span>
+  <span data-espera>Cargando el resto del catálogo, el buscador y los filtros…</span>
+  <span data-falla>
+    No se pudieron cargar el buscador ni los filtros. Puedes seguir viendo las referencias de abajo o
+    <a
+      class="font-semibold text-secondary-dark underline"
+      href={`${empresa.whatsapp}?text=${mensajeSinJs}`}
+      target="_blank"
+      rel="noopener">escribirnos por WhatsApp</a
+    >.
+  </span>
+</p>
+
+<div data-resultados class="min-h-[40vh]" set:html={htmlInicial} />
 
 <script>
   import {
@@ -187,15 +564,35 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     type ProductoPedido,
   } from '../../lib/carrito';
   import { CANTIDAD_MAXIMA, TAMANO_TANDA } from '../../data/pedido';
+  import {
+    agruparPorMarca,
+    conteoSinFiltro,
+    grilla,
+    unidades,
+    vistaPorMarcas,
+    type EstadoCatalogo,
+  } from '../../lib/plantillasCatalogo';
   import { limpiarTermino, registrarEvento } from '../../lib/analitica';
 
   const contenedor = document.querySelector<HTMLElement>('[data-resultados]');
+  const barra = document.querySelector<HTMLElement>('[data-filtros]');
   const buscador = document.querySelector<HTMLInputElement>('[data-buscador]');
-  const selectorCategoria = document.querySelector<HTMLSelectElement>('[data-categoria]');
-  const barraMarcas = document.querySelector<HTMLElement>('[data-marcas]');
+  const tiraCategorias = document.querySelector<HTMLElement>('[data-categorias]');
+  const panelMarcas = document.querySelector<HTMLElement>('[data-panel-marcas]');
+  const botonPanel = document.querySelector<HTMLButtonElement>('[data-abrir-panel]');
+  const botonCategorias = document.querySelector<HTMLButtonElement>('[data-ver-categorias]');
   const conteo = document.querySelector<HTMLElement>('[data-conteo]');
 
-  if (contenedor && buscador && selectorCategoria && barraMarcas && conteo) {
+  if (
+    contenedor &&
+    barra &&
+    buscador &&
+    tiraCategorias &&
+    panelMarcas &&
+    botonPanel &&
+    botonCategorias &&
+    conteo
+  ) {
     const leerJson = <T,>(id: string, porDefecto: T): T => {
       const nodo = document.getElementById(id);
       if (!nodo?.textContent) return porDefecto;
@@ -219,23 +616,49 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
     const indice = new Map<string, string>();
     for (const p of catalogo) {
-      indice.set(p.id, normalizar(`${p.marca} ${p.nombre} ${p.presentacion} ${p.categoria}`));
+      indice.set(
+        p.id,
+        normalizar(
+          `${p.marca} ${p.nombre} ${p.presentacion} ${p.categoria} ${p.subcategoria ?? ''}`,
+        ),
+      );
     }
 
     /** Marcas en el orden en que aparecen, con su listado de productos. */
-    const porMarca = new Map<string, ProductoPedido[]>();
-    for (const p of catalogo) {
-      const lista = porMarca.get(p.marca);
-      if (lista) lista.push(p);
-      else porMarca.set(p.marca, [p]);
-    }
+    const porMarca = agruparPorMarca(catalogo);
     const marcas = [...porMarca.keys()];
 
     // --- Estado de la vista -------------------------------------------------
     let consulta = '';
-    let marcaFiltro = '';
-    let categoriaFiltro = '';
-    /** Marcas desplegadas en la vista por secciones. */
+    /**
+     * Categorías y marcas elegidas, las dos de selección múltiple.
+     *
+     * Dentro de un mismo grupo las opciones SUMAN (café o galletas) y entre
+     * grupos RESTRINGEN (café y de marca Sello Rojo): es lo que ya espera
+     * quien ha comprado en cualquier tienda en línea. El conjunto vacío
+     * significa "todas", así que no hace falta un valor centinela ni un
+     * estado aparte para "sin filtrar".
+     */
+    const categoriasSel = new Set<string>();
+    const marcasSel = new Set<string>();
+    /**
+     * Subcategorías elegidas, agrupadas por la categoría a la que pertenecen.
+     *
+     * Es un segundo nivel, no un filtro más al mismo nivel: una subcategoría
+     * solo AFINA dentro de su categoría, y las demás categorías elegidas no se
+     * ven afectadas. Con "Pastas › Largas" y "Café" puestos a la vez, pasan los
+     * spaghetti y TODO el café, no solo el café que estuviera en una
+     * subcategoría llamada "Largas".
+     *
+     * Se guardan por categoría en vez de en un conjunto plano para que esa
+     * regla se lea directamente en el filtro, y para poder soltar de golpe las
+     * subcategorías de una categoría cuando se apaga su chip.
+     */
+    const subsSel = new Map<string, Set<string>>();
+    /**
+     * Marcas desplegadas en la vista por secciones. Arranca con la primera, que
+     * es justo la que el build dejó abierta en el HTML.
+     */
     const abiertas = new Set<string>(marcas.slice(0, 1));
     /** Cuántas tarjetas se están mostrando en cada lista (clave: marca o ''). */
     const tandas = new Map<string, number>();
@@ -244,171 +667,69 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
     let pedido = leerPedido();
 
-    // --- Utilidades ---------------------------------------------------------
-    const esc = (v: string) =>
-      v.replace(
-        /[&<>"']/g,
-        (c) =>
-          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
-      );
-
-    /** Dos iniciales de la marca, para el marcador cuando no hay logotipo. */
-    const iniciales = (marca: string) =>
-      marca
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((p) => p[0] ?? '')
-        .join('')
-        .toUpperCase();
-
-    const unidades = (n: number) => `${n} ${n === 1 ? 'unidad' : 'unidades'}`;
-
     const cantidadEnTarjeta = (id: string) => cantidades.get(id) ?? 1;
+
+    /**
+     * El estado que leen las plantillas. Es el mismo objeto que arma el
+     * frontmatter para el build, solo que aquí las respuestas salen del estado
+     * vivo en vez de ser fijas.
+     */
+    const estado: EstadoCatalogo = {
+      logos,
+      enPedido: (id) => cantidadDe(pedido, id),
+      cantidad: cantidadEnTarjeta,
+      visibles: (clave) => tandas.get(clave) ?? TAMANO_TANDA,
+      abierta: (marca) => abiertas.has(marca),
+    };
+
+    /** Cuántas subcategorías hay puestas, sumando todas las categorías. */
+    const totalSubs = () => {
+      let n = 0;
+      for (const elegidas of subsSel.values()) n += elegidas.size;
+      return n;
+    };
 
     const filtrar = (): ProductoPedido[] => {
       const q = normalizar(consulta.trim());
       return catalogo.filter((p) => {
-        if (marcaFiltro && p.marca !== marcaFiltro) return false;
-        if (categoriaFiltro && p.categoria !== categoriaFiltro) return false;
+        if (marcasSel.size && !marcasSel.has(p.marca)) return false;
+        if (categoriasSel.size && !categoriasSel.has(p.categoria)) return false;
+        // El segundo nivel solo se aplica dentro de su propia categoría: si
+        // esta no tiene subcategorías puestas, el producto pasa igual.
+        const elegidas = subsSel.get(p.categoria);
+        if (elegidas?.size && !elegidas.has(p.subcategoria ?? '')) return false;
         if (q && !indice.get(p.id)?.includes(q)) return false;
         return true;
       });
     };
 
     /** Sin ningún filtro el catálogo se recorre por marcas; con filtro, plano. */
-    const hayFiltro = () => Boolean(consulta.trim() || marcaFiltro || categoriaFiltro);
+    const hayFiltro = () =>
+      Boolean(consulta.trim()) || categoriasSel.size > 0 || marcasSel.size > 0 || totalSubs() > 0;
 
-    // --- Plantillas ---------------------------------------------------------
-    const tarjeta = (p: ProductoPedido): string => {
-      const logo = logos[p.marca];
-      const enPedido = cantidadDe(pedido, p.id);
-      const cantidad = cantidadEnTarjeta(p.id);
-      const nombre = esc(`${p.nombre} ${p.presentacion}`);
-
-      /*
-       * EL CUADRO DE 80x80: TRES CASOS
-       * ------------------------------
-       *  1. La referencia tiene FOTO REAL propia (`p.imagen`).
-       *  2. No tiene foto, pero su marca tiene LOGOTIPO. ← la mayoría hoy
-       *  3. No hay ni lo uno ni lo otro: quedan las INICIALES de la marca.
-       *
-       * En los tres se usa object-contain y nunca object-cover: recortar
-       * mutilaría un logotipo, y en una foto de producto se comería parte del
-       * empaque, que es justo lo que el cliente necesita reconocer para pedir.
-       *
-       * La foto real lleva además el mismo tratamiento que en "Especiales del
-       * mes": encima de una copia desenfocada de ella misma. Las fotos vienen
-       * en cualquier proporción (frascos altos, cajas apaisadas) y el hueco
-       * que deja el contain se rellena con el color de la propia imagen en vez
-       * de una franja blanca. Así una referencia con foto y otra con logotipo,
-       * lado a lado en la misma marca, se leen como la misma tarjeta. El
-       * desenfoque va más corto que en el inicio (blur-md, no blur-xl) porque
-       * aquí el cuadro mide 80 px y no 300: con el radio grande el fondo se
-       * volvía un color plano.
-       *
-       * El logotipo, en cambio, se deja sobre blanco y sin padding: los
-       * archivos de marca ya traen fondo blanco y su propio margen interno, y
-       * agregarle más lo dejaba flotando en medio de un marco vacío.
-       */
-      const foto = p.imagen;
-      const medio = foto
-        ? `<div class="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-md" style="background-image:url('${esc(foto)}')" aria-hidden="true"></div>
-           <img src="${esc(foto)}" alt="" loading="lazy" class="relative h-full w-full object-contain p-1" />`
-        : logo
-          ? `<img src="${esc(logo)}" alt="" loading="lazy" class="h-full w-full object-contain" />`
-          : `<span class="font-display text-lg font-bold text-primary/60" aria-hidden="true">${esc(iniciales(p.marca))}</span>`;
-
-      const fondoCuadro = foto
-        ? 'border-line bg-surface-2'
-        : logo
-          ? 'border-line bg-white'
-          : 'border-transparent bg-primary-soft';
-
-      return `
-        <article class="glass-card flex gap-4 p-4 ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${esc(p.id)}">
-          <div class="relative grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border ${fondoCuadro}">
-            ${medio}
-          </div>
-
-          <div class="flex min-w-0 flex-1 flex-col gap-2">
-            <div class="min-w-0">
-              <p class="m-0 font-display text-[11px] font-semibold tracking-[0.1em] text-secondary-dark uppercase">${esc(p.marca)}</p>
-              <h3 class="m-0 text-[15px] leading-snug">${esc(p.nombre)}</h3>
-              <p class="m-0 text-[13px] text-muted">${esc(p.presentacion)}</p>
-            </div>
-
-            <div class="mt-auto flex flex-wrap items-center gap-2">
-              <div class="flex items-center overflow-hidden rounded-full border border-line bg-surface">
-                <button type="button" class="paso" data-paso="-1" data-foco="menos:${esc(p.id)}"
-                        aria-label="Quitar una unidad de ${nombre}" ${cantidad <= 1 ? 'disabled' : ''}>
-                  <span aria-hidden="true" class="text-lg leading-none">&minus;</span>
-                </button>
-                <input type="number" class="campo-cantidad" value="${cantidad}" min="1" step="1"
-                       max="${CANTIDAD_MAXIMA}" inputmode="numeric" data-cantidad data-foco="campo:${esc(p.id)}"
-                       aria-label="Cantidad de unidades de ${nombre}" />
-                <button type="button" class="paso" data-paso="1" data-foco="mas:${esc(p.id)}"
-                        aria-label="Agregar una unidad de ${nombre}" ${cantidad >= CANTIDAD_MAXIMA ? 'disabled' : ''}>
-                  <span aria-hidden="true" class="text-lg leading-none">+</span>
-                </button>
-              </div>
-
-              <button type="button" class="btn btn-primary !px-5 !py-2 !text-[13px]"
-                      data-agregar data-foco="agregar:${esc(p.id)}">Agregar</button>
-            </div>
-
-            <p class="m-0 text-[12.5px] font-semibold text-ok ${enPedido ? '' : 'hidden'}" data-en-pedido>
-              En tu pedido: ${unidades(enPedido)}
-            </p>
-          </div>
-        </article>`;
-    };
-
-    /** Grilla + botón "Ver más" de una lista. `clave` identifica su tanda. */
-    const grilla = (lista: ProductoPedido[], clave: string): string => {
-      const visibles = Math.min(tandas.get(clave) ?? TAMANO_TANDA, lista.length);
-      const tarjetas = lista.slice(0, visibles).map(tarjeta).join('');
-      const restantes = lista.length - visibles;
-      const mas =
-        restantes > 0
-          ? `<div class="mt-6 flex justify-center">
-               <button type="button" class="btn btn-secondary" data-mas="${esc(clave)}" data-foco="mas-lista:${esc(clave)}">
-                 Ver ${Math.min(restantes, TAMANO_TANDA)} más
-                 <span class="text-muted">(faltan ${restantes})</span>
-               </button>
-             </div>`
-          : '';
-
-      return `<div class="grid grid-cols-1 gap-4 tablet:grid-cols-2 nav:grid-cols-3">${tarjetas}</div>${mas}`;
-    };
-
-    const seccionMarca = (marca: string): string => {
-      const lista = porMarca.get(marca) ?? [];
-      const abierta = abiertas.has(marca);
-      const idCuerpo = `seccion-${marca.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()}`;
-      const logo = logos[marca];
-
-      const emblema = logo
-        ? `<img src="${esc(logo)}" alt="" class="h-8 w-auto max-w-[92px] object-contain" />`
-        : `<span class="grid h-9 w-9 place-items-center rounded-xl bg-primary-soft font-display text-[13px] font-bold text-primary" aria-hidden="true">${esc(iniciales(marca))}</span>`;
-
-      return `
-        <section class="mb-4">
-          <h2 class="m-0">
-            <button type="button" class="glass-card flex w-full items-center gap-4 p-4 text-left"
-                    aria-expanded="${abierta}" aria-controls="${idCuerpo}"
-                    data-seccion="${esc(marca)}" data-foco="seccion:${esc(marca)}">
-              ${emblema}
-              <span class="flex-1 font-display text-[17px] font-semibold text-primary">${esc(marca)}</span>
-              <span class="text-[13px] text-muted">${lista.length} ${lista.length === 1 ? 'referencia' : 'referencias'}</span>
-              <span class="text-primary transition-transform duration-300 ${abierta ? 'rotate-180' : ''}" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5"><path d="m6 9 6 6 6-6"/></svg>
-              </span>
-            </button>
-          </h2>
-          <div id="${idCuerpo}" class="pt-4" ${abierta ? '' : 'hidden'}>
-            ${abierta ? grilla(lista, marca) : ''}
-          </div>
-        </section>`;
+    /**
+     * Los filtros activos dichos en palabras: "con 2 categorías y 1 marca".
+     *
+     * Es el mismo dato que llevan los contadores de la barra, pero va en el
+     * párrafo de resultados, que es la región `aria-live` del listado: quien
+     * usa lector de pantalla se entera de lo que quedó aplicado sin tener que
+     * recorrer los controles.
+     */
+    const descripcionFiltros = (): string => {
+      const partes: string[] = [];
+      const texto = consulta.trim();
+      if (texto) partes.push(`el texto “${texto}”`);
+      if (categoriasSel.size)
+        partes.push(
+          `${categoriasSel.size} ${categoriasSel.size === 1 ? 'categoría' : 'categorías'}`,
+        );
+      const subs = totalSubs();
+      if (subs) partes.push(`${subs} ${subs === 1 ? 'subcategoría' : 'subcategorías'}`);
+      if (marcasSel.size)
+        partes.push(`${marcasSel.size} ${marcasSel.size === 1 ? 'marca' : 'marcas'}`);
+      if (!partes.length) return '';
+      const ultima = partes.pop() as string;
+      return ` con ${partes.length ? `${partes.join(', ')} y ${ultima}` : ultima}`;
     };
 
     // --- Pintado ------------------------------------------------------------
@@ -421,17 +742,17 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       if (hayFiltro()) {
         const lista = filtrar();
         conteo.textContent = lista.length
-          ? `${lista.length} ${lista.length === 1 ? 'producto' : 'productos'}`
-          : 'Ningún producto coincide con la búsqueda.';
+          ? `${lista.length} ${lista.length === 1 ? 'producto' : 'productos'}${descripcionFiltros()}.`
+          : `Ningún producto coincide${descripcionFiltros()}.`;
         contenedor.innerHTML = lista.length
-          ? grilla(lista, '')
+          ? grilla(lista, '', estado)
           : `<div class="glass-card p-8 text-center">
-               <p class="m-0 text-muted">Prueba con otro nombre, otra marca o quita los filtros.</p>
-               <button type="button" class="btn btn-secondary mt-5" data-limpiar>Quitar filtros</button>
+               <p class="m-0 text-muted">Prueba con otro nombre, otra categoría u otra marca.</p>
+               <button type="button" class="btn btn-secondary mt-5" data-limpiar>Limpiar filtros</button>
              </div>`;
       } else {
-        conteo.textContent = `${catalogo.length} referencias en ${marcas.length} marcas. Abre una marca para ver sus productos.`;
-        contenedor.innerHTML = marcas.map(seccionMarca).join('');
+        conteo.textContent = conteoSinFiltro(catalogo.length, marcas.length);
+        contenedor.innerHTML = vistaPorMarcas(porMarca, estado);
       }
 
       if (foco) {
@@ -458,45 +779,229 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     };
 
     // --- Interacción --------------------------------------------------------
+    const conteoMarcas = barra.querySelector<HTMLElement>('[data-conteo-marcas]');
+    const conteoCategorias = barra.querySelector<HTMLElement>('[data-conteo-categorias]');
+    const limpiarTodoBoton = barra.querySelector<HTMLButtonElement>('[data-limpiar]');
+    const limpiarMarcasBoton = panelMarcas.querySelector<HTMLButtonElement>('[data-limpiar-marcas]');
+    const cajaSubs = panelMarcas.querySelector<HTMLElement>('[data-caja-subs]');
+    const limpiarSubsBoton = panelMarcas.querySelector<HTMLButtonElement>('[data-limpiar-subs]');
+
     /**
-      * Busqueda: el evento se manda cuando la persona deja de escribir, no en
-      * cada tecla. Si no, "chocolate" llegaria a GA4 como diez busquedas
-      * distintas y el informe seria ilegible.
-      */
+     * Muestra los grupos de subcategorías de las categorías elegidas y esconde
+     * los demás; si ninguna de las elegidas tiene segundo nivel, se va la caja
+     * entera. Así el panel nunca ofrece las 51 casillas de golpe: solo las que
+     * afinan algo que ya está puesto.
+     */
+    const pintarSubs = () => {
+      let visibles = 0;
+      panelMarcas.querySelectorAll<HTMLElement>('[data-grupo-sub]').forEach((grupo) => {
+        const mostrar = categoriasSel.has(grupo.dataset.grupoSub ?? '');
+        grupo.classList.toggle('hidden', !mostrar);
+        if (mostrar) visibles++;
+      });
+      cajaSubs?.classList.toggle('hidden', visibles === 0);
+      limpiarSubsBoton?.classList.toggle('hidden', totalSubs() === 0);
+    };
+
+    /**
+     * Deja la barra contando lo que hay puesto: los dos contadores, el azul
+     * claro de las píldoras que abren algo y el botón de limpiar, que solo
+     * aparece cuando hay algo que quitar.
+     *
+     * Va aparte y se llama después de cada cambio, en vez de repetir estas
+     * cuatro decisiones dentro de cada manejador: los filtros se tocan desde
+     * cinco sitios distintos (chips, casillas, buscador, "Limpiar filtros" y el
+     * botón del listado vacío) y todos tienen que dejar la barra igual.
+     */
+    const sincronizarBarra = () => {
+      const contador = (nodo: HTMLElement | null, n: number) => {
+        if (!nodo) return;
+        nodo.textContent = String(n);
+        nodo.classList.toggle('hidden', n === 0);
+      };
+      // El botón "Filtros" cuenta todo lo que hay puesto DENTRO de su panel:
+      // las marcas y las subcategorías. Si contara solo las marcas, quien
+      // afinara por subcategoría y cerrara el panel no tendría en pantalla
+      // ninguna señal de que ese filtro sigue aplicado.
+      const enPanel = marcasSel.size + totalSubs();
+      contador(conteoMarcas, enPanel);
+      contador(conteoCategorias, categoriasSel.size);
+      botonPanel.dataset.activo = enPanel ? 'si' : 'no';
+      botonCategorias.dataset.activo = categoriasSel.size ? 'si' : 'no';
+      limpiarMarcasBoton?.classList.toggle('hidden', marcasSel.size === 0);
+      limpiarTodoBoton?.classList.toggle('hidden', !hayFiltro());
+      pintarSubs();
+    };
+
+    /**
+     * Lo que hay que hacer tras cualquier cambio de filtro. Las tandas se
+     * reinician a propósito: si alguien venía de pedir "Ver más" tres veces y
+     * escribe en el buscador, lo que espera son los primeros resultados de la
+     * búsqueda nueva, no 96 tarjetas de la anterior.
+     */
+    const filtroCambio = () => {
+      tandas.clear();
+      sincronizarBarra();
+      render();
+    };
+
+    /**
+     * Búsqueda: el evento se manda cuando la persona deja de escribir, no en
+     * cada tecla. Si no, "chocolate" llegaría a GA4 como diez búsquedas
+     * distintas y el informe sería ilegible.
+     */
     let temporizadorBusqueda: number | undefined;
 
     buscador.addEventListener('input', () => {
       consulta = buscador.value;
-      tandas.clear();
-      render();
+      filtroCambio();
 
       window.clearTimeout(temporizadorBusqueda);
       temporizadorBusqueda = window.setTimeout(() => {
         const termino = limpiarTermino(consulta);
-        // Menos de tres letras no dice nada util y son casi todo tecleo a medias.
+        // Menos de tres letras no dice nada útil y son casi todo tecleo a medias.
         if (termino.length >= 3) registrarEvento('catalogo_buscar', { termino });
       }, 900);
     });
 
-    selectorCategoria.addEventListener('change', () => {
-      categoriaFiltro = selectorCategoria.value;
-      tandas.clear();
-      render();
+    /**
+     * Suelta las subcategorías de una categoría -o de todas, sin argumento- y
+     * desmarca sus casillas. El estado y el formulario tienen que quedar
+     * iguales: una casilla marcada cuyo filtro ya se soltó es una mentira en
+     * pantalla.
+     */
+    const olvidarSubs = (categoria?: string) => {
+      if (categoria) subsSel.delete(categoria);
+      else subsSel.clear();
+      panelMarcas.querySelectorAll<HTMLInputElement>('[data-sub]').forEach((casilla) => {
+        if (!categoria || casilla.dataset.subCategoria === categoria) casilla.checked = false;
+      });
+    };
+
+    /** Deja los chips de categoría con el `aria-pressed` que corresponde. */
+    const pintarChips = () => {
+      tiraCategorias.querySelectorAll<HTMLButtonElement>('[data-categoria]').forEach((chip) => {
+        const valor = chip.dataset.categoria ?? '';
+        chip.setAttribute(
+          'aria-pressed',
+          // El chip "Todas" (valor vacío) se enciende justamente cuando no hay
+          // ninguna categoría elegida: es el estado de "sin filtrar".
+          String(valor ? categoriasSel.has(valor) : categoriasSel.size === 0),
+        );
+      });
+    };
+
+    tiraCategorias.addEventListener('click', (e) => {
+      const chip = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-categoria]');
+      if (!chip) return;
+      const categoria = chip.dataset.categoria ?? '';
+      if (!categoria) {
+        categoriasSel.clear();
+        olvidarSubs();
+      } else if (categoriasSel.has(categoria)) {
+        categoriasSel.delete(categoria);
+        // Al apagar la categoría se van con ella sus subcategorías: dejarlas
+        // puestas escondería un filtro activo, porque su grupo desaparece del
+        // panel y ya no habría forma de quitarlo.
+        olvidarSubs(categoria);
+      } else {
+        categoriasSel.add(categoria);
+      }
+      pintarChips();
+      filtroCambio();
+
+      // El chip es de selección múltiple, así que no basta con mandar "la"
+      // categoría como cuando esto era un desplegable de una sola: se manda la
+      // que se acaba de tocar, si quedó puesta o quitada, y cuántas hay activas
+      // en total. Así el informe distingue "entró a Galletas" de "quitó
+      // Galletas y se quedó con otras tres".
       registrarEvento('catalogo_filtrar_categoria', {
-        categoria: categoriaFiltro || 'todas',
+        categoria: categoria || 'todas',
+        accion: !categoria ? 'limpiar' : categoriasSel.has(categoria) ? 'poner' : 'quitar',
+        activas: categoriasSel.size,
       });
     });
 
-    barraMarcas.addEventListener('click', (e) => {
-      const boton = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-marca]');
-      if (!boton) return;
-      marcaFiltro = boton.dataset.marca ?? '';
-      barraMarcas.querySelectorAll<HTMLButtonElement>('[data-marca]').forEach((b) => {
-        b.setAttribute('aria-pressed', String((b.dataset.marca ?? '') === marcaFiltro));
+    panelMarcas.addEventListener('change', (e) => {
+      const casilla = (e.target as HTMLElement).closest<HTMLInputElement>('[data-sub]');
+      if (!casilla) return;
+      const categoria = casilla.dataset.subCategoria ?? '';
+      const elegidas = subsSel.get(categoria) ?? new Set<string>();
+      if (casilla.checked) elegidas.add(casilla.value);
+      else elegidas.delete(casilla.value);
+      if (elegidas.size) subsSel.set(categoria, elegidas);
+      else subsSel.delete(categoria);
+      filtroCambio();
+
+      // El segundo nivel no existía cuando se instrumentó el catálogo, pero es
+      // un filtro real: sin este evento el informe mostraría a la gente
+      // entrando a "Pastas" y no lo que hace después dentro.
+      registrarEvento('catalogo_filtrar_subcategoria', {
+        categoria,
+        subcategoria: casilla.value,
+        accion: casilla.checked ? 'poner' : 'quitar',
       });
-      tandas.clear();
-      render();
-      registrarEvento('catalogo_filtrar_marca', { marca: marcaFiltro || 'todas' });
+    });
+
+    panelMarcas.addEventListener('change', (e) => {
+      const casilla = (e.target as HTMLElement).closest<HTMLInputElement>('[data-marca]');
+      if (!casilla) return;
+      if (casilla.checked) marcasSel.add(casilla.value);
+      else marcasSel.delete(casilla.value);
+      filtroCambio();
+
+      registrarEvento('catalogo_filtrar_marca', {
+        marca: casilla.value,
+        accion: casilla.checked ? 'poner' : 'quitar',
+        activas: marcasSel.size,
+      });
+    });
+
+    /** Píldora que abre algo: el estado visible es su propio `aria-expanded`. */
+    const alternar = (boton: HTMLButtonElement, abrir: (abierto: boolean) => void) => {
+      boton.addEventListener('click', () => {
+        const abierto = boton.getAttribute('aria-expanded') === 'true';
+        boton.setAttribute('aria-expanded', String(!abierto));
+        abrir(!abierto);
+      });
+    };
+
+    alternar(botonPanel, (abierto) => panelMarcas.classList.toggle('hidden', !abierto));
+    alternar(botonCategorias, (abierta) => {
+      tiraCategorias.dataset.abierta = abierta ? 'si' : 'no';
+    });
+
+    /** Quita solo las marcas, sin tocar el texto ni las categorías. */
+    const limpiarMarcas = () => {
+      marcasSel.clear();
+      panelMarcas.querySelectorAll<HTMLInputElement>('[data-marca]').forEach((casilla) => {
+        casilla.checked = false;
+      });
+      filtroCambio();
+    };
+
+    /** Deja el catálogo como al entrar: sin texto, sin categorías, sin marcas. */
+    const limpiarTodo = () => {
+      consulta = '';
+      buscador.value = '';
+      categoriasSel.clear();
+      marcasSel.clear();
+      olvidarSubs();
+      pintarChips();
+      panelMarcas.querySelectorAll<HTMLInputElement>('[data-marca]').forEach((casilla) => {
+        casilla.checked = false;
+      });
+      filtroCambio();
+    };
+
+    limpiarMarcasBoton?.addEventListener('click', limpiarMarcas);
+    limpiarSubsBoton?.addEventListener('click', () => {
+      olvidarSubs();
+      filtroCambio();
+    });
+    limpiarTodoBoton?.addEventListener('click', () => {
+      limpiarTodo();
+      buscador.focus();
     });
 
     contenedor.addEventListener('click', (e) => {
@@ -520,16 +1025,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       }
 
       if (objetivo.closest('[data-limpiar]')) {
-        consulta = '';
-        marcaFiltro = '';
-        categoriaFiltro = '';
-        buscador.value = '';
-        selectorCategoria.value = '';
-        barraMarcas.querySelectorAll<HTMLButtonElement>('[data-marca]').forEach((b) => {
-          b.setAttribute('aria-pressed', String((b.dataset.marca ?? '') === ''));
-        });
-        tandas.clear();
-        render();
+        limpiarTodo();
         buscador.focus();
         return;
       }
@@ -604,6 +1100,20 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       refrescarEstados();
     });
 
-    render();
+    /*
+     * ARRANQUE: adoptar, no repintar.
+     *
+     * La grilla que se está viendo ya salió del build con estas mismas
+     * plantillas y este mismo estado inicial, así que volver a pintarla solo
+     * produciría un parpadeo y tiraría a la basura las imágenes ya
+     * descargadas. Lo único que el servidor no podía saber es el pedido
+     * guardado en este navegador, y de eso se encarga `refrescarEstados`.
+     *
+     * `render()` no se llama aquí: la primera vez que corre es cuando el
+     * visitante toca un filtro, abre otra marca o pide "Ver más".
+     */
+    sincronizarBarra();
+    refrescarEstados();
+    document.querySelector('[data-cargando]')?.remove();
   }
 </script>
