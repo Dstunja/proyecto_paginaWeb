@@ -2,11 +2,11 @@
  * Cruce entre el catálogo (src/data/productos.ts) y los precios sugeridos
  * (src/data/precios.ts).
  *
- * Vive aparte y son funciones PURAS a propósito: la interfaz de `Producto` no
- * se toca —el maestro de productos se regenera desde el deck de Nutresa y
- * cualquier campo agregado a mano se perdería en la siguiente regeneración—,
- * así que el precio se resuelve por CÓDIGO SAP en tiempo de compilación y solo
- * viaja al navegador de las referencias que sí lo tienen.
+ * Vive aparte y son funciones PURAS a propósito: el maestro de productos se
+ * regenera desde el deck de Nutresa, así que las correcciones de precio no se
+ * escriben ahí sino en src/data/precios.ts, por CÓDIGO SAP. El precio se
+ * resuelve en tiempo de compilación y solo viaja al navegador de las
+ * referencias que sí lo tienen.
  *
  * Se usa desde el frontmatter de los componentes (servidor) y desde sus
  * `<script>` (navegador); por eso aquí no hay `document`, `window` ni
@@ -19,21 +19,32 @@ import { PRECIOS_SUGERIDOS } from '../data/precios';
 export interface ConCodigo {
   codigo: string;
   codigoParcial?: boolean;
+  /** PSP que ya trae el maestro de productos, extraído del deck de Nutresa. */
+  precio?: number;
 }
 
 /**
  * Precio sugerido de una referencia, o `null` si no está confirmado.
  *
+ * Hay dos fuentes y este es el orden:
+ *   1. src/data/precios.ts, la corrección manual por código SAP. Manda sobre
+ *      todo lo demás: es donde se anota un precio que el asesor ya corrigió.
+ *   2. El campo `precio` del maestro (src/data/productos.ts), que viene del
+ *      deck "MASIVO 1.0" y cubre las referencias cuya página declara un PSP.
+ *
  * Devuelve `null` —y no 0 ni undefined— para que en la interfaz sea imposible
  * confundir "no sabemos" con "sale gratis". Las referencias con código parcial
- * o vacío nunca tienen precio: su código no identifica un producto único.
+ * o vacío no pueden llevar corrección manual (su código no identifica un
+ * producto único), pero sí conservan el PSP del deck si lo tienen.
  */
 export function precioSugerido(producto: ConCodigo): number | null {
-  if (producto.codigoParcial) return null;
   const codigo = producto.codigo?.trim();
-  if (!codigo) return null;
-  const valor = PRECIOS_SUGERIDOS[codigo];
-  return typeof valor === 'number' && Number.isFinite(valor) && valor > 0 ? valor : null;
+  if (codigo && !producto.codigoParcial) {
+    const manual = PRECIOS_SUGERIDOS[codigo];
+    if (typeof manual === 'number' && Number.isFinite(manual) && manual > 0) return manual;
+  }
+  const delDeck = producto.precio;
+  return typeof delDeck === 'number' && Number.isFinite(delDeck) && delDeck > 0 ? delDeck : null;
 }
 
 /** `$ 12.900`. Sin decimales: los precios de tienda van en pesos redondos. */

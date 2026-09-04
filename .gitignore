@@ -9,3 +9,10 @@ dist/
 # Material de trabajo que no se publica: demos, comprimidos y borradores que
 # se integran al proyecto y luego no hacen falta en el repositorio.
 recursos/
+
+# Catálogo fuente: el PDF del que se extrajo src/data/productos.ts. Lleva
+# información comercial confidencial (códigos, embalajes y condiciones), así
+# que no puede subirse al repositorio. Se ignora la carpeta completa, no solo
+# los .pdf, para que ningún archivo que se deje ahí más adelante se cuele por
+# accidente en un `git add .`.
+docs/catalogo-fuente/

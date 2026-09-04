@@ -1,7 +1,8 @@
 ---
+import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
-import { logoMarca } from '../lib/imagenes';
+import { altoSeguroLogo, logoMarcaImagen } from '../lib/imagenes';
 import MapaRed from '../components/MapaRed.astro';
 import BuscadorMunicipio from '../components/BuscadorMunicipio.astro';
 import NovedadesTemporada from '../components/NovedadesTemporada.astro';
@@ -11,19 +12,21 @@ import Resenas from '../components/Resenas.astro';
 import AnaliticaSecciones from '../components/AnaliticaSecciones.astro';
 import {
   cifras,
-  marcas,
+  marcasDeLaFranja,
   beneficios,
   empresa,
   CLIENTES_TEXTO,
   PIDEKY_URL,
   HERO_IMAGEN,
   HERO_IMAGEN_ALT,
+  resumenCobertura,
 } from '../data/site';
+// De municipios.ts sale el dato real (cuántos municipios cubre cada
+// departamento y su color); las cifras de clientes que se muestran son las
+// comunicadas y salen de resumenCobertura (ver src/data/site.ts).
 import { departamentos } from '../data/municipios';
 
-/* Logos de marca de la franja del inicio. Si el archivo todavía no está en
-   public/img/marcas/, se muestra el nombre en texto (ver src/lib/imagenes.ts). */
-const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(marca) }));
+const formatoNumero = new Intl.NumberFormat('es-CO');
 
 /**
  * EDITAR AQUÍ (src/data/site.ts, PIDEKY_URL): mientras esa variable esté vacía,
@@ -33,6 +36,30 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
  * reaparece sola y la rejilla vuelve a dos columnas.
  */
 const hayPideky = PIDEKY_URL.trim() !== '';
+
+/* Franja "Marcas que distribuimos".
+
+   Solo entran las marcas que ya tienen su logotipo en src/assets/marcas/: la
+   lista de src/data/site.ts se filtra contra los archivos reales, así que una
+   marca sin archivo (o con el archivo renombrado) simplemente no aparece, en
+   vez de mostrarse como texto suelto o como imagen rota.
+
+   Cada logo se muestra a un tamaño calculado, no impuesto por el CSS (ver
+   altoSeguroLogo en src/lib/imagenes.ts): ninguno se agranda por encima de la
+   resolución que da su archivo. Por eso Corona, el archivo más pequeño, se ve
+   un punto más bajo que el resto, y La Especial, que es muy alargada, se ve
+   más baja todavía: es preferible a verlas borrosas en una pantalla retina. */
+const ALTO_FRANJA = 40;
+const ANCHO_MAXIMO_FRANJA = 130;
+
+const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
+  const imagen = logoMarcaImagen(nombre);
+  if (!imagen) return []; // marca sin archivo de logo: fuera de la franja
+
+  // Solo se pasa el alto: <Image> deriva el ancho de la relación de aspecto
+  // real del archivo, así el atributo width y la imagen generada coinciden.
+  return [{ nombre, imagen, alto: altoSeguroLogo(imagen, ALTO_FRANJA, ANCHO_MAXIMO_FRANJA) }];
+});
 ---
 
 <BaseLayout
@@ -148,26 +175,28 @@ const hayPideky = PIDEKY_URL.trim() !== '';
       <p class="mb-8 text-center text-[12.5px] font-semibold tracking-[0.14em] text-muted uppercase">
         Marcas que distribuimos
       </p>
-      <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-5">
+      <ul class="m-0 flex list-none flex-wrap items-center justify-center gap-x-10 gap-y-6 p-0">
         {
-          marcasConLogo.map((marca) =>
-            marca.logo ? (
-              <img
-                src={marca.logo}
-                alt={marca.nombre}
+          logosDeLaFranja.map((marca) => (
+            <li class="flex items-center justify-center" style={`height:${ALTO_FRANJA}px`}>
+              <Image
+                src={marca.imagen}
+                alt={`Logotipo de ${marca.nombre}`}
+                height={marca.alto}
+                densities={[1, 2]}
+                format="webp"
+                quality={90}
                 loading="lazy"
-                class="h-10 w-auto max-w-[130px] object-contain opacity-80 transition-opacity duration-200 hover:opacity-100"
+                decoding="async"
+                class="logo-marca logo-marca-franja"
               />
-            ) : (
-              <span class="font-display text-[15px] font-semibold text-muted transition-colors duration-200 hover:text-primary">
-                {marca.nombre}
-              </span>
-            ),
-          )
+            </li>
+          ))
         }
-      </div>
-      {/* EDITAR AQUÍ: cuando tengas los logotipos autorizados de cada marca,
-          reemplaza estos nombres por <img> con los archivos en public/marcas/. */}
+      </ul>
+      {/* EDITAR AQUÍ: para sumar una marca a esta franja, deja su logotipo en
+          src/assets/marcas/ (nombre en minúsculas y con guiones) y agrégala a
+          `marcasDeLaFranja` en src/data/site.ts. */}
     </div>
   </div>
 
@@ -208,7 +237,7 @@ const hayPideky = PIDEKY_URL.trim() !== '';
                     sigue siendo interno y alimenta el tamaño de los puntos del
                     mapa. */}
                 <dd class="mt-1 m-0 text-[12.5px] text-muted">
-                  {dep.total === 1 ? 'municipio' : 'municipios'} con cobertura
+                  {formatoNumero.format(resumenCobertura.clientesPorDepartamento[dep.nombre])} clientes
                 </dd>
               </div>
             ))
@@ -236,7 +265,7 @@ const hayPideky = PIDEKY_URL.trim() !== '';
         </p>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4" data-revelar-grupo>
         {
           beneficios.map((b) => (
             <a class="tarjeta-int flex flex-col p-8" href={ruta(b.enlace)}>
@@ -398,3 +427,18 @@ const hayPideky = PIDEKY_URL.trim() !== '';
     cifras.forEach((cifra) => observador.observe(cifra));
   }
 </script>
+
+<style>
+  /* El realce parejo y el object-contain vienen de .logo-marca, en
+     global.css, que comparten la franja y las fichas del catálogo. Aquí solo
+     va lo propio de la franja: sobre el fondo gris los logotipos van algo
+     atenuados y recuperan su color al pasar el cursor. */
+  .logo-marca-franja {
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+  }
+
+  .logo-marca-franja:hover {
+    opacity: 1;
+  }
+</style>

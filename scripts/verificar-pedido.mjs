@@ -115,10 +115,12 @@ async function revisar(navegador, etiqueta, viewport) {
   );
 
   // ---- 6. Contador del buscador -------------------------------------------
+  // Sin filtros el contador da el tamaño del portafolio; con filtros puestos
+  // dice "X de N", para que la cifra filtrada no se lea como el catálogo entero.
   const conteo = (await pagina.locator('[data-conteo]').textContent()) ?? '';
   comprobar(
-    `${etiqueta}: el contador dice "Mostrando X de N referencias"`,
-    /Mostrando \d+ de \d+ referencias/.test(conteo),
+    `${etiqueta}: sin filtros el contador dice cuántas referencias hay`,
+    /\d+ referencias/.test(conteo),
     conteo.trim().slice(0, 70),
   );
 
@@ -127,10 +129,18 @@ async function revisar(navegador, etiqueta, viewport) {
   const conteoFiltrado = (await pagina.locator('[data-conteo]').textContent()) ?? '';
   comprobar(
     `${etiqueta}: al buscar, el contador baja y sigue diciendo el total`,
-    /Mostrando \d+ de \d+ referencias/.test(conteoFiltrado) && conteoFiltrado !== conteo,
+    /\d+ de \d+ productos?/.test(conteoFiltrado) && conteoFiltrado !== conteo,
     conteoFiltrado.trim().slice(0, 70),
   );
-  await pagina.click('[data-limpiar-barra]');
+
+  // "Limpiar filtros" vive en la barra fija y solo aparece cuando hay algo que
+  // quitar; con la búsqueda puesta tiene que estar a la vista.
+  const limpiar = pagina.locator('[data-filtros] [data-limpiar]');
+  comprobar(
+    `${etiqueta}: con la búsqueda puesta aparece "Limpiar filtros"`,
+    await limpiar.isVisible(),
+  );
+  await limpiar.click();
   await pagina.waitForTimeout(150);
 
   // ---- 2. Agregar productos ----------------------------------------------

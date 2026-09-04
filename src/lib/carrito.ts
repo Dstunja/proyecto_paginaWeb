@@ -34,14 +34,22 @@ export interface ProductoPedido {
   id: string;
   marca: string;
   categoria: string;
+  /**
+   * Segundo nivel de la categoría. Viaja porque el filtro de subcategorías
+   * corre en el navegador; las categorías que no lo tienen -hoy solo
+   * "Untables"- llegan sin el campo.
+   */
+  subcategoria?: string;
   nombre: string;
   presentacion: string;
   codigo: string;
   imagen?: string;
   /**
-   * Precio sugerido al público, en pesos. Solo viaja cuando está CONFIRMADO
-   * en src/data/precios.ts; si falta, la referencia se muestra con la etiqueta
-   * "Precio con tu asesor" y no entra en el subtotal orientativo.
+   * Precio sugerido al público, en pesos. Sale del PSP que trae el maestro de
+   * productos (extraído del deck) o de la corrección manual en
+   * src/data/precios.ts, que manda cuando existe; ver `precioSugerido` en
+   * src/lib/precios.ts. Si no hay ninguno, la referencia se muestra con la
+   * etiqueta "Precio con tu asesor" y no entra en el subtotal orientativo.
    */
   psp?: number;
 }

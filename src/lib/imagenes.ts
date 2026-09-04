@@ -102,15 +102,84 @@ function buscarConCualquierExtension(rutaPublica: string): string | null {
 }
 
 /**
- * Logo de una marca comercial, si ya está subido a public/img/marcas/.
+ * Logotipos de marca, importados desde src/assets/marcas/.
  *
- * Busca por el nombre convertido a slug y prueba las extensiones habituales:
- * 'Choco Listo' -> public/img/marcas/choco-listo.png (o .svg, .webp...).
- * Devuelve null cuando todavía no existe, para que quien llame muestre el
- * nombre en texto y no una imagen rota.
+ * Viven en src/ y no en public/ a propósito: solo las imágenes de src/ pasan
+ * por el optimizador de Astro (astro:assets), que es lo que permite servir
+ * cada logo en el tamaño justo y con versión @2x para pantallas de alta
+ * densidad. Astro las copia a la salida con un nombre con hash, así que la
+ * URL final ya lleva el `base` del sitio y no hace falta pasarla por `ruta`.
+ *
+ * EDITAR AQUÍ: para agregar el logotipo de una marca, deja el archivo en
+ * src/assets/marcas/ con el nombre de la marca en minúsculas y con guiones:
+ * 'Saltín Noel' -> saltin-noel.png (también sirven .svg, .webp, .jpg o .avif).
+ * Entre mejor sea la resolución original, mejor se ve en pantallas retina:
+ * como mínimo el doble del tamaño al que se muestra.
  */
-export function logoMarca(nombre: string): string | null {
-  const base = `/img/marcas/${slug(nombre)}`;
-  const encontrada = EXTENSIONES.map((ext) => base + ext).find(existeEnPublico);
-  return encontrada ? ruta(encontrada) : null;
+const LOGOS_MARCA = import.meta.glob<{ default: ImageMetadata }>(
+  '../assets/marcas/*.{png,jpg,jpeg,webp,avif,svg}',
+  { eager: true },
+);
+
+/** { 'saltin-noel': ImageMetadata, ... }, indexado por el nombre del archivo. */
+const LOGOS_POR_SLUG: Record<string, ImageMetadata> = Object.fromEntries(
+  Object.entries(LOGOS_MARCA).map(([archivo, modulo]) => [
+    archivo.replace(/^.*\//, '').replace(/\.[a-z0-9]+$/i, ''),
+    modulo.default,
+  ]),
+);
+
+/**
+ * El mismo índice, con las claves sin guiones ('chocolisto', 'saltinnoel'...).
+ *
+ * Sirve para que una marca escrita de dos maneras en el sitio encuentre igual
+ * su archivo: el catálogo extraído del PDF dice 'Chocolisto' en una palabra
+ * mientras el resto del sitio escribe 'Choco Listo', y ambas deben llegar a
+ * choco-listo.jpg. Solo se consulta si falla la búsqueda exacta, así que no
+ * cambia el resultado de ninguna marca que ya cruzaba.
+ */
+const LOGOS_SIN_GUIONES: Record<string, ImageMetadata> = Object.fromEntries(
+  Object.entries(LOGOS_POR_SLUG).map(([clave, imagen]) => [clave.replace(/-/g, ''), imagen]),
+);
+
+/**
+ * Imagen del logotipo de una marca, lista para el <Image> de astro:assets.
+ *
+ * Devuelve el `ImageMetadata` completo (con el ancho y el alto reales del
+ * archivo), que es lo que necesita <Image> para generar los tamaños y el
+ * srcset. Devuelve null cuando la marca todavía no tiene archivo, para que
+ * quien la use decida el respaldo: mostrar el nombre en texto u omitirla.
+ */
+export function logoMarcaImagen(nombre: string): ImageMetadata | null {
+  const clave = slug(nombre);
+  return LOGOS_POR_SLUG[clave] ?? LOGOS_SIN_GUIONES[clave.replace(/-/g, '')] ?? null;
 }
+
+/**
+ * Alto al que se puede mostrar un logotipo sin agrandarlo, dentro de una caja.
+ *
+ * Devuelve el mayor alto que cumple tres condiciones a la vez: cabe en la
+ * caja, no supera la mitad del alto real del archivo —para que la copia @2x
+ * del srcset siga cabiendo dentro de la resolución original— y no desborda el
+ * ancho de la caja cuando el logotipo es muy alargado.
+ *
+ * El píxel que se descuenta antes de partir a la mitad absorbe el redondeo
+ * del ancho: sin él, un logotipo de alto impar como Corona (62 px) pediría
+ * una copia @2x un píxel más ancha que su propio archivo.
+ *
+ * Es la regla que mantiene parejos los logotipos de la franja del inicio y
+ * las fichas del catálogo, que vienen de fuentes y resoluciones muy
+ * distintas: ninguno se estira por encima de lo que da su archivo.
+ */
+export function altoSeguroLogo(
+  imagen: ImageMetadata,
+  altoMaximo: number,
+  anchoMaximo: number,
+): number {
+  return Math.min(
+    altoMaximo,
+    Math.floor((imagen.height - 1) / 2),
+    Math.floor((anchoMaximo * imagen.height) / imagen.width),
+  );
+}
+

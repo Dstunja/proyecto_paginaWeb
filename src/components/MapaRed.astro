@@ -69,6 +69,10 @@ const listaDepartamentos =
     que se lea como una figura encuadrada y no como un mapa recortado. En móvil
     va a sangre y a ancho completo.
 
+    El alto crece con la pantalla porque abajo de 900 px el mapa va a ancho
+    completo: si se quedara bajo, la red saldría diminuta en el centro de una
+    franja apaisada llena de terreno que no cubrimos.
+
     El límite de ancho va en este contenedor y no en el mapa, para que el aviso
     del buscador se centre sobre el mapa visible.
   -->
@@ -76,7 +80,7 @@ const listaDepartamentos =
     <div class="relative mx-auto w-full tablet:max-w-[560px]">
       <div
         id="mapa-red"
-        class="h-[440px] w-full overflow-hidden bg-fondo tablet:h-[560px] tablet:rounded-2xl tablet:ring-1 tablet:ring-line"
+        class="h-[440px] w-full overflow-hidden bg-fondo mob:h-[560px] tablet:h-[600px] tablet:rounded-2xl tablet:ring-1 tablet:ring-line"
         role="application"
         aria-label="Mapa de los municipios con cobertura"
       >
@@ -216,6 +220,43 @@ const listaDepartamentos =
     filter: drop-shadow(0 1px 2px rgba(3, 8, 25, 0.45));
   }
 
+  /*
+    Borde desvanecido del mapa de fondo.
+
+    Las teselas de OpenStreetMap traen los nombres de los pueblos pintados
+    encima, y siempre queda alguno justo sobre el borde del contenedor: cortado
+    a filo se leía "Contratación" o "Charalá" partido por la mitad. Agrandar el
+    margen del encuadre NO lo arregla —al fitBounds se le encoge la red, se ve
+    más territorio alrededor y el corte le toca a otro pueblo—, así que el borde
+    se apaga contra el fondo y esos nombres se desvanecen en vez de quedar
+    rebanados.
+
+    El degradado se pinta dentro del panel de teselas, que en Leaflet va en el
+    z-index más bajo (200). Así los puntos de los municipios y la sede (400 y
+    600), las fichas al pasar el mouse (650) y la atribución de OpenStreetMap
+    (1000) quedan por encima y siguen nítidos. Y como el encuadre deja aire de
+    sobra (ver `encuadrar()`), ningún punto de la red cae dentro del degradado.
+  */
+  :global(#mapa-red .leaflet-map-pane),
+  :global(#mapa-red .leaflet-tile-pane) {
+    /* Los paneles de Leaflet nacen sin tamaño; se les da el del mapa para poder
+       anclar el degradado a sus cuatro bordes. No mueve nada más: todo lo que
+       llevan dentro está posicionado en absoluto. */
+    inset: 0;
+  }
+
+  :global(#mapa-red .leaflet-tile-pane::after) {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(to bottom, var(--color-fondo), transparent 30px),
+      linear-gradient(to top, var(--color-fondo), transparent 30px),
+      linear-gradient(to right, var(--color-fondo), transparent 24px),
+      linear-gradient(to left, var(--color-fondo), transparent 24px);
+  }
+
   /* Sin arrastre ni zoom: el cursor no debe insinuar que el mapa se mueve. */
   :global(#mapa-red.leaflet-container),
   :global(#mapa-red .leaflet-tile-pane) {
@@ -345,17 +386,31 @@ const listaDepartamentos =
      * Sin animación a propósito: animado, el zoom nuevo tarda un momento en
      * quedar aplicado y la escala se leería con el zoom viejo.
      *
-     * En pantallas angostas el margen se recorta: ahí manda el ancho, y cada
-     * píxel que se le quite al margen es escala que ganan los puntos. El margen
-     * de abajo lleva 10 px extra para la línea de atribución de OpenStreetMap.
+     * Los márgenes son holgados y desiguales a propósito: apartan la red del
+     * filete del contenedor para que ni un punto ni la ficha que abre al pasarle
+     * el mouse queden pegados al borde. Arriba va el mayor, porque es donde la
+     * red termina en punta —La Paz, Aguada, San Benito— y era donde más se
+     * notaba el recorte; abajo lleva 10 px extra para la línea de atribución de
+     * OpenStreetMap.
+     *
+     * Estos márgenes cuidan la red, no las etiquetas del mapa de fondo: de que
+     * los nombres del borde no queden partidos se encarga el degradado de
+     * `.leaflet-tile-pane` (ver el CSS de arriba).
+     *
+     * En pantallas angostas manda el ancho, así que a los lados el margen se
+     * recorta —cada píxel que se le quite es escala que ganan los puntos—,
+     * mientras que arriba y abajo sobra alto y el margen sale gratis.
      */
     const RED = L.latLngBounds(municipios.map((m) => [m.lat, m.lng] as [number, number]));
 
     function encuadrar() {
-      const margen = contenedor!.clientWidth < 420 ? 10 : 24;
+      const angosto = contenedor!.clientWidth < 420;
+      const lados = angosto ? 12 : 30;
+      const arriba = angosto ? 40 : 46;
+      const abajo = (angosto ? 30 : 34) + 10;
       mapa.fitBounds(RED, {
-        paddingTopLeft: [margen, margen],
-        paddingBottomRight: [margen, margen + 10],
+        paddingTopLeft: [lados, arriba],
+        paddingBottomRight: [lados, abajo],
         maxZoom: 10,
         animate: false,
       });
