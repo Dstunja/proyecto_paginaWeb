@@ -47,6 +47,33 @@ export const navegacion = [
 ] as const;
 
 /**
+ * Título legible de cada página, para la ruta de migas (Breadcrumb.astro).
+ *
+ * La clave es la ruta SIN el `base` y con la barra final, tal como se escribe
+ * en `navegacion`. Es un mapa aparte y no el `texto` de `navegacion` porque no
+ * todas las páginas están en el menú (privacidad, 404, las ofertas de empleo) y
+ * porque el rótulo del menú puede ser más corto que el nombre de la página.
+ *
+ * Las migas NUNCA se arman con `Astro.url.pathname`: ese valor incluye el
+ * prefijo del despliegue y produciría "/proyecto_paginaWeb/pedido/" en pantalla,
+ * que no le dice nada a nadie. Si una página no está en este mapa, su plantilla
+ * pasa el título por prop (ver `Props.migaTitulo` en PageHero.astro); y si no
+ * hay ninguno de los dos, las migas simplemente no se dibujan.
+ *
+ * EDITAR AQUÍ al agregar una página nueva.
+ */
+export const titulosDePagina: Record<string, string> = {
+  '/nosotros/': 'Nosotros',
+  '/catalogo/': 'Catálogo',
+  '/pedido/': 'Arma tu pedido',
+  '/innovacion/': 'Innovación',
+  '/empleos/': 'Empleos',
+  '/contactanos/': 'Contáctanos',
+  '/pqrs/': 'PQRS',
+  '/privacidad/': 'Tratamiento de datos',
+};
+
+/**
  * Cuántos clientes atiende la empresa, en el texto EXACTO que se publica.
  *
  * Es una cifra redondeada a la baja y se escribe siempre igual —con el signo

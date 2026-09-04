@@ -1,27 +1,31 @@
 ---
+/**
+ * Botón "Ir a Pideky".
+ *
+ * REGLA: si `PIDEKY_URL` está vacío, este componente NO DIBUJA NADA.
+ *
+ * Antes el botón se pintaba igual y, al tocarlo, abría un `alert` de
+ * desarrollo pidiendo configurar una variable —un mensaje escrito para el
+ * equipo, mostrado al cliente— o simplemente no hacía nada, porque el enlace
+ * apuntaba a `#`. Un canal que se anuncia y no lleva a ninguna parte gasta
+ * confianza; es preferible que Pideky no exista en la página hasta que exista
+ * de verdad.
+ *
+ * EDITAR AQUÍ: al llenar `PIDEKY_URL` en src/data/site.ts, este botón y la
+ * tarjeta de Pideky del inicio y su enlace del pie de página reaparecen solos,
+ * sin tocar ningún componente.
+ */
 import { PIDEKY_URL } from '../data/site';
 import Icono from './Icono.astro';
 
 const configurado = PIDEKY_URL.trim() !== '';
 ---
 
-<a
-  class="btn btn-accent mt-auto"
-  id="pideky-open"
-  href={configurado ? PIDEKY_URL : '#'}
-  data-configurado={String(configurado)}
-  {...configurado ? { target: '_blank', rel: 'noopener' } : {}}
->
-  Ir a Pideky
-  <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
-</a>
-
-<script>
-  // Mientras no exista la URL real de Pideky, el botón lo dice en vez de no hacer nada.
-  const boton = document.getElementById('pideky-open');
-  boton?.addEventListener('click', (e) => {
-    if (boton.dataset.configurado === 'true') return;
-    e.preventDefault();
-    alert('Falta configurar el enlace real de Pideky: define PIDEKY_URL en src/data/site.ts.');
-  });
-</script>
+{
+  configurado && (
+    <a class="btn btn-accent mt-auto" href={PIDEKY_URL} target="_blank" rel="noopener">
+      Ir a Pideky
+      <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
+    </a>
+  )
+}

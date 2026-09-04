@@ -15,6 +15,7 @@ import {
   beneficios,
   empresa,
   CLIENTES_TEXTO,
+  PIDEKY_URL,
   HERO_IMAGEN,
   HERO_IMAGEN_ALT,
 } from '../data/site';
@@ -23,6 +24,15 @@ import { departamentos } from '../data/municipios';
 /* Logos de marca de la franja del inicio. Si el archivo todavía no está en
    public/img/marcas/, se muestra el nombre en texto (ver src/lib/imagenes.ts). */
 const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(marca) }));
+
+/**
+ * EDITAR AQUÍ (src/data/site.ts, PIDEKY_URL): mientras esa variable esté vacía,
+ * la tarjeta de Pideky de "Haz tu pedido" no se dibuja y la sección queda con
+ * los canales que sí funcionan. Anunciar un canal cuyo botón no lleva a ninguna
+ * parte cuesta más confianza de la que gana. Al llenar la URL, la tarjeta
+ * reaparece sola y la rejilla vuelve a dos columnas.
+ */
+const hayPideky = PIDEKY_URL.trim() !== '';
 ---
 
 <BaseLayout
@@ -262,7 +272,12 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
         <p class="mt-4 text-lg text-muted">Elige el canal que prefieras.</p>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 tablet:grid-cols-2">
+      <div
+        class:list={[
+          'grid grid-cols-1 gap-6',
+          hayPideky ? 'tablet:grid-cols-2' : 'mx-auto max-w-[520px]',
+        ]}
+      >
         <div class="group glass-card flex flex-col items-center p-10 text-center">
           <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-whatsapp/15 text-whatsapp transition-all duration-300 group-hover:scale-105 group-hover:bg-whatsapp group-hover:text-white group-focus-within:scale-105">
             <Icono nombre="whatsapp" class="h-8 w-8" interactivo={false} />
@@ -282,16 +297,20 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
           </a>
         </div>
 
-        <div class="group glass-card flex flex-col items-center p-10 text-center">
-          <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/15 text-accent transition-all duration-300 group-hover:scale-105 group-hover:bg-accent group-hover:text-ink-dark group-focus-within:scale-105">
-            <Icono nombre="shopping-cart" class="h-8 w-8" interactivo={false} />
-          </span>
-          <h3 class="mt-6 text-xl">Pideky</h3>
-          <p class="mt-3 mb-8 max-w-[30ch] text-[14.5px] text-muted">
-            Haz tu pedido en línea de manera rápida, sin registro previo.
-          </p>
-          <BotonPideky />
-        </div>
+        {
+          hayPideky && (
+            <div class="group glass-card flex flex-col items-center p-10 text-center">
+              <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/15 text-accent transition-all duration-300 group-hover:scale-105 group-hover:bg-accent group-hover:text-ink-dark group-focus-within:scale-105">
+                <Icono nombre="shopping-cart" class="h-8 w-8" interactivo={false} />
+              </span>
+              <h3 class="mt-6 text-xl">Pideky</h3>
+              <p class="mt-3 mb-8 max-w-[30ch] text-[14.5px] text-muted">
+                Haz tu pedido en línea de manera rápida, sin registro previo.
+              </p>
+              <BotonPideky />
+            </div>
+          )
+        }
       </div>
 
       <div class="glass-card mt-6 flex flex-wrap items-center justify-between gap-6 px-8 py-7">

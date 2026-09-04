@@ -1,0 +1,71 @@
+---
+/**
+ * Ruta de migas: "Inicio › Arma tu pedido".
+ *
+ * QUÉ NO HACE
+ * -----------
+ * No usa `Astro.url.pathname`. Ese valor trae el prefijo del despliegue
+ * (`/proyecto_paginaWeb/pedido/` en GitHub Pages) y mostrarlo tal cual convierte
+ * las migas en la barra de direcciones del navegador: información que ya está
+ * arriba y que además cambia sola al mudar el sitio a otro dominio.
+ *
+ * DE DÓNDE SALE EL NOMBRE
+ * -----------------------
+ * En este orden:
+ *   1. La prop `titulo`, que pasa la página (necesario en las rutas dinámicas,
+ *      como cada oferta de /empleos/).
+ *   2. `titulosDePagina` de src/data/site.ts, buscando por la ruta LIMPIA (sin
+ *      el `base`), que es la misma clave con la que se declara la navegación.
+ *
+ * Si no hay ninguno de los dos, no se dibuja nada: unas migas con el nombre
+ * equivocado son peores que ninguna. En el inicio tampoco se dibujan, porque
+ * "Inicio › Inicio" no lleva a ninguna parte.
+ */
+import { titulosDePagina } from '../data/site';
+import { ruta } from '../lib/rutas';
+
+interface Props {
+  /** Nombre legible de la página actual. Gana sobre `titulosDePagina`. */
+  titulo?: string;
+  /** Ruta con el `base` incluido, tal como la da `Astro.url.pathname`. */
+  pathname: string;
+}
+
+const { titulo, pathname } = Astro.props;
+
+/** Descuenta el `base` y normaliza las barras: '/proyecto_paginaWeb/pqrs/' -> '/pqrs/'. */
+const BASE = import.meta.env.BASE_URL.replace(/\/+$/, '');
+let limpia = pathname;
+if (BASE !== '' && (limpia === BASE || limpia.startsWith(`${BASE}/`))) {
+  limpia = limpia.slice(BASE.length);
+}
+if (!limpia.startsWith('/')) limpia = `/${limpia}`;
+if (!limpia.endsWith('/')) limpia = `${limpia}/`;
+
+const esInicio = limpia === '/';
+const nombre = titulo ?? titulosDePagina[limpia];
+---
+
+{
+  !esInicio && nombre && (
+    <nav aria-label="Ruta de navegación" class="mb-6">
+      <ol class="m-0 flex list-none flex-wrap items-center gap-2 p-0 text-[13px]">
+        <li>
+          <a
+            class="text-muted underline-offset-4 transition-colors duration-200 hover:text-secondary-dark hover:underline"
+            href={ruta('/')}
+          >
+            Inicio
+          </a>
+        </li>
+        <li aria-hidden="true" class="text-muted/60">
+          &rsaquo;
+        </li>
+        {/* La página actual no es un enlace: ya estás en ella. */}
+        <li class="font-semibold text-ink" aria-current="page">
+          {nombre}
+        </li>
+      </ol>
+    </nav>
+  )
+}
