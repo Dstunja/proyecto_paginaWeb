@@ -15,7 +15,8 @@
     "favicon": "node scripts/build-favicon.mjs",
     "geocodificar": "node scripts/geocodificar.mjs",
     "iconos": "npm run favicon && npm run og",
-    "verificar:analitica": "node scripts/verificar-analitica.mjs"
+    "verificar:analitica": "node scripts/verificar-analitica.mjs",
+    "verificar:pedido": "node scripts/verificar-pedido.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

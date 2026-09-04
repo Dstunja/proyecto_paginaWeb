@@ -19,6 +19,7 @@
  */
 import { productos, MARCAS, CATEGORIAS } from '../../data/productos';
 import { imagenSiExiste, logoMarca } from '../../lib/imagenes';
+import { codigosSinProducto, precioSugerido } from '../../lib/precios';
 import { ruta } from '../../lib/rutas';
 import Icono from '../Icono.astro';
 import LoaderDST from '../LoaderDST.astro';
@@ -35,6 +36,11 @@ import LoaderDST from '../LoaderDST.astro';
  */
 const catalogo = productos.map((p) => {
   const imagen = imagenSiExiste(p.imagen);
+  // El precio se resuelve aquí, en el build, cruzando por CÓDIGO SAP contra
+  // src/data/precios.ts (ver src/lib/precios.ts). Solo viaja al navegador el de
+  // las referencias que lo tienen confirmado; las demás llegan sin el campo y
+  // la tarjeta muestra "Precio con tu asesor".
+  const psp = precioSugerido(p);
   return {
     id: p.id,
     marca: p.marca,
@@ -43,8 +49,22 @@ const catalogo = productos.map((p) => {
     presentacion: p.presentacion,
     codigo: p.codigo,
     ...(imagen ? { imagen } : {}),
+    ...(psp !== null ? { psp } : {}),
   };
 });
+
+/** Cuántas referencias tienen precio confirmado: se dice bajo el buscador. */
+const conPrecio = catalogo.filter((p) => 'psp' in p).length;
+
+/* Aviso de mantenimiento, solo en consola durante `npm run build`: un código de
+   src/data/precios.ts que no corresponda a ninguna referencia no rompe nada,
+   pero conviene limpiarlo antes de que se acumulen. */
+const sobrantes = codigosSinProducto(productos);
+if (sobrantes.length > 0) {
+  console.warn(
+    `[precios] ${sobrantes.length} código(s) de src/data/precios.ts no existen en el catálogo: ${sobrantes.join(', ')}`,
+  );
+}
 
 /**
  * Logotipo de cada marca, si ya está subido a public/img/marcas/.
@@ -80,12 +100,14 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
         >
           <Icono nombre="search" class="h-[18px] w-[18px]" interactivo={false} />
         </span>
-        <label class="sr-only" for="buscador">Buscar producto por nombre o presentación</label>
+        <label class="sr-only" for="buscador">
+          Buscar producto por nombre, marca, categoría o presentación
+        </label>
         <input
           id="buscador"
           type="search"
           class="field !pl-11"
-          placeholder="Buscar producto o presentación…"
+          placeholder="Buscar por producto, marca o categoría…"
           autocomplete="off"
           data-buscador
         />
@@ -120,7 +142,28 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 </div>
 
 {/* ---- Resultados ---- */}
-<p class="mb-6 text-[14.5px] text-muted" role="status" aria-live="polite" data-conteo></p>
+<div class="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+  <p class="m-0 text-[14.5px] text-muted" role="status" aria-live="polite" data-conteo></p>
+  {/* Solo aparece cuando hay algo que quitar: lo prende y apaga el script. */}
+  <button
+    type="button"
+    class="hidden text-[13.5px] font-semibold text-secondary-dark underline underline-offset-4"
+    data-limpiar
+    data-limpiar-barra
+  >
+    Quitar filtros
+  </button>
+
+  {/* Solo aparece cuando ya hay precios cargados en src/data/precios.ts. Con la
+      lista vacía, esta línea no se renderiza y el catálogo se ve como antes. */}
+  {
+    conPrecio > 0 && (
+      <p class="m-0 text-[13.5px] text-muted">
+        {conPrecio} de {catalogo.length} con precio sugerido de referencia.
+      </p>
+    )
+  }
+</div>
 
 {/* Espera real: el navegador tiene que leer las 709 referencias del bloque
     JSON, indexarlas y pintar la primera tanda de tarjetas. Hasta que render()
@@ -165,6 +208,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   const selectorCategoria = document.querySelector<HTMLSelectElement>('[data-categoria]');
   const barraMarcas = document.querySelector<HTMLElement>('[data-marcas]');
   const conteo = document.querySelector<HTMLElement>('[data-conteo]');
+  const limpiarBarra = document.querySelector<HTMLElement>('[data-limpiar-barra]');
 
   if (contenedor && buscador && selectorCategoria && barraMarcas && conteo) {
     const leerJson = <T,>(id: string, porDefecto: T): T => {
@@ -234,6 +278,14 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
     const unidades = (n: number) => `${n} ${n === 1 ? 'unidad' : 'unidades'}`;
 
+    /** `$ 12.900`. Mismo formato que el panel y que el mensaje al asesor. */
+    const pesos = (valor: number) =>
+      new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0,
+      }).format(valor);
+
     const cantidadEnTarjeta = (id: string) => cantidades.get(id) ?? 1;
 
     const filtrar = (): ProductoPedido[] => {
@@ -250,6 +302,25 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     const hayFiltro = () => Boolean(consulta.trim() || marcaFiltro || categoriaFiltro);
 
     // --- Plantillas ---------------------------------------------------------
+    /**
+     * Precio de la tarjeta. Dos estados y ninguno más:
+     *
+     *  - PSP confirmado → se muestra la cifra rotulada como "Precio sugerido de
+     *    referencia", para que nadie la lea como el precio de venta al tendero.
+     *  - Sin dato       → "Precio con tu asesor", en gris y sin adornos.
+     *
+     * La advertencia larga ("el valor final lo confirma tu asesor…") NO se
+     * repite aquí: iría 709 veces en la misma página. Va una sola vez, al pie
+     * del panel del pedido, que es donde el cliente hace cuentas.
+     */
+    const precioEnTarjeta = (p: ProductoPedido): string =>
+      typeof p.psp === 'number'
+        ? `<p class="m-0 mt-1 text-[13px]">
+             <span class="font-display font-bold text-primary">${esc(pesos(p.psp))}</span>
+             <span class="text-muted"> · precio sugerido de referencia</span>
+           </p>`
+        : `<p class="m-0 mt-1 text-[12.5px] text-muted">Precio con tu asesor</p>`;
+
     const tarjeta = (p: ProductoPedido): string => {
       const logo = logos[p.marca];
       const enPedido = cantidadDe(pedido, p.id);
@@ -306,6 +377,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
               <p class="m-0 font-display text-[11px] font-semibold tracking-[0.1em] text-secondary-dark uppercase">${esc(p.marca)}</p>
               <h3 class="m-0 text-[15px] leading-snug">${esc(p.nombre)}</h3>
               <p class="m-0 text-[13px] text-muted">${esc(p.presentacion)}</p>
+              ${precioEnTarjeta(p)}
             </div>
 
             <div class="mt-auto flex flex-wrap items-center gap-2">
@@ -389,11 +461,17 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       const activo = document.activeElement;
       const foco = activo instanceof HTMLElement ? activo.dataset.foco : undefined;
 
-      if (hayFiltro()) {
+      // El contador dice siempre cuántas de cuántas se están viendo: con los
+      // filtros puestos es lo único que deja medir si la búsqueda sirvió, y sin
+      // ellos recuerda el tamaño real del portafolio.
+      const filtrado = hayFiltro();
+      if (limpiarBarra) limpiarBarra.classList.toggle('hidden', !filtrado);
+
+      if (filtrado) {
         const lista = filtrar();
         conteo.textContent = lista.length
-          ? `${lista.length} ${lista.length === 1 ? 'producto' : 'productos'}`
-          : 'Ningún producto coincide con la búsqueda.';
+          ? `Mostrando ${lista.length} de ${catalogo.length} referencias.`
+          : `Ninguna de las ${catalogo.length} referencias coincide con la búsqueda.`;
         contenedor.innerHTML = lista.length
           ? grilla(lista, '')
           : `<div class="glass-card p-8 text-center">
@@ -401,7 +479,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
                <button type="button" class="btn btn-secondary mt-5" data-limpiar>Quitar filtros</button>
              </div>`;
       } else {
-        conteo.textContent = `${catalogo.length} referencias en ${marcas.length} marcas. Abre una marca para ver sus productos.`;
+        conteo.textContent = `Mostrando ${catalogo.length} de ${catalogo.length} referencias en ${marcas.length} marcas. Abre una marca para ver sus productos.`;
         contenedor.innerHTML = marcas.map(seccionMarca).join('');
       }
 
@@ -429,6 +507,27 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     };
 
     // --- Interacción --------------------------------------------------------
+    /**
+     * Deja el catálogo como recién cargado. Vive aparte porque hay dos botones
+     * que hacen lo mismo: el de la barra de conteo y el del estado sin
+     * resultados, que se dibuja dentro de la grilla.
+     */
+    const limpiarFiltros = () => {
+      consulta = '';
+      marcaFiltro = '';
+      categoriaFiltro = '';
+      buscador.value = '';
+      selectorCategoria.value = '';
+      barraMarcas.querySelectorAll<HTMLButtonElement>('[data-marca]').forEach((b) => {
+        b.setAttribute('aria-pressed', String((b.dataset.marca ?? '') === ''));
+      });
+      tandas.clear();
+      render();
+      buscador.focus();
+    };
+
+    limpiarBarra?.addEventListener('click', limpiarFiltros);
+
     /**
       * Busqueda: el evento se manda cuando la persona deja de escribir, no en
       * cada tecla. Si no, "chocolate" llegaria a GA4 como diez busquedas
@@ -491,17 +590,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       }
 
       if (objetivo.closest('[data-limpiar]')) {
-        consulta = '';
-        marcaFiltro = '';
-        categoriaFiltro = '';
-        buscador.value = '';
-        selectorCategoria.value = '';
-        barraMarcas.querySelectorAll<HTMLButtonElement>('[data-marca]').forEach((b) => {
-          b.setAttribute('aria-pressed', String((b.dataset.marca ?? '') === ''));
-        });
-        tandas.clear();
-        render();
-        buscador.focus();
+        limpiarFiltros();
         return;
       }
 

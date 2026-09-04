@@ -3,9 +3,11 @@
  * "Arma tu pedido": el catálogo completo convertido en una lista que el
  * tendero le manda a su asesor por WhatsApp.
  *
- * Aquí no hay precios. El sitio es estático y no consulta inventario ni lista
- * de precios: quien confirma valores y disponibilidad es el asesor, y así se
- * advierte tanto en pantalla como en el mensaje que se envía.
+ * Los precios que se muestran son SUGERIDOS AL PÚBLICO y solo aparecen en las
+ * referencias que los tienen confirmados (src/data/precios.ts). El sitio es
+ * estático y no consulta inventario ni lista de precios: el valor final y la
+ * disponibilidad los confirma el asesor, y así se advierte en el panel del
+ * pedido y en el mensaje que se envía.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
@@ -13,7 +15,6 @@ import CatalogoPedido from '../components/pedido/CatalogoPedido.astro';
 import PanelPedido from '../components/pedido/PanelPedido.astro';
 import Icono from '../components/Icono.astro';
 import { empresa } from '../data/site';
-import { AVISO_PRECIOS } from '../data/pedido';
 import { productos, MARCAS } from '../data/productos';
 
 const mensajeDirecto = encodeURIComponent(
@@ -28,10 +29,13 @@ const mensajeDirecto = encodeURIComponent(
   <PageHero
     kicker="Arma tu pedido"
     titulo="Elige lo que necesita tu negocio"
-    texto={`Busca entre ${productos.length} referencias de ${MARCAS.length} marcas, marca las cantidades y envíale la lista a tu asesor por WhatsApp. ${AVISO_PRECIOS}`}
+    texto={`Busca entre ${productos.length} referencias de ${MARCAS.length} marcas, marca las cantidades y envíale la lista a tu asesor por WhatsApp. Sin registro y sin compromiso.`}
   />
 
-  <section class="section pt-10 tablet:pt-12">
+  {/* `pb-28` en móvil y tableta: la barra fija del carrito mide unos 76 px y
+      sin este aire taparía la última fila de productos. En escritorio la barra
+      es una píldora suelta en la esquina y no hace falta tanto. */}
+  <section class="section pt-10 pb-28 tablet:pt-12 tablet:pb-20">
     <div class="wrap">
       {/* Salida rápida para quien prefiere que se lo tomen por chat. */}
       <p class="mb-8 text-[14.5px] text-muted">
