@@ -1,6 +1,16 @@
 // Generado a partir del deck "MASIVO 1.0 – 18/08/2026" (Nutresa).
 // Los PSP provienen del mismo deck; ver productos_revision.csv. Los combos promocionales
 // (referencias "CMU") quedaron fuera a propósito: son mecánicas internas con vigencia.
+//
+// PENDIENTE DE CONFIRMAR CON EL ASESOR COMERCIAL — Gomas Bénet.
+// Las páginas 124 y 125 del deck le ponen PSP $36.500 a las Gomas de Vinagre de
+// Manzana (2037217) y Citrato de Magnesio (2037218), que es el precio que quedó
+// aquí. Las páginas 68 a 71 traen esos mismos empaques dentro de un combo, bajo
+// otros códigos (1080144, 1080145, 1072792, 1071985) y con PSP $48.900. Se
+// dejó el de la página de producto por ser la más específica, y los códigos de
+// combo NO se agregaron para no duplicar la referencia en el catálogo. Las
+// Gomas de Colágeno (2019271) y de Zinc + Vitamina C (2019270) siguen sin
+// precio: su página no publica ningún PSP.
 // codigoParcial = true → el deck mostraba solo los últimos dígitos del código SAP; completar.
 
 export type UnidadPedido = "unidad";
@@ -287,6 +297,7 @@ export const productos: Producto[] = [
   { id: "cordillera-cordillera-lluvia-sabor-a-chocolate-bolsa", marca: "Cordillera", categoria: "Toppings", nombre: "Cordillera Lluvia sabor a Chocolate", presentacion: "Bolsa", codigo: "1057723", codigoParcial: false, embalaje: "", paginaPdf: 391 },
   { id: "cordillera-cordillera-mani-tostado-3-mm-bolsa", marca: "Cordillera", categoria: "Toppings", nombre: "Cordillera Maní Tostado 3 mm", presentacion: "Bolsa", codigo: "1060216", codigoParcial: false, embalaje: "", paginaPdf: 392 },
   { id: "cordillera-cordillera-perlas-de-chocolate-crocante-bolsa", marca: "Cordillera", categoria: "Toppings", nombre: "Cordillera Perlas de Chocolate Crocante", presentacion: "Bolsa", codigo: "1057720", codigoParcial: false, embalaje: "", paginaPdf: 391 },
+  { id: "corona-chocolate-corona-baileys-instantaneo-400-g", marca: "Corona", categoria: "Chocolate de mesa", nombre: "Chocolate Corona Baileys Instantáneo", presentacion: "400 g", codigo: "1084520", codigoParcial: false, precio: 15500, embalaje: "Caja x 12 bolsas", paginaPdf: 80 },
   { id: "corona-chocolate-corona-bogotano-pastillas-individuales-18-pastillas-450-g", marca: "Corona", categoria: "Chocolate de mesa", nombre: "Chocolate Corona Bogotano Pastillas Individuales (18 pastillas)", presentacion: "450 g", codigo: "74118", codigoParcial: true, embalaje: "", paginaPdf: 239 },
   { id: "corona-chocolate-corona-clavos-y-canela-8-pastillas-200-g", marca: "Corona", categoria: "Chocolate de mesa", nombre: "Chocolate Corona Clavos y Canela (8 pastillas)", presentacion: "200 g", codigo: "74161", codigoParcial: true, embalaje: "", paginaPdf: 240 },
   { id: "corona-chocolate-corona-clavos-y-canela-pastillas-individuales-18-pastillas-450-", marca: "Corona", categoria: "Chocolate de mesa", nombre: "Chocolate Corona Clavos y Canela Pastillas Individuales (18 pastillas)", presentacion: "450 g", codigo: "74117", codigoParcial: true, embalaje: "", paginaPdf: 239 },
@@ -396,6 +407,7 @@ export const productos: Producto[] = [
   { id: "festival-galleta-festival-limon-12-unidades-403-g", marca: "Festival", categoria: "Galletas", nombre: "Galleta Festival Limón", presentacion: "12 unidades (403 g)", codigo: "1001572", codigoParcial: false, embalaje: "", paginaPdf: 301 },
   { id: "festival-galleta-festival-limon-taco-grande-600-g", marca: "Festival", categoria: "Galletas", nombre: "Galleta Festival Limón (taco grande)", presentacion: "600 g", codigo: "1001511", codigoParcial: false, embalaje: "", paginaPdf: 302 },
   { id: "festival-galleta-festival-limon-f8-8-galletas-paquete", marca: "Festival", categoria: "Galletas", nombre: "Galleta Festival Limón F8 (8 galletas)", presentacion: "Paquete", codigo: "1080730", codigoParcial: false, precio: 1500, embalaje: "", paginaPdf: 300 },
+  { id: "festival-galleta-festival-malteada-de-mora-6-x-4", marca: "Festival", categoria: "Galletas", nombre: "Galleta Festival Malteada de Mora", presentacion: "6 x 4", codigo: "1081641", codigoParcial: false, precio: 6200, embalaje: "", paginaPdf: 81 },
   { id: "festival-galleta-festival-minichips-12-paquetes", marca: "Festival", categoria: "Galletas", nombre: "Galleta Festival MiniChips", presentacion: "12 paquetes", codigo: "1049449", codigoParcial: false, embalaje: "", paginaPdf: 305 },
   { id: "festival-galleta-festival-minichips-tira-12-unidades", marca: "Festival", categoria: "Galletas", nombre: "Galleta Festival MiniChips (tira)", presentacion: "12 unidades", codigo: "1071234", codigoParcial: false, embalaje: "", paginaPdf: 305 },
   { id: "festival-galleta-festival-recreo-12-x-6", marca: "Festival", categoria: "Galletas", nombre: "Galleta Festival Recreo", presentacion: "12 x 6", codigo: "1038784", codigoParcial: false, embalaje: "", paginaPdf: 303 },
@@ -442,7 +454,7 @@ export const productos: Producto[] = [
   { id: "jet-chocolatina-jet-leche-25-g-plegadiza-x-16-25-g", marca: "Jet", categoria: "Chocolates", nombre: "Chocolatina Jet Leche 25 g (plegadiza x 16)", presentacion: "25 g", codigo: "1066729", codigoParcial: false, embalaje: "", paginaPdf: 360 },
   { id: "jet-chocolatina-jet-leche-calcio-bolsa-x-12-12-g", marca: "Jet", categoria: "Chocolates", nombre: "Chocolatina Jet Leche Calcio (bolsa x 12)", presentacion: "12 g", codigo: "1015400", codigoParcial: false, precio: 1000, embalaje: "Caja x 48 bolsas", paginaPdf: 354 },
   { id: "jet-chocolatina-jet-leche-calcio-plegadiza-x-24-12-g", marca: "Jet", categoria: "Chocolates", nombre: "Chocolatina Jet Leche Calcio (plegadiza x 24)", presentacion: "12 g", codigo: "1003844", codigoParcial: false, embalaje: "Caja x 12 plegadizas", paginaPdf: 354 },
-  { id: "jet-chocolatina-jet-leche-no-3-plegadiza-x-16-45-g", marca: "Jet", categoria: "Chocolates", nombre: "Chocolatina Jet Leche No. 3 (plegadiza x 16)", presentacion: "45 g", codigo: "1073970", codigoParcial: false, embalaje: "Caja x 12 plegadizas", paginaPdf: 359 },
+  { id: "jet-chocolatina-jet-leche-no-3-plegadiza-x-16-45-g", marca: "Jet", categoria: "Chocolates", nombre: "Chocolatina Jet Leche No. 3 (plegadiza x 16)", presentacion: "45 g", codigo: "1075970", codigoParcial: false, precio: 5000, embalaje: "Caja x 12 plegadizas", paginaPdf: 359 },
   { id: "jet-chocolatina-jet-sabores-surtidos-bolsa-x-24-bolsa-x-24", marca: "Jet", categoria: "Chocolates", nombre: "Chocolatina Jet Sabores Surtidos (bolsa x 24)", presentacion: "Bolsa x 24", codigo: "1004077", codigoParcial: false, embalaje: "", paginaPdf: 357 },
   { id: "jet-chocolatina-jet-sabores-surtidos-plegadiza-x-35-plegadiza-x-35", marca: "Jet", categoria: "Chocolates", nombre: "Chocolatina Jet Sabores Surtidos (plegadiza x 35)", presentacion: "Plegadiza x 35", codigo: "1066730", codigoParcial: false, embalaje: "", paginaPdf: 360 },
   { id: "jet-cruji-jet-blanca-24-g", marca: "Jet", categoria: "Chocolates", nombre: "Cruji Jet Blanca", presentacion: "24 g", codigo: "1092083", codigoParcial: false, precio: 3600, embalaje: "Plegadiza x 18 / caja x 24", paginaPdf: 89 },
