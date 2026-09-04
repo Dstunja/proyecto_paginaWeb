@@ -1,7 +1,13 @@
 ---
 /**
- * "Especiales del mes": franja festiva del inicio con los productos de la
- * temporada vigente (Amor y Amistad, Halloween, Navidad...).
+ * "Especiales de temporada": franja festiva del inicio con los productos de
+ * la temporada vigente (Amor y Amistad, Halloween, Navidad...).
+ *
+ * Es una sección distinta de EspecialesMes.astro, que muestra las
+ * colaboraciones y ediciones especiales de marca del mes. Esta se prende y se
+ * apaga sola por fecha; aquella se cura a mano. Por eso los rótulos de las dos
+ * son distintos: si ambas dijeran "Especiales del mes" el visitante no sabría
+ * en qué se diferencian.
  *
  * Los datos y las fechas viven en src/data/temporada.ts. Si hoy no cae dentro
  * de ninguna temporada, el componente no renderiza nada: la página queda
@@ -30,7 +36,7 @@ const columnas = (productos?.length ?? 0) >= 3 ? 'tablet:grid-cols-3' : 'tablet:
 {
   temporada && productos && (
     <section
-      id="especiales-del-mes"
+      id="especiales-de-temporada"
       class="section border-y border-accent/35 bg-[linear-gradient(180deg,rgba(245,166,35,.10),rgba(245,166,35,.02))]"
       data-seccion="especiales_mes"
     >
@@ -39,7 +45,7 @@ const columnas = (productos?.length ?? 0) >= 3 ? 'tablet:grid-cols-3' : 'tablet:
           <div class="max-w-[54ch]">
             <span class="mb-4 inline-flex items-center gap-2 rounded-full border border-accent/45 bg-accent/15 px-4 py-1.5 font-display text-[12.5px] font-semibold tracking-[0.14em] text-accent-text uppercase">
               <Icono nombre="sparkles" class="h-4 w-4" interactivo={false} />
-              Especiales del mes
+              Especiales de temporada
             </span>
             <h2 class="text-[28px] tablet:text-[38px]">{temporada.nombre}</h2>
             <p class="mt-3 text-muted">{temporada.descripcion}</p>

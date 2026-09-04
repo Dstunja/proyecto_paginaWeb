@@ -72,6 +72,23 @@ export function imagenOMarcador(
 }
 
 /**
+ * La imagen si el archivo ya está en public/, o `null` si todavía no.
+ *
+ * Es la hermana de `imagenOMarcador` para los sitios donde ya hay un respaldo
+ * propio mejor que un rectángulo azul: en el armador de pedidos, un producto
+ * sin foto muestra el logotipo de su marca. Devolver `null` deja que quien
+ * llama elija ese respaldo, en vez de imponerle un marcador.
+ *
+ * Sirve además de red de seguridad al ir conectando las fotos del catálogo:
+ * si una ruta queda mal escrita, el producto vuelve al logotipo en lugar de
+ * enseñar una imagen rota.
+ */
+export function imagenSiExiste(rutaPublica: string | undefined): string | null {
+  const encontrada = rutaPublica ? buscarConCualquierExtension(rutaPublica) : null;
+  return encontrada ? ruta(encontrada) : null;
+}
+
+/**
  * Busca el archivo tal cual y, si no está, con las demás extensiones de imagen.
  *
  * Así da igual que en los datos diga `.jpg` y el archivo subido sea `.png`:

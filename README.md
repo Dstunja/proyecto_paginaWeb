@@ -25,6 +25,7 @@ npm run preview      # ver dist/ como quedará en producción
 npm run check        # revisa tipos y errores de Astro
 npm run og           # regenera la tarjeta de link (public/og.png)
 npm run favicon      # regenera favicon.ico y apple-touch-icon desde el isotipo
+npm run geocodificar # busca las coordenadas que falten (municipios y sede)
 npm run iconos       # las dos anteriores
 ```
 
@@ -35,10 +36,13 @@ src/
   data/site.ts             Datos de la empresa: teléfono, correo, marcas,
                            municipios, cifras, menú. EDITAR AQUÍ primero.
   data/vacantes.ts         Vacantes y convocatorias (listado y detalle).
-  data/municipios.ts       Municipios cubiertos y sus coordenadas (mapa).
+  data/clientes-municipio.ts  Clientes reales por municipio (base de datos).
+  data/coordenadas.json    Caché de coordenadas geocodificadas con Nominatim.
+  data/municipios.ts       Cruce de los dos anteriores: lo que usa el mapa.
   data/innovaciones.ts     Novedades mes a mes de la página de innovación.
   lib/rutas.ts             ruta(): antepone el `base` a los enlaces internos y
                            a los archivos de public/. OBLIGATORIO usarlo.
+  lib/mapa-base.ts         Teselas de los mapas (OpenStreetMap / CARTO).
   lib/imagenes.ts          Imágenes con reemplazo automático: si el archivo aún
                            no existe se muestra un marcador de posición (o el
                            nombre en texto, para los logos de marca).
@@ -52,10 +56,9 @@ src/
     Testimonio.astro       Testimonio de cliente con estrellas.
     MisionVision.astro     Pestañas accesibles de Misión / Visión.
     BuscadorCobertura.astro Buscador de municipios (ignora tildes y mayúsculas).
-    MapaCobertura.astro    Mapa de la sede (OpenStreetMap o Google Maps).
+    MapaCobertura.astro    Mapa de la sede, a nivel de calle (Leaflet).
     MapaRed.astro          Mapa interactivo de cobertura: un punto por
-                           municipio, filtros por departamento y buscador
-                           (Leaflet + teselas de Esri).
+                           municipio, filtros por departamento y buscador.
     BotonPideky.astro      Botón de Pideky.
     FormularioMailto.astro Formularios de contacto, empleos y PQRS.
     PageHero.astro         Encabezado de las páginas internas.
@@ -74,6 +77,7 @@ public/
   og.png, robots.txt
 scripts/build-og.mjs       Genera la tarjeta Open Graph con Playwright.
 scripts/build-favicon.mjs  Genera los íconos a partir del isotipo.
+scripts/geocodificar.mjs   Consulta Nominatim y llena data/coordenadas.json.
 legacy-html/               El prototipo HTML original, como referencia.
 ```
 
@@ -127,23 +131,58 @@ cuanto dejes el archivo real en su carpeta y vuelvas a compilar, el marcador
 desaparece sin tocar el código. Todos los puntos donde falta una imagen real
 están marcados en el código con `EDITAR AQUÍ`.
 
-## Mapa de cobertura
+## Mapa de la red comercial
 
-La sección "Cobertura nacional" del inicio dibuja un punto por municipio con
-[Leaflet](https://leafletjs.com) (paquete del proyecto, no CDN) sobre el fondo
-claro de Esri. Los datos están en `src/data/municipios.ts`: nombre,
-departamento y coordenadas de la cabecera municipal.
+La sección "Cobertura nacional" del inicio dibuja **un punto por municipio
+atendido**: 87 puntos, con el color de su departamento. El número de clientes no
+se pinta sobre el mapa; aparece al pasar el mouse o al tocar el punto, para que
+el mapa se lea limpio. Tunja lleva además el punto pulsante de sede principal.
 
-**Pendiente**: buscamos el listado oficial en `ListadoAutomatizacionDST.xlsx`
-(Escritorio), pero ese archivo contiene las funciones a automatizar por área,
-no los municipios. Por ahora están cargados los 22 municipios que ya traía el
-prototipo, con coordenadas aproximadas; los contadores siguen mostrando las
-cifras oficiales (67 / 18 / 2) y la leyenda del mapa dice cuántos van
-cargados. Al recibir el listado real basta con agregar una línea por municipio
-en ese archivo — está marcado con `EDITAR AQUÍ`.
+De dónde sale cada dato:
 
-Los colores de cada departamento se definen una sola vez (`departamentos` en
-`municipios.ts`) y se usan tanto en los contadores como en los puntos del mapa.
+| Archivo | Qué guarda | Cómo se actualiza |
+| --- | --- | --- |
+| `src/data/clientes-municipio.ts` | Clientes por municipio, de la base de datos real | Regenerándolo desde el Excel de clientes |
+| `src/data/coordenadas.json` | Coordenadas de cada cabecera y de la sede | `npm run geocodificar` |
+| `src/data/municipios.ts` | Cruce de los dos anteriores | Solo, al compilar |
+
+`npm run geocodificar` consulta [Nominatim](https://nominatim.openstreetmap.org)
+(OpenStreetMap, gratis y sin API key), respeta su límite de una consulta por
+segundo y **solo pide lo que falte**: como el resultado queda en
+`coordenadas.json`, una compilación normal no genera ni una petición. Si alguna
+coordenada quedara mal, se corrige a mano en ese JSON; para volver a pedirla,
+basta con borrar esa entrada.
+
+### Fondo del mapa
+
+Las teselas se configuran en un solo archivo, `src/lib/mapa-base.ts`, que usan
+los dos mapas del sitio. Hoy está activo **OpenStreetMap estándar**: el mapa
+clásico a color, con calles, parques en verde, agua en azul y los nombres de
+municipios y veredas. La atribución "© OpenStreetMap contributors" es
+obligatoria por licencia y se muestra en la esquina del mapa.
+
+Ese archivo deja lista una segunda opción, **CARTO Voyager**, igual de colorida
+pero servida desde una CDN pensada para producción. Conviene cambiar a ella si
+el sitio empieza a recibir mucho tráfico: los servidores de teselas de
+OpenStreetMap son donados y su política de uso pide no apoyarse en ellos para
+aplicaciones con mucho público. El cambio es una línea:
+
+```ts
+export const FONDO: FondoMapa = FONDOS.cartoVoyager;
+```
+
+Sobre el fondo a color los puntos llevan un aro blanco de 3 px y una sombra
+suave; sin eso se perderían entre las calles y los parques.
+
+El tamaño del punto crece un poco con la cantidad de clientes (radio de 6 a
+12 px) para que se vea de un vistazo dónde está el grueso de la red. Para que
+todos midan igual, basta con dejar fijo el radio en `MapaRed.astro`.
+
+Los 4 clientes fuera de la zona (3 en Bogotá y 1 en Medellín) no se dibujan: el
+mapa es el de la red de los tres departamentos.
+
+El mapa de **Contáctanos** es distinto: muestra la sede a nivel de calle
+(zoom 16), centrada en la coordenada geocodificada de Cra 2 Este #58-79.
 
 ## Identidad visual
 
@@ -184,22 +223,16 @@ Facebook, Instagram y X. Todos comparten la misma micro-interacción
 200 ms, tanto con el mouse como con el foco de teclado, y desactivada si el
 sistema pide menos movimiento.
 
-## Mapa y API key
+## Mapas y llaves de API
 
-Por defecto el mapa usa **OpenStreetMap**, que no necesita API key: no hay ninguna
-clave en el HTML.
+Ninguna. Los dos mapas del sitio usan Leaflet con teselas de OpenStreetMap, que
+no piden API key ni registro: no hay claves en el HTML ni variables que
+configurar. Lo único obligatorio es dejar visible la atribución, que ya viene en
+la esquina del mapa.
 
-Para usar Google Maps Embed API, copia `.env.example` como `.env` (está en
-`.gitignore`) o define las variables en Cloudflare:
-
-```
-PUBLIC_MAPS_PROVIDER=google
-PUBLIC_GOOGLE_MAPS_EMBED_KEY=la-key
-```
-
-Cualquier key de Google Maps Embed API viaja en la petición del navegador, así que
-nunca es 100 % secreta: la protección real es restringirla en Google Cloud Console
-por referente HTTP (solo `dstunja.com`) y limitarla a la Maps Embed API.
+La geocodificación de municipios y de la sede también es libre (Nominatim) y se
+corre una sola vez con `npm run geocodificar`; el resultado queda cacheado en
+`src/data/coordenadas.json`.
 
 ## Formularios
 

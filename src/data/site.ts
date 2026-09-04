@@ -77,13 +77,23 @@ export const cobertura = [
 export const PIDEKY_URL = '';
 
 /**
- * Imagen principal del hero: la mascota de la empresa (el búho conductor)
- * sobre el camión de reparto con el portafolio.
+ * Imagen principal del hero (portada). Hoy muestra la ilustración de la mascota
+ * de la empresa (el búho conductor) sobre el camión de reparto.
  *
- * EDITAR AQUÍ: para cambiarla, deja el archivo en public/img/marca/ y pon aquí
- * su ruta. Si se deja vacío, el hero vuelve al panel de marca con el isotipo.
+ * EDITAR AQUÍ: reemplazar cuando se suba la foto real de [bodega/equipo/flota].
+ * Basta con dejar el archivo en public/img/marca/ y cambiar estas dos constantes
+ * (la ruta y su texto alternativo): el hero de src/pages/index.astro las lee de
+ * aquí y no hay que tocar el maquetado. Si HERO_IMAGEN se deja vacío, el hero
+ * vuelve al panel de marca con el isotipo.
  */
 export const HERO_IMAGEN = '/img/marca/mascota-camion.jpg';
+
+/**
+ * Texto alternativo de la imagen del hero. Debe describir la foto que esté
+ * puesta en HERO_IMAGEN, así que se actualiza junto con ella.
+ */
+export const HERO_IMAGEN_ALT =
+  'La mascota de Distribuciones Santiago de Tunja al volante del camión de reparto, cargado con el portafolio';
 
 /** Valor agregado (home). */
 export const valorAgregado = [
@@ -110,27 +120,39 @@ export const valorAgregado = [
   },
 ] as const;
 
-/** Sección "Para tu negocio" (home). */
+/**
+ * Sección "Para tu negocio" (home).
+ * Cada tarjeta es un enlace: además de contar el beneficio, lleva a la página
+ * donde se puede actuar sobre él.
+ */
 export const beneficios = [
   {
     icono: 'shield-check',
     titulo: 'Productos de calidad',
     texto: 'Las mejores marcas del país, con manejo y almacenamiento cuidado en toda la ruta.',
+    enlace: '/catalogo/',
+    enlaceTexto: 'Ver el portafolio',
   },
   {
     icono: 'badge-percent',
     titulo: 'Precios competitivos',
     texto: 'Ofertas y promociones de la quincena pensadas para el margen de tu negocio.',
+    enlace: '/catalogo/',
+    enlaceTexto: 'Pedir la lista de precios',
   },
   {
     icono: 'user-check',
     titulo: 'Asesoría personalizada',
     texto: 'Un asesor de tu zona que conoce tu tienda y te ayuda a rotar el inventario.',
+    enlace: '/contactanos/',
+    enlaceTexto: 'Hablar con un asesor',
   },
   {
     icono: 'clock',
     titulo: 'Entregas confiables',
     texto: 'Frecuencia semanal y cumplimiento para que tu negocio no se detenga.',
+    enlace: '/#cobertura',
+    enlaceTexto: 'Ver la cobertura',
   },
 ] as const;
 

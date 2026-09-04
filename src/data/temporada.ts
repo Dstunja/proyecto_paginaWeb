@@ -7,6 +7,14 @@
  * vigente y desaparece por completo cuando ninguna lo está, así que nunca
  * queda un espacio vacío en la página.
  *
+ * NO CONFUNDIR CON src/data/especiales.ts
+ * ---------------------------------------
+ * Este archivo son las TEMPORADAS COMERCIALES del año, que se prenden y
+ * apagan solas por fecha. Las COLABORACIONES y ediciones especiales de marca
+ * (Festival con KPop Demon Hunters, Jumbo con Ryan Castro) van en
+ * especiales.ts, se curan a mano y no dependen del calendario. Las dos
+ * secciones conviven en el inicio.
+ *
  * FECHAS
  * ------
  * `inicio` y `fin` van en formato 'MM-DD' (mes y día, sin año) porque estas

@@ -28,7 +28,10 @@
   /* --- Fondos: el blanco es el color primario --- */
   --color-canvas: #ffffff; /* fondo del sitio */
   --color-surface: #ffffff; /* tarjetas y paneles */
-  --color-base: #f5f7fa; /* franjas alternas (gris muy claro de marca) */
+  /* Ojo: no llamar `base` a este token. Tailwind generaría `text-base` como
+     color y pisaría su utilidad de tamaño de letra, dejando textos casi
+     invisibles sobre blanco. */
+  --color-fondo: #f5f7fa; /* franjas alternas (gris muy claro de marca) */
   --color-surface-2: #eef2f8; /* un escalón más de gris, para rellenos */
 
   /* --- Paleta oficial --- */
@@ -39,6 +42,7 @@
   --color-secondary-dark: #1565c0; /* azul legible como texto (contraste AA) */
   --color-secondary-soft: #e3f1fd;
   --color-accent: #f5a623; /* naranja: CTA destacado */
+  --color-accent-soft: #fdf3e3; /* velo naranja muy claro: franja de temporada */
   --color-accent-dark: #d98c07; /* hover del naranja */
   --color-accent-text: #a65f00; /* naranja legible como texto pequeño sobre blanco */
   --color-accent-strong: #c77700; /* naranja para titulares grandes (AA en texto grande) */
@@ -129,14 +133,19 @@
 @layer base {
   :root {
     /* Altura de la barra fija. `main` reserva este espacio y los anclajes lo
-       descuentan, para que nada quede escondido debajo de la barra. */
-    --nav-h: 5rem;
+       descuentan, para que nada quede escondido debajo de la barra.
+
+       La barra se mantiene delgada para no comerse la primera pantalla, sobre
+       todo en móvil: 64 px alcanzan para el isotipo (44 px) y el carrito
+       (44 px) con 10 px de aire arriba y abajo. El logo acompaña la altura en
+       Logo.astro, así que si se cambia uno hay que revisar el otro. */
+    --nav-h: 4rem;
   }
 
   @media (min-width: 900px) {
     :root {
-      /* Alto suficiente para el logotipo horizontal sin que quede apretado. */
-      --nav-h: 6.25rem;
+      /* Alto suficiente para el logotipo horizontal (56 px) sin apretarlo. */
+      --nav-h: 5rem;
     }
   }
 
@@ -287,6 +296,57 @@
     border-color: var(--color-glass-border);
   }
 
+  /* --- Tarjeta interactiva -----------------------------------------------
+     Se usa en los bloques que invitan a hacer clic. Reacciona igual con el
+     mouse y con el foco de teclado (`:focus-within`), y todo el movimiento se
+     apaga si el sistema pide menos animación. */
+  .tarjeta-int {
+    @apply relative overflow-hidden rounded-card border border-line bg-surface
+           transition-all duration-200 ease-out;
+    box-shadow: 0 1px 2px rgba(13, 44, 132, 0.04);
+  }
+
+  /* Filo naranja que crece de izquierda a derecha en la parte superior. */
+  .tarjeta-int::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease-out;
+  }
+
+  .tarjeta-int:hover,
+  .tarjeta-int:focus-within {
+    border-color: rgba(30, 136, 229, 0.45);
+    transform: translateY(-6px);
+    box-shadow: 0 18px 40px rgba(13, 44, 132, 0.12);
+  }
+
+  .tarjeta-int:hover::before,
+  .tarjeta-int:focus-within::before {
+    transform: scaleX(1);
+  }
+
+  /* El ícono se inclina y cambia de color dentro de la tarjeta activa. */
+  .tarjeta-int:hover .icono-chip,
+  .tarjeta-int:focus-within .icono-chip {
+    @apply bg-secondary text-white;
+    transform: scale(1.08) rotate(-6deg);
+  }
+
+  /* La flecha del pie de la tarjeta avanza un poco. */
+  .tarjeta-int .flecha-int {
+    transition: transform 0.2s ease-out;
+  }
+
+  .tarjeta-int:hover .flecha-int,
+  .tarjeta-int:focus-within .flecha-int {
+    transform: translateX(4px);
+  }
+
   /* --- Botones tipo píldora ---------------------------------------------- */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-transparent
@@ -367,7 +427,9 @@
     z-index: 400;
     display: grid;
     place-items: center;
-    background: var(--color-base);
+    /* `--color-base` se renombro a `--color-fondo` (ver la nota del bloque de
+       tokens): sin este cambio la capa quedaria transparente. */
+    background: var(--color-fondo);
   }
 
   .dst-capa-carga[data-fuera='true'] {
@@ -499,6 +561,12 @@
   .btn:focus-visible,
   .glass-card:hover,
   .glass-card:focus-within,
+  .tarjeta-int:hover,
+  .tarjeta-int:focus-within,
+  .tarjeta-int:hover .icono-chip,
+  .tarjeta-int:focus-within .icono-chip,
+  .tarjeta-int:hover .flecha-int,
+  .tarjeta-int:focus-within .flecha-int,
   .group:hover .icono-int,
   .group:hover .icono-chip,
   .icono-int:hover,

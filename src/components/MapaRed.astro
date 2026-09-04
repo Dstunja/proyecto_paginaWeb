@@ -1,18 +1,29 @@
 ---
 import Icono from './Icono.astro';
 import LoaderDST from './LoaderDST.astro';
-import { departamentos, municipios, totalOficial } from '../data/municipios';
+import { departamentos, municipios, totalMunicipios } from '../data/municipios';
 
 /**
- * Mapa interactivo de cobertura.
+ * Mapa de cobertura: una pieza visual fija, no un mapa para explorar.
  *
- * Un punto por municipio, con el color de su departamento, más un marcador
- * pulsante para Tunja (sede principal). Encima del mapa: filtros por
- * departamento y buscador de municipio. Todo se arma en el navegador con
- * Leaflet (paquete instalado en el proyecto, no CDN); las teselas vienen de
- * Esri, con su atribución obligatoria abajo a la derecha.
+ * Se dibuja un punto por cada municipio cubierto —los 87—, nunca uno por
+ * cliente. Como el corredor de Tunja concentra municipios muy juntos (hay
+ * cabeceras a menos de 3 km una de otra), el tamaño del punto se calcula a
+ * partir de la escala real del encuadre para que ahí sigan distinguiéndose;
+ * ver `radio()` en el script de abajo.
+ *
+ * El mapa no se arrastra ni hace zoom con la rueda; el encuadre es siempre el
+ * mismo. Lo único interactivo es la ficha con el nombre del municipio que sale
+ * al pasar el mouse o tocar un punto, más los filtros y el buscador de arriba.
+ *
+ * Los municipios salen de la base de datos real (src/data/clientes-municipio.ts)
+ * y las coordenadas de la caché de src/data/coordenadas.json. El número de
+ * clientes de cada municipio es información interna: se usa para darle algo de
+ * peso visual a los puntos, pero NO se muestra en ningún texto de esta sección.
  */
-const cargados = municipios.length;
+const nombresDepartamentos = departamentos.map((d) => d.nombre);
+const listaDepartamentos =
+  nombresDepartamentos.slice(0, -1).join(', ') + ' y ' + nombresDepartamentos.at(-1);
 ---
 
 <div class="glass-card overflow-hidden">
@@ -21,12 +32,7 @@ const cargados = municipios.length;
     class="flex flex-col gap-4 border-b border-line px-5 py-4 tablet:flex-row tablet:items-center tablet:justify-between"
   >
     <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar municipios por departamento">
-      <button
-        type="button"
-        class="filtro-mapa"
-        data-filtro="todos"
-        aria-pressed="true"
-      >
+      <button type="button" class="filtro-mapa" data-filtro="todos" aria-pressed="true">
         Todos los municipios
       </button>
       {
@@ -68,33 +74,51 @@ const cargados = municipios.length;
   </div>
 
   <!-- MAPA -->
-  <div class="relative">
-    <div
-      id="mapa-red"
-      class="h-[420px] w-full bg-base tablet:h-[520px]"
-      role="application"
-      aria-label="Mapa de los municipios cubiertos"
-    >
-    </div>
+  <!--
+    Con los 87 municipios la zona cubierta es casi cuadrada: 1,29 grados de
+    latitud por 1,18 de longitud. Por eso el mapa es alto y no una franja
+    ancha; en una franja baja los puntos quedarían apretados en vertical y con
+    mucho terreno vacío a los lados.
 
-    {/* Espera real: Leaflet se descarga, arma los 87 puntos y pide las teselas
-        al servidor de mapas. Hasta que eso termina, aqui solo habria un
-        rectangulo gris. */}
-    <div class="dst-capa-carga" data-cargando-mapa>
-      <LoaderDST texto="Cargando el mapa…" />
-    </div>
+    En escritorio se le pone un ancho máximo y se centra, y el aire que queda
+    se trata como marco —el mapa lleva esquinas redondeadas y un filete— para
+    que se lea como una figura encuadrada y no como un mapa recortado. En móvil
+    va a sangre y a ancho completo.
 
-    <!-- Aviso del buscador: aparece sobre el mapa al buscar. -->
-    <p
-      id="aviso-mapa"
-      class="pointer-events-none absolute inset-x-4 top-4 z-[500] m-0 hidden rounded-xl bg-surface px-4 py-2.5 text-[14px] font-medium shadow-[0_8px_24px_rgba(13,44,132,.16)] tablet:inset-x-auto tablet:left-1/2 tablet:-translate-x-1/2"
-      role="status"
-    >
-    </p>
+    El límite de ancho va en este contenedor y no en el mapa, para que el aviso
+    del buscador se centre sobre el mapa visible.
+  -->
+  <div class="tablet:px-6 tablet:py-6">
+    <div class="relative mx-auto w-full tablet:max-w-[560px]">
+      <div
+        id="mapa-red"
+        class="h-[440px] w-full overflow-hidden bg-fondo tablet:h-[560px] tablet:rounded-2xl tablet:ring-1 tablet:ring-line"
+        role="application"
+        aria-label="Mapa de los municipios con cobertura"
+      >
+      </div>
+
+      {/* Espera real: Leaflet se descarga, arma los 87 puntos y pide las teselas
+          al servidor de mapas. Hasta que eso termina, aqui solo habria un
+          rectangulo gris. La capa hereda las esquinas redondeadas del marco. */}
+      <div class="dst-capa-carga tablet:rounded-2xl" data-cargando-mapa>
+        <LoaderDST texto="Cargando el mapa…" />
+      </div>
+
+      <!-- Aviso del buscador: aparece sobre el mapa al buscar. -->
+      <p
+        id="aviso-mapa"
+        class="pointer-events-none absolute inset-x-4 top-4 z-[500] m-0 hidden rounded-xl bg-surface px-4 py-2.5 text-[14px] font-medium shadow-[0_8px_24px_rgba(13,44,132,.16)] tablet:inset-x-auto tablet:left-1/2 tablet:-translate-x-1/2"
+        role="status"
+      >
+      </p>
+    </div>
   </div>
 
   <!-- LEYENDA -->
-  <div class="flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-line px-5 py-4 text-[13.5px]">
+  <div
+    class="flex flex-wrap items-center gap-x-7 gap-y-3 border-t border-line px-5 py-4 text-[13.5px]"
+  >
     <span class="inline-flex items-center gap-2.5 font-medium">
       <span class="punto-sede" aria-hidden="true"></span>
       Tunja, sede principal — punto pulsante en el mapa
@@ -112,7 +136,9 @@ const cargados = municipios.length;
       ))
     }
     <span class="text-muted">
-      {cargados} de {totalOficial} municipios cargados
+      Un punto por municipio &middot; cobertura en {totalMunicipios} municipios de {
+        listaDepartamentos
+      }
     </span>
   </div>
 </div>
@@ -170,17 +196,13 @@ const cargados = municipios.length;
       transform: scale(0.9);
       opacity: 0.9;
     }
-    70% {
-      transform: scale(2.1);
-      opacity: 0;
-    }
+    70%,
     100% {
       transform: scale(2.1);
       opacity: 0;
     }
   }
 
-  /* Marcador de la sede dentro del mapa (lo inserta Leaflet como divIcon) */
   :global(.marcador-sede) {
     display: grid;
     place-items: center;
@@ -207,58 +229,111 @@ const cargados = municipios.length;
   }
 
   /* Ajustes de Leaflet al estilo del sitio */
-  :global(.leaflet-container) {
+  :global(#mapa-red.leaflet-container) {
     font-family: var(--font-body);
-    background: var(--color-base);
+    background: var(--color-fondo);
   }
 
-  :global(.leaflet-control-zoom a) {
-    color: var(--color-primary) !important;
-    border-radius: 8px !important;
+  /* Con el mapa a color, una sombra suave despega los puntos del fondo. */
+  :global(#mapa-red .leaflet-overlay-pane path) {
+    filter: drop-shadow(0 1px 2px rgba(3, 8, 25, 0.45));
   }
 
-  :global(.leaflet-popup-content-wrapper) {
+  /* Sin arrastre ni zoom: el cursor no debe insinuar que el mapa se mueve. */
+  :global(#mapa-red.leaflet-container),
+  :global(#mapa-red .leaflet-tile-pane) {
+    cursor: default;
+  }
+
+  /* Los puntos sí son clicables (abren la ficha del municipio). */
+  :global(#mapa-red .leaflet-interactive) {
+    cursor: pointer;
+  }
+
+  :global(#mapa-red .leaflet-popup-content-wrapper),
+  :global(#mapa-red .leaflet-tooltip) {
     border-radius: 12px;
   }
 
-  :global(.leaflet-popup-content) {
-    margin: 12px 16px;
+  :global(#mapa-red .leaflet-popup-content),
+  :global(#mapa-red .leaflet-tooltip) {
     font-size: 13.5px;
   }
 
-  :global(.leaflet-popup-content strong) {
+  :global(#mapa-red .leaflet-popup-content) {
+    margin: 12px 16px;
+  }
+
+  :global(#mapa-red .leaflet-tooltip) {
+    padding: 8px 12px;
+    border: 1px solid var(--color-line);
+    box-shadow: 0 8px 20px rgba(13, 44, 132, 0.14);
+  }
+
+  :global(#mapa-red .leaflet-popup-content strong),
+  :global(#mapa-red .leaflet-tooltip strong) {
     font-family: var(--font-display);
     color: var(--color-primary);
+  }
+
+  /* Departamento: debajo del municipio, más pequeño y en gris. */
+  :global(#mapa-red .leaflet-popup-content .depto),
+  :global(#mapa-red .leaflet-tooltip .depto) {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--color-muted);
   }
 </style>
 
 <script>
   import L from 'leaflet';
   import 'leaflet/dist/leaflet.css';
-  import { municipios, colorDepartamento } from '../data/municipios';
+  import { municipios, colorDepartamento, sede, type Municipio } from '../data/municipios';
+  import { FONDO } from '../lib/mapa-base';
   import { limpiarTermino, registrarEvento } from '../lib/analitica';
 
   const contenedor = document.getElementById('mapa-red');
+
   if (contenedor) {
+    // Encuadre fijo: el mapa es una ilustración de la red, no un mapa para
+    // explorar. Se apagan arrastre, rueda, doble clic, pellizco y teclado para
+    // que no compita con el scroll de la página ni se pueda dejar descuadrado.
     const mapa = L.map(contenedor, {
-      center: [6.1, -73.4],
-      zoom: 7,
-      // La rueda del mouse no debe secuestrar el scroll de la página.
+      center: [5.8, -73.6],
+      zoom: 8,
+      dragging: false,
       scrollWheelZoom: false,
-      zoomControl: true,
+      doubleClickZoom: false,
+      touchZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      zoomControl: false,
+      // Zoom fraccionado: con saltos de un nivel entero el encuadre se queda
+      // corto y los 87 puntos se apelotonan en el centro con terreno vacío
+      // alrededor.
+      zoomSnap: 0.25,
     });
 
-    // Fondo claro de Esri: deja que los puntos de color sean lo que resalta.
-    // Alternativa sin Esri:
-    //   https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png  (atribución © OpenStreetMap)
-    const teselas = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-      {
-        maxZoom: 16,
-        attribution:
-          'Teselas &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener">Esri</a> — Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
-      },
-    ).addTo(mapa);
+    // Fondo a color de OpenStreetMap (ver src/lib/mapa-base.ts).
+    const teselas = L.tileLayer(FONDO.url, FONDO.opciones).addTo(mapa);
+
+    const normalizar = (texto: string) =>
+      texto
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
+    /**
+     * Ficha que se muestra al pasar el mouse o al tocar el punto: el nombre del
+     * municipio y, debajo y en gris, su departamento.
+     *
+     * A propósito no lleva el número de clientes: ese dato es interno y no debe
+     * quedar visible en el sitio (ver el comentario de arriba).
+     */
+    const ficha = (municipio: Municipio) =>
+      `<strong>${municipio.nombre}</strong><span class="depto">${municipio.departamento}</span>`;
 
     // ---- Retirada de la animacion de carga ----
     const capaCarga = document.querySelector<HTMLElement>('[data-cargando-mapa]');
@@ -278,81 +353,143 @@ const cargados = municipios.length;
 
     /** Una capa por departamento, para poder filtrar. */
     const capas = new Map<string, L.LayerGroup>();
-    /** Marcador de cada municipio, para centrarlo desde el buscador. */
-    const marcadores = new Map<string, { marcador: L.CircleMarker | L.Marker; nombre: string }>();
+    /** Punto dibujado de cada municipio, para realzarlo al buscarlo. */
+    const puntos = new Map<string, { marcador: L.CircleMarker; municipio: Municipio }>();
+
+    /**
+     * Encuadre único sobre toda la red, siempre el mismo. Va antes de dibujar
+     * porque el tamaño de los puntos se calcula a partir de la escala que
+     * resulte de aquí. Los filtros solo prenden y apagan puntos; el mapa nunca
+     * se mueve, así la sección no salta al filtrar.
+     *
+     * Sin animación a propósito: animado, el zoom nuevo tarda un momento en
+     * quedar aplicado y la escala se leería con el zoom viejo.
+     *
+     * En pantallas angostas el margen se recorta: ahí manda el ancho, y cada
+     * píxel que se le quite al margen es escala que ganan los puntos. El margen
+     * de abajo lleva 10 px extra para la línea de atribución de OpenStreetMap.
+     */
+    const RED = L.latLngBounds(municipios.map((m) => [m.lat, m.lng] as [number, number]));
+
+    function encuadrar() {
+      const margen = contenedor!.clientWidth < 420 ? 10 : 24;
+      mapa.fitBounds(RED, {
+        paddingTopLeft: [margen, margen],
+        paddingBottomRight: [margen, margen + 10],
+        maxZoom: 10,
+        animate: false,
+      });
+    }
+
+    encuadrar();
+
+    const clientesTope = Math.max(...municipios.map((m) => m.clientes));
+
+    /**
+     * Tamaño del punto, en píxeles de radio.
+     *
+     * Los 87 puntos se aprietan alrededor de Tunja: hay cabeceras a 2,7 km una
+     * de otra (Cucaita y Sora, Ciénega y Viracachá…). Por eso el radio mínimo
+     * no es un número fijo sino algo más de un kilómetro medido sobre el mapa:
+     * así, encoja o crezca la tarjeta, entre dos vecinos siempre queda aire y
+     * se leen como dos puntos y no como una mancha.
+     *
+     * Sobre ese mínimo, el punto crece con la raíz del número de clientes hasta
+     * 2,8 veces el mínimo, para que Tunja, Chiquinquirá o Barbosa pesen más que
+     * un municipio pequeño. El número en sí es información interna y no se
+     * muestra en ninguna parte: el visitante solo ve el peso relativo.
+     */
+    function escalaPunto() {
+      const centro = mapa.getCenter();
+      const vecino = L.latLng(centro.lat, centro.lng + 0.1);
+      const px = mapa.latLngToLayerPoint(vecino).x - mapa.latLngToLayerPoint(centro).x;
+      const km = mapa.distance(centro, vecino) / 1000;
+      const minimo = Math.max(2, (px / km) * 1.05);
+      return { minimo, maximo: minimo * 2.8 };
+    }
+
+    let escala = escalaPunto();
+
+    const radio = (clientes: number) =>
+      escala.minimo + (escala.maximo - escala.minimo) * Math.sqrt(clientes / clientesTope);
 
     for (const municipio of municipios) {
       const capa = capas.get(municipio.departamento) ?? L.layerGroup();
       capas.set(municipio.departamento, capa);
 
-      const popup = `<strong>${municipio.nombre}</strong><br>${municipio.departamento}${
-        municipio.sede ? '<br>Sede principal' : ''
-      }`;
+      const marcador = L.circleMarker([municipio.lat, municipio.lng], {
+        radius: radio(municipio.clientes),
+        // Aro blanco: sobre el mapa a color es lo que separa un punto del fondo
+        // y de su vecino. La sombra la pone el CSS del contenedor.
+        color: '#ffffff',
+        weight: 2,
+        fillColor: colorDepartamento(municipio.departamento),
+        fillOpacity: 1,
+      });
 
-      const marcador = municipio.sede
-        ? L.marker([municipio.lat, municipio.lng], {
-            icon: L.divIcon({
-              className: 'marcador-sede',
-              html: '<span class="nucleo"></span>',
-              iconSize: [14, 14],
-              iconAnchor: [7, 7],
-            }),
-            title: `${municipio.nombre} — sede principal`,
-            zIndexOffset: 1000,
-          })
-        : L.circleMarker([municipio.lat, municipio.lng], {
-            radius: 7,
-            color: '#ffffff',
-            weight: 2,
-            fillColor: colorDepartamento(municipio.departamento),
-            fillOpacity: 1,
-          });
+      marcador
+        .bindTooltip(ficha(municipio), { direction: 'top', offset: [0, -10] })
+        .bindPopup(ficha(municipio));
 
-      marcador.bindPopup(popup);
-      marcador.bindTooltip(municipio.nombre, { direction: 'top', offset: [0, -8] });
+      // Al pasar el mouse el punto se engorda y se pone encima de sus vecinos.
+      marcador.on('mouseover', () => {
+        marcador.setStyle({ weight: 4 });
+        marcador.bringToFront();
+      });
+      marcador.on('mouseout', () => marcador.setStyle({ weight: 2 }));
+
       marcador.addTo(capa);
-      marcadores.set(normalizar(municipio.nombre), { marcador, nombre: municipio.nombre });
+      puntos.set(normalizar(municipio.nombre), { marcador, municipio });
     }
+
+    // Los puntos pequeños van encima de los grandes: si no, Tunja o
+    // Chiquinquirá tapan a sus vecinos y no hay forma de señalarlos.
+    [...puntos.values()]
+      .sort((a, b) => b.municipio.clientes - a.municipio.clientes)
+      .forEach(({ marcador }) => marcador.bringToFront());
 
     capas.forEach((capa) => capa.addTo(mapa));
 
-    /** Encuadra el mapa sobre las capas visibles. */
-    function encuadrar(visibles: L.LayerGroup[]) {
-      const puntos: L.LatLngExpression[] = [];
-      for (const capa of visibles) {
-        capa.eachLayer((m) => {
-          const latlng = (m as L.CircleMarker).getLatLng?.();
-          if (latlng) puntos.push(latlng);
-        });
-      }
-      if (puntos.length > 1) mapa.fitBounds(L.latLngBounds(puntos).pad(0.12), { maxZoom: 9 });
-      else if (puntos.length === 1) mapa.setView(puntos[0], 10);
-    }
+    // Al cambiar el ancho de la ventana cambia la escala del encuadre, así que
+    // los radios se vuelven a calcular para no perder la separación en Tunja.
+    mapa.on('resize', () => {
+      encuadrar();
+      escala = escalaPunto();
+      puntos.forEach(({ marcador, municipio }) => marcador.setRadius(radio(municipio.clientes)));
+    });
 
-    encuadrar([...capas.values()]);
+    // Sede principal: punto pulsante, siempre encima del resto.
+    L.marker([sede.lat, sede.lng], {
+      icon: L.divIcon({
+        className: 'marcador-sede',
+        html: '<span class="nucleo"></span>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      }),
+      title: 'Tunja — sede principal',
+      zIndexOffset: 2000,
+    })
+      .addTo(mapa)
+      .bindPopup('<strong>Tunja</strong><span class="depto">Boyacá · sede principal</span>');
 
-    // ---- Filtros por departamento ----
+    // ---- Filtros ------------------------------------------------------------
     const botones = document.querySelectorAll<HTMLButtonElement>('[data-filtro]');
     botones.forEach((boton) => {
       boton.addEventListener('click', () => {
         const filtro = boton.dataset.filtro!;
         botones.forEach((b) => b.setAttribute('aria-pressed', String(b === boton)));
 
-        const visibles: L.LayerGroup[] = [];
         capas.forEach((capa, departamento) => {
-          const mostrar = filtro === 'todos' || filtro === departamento;
-          if (mostrar) {
+          if (filtro === 'todos' || filtro === departamento) {
             capa.addTo(mapa);
-            visibles.push(capa);
           } else {
             mapa.removeLayer(capa);
           }
         });
-        encuadrar(visibles);
       });
     });
 
-    // ---- Buscador ----
+    // ---- Buscador -----------------------------------------------------------
     const formulario = document.getElementById('buscador-mapa') as HTMLFormElement | null;
     const campo = document.getElementById('buscar-municipio') as HTMLInputElement | null;
     const aviso = document.getElementById('aviso-mapa');
@@ -372,7 +509,8 @@ const cargados = municipios.length;
         return;
       }
 
-      const encontrado = marcadores.get(normalizar(valor));
+      const clave = normalizar(valor);
+      const encontrado = puntos.get(clave);
 
       /* Que municipios busca la gente y cuales todavia no tenemos cargados:
          es la lista de por donde conviene ampliar la cobertura. El termino se
@@ -383,28 +521,31 @@ const cargados = municipios.length;
       });
 
       if (!encontrado) {
-        mostrarAviso(`Por ahora no tenemos cobertura confirmada en "${valor}". Escríbenos y lo validamos.`, false);
+        mostrarAviso(
+          `Por ahora no tenemos cobertura confirmada en "${valor}". Escríbenos y lo validamos.`,
+          false,
+        );
         return;
       }
 
-      // Si estaba filtrado por otro departamento, se vuelve a "todos".
+      const { marcador, municipio } = encontrado;
+      mostrarAviso(`Sí, llegamos a ${municipio.nombre}, ${municipio.departamento}.`, true);
+
+      // Si estaba filtrado por otro departamento, se vuelven a mostrar todos.
       botones.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === 'todos')));
       capas.forEach((capa) => capa.addTo(mapa));
 
-      mapa.flyTo(encontrado.marcador.getLatLng(), 11, { duration: 0.8 });
-      encontrado.marcador.openPopup();
-      mostrarAviso(`Sí, llegamos a ${encontrado.nombre}.`, true);
+      marcador.bringToFront();
+      marcador.openPopup();
+
+      // Realce temporal para que el punto buscado se distinga de los demás.
+      marcador.setStyle({ weight: 4, radius: radio(municipio.clientes) + 4 });
+      window.setTimeout(
+        () => marcador.setStyle({ weight: 2, radius: radio(municipio.clientes) }),
+        2500,
+      );
     });
 
     campo?.addEventListener('input', () => aviso?.classList.add('hidden'));
-  }
-
-  /** Compara sin tildes ni mayúsculas: "chiquinquira" encuentra "Chiquinquirá". */
-  function normalizar(texto: string): string {
-    return texto
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
   }
 </script>

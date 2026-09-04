@@ -1,0 +1,45 @@
+FOTOS DE PRODUCTO Y CLASIFICACION DE COBERTURA - MASIVO 1.0
+==============================================================
+
+fotos_producto/ (741 imagenes)
+-------------------------------
+Fotos de producto extraidas directamente del PDF, SIN precios ni texto de
+oferta superpuesto (los precios/tablas en el documento original son
+elementos de texto/vectoriales separados de la foto, asi que al extraer
+solo las imagenes, el precio no viene incluido).
+
+Se eliminaron automaticamente las imagenes que se repetian 5 o mas veces
+en el documento (logos decorativos, iconos genericos que aparecen en casi
+todas las paginas), dejando solo fotos que parecen ser de producto
+especifico.
+
+Nombre de archivo: pagXXX_hash.jpg -> XXX es el numero de pagina del PDF
+original donde aparece, por si necesitas volver a esa pagina a confirmar
+de que producto se trata exactamente (el nombre del producto casi siempre
+esta en la foto misma o en el texto de esa pagina).
+
+manifest_fotos.csv
+-------------------
+Lista de las 741 fotos con su numero de pagina y cuantas veces aparecio
+esa imagen exacta en el documento (1 = aparicion unica, probablemente
+producto especifico; 2-4 = aparece en unas pocas paginas, revisar).
+
+clasificacion_cobertura.csv
+-----------------------------
+Intento de identificar, por pagina, si el producto es "Nacional" (para
+todos los clientes) o tiene restriccion regional, usando reconocimiento de
+texto (OCR) sobre las capturas de pantalla del documento.
+
+IMPORTANTE - LIMITACIONES DE ESTE ARCHIVO:
+- Solo 45 de las 398 paginas quedaron clasificadas con confianza (17
+  Nacional, 28 Regional). Las otras 353 dicen "No detectado": puede ser
+  porque esa pagina no tiene ese dato, o porque el OCR no pudo leerlo bien
+  (el documento es un conjunto de capturas de pantalla, no texto real, y
+  la calidad de lectura automatica varia mucho segun cada diseno de pagina).
+- NO uses este archivo como fuente unica de verdad para decidir que
+  producto ofrecer a que cliente. Es un punto de partida para que tu
+  equipo comercial confirme rapidamente pagina por pagina, no un
+  reemplazo de esa revision.
+- Las palabras clave que se buscaron: "nacional" (cobertura total) y
+  nombres de ciudades/regiones conocidas (Bogota, Pereira, Boyaca,
+  Santander, Cundinamarca, etc.) cerca del texto "Regional".

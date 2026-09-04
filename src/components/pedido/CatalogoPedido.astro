@@ -18,28 +18,38 @@
  * al catálogo de marcas y a WhatsApp.
  */
 import { productos, MARCAS, CATEGORIAS } from '../../data/productos';
-import { logoMarca } from '../../lib/imagenes';
+import { imagenSiExiste, logoMarca } from '../../lib/imagenes';
 import { ruta } from '../../lib/rutas';
 import Icono from '../Icono.astro';
 import LoaderDST from '../LoaderDST.astro';
 
-/** Lo que se le manda al navegador de cada producto. */
-const catalogo = productos.map((p) => ({
-  id: p.id,
-  marca: p.marca,
-  categoria: p.categoria,
-  nombre: p.nombre,
-  presentacion: p.presentacion,
-  codigo: p.codigo,
-  // El campo `imagen` viene vacío hoy. Si algún día se llena con una ruta de
-  // public/, aquí se le antepone el `base` y la tarjeta la usa sola.
-  ...(p.imagen ? { imagen: ruta(p.imagen) } : {}),
-}));
+/**
+ * Lo que se le manda al navegador de cada producto.
+ *
+ * `imagen` solo viaja cuando la referencia tiene foto propia Y el archivo
+ * existe de verdad en public/ (`imagenSiExiste` ya le antepone el `base`).
+ * Hoy son las siete referencias confirmadas contra su código SAP; el resto
+ * llega sin el campo y la tarjeta cae en el logotipo de la marca. Conectar
+ * una foto nueva es entonces solo llenar `imagen` en src/data/productos.ts:
+ * aquí y en la tarjeta no hay que tocar nada.
+ */
+const catalogo = productos.map((p) => {
+  const imagen = imagenSiExiste(p.imagen);
+  return {
+    id: p.id,
+    marca: p.marca,
+    categoria: p.categoria,
+    nombre: p.nombre,
+    presentacion: p.presentacion,
+    codigo: p.codigo,
+    ...(imagen ? { imagen } : {}),
+  };
+});
 
 /**
  * Logotipo de cada marca, si ya está subido a public/img/marcas/.
- * Hoy la carpeta está vacía, así que todas caen en el marcador de iniciales;
- * al dejar los archivos, las tarjetas los toman sin tocar el código.
+ * Es el respaldo de las referencias que todavía no tienen foto propia; si
+ * tampoco hay logotipo, la tarjeta muestra las iniciales de la marca.
  */
 const logos = Object.fromEntries(MARCAS.map((marca) => [marca, logoMarca(marca)]));
 
@@ -246,15 +256,48 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       const cantidad = cantidadEnTarjeta(p.id);
       const nombre = esc(`${p.nombre} ${p.presentacion}`);
 
-      const medio = p.imagen
-        ? `<img src="${esc(p.imagen)}" alt="" loading="lazy" class="h-full w-full object-contain p-1" />`
+      /*
+       * EL CUADRO DE 80x80: TRES CASOS
+       * ------------------------------
+       *  1. La referencia tiene FOTO REAL propia (`p.imagen`).
+       *  2. No tiene foto, pero su marca tiene LOGOTIPO. ← la mayoría hoy
+       *  3. No hay ni lo uno ni lo otro: quedan las INICIALES de la marca.
+       *
+       * En los tres se usa object-contain y nunca object-cover: recortar
+       * mutilaría un logotipo, y en una foto de producto se comería parte del
+       * empaque, que es justo lo que el cliente necesita reconocer para pedir.
+       *
+       * La foto real lleva además el mismo tratamiento que en "Especiales del
+       * mes": encima de una copia desenfocada de ella misma. Las fotos vienen
+       * en cualquier proporción (frascos altos, cajas apaisadas) y el hueco
+       * que deja el contain se rellena con el color de la propia imagen en vez
+       * de una franja blanca. Así una referencia con foto y otra con logotipo,
+       * lado a lado en la misma marca, se leen como la misma tarjeta. El
+       * desenfoque va más corto que en el inicio (blur-md, no blur-xl) porque
+       * aquí el cuadro mide 80 px y no 300: con el radio grande el fondo se
+       * volvía un color plano.
+       *
+       * El logotipo, en cambio, se deja sobre blanco y sin padding: los
+       * archivos de marca ya traen fondo blanco y su propio margen interno, y
+       * agregarle más lo dejaba flotando en medio de un marco vacío.
+       */
+      const foto = p.imagen;
+      const medio = foto
+        ? `<div class="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-md" style="background-image:url('${esc(foto)}')" aria-hidden="true"></div>
+           <img src="${esc(foto)}" alt="" loading="lazy" class="relative h-full w-full object-contain p-1" />`
         : logo
-          ? `<img src="${esc(logo)}" alt="" loading="lazy" class="h-full w-full object-contain p-2" />`
+          ? `<img src="${esc(logo)}" alt="" loading="lazy" class="h-full w-full object-contain" />`
           : `<span class="font-display text-lg font-bold text-primary/60" aria-hidden="true">${esc(iniciales(p.marca))}</span>`;
+
+      const fondoCuadro = foto
+        ? 'border-line bg-surface-2'
+        : logo
+          ? 'border-line bg-white'
+          : 'border-transparent bg-primary-soft';
 
       return `
         <article class="glass-card flex gap-4 p-4 ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${esc(p.id)}">
-          <div class="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-primary-soft">
+          <div class="relative grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border ${fondoCuadro}">
             ${medio}
           </div>
 

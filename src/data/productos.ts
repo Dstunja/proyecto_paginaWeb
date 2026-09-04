@@ -17,6 +17,21 @@ export interface Producto {
   embalaje: string;
   /** Página del deck de origen, para verificación interna */
   paginaPdf: number;
+  /**
+   * Foto real del producto: ruta dentro de public/, por ejemplo
+   * '/img/innovacion/jumbo-pistacho-dubai.jpg'.
+   *
+   * CÓMO SE LLENA: se asigna solo cuando la foto está confirmada contra el
+   * CÓDIGO SAP de la referencia, no por parecido de nombre. Dos referencias
+   * de la misma marca pueden llamarse casi igual y cambiar solo en la
+   * presentación (Bénet Kids vs. Bénet, plegadiza x 4 vs. x 8), así que el
+   * código es lo único que amarra la foto al producto correcto.
+   *
+   * QUÉ PASA SI SE DEJA VACÍO: la tarjeta del armador de pedidos muestra el
+   * logotipo de la marca, como hasta ahora. No hay que tocar ningún
+   * componente para prender la foto: basta con llenar este campo y dejar el
+   * archivo en public/ (ver CatalogoPedido.astro).
+   */
   imagen?: string;
 }
 
@@ -27,10 +42,10 @@ export const MARCAS = ["Badia", "Bénet", "Carve", "Chocolisto", "Colcafé", "Co
 export const CATEGORIAS = ["Aceites y vinagres", "Ajo picado", "Aromaterapia", "Aromáticas", "Atún", "Barras de cereal", "Bebidas achocolatadas", "Bebidas vegetales", "Bienestar", "Café", "Cereales y granolas", "Chocolate de mesa", "Chocolates", "Chocubiertas", "Coberturas", "Conservas", "Dermocosmética", "Dulces", "Enlatados", "Esencias florales", "Especias", "Fitoterapia", "Frutos secos", "Galletas", "Granos y semillas", "Pasabocas", "Pastas", "Pastas rellenas", "Pastas sin gluten", "Proteína vegetal", "Repostería", "Salsas", "Salsas y marinadas", "Snacks", "Toppings", "Tés", "Tés y aromáticas", "Untables", "Vegetales enlatados"] as const;
 
 export const productos: Producto[] = [
-  { id: "badia-badia-ajo-fino-picado-con-limon-y-albahaca-226-7-g", marca: "Badia", categoria: "Ajo picado", nombre: "Badia Ajo Fino Picado con Limón y Albahaca", presentacion: "226,7 g", codigo: "2034008", codigoParcial: false, embalaje: "Caja x 12", paginaPdf: 206 },
-  { id: "badia-badia-ajo-fino-picado-con-pimienta-roja-226-7-g", marca: "Badia", categoria: "Ajo picado", nombre: "Badia Ajo Fino Picado con Pimienta Roja", presentacion: "226,7 g", codigo: "2034009", codigoParcial: false, embalaje: "Caja x 12", paginaPdf: 207 },
+  { id: "badia-badia-ajo-fino-picado-con-limon-y-albahaca-226-7-g", marca: "Badia", categoria: "Ajo picado", nombre: "Badia Ajo Fino Picado con Limón y Albahaca", presentacion: "226,7 g", codigo: "2034008", codigoParcial: false, embalaje: "Caja x 12", paginaPdf: 206, imagen: "/img/innovacion/badia-ajo-limon-albahaca.jpg" },
+  { id: "badia-badia-ajo-fino-picado-con-pimienta-roja-226-7-g", marca: "Badia", categoria: "Ajo picado", nombre: "Badia Ajo Fino Picado con Pimienta Roja", presentacion: "226,7 g", codigo: "2034009", codigoParcial: false, embalaje: "Caja x 12", paginaPdf: 207, imagen: "/img/innovacion/badia-ajo-pimienta-roja.jpg" },
   { id: "badia-badia-ajo-fino-picado-con-sazon-completa-226-7-g", marca: "Badia", categoria: "Ajo picado", nombre: "Badia Ajo Fino Picado con Sazón Completa", presentacion: "226,7 g", codigo: "2034331", codigoParcial: false, embalaje: "Caja x 12", paginaPdf: 208 },
-  { id: "badia-badia-ajo-negro-fino-picado-en-agua-226-7-g", marca: "Badia", categoria: "Ajo picado", nombre: "Badia Ajo Negro Fino Picado en Agua", presentacion: "226,7 g", codigo: "2034015", codigoParcial: false, embalaje: "Caja x 12", paginaPdf: 209 },
+  { id: "badia-badia-ajo-negro-fino-picado-en-agua-226-7-g", marca: "Badia", categoria: "Ajo picado", nombre: "Badia Ajo Negro Fino Picado en Agua", presentacion: "226,7 g", codigo: "2034015", codigoParcial: false, embalaje: "Caja x 12", paginaPdf: 209, imagen: "/img/innovacion/badia-ajo-negro.jpg" },
   { id: "badia-badia-ajo-picado-en-aceite-de-oliva-minced-garlic-226-g", marca: "Badia", categoria: "Ajo picado", nombre: "Badia Ajo Picado en Aceite de Oliva (Minced Garlic)", presentacion: "226 g", codigo: "2017467", codigoParcial: false, embalaje: "", paginaPdf: 228 },
   { id: "badia-badia-leche-de-coco-coconut-milk-400-ml", marca: "Badia", categoria: "Conservas", nombre: "Badia Leche de Coco (Coconut Milk)", presentacion: "400 ml", codigo: "2017340", codigoParcial: false, embalaje: "", paginaPdf: 229 },
   { id: "badia-badia-ajo-en-polvo-85-g", marca: "Badia", categoria: "Especias", nombre: "Badia Ajo en Polvo", presentacion: "85 g", codigo: "2017237", codigoParcial: false, embalaje: "", paginaPdf: 215 },
@@ -122,7 +137,7 @@ export const productos: Producto[] = [
   { id: "benet-capsulas-benet-calcio-magnesio-vitamina-d3-30-capsulas", marca: "Bénet", categoria: "Bienestar", nombre: "Cápsulas Bénet Calcio + Magnesio + Vitamina D3", presentacion: "30 cápsulas", codigo: "1078795", codigoParcial: false, embalaje: "", paginaPdf: 130 },
   { id: "benet-capsulas-benet-colageno-hidrolizado-biotina-vitamina-c-60-capsulas", marca: "Bénet", categoria: "Bienestar", nombre: "Cápsulas Bénet Colágeno Hidrolizado + Biotina + Vitamina C", presentacion: "60 cápsulas", codigo: "2019772", codigoParcial: false, embalaje: "", paginaPdf: 126 },
   { id: "benet-capsulas-benet-vitamina-e-selenio-30-capsulas", marca: "Bénet", categoria: "Bienestar", nombre: "Cápsulas Bénet Vitamina E + Selenio", presentacion: "30 cápsulas", codigo: "2008565", codigoParcial: false, embalaje: "", paginaPdf: 130 },
-  { id: "benet-gomas-benet-citrato-de-magnesio-48-gomas-144-g", marca: "Bénet", categoria: "Bienestar", nombre: "Gomas Bénet Citrato de Magnesio", presentacion: "48 gomas (144 g)", codigo: "2037218", codigoParcial: false, embalaje: "", paginaPdf: 125 },
+  { id: "benet-gomas-benet-citrato-de-magnesio-48-gomas-144-g", marca: "Bénet", categoria: "Bienestar", nombre: "Gomas Bénet Citrato de Magnesio", presentacion: "48 gomas (144 g)", codigo: "2037218", codigoParcial: false, embalaje: "", paginaPdf: 125, imagen: "/img/innovacion/benet-magnesio.jpg" },
   { id: "benet-gomas-benet-colageno-selenio-vitaminas-a-y-e-60-gomas-150-g", marca: "Bénet", categoria: "Bienestar", nombre: "Gomas Bénet Colágeno + Selenio + Vitaminas A y E", presentacion: "60 gomas (150 g)", codigo: "2019271", codigoParcial: false, embalaje: "Caja x 12", paginaPdf: 128 },
   { id: "benet-gomas-benet-kids-multivitaminas-minerales-45-gomas", marca: "Bénet", categoria: "Bienestar", nombre: "Gomas Bénet Kids Multivitaminas + Minerales", presentacion: "45 gomas", codigo: "2018640", codigoParcial: false, embalaje: "", paginaPdf: 133 },
   { id: "benet-gomas-benet-kids-omega-3-zinc-40-gomas", marca: "Bénet", categoria: "Bienestar", nombre: "Gomas Bénet Kids Omega 3 + Zinc", presentacion: "40 gomas", codigo: "2020557", codigoParcial: false, embalaje: "", paginaPdf: 132 },
@@ -414,7 +429,7 @@ export const productos: Producto[] = [
   { id: "jet-jet-burbujas-bolsa-x-12-14-g", marca: "Jet", categoria: "Chocolates", nombre: "Jet Burbujas (bolsa x 12)", presentacion: "14 g", codigo: "1025339", codigoParcial: false, embalaje: "Caja x 24 bolsas", paginaPdf: 354 },
   { id: "jet-jet-burbujas-bolsa-x-12-bolsa-x-12", marca: "Jet", categoria: "Chocolates", nombre: "Jet Burbujas (bolsa x 12)", presentacion: "Bolsa x 12", codigo: "1079697", codigoParcial: false, embalaje: "", paginaPdf: 357 },
   { id: "jet-jet-burbujas-cookies-cream-bolsa-x-10-bolsa-x-10", marca: "Jet", categoria: "Chocolates", nombre: "Jet Burbujas Cookies & Cream (bolsa x 10)", presentacion: "Bolsa x 10", codigo: "1079698", codigoParcial: false, embalaje: "", paginaPdf: 357 },
-  { id: "jet-jet-burbujas-pistacho-dubai-style-11-5-g", marca: "Jet", categoria: "Chocolates", nombre: "Jet Burbujas Pistacho Dubai Style", presentacion: "11,5 g", codigo: "1089476", codigoParcial: false, embalaje: "Plegadiza x 4 / caja x 12", paginaPdf: 106 },
+  { id: "jet-jet-burbujas-pistacho-dubai-style-11-5-g", marca: "Jet", categoria: "Chocolates", nombre: "Jet Burbujas Pistacho Dubai Style", presentacion: "11,5 g", codigo: "1089476", codigoParcial: false, embalaje: "Plegadiza x 4 / caja x 12", paginaPdf: 106, imagen: "/img/innovacion/jet-burbujas-pistacho-dubai.jpg" },
   { id: "jet-jet-caramel-bolsa-x-18-bolsa-x-18", marca: "Jet", categoria: "Chocolates", nombre: "Jet Caramel (bolsa x 18)", presentacion: "Bolsa x 18", codigo: "1078305", codigoParcial: false, embalaje: "", paginaPdf: 349 },
   { id: "jet-jet-chocolatina-bolsa-x-12-12-und-x-11-g", marca: "Jet", categoria: "Chocolates", nombre: "Jet Chocolatina Bolsa x 12", presentacion: "12 und x 11 g", codigo: "1092010", codigoParcial: false, embalaje: "Caja x 48 bolsas", paginaPdf: 88 },
   { id: "jet-jet-chocoveteada-150-g", marca: "Jet", categoria: "Chocolates", nombre: "Jet Chocoveteada", presentacion: "150 g", codigo: "1058579", codigoParcial: false, embalaje: "Plegadiza x 6 / caja x 6", paginaPdf: 87 },
@@ -425,7 +440,7 @@ export const productos: Producto[] = [
   { id: "jet-jet-gol-bolsa-x-48-bolsa-x-48", marca: "Jet", categoria: "Chocolates", nombre: "Jet Gol! (bolsa x 48)", presentacion: "Bolsa x 48", codigo: "1078326", codigoParcial: false, embalaje: "", paginaPdf: 356 },
   { id: "jet-jet-mini-wafer-bolsa-x-20-6-g", marca: "Jet", categoria: "Chocolates", nombre: "Jet Mini Wafer (bolsa x 20)", presentacion: "6 g", codigo: "1078040", codigoParcial: false, embalaje: "Corrugado x 24 bolsas", paginaPdf: 348 },
   { id: "jet-jet-postres-fresas-con-crema-plegadiza-x-12-29-g", marca: "Jet", categoria: "Chocolates", nombre: "Jet Postres Fresas con Crema (plegadiza x 12)", presentacion: "29 g", codigo: "1064641", codigoParcial: false, embalaje: "", paginaPdf: 350 },
-  { id: "jet-jet-postres-pistacho-dubai-style-29-g", marca: "Jet", categoria: "Chocolates", nombre: "Jet Postres Pistacho Dubai Style", presentacion: "29 g", codigo: "1089477", codigoParcial: false, embalaje: "Plegadiza x 8 / caja x 12", paginaPdf: 107 },
+  { id: "jet-jet-postres-pistacho-dubai-style-29-g", marca: "Jet", categoria: "Chocolates", nombre: "Jet Postres Pistacho Dubai Style", presentacion: "29 g", codigo: "1089477", codigoParcial: false, embalaje: "Plegadiza x 8 / caja x 12", paginaPdf: 107, imagen: "/img/innovacion/jet-pistacho-dubai.jpg" },
   { id: "jet-jet-wafer-bolsa-x-10-bolsa-x-10", marca: "Jet", categoria: "Chocolates", nombre: "Jet Wafer (bolsa x 10)", presentacion: "Bolsa x 10", codigo: "1027118", codigoParcial: false, embalaje: "", paginaPdf: 356 },
   { id: "jet-jet-wafer-plegadiza-x-20-plegadiza-x-20", marca: "Jet", categoria: "Chocolates", nombre: "Jet Wafer (plegadiza x 20)", presentacion: "Plegadiza x 20", codigo: "1003905", codigoParcial: false, embalaje: "", paginaPdf: 363 },
   { id: "jet-jet-wafer-mini-bolsa-x-20-bolsa-x-20", marca: "Jet", categoria: "Chocolates", nombre: "Jet Wafer Mini (bolsa x 20)", presentacion: "Bolsa x 20", codigo: "1003907", codigoParcial: false, embalaje: "", paginaPdf: 363 },
@@ -449,7 +464,7 @@ export const productos: Producto[] = [
   { id: "jumbo-jumbo-mini-17-g-plegadiza-x-24-17-g", marca: "Jumbo", categoria: "Chocolates", nombre: "Jumbo Mini 17 g (plegadiza x 24)", presentacion: "17 g", codigo: "1068576", codigoParcial: false, embalaje: "Plegadiza x 24", paginaPdf: 369 },
   { id: "jumbo-jumbo-mini-17-g-tira-x-10-17-g", marca: "Jumbo", categoria: "Chocolates", nombre: "Jumbo Mini 17 g (tira x 10)", presentacion: "17 g", codigo: "1068578", codigoParcial: false, embalaje: "Tira x 10", paginaPdf: 369 },
   { id: "jumbo-jumbo-mix-60-g-plegadiza-x-12-60-g", marca: "Jumbo", categoria: "Chocolates", nombre: "Jumbo Mix 60 g (plegadiza x 12)", presentacion: "60 g", codigo: "1015160", codigoParcial: false, embalaje: "Plegadiza x 12", paginaPdf: 370 },
-  { id: "jumbo-jumbo-pistacho-dubai-style-90-g", marca: "Jumbo", categoria: "Chocolates", nombre: "Jumbo Pistacho Dubai Style", presentacion: "90 g", codigo: "1089478", codigoParcial: false, embalaje: "Plegadiza x 6 / caja x 18", paginaPdf: 105 },
+  { id: "jumbo-jumbo-pistacho-dubai-style-90-g", marca: "Jumbo", categoria: "Chocolates", nombre: "Jumbo Pistacho Dubai Style", presentacion: "90 g", codigo: "1089478", codigoParcial: false, embalaje: "Plegadiza x 6 / caja x 18", paginaPdf: 105, imagen: "/img/innovacion/jumbo-pistacho-dubai.jpg" },
   { id: "jumbo-jumbo-ryan-castro-2-0-blondie-170-g", marca: "Jumbo", categoria: "Chocolates", nombre: "Jumbo Ryan Castro 2.0 Blondie", presentacion: "170 g", codigo: "1092005", codigoParcial: false, embalaje: "Plegadiza x 6 / caja x 12", paginaPdf: 86 },
   { id: "jumbo-jumbo-ryan-castro-2-0-blondie-170-g-2", marca: "Jumbo", categoria: "Chocolates", nombre: "Jumbo Ryan Castro 2.0 Blondie", presentacion: "170 g", codigo: "1092006", codigoParcial: false, embalaje: "Plegadiza x 3 / caja x 24", paginaPdf: 86 },
   { id: "jumbo-jumbo-ryan-castro-2-0-morena-170-g", marca: "Jumbo", categoria: "Chocolates", nombre: "Jumbo Ryan Castro 2.0 Morena", presentacion: "170 g", codigo: "1079450", codigoParcial: false, embalaje: "Plegadiza x 6 / caja x 12", paginaPdf: 85 },

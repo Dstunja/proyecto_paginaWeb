@@ -85,19 +85,30 @@ const mensajeWhatsapp = encodeURIComponent(
               </span>
               <h2 class="mb-3 text-lg">{cat.nombre}</h2>
               <p class="m-0 text-[14.5px] text-muted">{cat.texto}</p>
+              {/*
+                Fichas de marca. Todas miden lo mismo (100x48) y el logo va
+                centrado con object-contain, así que ninguno sale estirado por
+                más que las imágenes de origen vayan de 1,22 a 3,27 de relación
+                de aspecto. El fondo blanco es a propósito: varios de estos
+                archivos no son logos recortados sino capturas con fondo
+                blanco, y asi se funden con la ficha en vez de verse pegados.
+
+                Las marcas sin archivo en public/img/marcas/ caen en la ficha
+                de texto, que mide igual de alto para que las filas cuadren.
+              */}
               <ul class="m-0 mt-5 flex list-none flex-wrap items-center gap-2.5 p-0">
                 {cat.marcas.map((marca) =>
                   marca.logo ? (
-                    <li class="flex h-11 items-center rounded-xl border border-line bg-surface px-3 transition-all duration-200 hover:border-secondary/50 hover:shadow-[0_6px_18px_rgba(13,44,132,.1)]">
+                    <li class="flex h-12 w-[100px] items-center justify-center rounded-xl border border-line bg-white px-2.5 py-1.5 transition-all duration-200 hover:border-secondary/50 hover:shadow-[0_6px_18px_rgba(13,44,132,.1)]">
                       <img
                         src={marca.logo}
                         alt={marca.nombre}
                         loading="lazy"
-                        class="h-9 w-auto max-w-[110px] object-contain"
+                        class="max-h-full max-w-full object-contain"
                       />
                     </li>
                   ) : (
-                    <li class="glass rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-ink transition-colors duration-200 hover:bg-secondary hover:text-white">
+                    <li class="flex h-12 items-center rounded-xl border border-line bg-surface px-4 text-[13px] font-semibold text-ink transition-all duration-200 hover:border-secondary/50 hover:shadow-[0_6px_18px_rgba(13,44,132,.1)]">
                       {marca.nombre}
                     </li>
                   ),
