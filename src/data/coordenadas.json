@@ -1,9 +1,9 @@
 {
   "__sede__": {
-    "lat": 5.560469,
-    "lng": -73.348366,
-    "fuente": "Carrera 2 Este, Tunja, Centro, Boyacá, RAP (Especial) Central, 150003, Colombia",
-    "consulta": "{\"q\":\"Carrera 2 Este 58-79, Tunja, Boyacá, Colombia\"}"
+    "lat": 5.563385196194943,
+    "lng": -73.34434037116415,
+    "fuente": "Medida a mano en Google Maps sobre la puerta de la oficina (Cra 2 Este #58-79, Tunja).",
+    "consulta": "MANUAL: no la puso el geocodificador. Nominatim solo resolvia la carrera, no el numero de puerta, y dejaba el punto corrido unas cuadras. scripts/geocodificar.mjs respeta este valor porque solo escribe __sede__ cuando la clave no existe; si se borra la entrada, el script volvera a poner la coordenada aproximada."
   },
   "Tunja": {
     "departamento": "Boyaca",
