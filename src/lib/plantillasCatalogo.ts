@@ -129,9 +129,9 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
   const foto = p.imagen;
   const medio = foto
     ? `<div class="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-md" style="background-image:url('${escapar(foto)}')" aria-hidden="true"></div>
-           <img src="${escapar(foto)}" alt=""${carga} class="relative h-full w-full object-contain p-1" />`
+           <img src="${escapar(foto)}" alt=""${carga} class="foto-zoom relative h-full w-full object-contain p-1" />`
     : logo
-      ? `<img src="${escapar(logo)}" alt=""${carga} class="h-full w-full object-contain" />`
+      ? `<img src="${escapar(logo)}" alt=""${carga} class="foto-zoom h-full w-full object-contain" />`
       : `<span class="font-display text-lg font-bold text-primary/60" aria-hidden="true">${escapar(iniciales(p.marca))}</span>`;
 
   const fondoCuadro = foto

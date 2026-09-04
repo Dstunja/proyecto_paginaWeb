@@ -634,6 +634,240 @@
     border-color: transparent;
     transform: scale(1.06);
   }
+
+  /* --- Foto de producto integrada ----------------------------------------
+     PROBLEMA QUE RESUELVE
+     ---------------------
+     Las fotos de "Especiales del mes" y de Innovación son fotos publicitarias
+     del fabricante: cada una trae SU PROPIO fondo (un chorro de chocolate, un
+     verde de pistacho, hojas) y ninguna viene recortada sobre transparente.
+     Puestas tal cual sobre el crema de la sección se leían como una calcomanía
+     pegada encima, y tres tarjetas seguidas peleaban entre sí por el color.
+
+     CÓMO SE ARMA (cuatro capas, de atrás hacia adelante)
+     ---------------------------------------------------
+       1. __fondo   círculos concéntricos difuminados en la paleta de marca.
+                    Es el mismo telón en TODAS las tarjetas, así que existe un
+                    fondo propio del sitio antes de que llegue cualquier foto.
+       2. __sombra  elipse difusa bajo el producto, para que se apoye en la
+                    tarjeta en vez de flotar sobre un rectángulo.
+       3. __img     la foto, con una máscara que disuelve sus bordes hacia el
+                    fondo en lugar de cortarlos en seco.
+       4. __velo    un multiply naranja muy bajo que mete todas las fotos en la
+                    misma temperatura de color.
+
+     `isolation: isolate` en el contenedor es OBLIGATORIO: sin él, el multiply
+     del velo se mezclaría con lo que haya detrás de la tarjeta en la página.
+
+     Todo es CSS: ni una línea de JavaScript, ni un filtro que haya que
+     recalcular al hacer scroll. */
+  .foto-producto {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background-color: var(--color-accent-soft);
+  }
+
+  /* Marco interior: es el que le da a la foto una caja de tamaño DEFINIDO.
+     Suena rebuscado y no lo es. La altura de `.foto-producto` sale de un
+     `aspect-ratio`, y contra una altura así los navegadores no resuelven los
+     porcentajes de `max-height` de los descendientes: la foto se pasaba de
+     largo y la tarjeta la recortaba por abajo. Un elemento posicionado con los
+     cuatro `inset` sí tiene ancho y alto definidos, así que dentro de él el
+     `max-height: 100%` de la foto funciona.
+
+     El 7 % de `inset` hace además de aire alrededor del producto.
+
+     Se centra con flex y no con rejilla a propósito: en una rejilla la pista
+     se auto-ajusta a la altura de la foto, así que el `max-height: 100%` de la
+     foto acaba midiéndose contra una pista que ya creció para contenerla y no
+     limita nada. En flex el ítem se mide contra la altura del contenedor, que
+     aquí sí es fija. */
+  .foto-producto__marco {
+    position: absolute;
+    inset: 7%;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Telón de marca: dos círculos concéntricos muy difusos y un velo cálido
+     desde arriba. Son gradientes, no imágenes: no pesan ni piden red. */
+  .foto-producto__fondo {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(
+        circle at 50% 46%,
+        rgba(255, 255, 255, 0.85) 0%,
+        rgba(255, 255, 255, 0) 42%
+      ),
+      radial-gradient(
+        circle at 50% 46%,
+        rgba(245, 166, 35, 0.16) 34%,
+        rgba(245, 166, 35, 0) 58%
+      ),
+      radial-gradient(
+        circle at 50% 46%,
+        rgba(13, 44, 132, 0.07) 62%,
+        rgba(13, 44, 132, 0) 82%
+      ),
+      linear-gradient(180deg, #fffaf1 0%, var(--color-accent-soft) 100%);
+  }
+
+  /* Sombra de contacto. Es una elipse de gradiente, no un `filter: blur`:
+     rinde igual de suave y no crea una capa que el navegador tenga que volver
+     a desenfocar cuando la tarjeta se mueve al pasar el mouse.
+
+     NOTA: no sigue la silueta real del producto, y no puede. Estas fotos son
+     rectángulos opacos con su propio fondo, no recortes con transparencia, así
+     que una sombra derivada de la imagen daría un rectángulo borroso. La
+     elipse es la aproximación honesta. */
+  .foto-producto__sombra {
+    position: absolute;
+    bottom: 11%;
+    left: 50%;
+    width: 58%;
+    height: 9%;
+    transform: translateX(-50%);
+    background: radial-gradient(
+      ellipse at center,
+      rgba(38, 50, 56, 0.28) 0%,
+      rgba(38, 50, 56, 0.12) 45%,
+      rgba(38, 50, 56, 0) 72%
+    );
+  }
+
+  /* La foto.
+
+     POR QUÉ NO SE USA `object-fit: contain`
+     ---------------------------------------
+     Es el detalle que hace que esto funcione. `mask-image` se aplica a la CAJA
+     del elemento, no a los píxeles pintados. Con `object-fit: contain` la caja
+     ocupa toda la tarjeta y la foto queda encajada dentro con franjas vacías a
+     los lados, así que el degradado de la máscara caía en el vacío y los
+     bordes reales de la foto seguían cortados en seco.
+
+     Con `max-width/max-height` y las medidas en `auto`, la caja del <img> mide
+     exactamente lo que mide la foto pintada. La máscara cae entonces sobre sus
+     bordes de verdad. El centrado y el aire alrededor los pone
+     `.foto-producto__marco`.
+
+     La máscara es una ELIPSE y no un rectángulo difuminado: como la foto es
+     opaca y su fondo muy saturado, disolver solo una franja de cada lado
+     dejaba ver igual el bloque de color. La elipse empieza a disolver antes y
+     por los cuatro lados a la vez, así que a plena opacidad queda el producto
+     y nada más.
+
+     `saturate(.9)` calma los verdes y marrones muy vivos de las fotos
+     publicitarias para que convivan con el crema de la sección. Es un filtro
+     estático: se resuelve una vez, no en cada fotograma del scroll. */
+  .foto-producto__img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    filter: saturate(0.9);
+    -webkit-mask-image: radial-gradient(
+      ellipse 78% 78% at 50% 48%,
+      #000 42%,
+      rgba(0, 0, 0, 0.75) 62%,
+      transparent 86%
+    );
+    mask-image: radial-gradient(
+      ellipse 78% 78% at 50% 48%,
+      #000 42%,
+      rgba(0, 0, 0, 0.75) 62%,
+      transparent 86%
+    );
+  }
+
+  /* Armonía de color: multiply naranja al 13 %. Con el multiply las fotos
+     comparten temperatura sin lavarse, que es lo que pasaría con un velo
+     opaco encima. */
+  .foto-producto__velo {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(
+      165deg,
+      var(--color-accent) 0%,
+      var(--color-accent-soft) 55%,
+      var(--color-accent) 100%
+    );
+    mix-blend-mode: multiply;
+    opacity: 0.13;
+  }
+
+  /* Zoom suave al pasar el mouse. Solo con mouse de verdad: en una pantalla
+     táctil el :hover se queda pegado después de tocar. El recorte lo hace el
+     `overflow: hidden` del contenedor. */
+  @media (hover: hover) and (pointer: fine) {
+    .foto-producto__img {
+      transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-card:hover .foto-producto__img,
+    .glass-card:focus-within .foto-producto__img,
+    .foto-producto:hover .foto-producto__img {
+      transform: scale(1.045);
+    }
+
+    /* Mismo gesto para las miniaturas del armador de pedidos. El recuadro de
+       80 px que las contiene ya tiene `overflow: hidden`, así que la foto
+       crece por dentro sin desbordar la tarjeta. */
+    .foto-zoom {
+      transition: transform 450ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-card:hover .foto-zoom,
+    .glass-card:focus-within .foto-zoom {
+      transform: scale(1.07);
+    }
+  }
+
+  /* --- Botón magnético ----------------------------------------------------
+     El desplazamiento hacia el cursor llega en dos variables que escribe
+     src/lib/interacciones.ts, y NO como un `transform` en línea: así se
+     compone con la elevación de `.btn:hover` en vez de pisarla. Sin
+     JavaScript, o con "reducir movimiento", las variables no existen, el
+     `translate3d` vale cero y el botón se comporta como cualquier otro.
+
+     La transición es corta (180 ms) a propósito: el imán se recalcula en cada
+     fotograma, y una transición larga lo dejaría persiguiendo al cursor con
+     retraso. */
+  [data-magnetico] {
+    transform: translate3d(var(--iman-x, 0px), var(--iman-y, 0px), 0);
+    transition-duration: 180ms;
+    will-change: transform;
+  }
+
+  [data-magnetico]:hover,
+  [data-magnetico]:focus-visible {
+    transform: translate3d(var(--iman-x, 0px), var(--iman-y, 0px), 0) translateY(-2px) scale(1.02);
+  }
+
+  /* --- Rebote del contador de filtros -------------------------------------
+     El número de "Filtros (3)" cambiaba en seco y era fácil no verlo. Con el
+     rebote el ojo se va solo al badge. La clase la pone y la quita el script
+     del catálogo, y solo cuando el número cambia de verdad: animarlo en cada
+     repintado lo volvería ruido. */
+  .conteo-filtro[data-rebote] {
+    animation: rebote-conteo 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+}
+
+@keyframes rebote-conteo {
+  0% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.34);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -709,7 +943,78 @@
   .group:hover .icono-int,
   .group:hover .icono-chip,
   .icono-int:hover,
-  .icono-chip:hover {
+  .icono-chip:hover,
+  /* Capa de interacción nueva. El JavaScript de parallax e imanes ni siquiera
+     arranca con "reducir movimiento" (cuelga de `js-revelado`, igual que el
+     revelado), pero estas reglas dejan además el CSS en su sitio: el botón
+     magnético no se estira ni se eleva, y la foto de producto no hace zoom. */
+  [data-magnetico],
+  [data-magnetico]:hover,
+  [data-magnetico]:focus-visible,
+  .glass-card:hover .foto-producto__img,
+  .glass-card:focus-within .foto-producto__img,
+  .foto-producto:hover .foto-producto__img,
+  .glass-card:hover .foto-zoom,
+  .glass-card:focus-within .foto-zoom,
+  [data-parallax] {
     transform: none;
+  }
+
+  /* El rebote del contador se apaga: el número cambia, pero sin salto. */
+  .conteo-filtro[data-rebote] {
+    animation: none;
+  }
+}
+/* ---------------------------------------------------------------------------
+   FUNDIDO ENTRE PÁGINAS (View Transitions entre documentos, sin JavaScript)
+
+   POR QUÉ ASÍ Y NO CON <ClientRouter />
+   ------------------------------------
+   El enrutador de Astro reemplaza el documento en el cliente, y al hacerlo NO
+   vuelve a ejecutar los <script> de los componentes: son módulos ES y el
+   navegador no reevalúa un módulo que ya cargó. `data-astro-rerun` reejecuta
+   la etiqueta, no el módulo. En este sitio eso dejaría sin arrancar el armador
+   de pedidos, los dos mapas de Leaflet, el menú del encabezado, el panel del
+   pedido y el carrusel en cuanto se navegara de una página a otra; y los
+   escuchadores que sí viven en `document` -la analítica de enlaces, el
+   teclado del Header, el panel- se duplicarían en cada navegación, con lo que
+   un clic acabaría contándose varias veces.
+
+   Dejarlo bien pedía rehacer unas 1.400 líneas de script repartidas en 17
+   archivos para que se reinicien en `astro:page-load` sin duplicarse. Esta
+   regla consigue el mismo fundido con cero JavaScript: la navegación sigue
+   siendo normal, así que ningún script cambia de comportamiento y el catálogo
+   conserva intacto su pintado progresivo.
+
+   Donde el navegador no la soporta, la navegación se ve como siempre. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: salir-pagina 160ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-new(root) {
+  animation: entrar-pagina 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes salir-pagina {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes entrar-pagina {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Con "reducir movimiento" no hay transición: la página cambia y ya. */
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
   }
 }

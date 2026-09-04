@@ -816,8 +816,21 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     const sincronizarBarra = () => {
       const contador = (nodo: HTMLElement | null, n: number) => {
         if (!nodo) return;
-        nodo.textContent = String(n);
+        const antes = nodo.textContent;
+        const nuevo = String(n);
+        nodo.textContent = nuevo;
         nodo.classList.toggle('hidden', n === 0);
+
+        // Rebote solo cuando el número CAMBIA y el badge queda a la vista.
+        // `sincronizarBarra` corre después de cada repintado, así que animar
+        // sin esta comprobación dejaría el badge saltando todo el rato.
+        // Reiniciar la animación pide quitar el atributo, forzar un reflow y
+        // volver a ponerlo: si no, el navegador reutiliza la que ya terminó.
+        if (n > 0 && antes !== nuevo) {
+          nodo.removeAttribute('data-rebote');
+          void nodo.offsetWidth;
+          nodo.setAttribute('data-rebote', '');
+        }
       };
       // El botón "Filtros" cuenta todo lo que hay puesto DENTRO de su panel:
       // las marcas y las subcategorías. Si contara solo las marcas, quien

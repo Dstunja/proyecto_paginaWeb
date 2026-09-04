@@ -134,30 +134,36 @@ const columnas =
                   fijo aquí marca la diferencia sin cambiar el lenguaje. */}
               <span class="h-1 shrink-0 bg-accent" aria-hidden="true" />
 
-              <div class="relative aspect-[4/3] overflow-hidden bg-surface-2">
-                {/* Fondo: la misma foto desenfocada, para rellenar el hueco que
-                    deja una foto vertical u horizontal sin recortarla. */}
-                <div
-                  class="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-xl"
-                  style={`background-image:url('${producto.src}')`}
-                  aria-hidden="true"
-                />
-                <img
-                  src={producto.src}
-                  alt={producto.esMarcador ? '' : `${producto.nombre} — ${producto.descripcion}`}
-                  width="1000"
-                  height="750"
-                  loading="lazy"
-                  class="relative h-full w-full object-contain p-3"
-                />
+              {/* Foto integrada: telón de marca + sombra de contacto + máscara
+                  de bordes + velo de color. Antes aquí iba una copia
+                  desenfocada de la propia foto como relleno, que era justo lo
+                  que hacía chocar el verde de una tarjeta con el marrón de la
+                  siguiente. Ver `.foto-producto` en src/styles/global.css. */}
+              <div class="foto-producto aspect-[4/3]">
+                <span class="foto-producto__fondo" aria-hidden="true" />
+                <span class="foto-producto__sombra" aria-hidden="true" />
+                <div class="foto-producto__marco">
+                  <img
+                    src={producto.src}
+                    alt={producto.esMarcador ? '' : `${producto.nombre} — ${producto.descripcion}`}
+                    width="1000"
+                    height="750"
+                    loading="lazy"
+                    class="foto-producto__img"
+                  />
+                </div>
+                <span class="foto-producto__velo" aria-hidden="true" />
 
-                <span class="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 font-display text-[12px] font-semibold text-ink-dark shadow-[0_6px_16px_rgba(245,166,35,.4)]">
+                {/* z-10: las etiquetas van por encima del velo de color, que
+                    ocupa toda la caja. Sin esto el multiply les caería encima
+                    y les bajaría el contraste del texto. */}
+                <span class="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 font-display text-[12px] font-semibold text-ink-dark shadow-[0_6px_16px_rgba(245,166,35,.4)]">
                   <Icono nombre="sparkles" class="h-3.5 w-3.5" interactivo={false} />
                   Especial del mes
                 </span>
 
                 {producto.etiqueta && (
-                  <span class="absolute top-4 right-4 rounded-full bg-surface/95 px-3 py-1.5 font-display text-[12px] font-semibold text-accent-text shadow-[0_4px_12px_rgba(13,44,132,.14)]">
+                  <span class="absolute top-4 right-4 z-10 rounded-full bg-surface/95 px-3 py-1.5 font-display text-[12px] font-semibold text-accent-text shadow-[0_4px_12px_rgba(13,44,132,.14)]">
                     {producto.etiqueta}
                   </span>
                 )}

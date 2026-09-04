@@ -77,12 +77,24 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
             Distribuimos productos de consumo masivo a negocios de Boyacá, Santander y
             Cundinamarca, con entregas semanales y asesoría cercana.
           </p>
+          {/* `data-magnetico`: los dos CTA de la portada se estiran unos
+              píxeles hacia el cursor cuando pasa cerca. Solo con ratón y solo
+              si el sistema no pide menos movimiento; lo gobierna
+              src/lib/interacciones.ts. */}
           <div class="mt-10 flex flex-wrap gap-4">
-            <a class="btn btn-whatsapp" href={empresa.whatsapp} target="_blank" rel="noopener">
+            <a
+              class="btn btn-whatsapp"
+              href={empresa.whatsapp}
+              target="_blank"
+              rel="noopener"
+              data-magnetico
+            >
               Haz tu pedido
               <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
             </a>
-            <a class="btn btn-secondary" href={ruta('/catalogo/')}>Conoce nuestro portafolio</a>
+            <a class="btn btn-secondary" href={ruta('/catalogo/')} data-magnetico>
+              Conoce nuestro portafolio
+            </a>
           </div>
         </div>
 
@@ -93,10 +105,15 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
              src/data/site.ts. El object-cover recorta cualquier foto al mismo
              formato 5:4, así que sirve tanto horizontal como vertical. */
           HERO_IMAGEN ? (
+            /* `data-parallax`: la foto se desplaza unos píxeles más despacio
+               que el texto al hacer scroll, para dar profundidad. El recorrido
+               son 16 px como máximo; lo gobierna src/lib/interacciones.ts y se
+               apaga solo con "reducir movimiento". */
             <img
               src={ruta(HERO_IMAGEN)}
               alt={HERO_IMAGEN_ALT}
-              class="aspect-[5/4] w-full rounded-[28px] object-cover shadow-[0_28px_60px_rgba(13,44,132,.22)]"
+              class="aspect-[5/4] w-full rounded-[28px] object-cover shadow-[0_28px_60px_rgba(13,44,132,.22)] will-change-transform"
+              data-parallax
             />
           ) : (
             /* Sin foto todavía: panel de marca. Al definir HERO_IMAGEN en
