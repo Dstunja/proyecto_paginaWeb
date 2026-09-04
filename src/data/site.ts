@@ -137,46 +137,62 @@ export const cifras = [
  * src/data/productos.ts (MARCAS); esta lista no lo reemplaza.
  */
 export const marcasDeLaFranja = [
-  'Zenú', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Zenú',
   'Noel',
   'Ducales',
   'Saltín Noel',
   'Dux',
   'Festival',
+  'Tosh',
   'Sello Rojo',
   'La Bastilla',
   'Colcafé',
-  'Matiz', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Matiz',
   'Jet',
   'Jumbo',
   'Corona',
-  'Choco Listo', // EDITAR AQUÍ: recorte descuadrado, reemplazar con logo limpio
+  'Cordillera',
+  'Choco Listo',
   'Doria',
+  'Comarrico',
+  'Monticello',
   'Gol',
+  'Santander',
+  'Lyne',
   'Haka',
-  'La Especial', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'La Especial',
   'Bénet',
   'Badia',
   'Rica',
   'Montblanc',
+  'Carve',
+  'Setas de Cuivá',
 ] as const;
 
 /*
- * Los siete logotipos marcados arriba no son logotipos sino recortes de una
- * foto del empaque, así que tienen poco detalle real y se ven blandos al lado
- * de los demás. No hay forma de inventarles resolución desde el código: hay
- * que reemplazar el archivo en src/assets/marcas/.
+ * Los logotipos de esta franja son ya todos logotipos de marca de verdad, no
+ * recortes de la foto de un empaque: fondo limpio, sin sellos de advertencia
+ * nutricional y sin texto de precio encima. Vinieron de tres sitios, en este
+ * orden de preferencia:
  *
- * Por orden de urgencia:
- *   - Dux: el recorte deja ver pedazos de los sellos de advertencia
- *     nutricional ("EXCESO GRASAS SATURADAS") y texto cortado del empaque.
- *   - La Especial y Matiz: recortes con bordes del empaque a la vista.
- *   - Choco Listo: el logotipo queda descuadrado y cortado por la derecha.
- *   - Zenú, Sello Rojo y Jumbo: los tres que ya venían de antes.
+ *   - El WordPress de la propia empresa (dstunja.com/wp-admin -> Medios):
+ *     Choco Listo, La Especial, Matiz y Noel.
+ *   - El sitio oficial de la filial que fabrica la marca: Festival y Carve de
+ *     ciadegalletasnoel.com.co, Setas de Cuivá de champinonessetasdecuiva.com,
+ *     Zenú de un repositorio de logotipos vectoriales.
+ *   - La cabecera de marca del catálogo "MASIVO 1.0" de Comercial Nutresa,
+ *     que trae el logotipo sobre fondo blanco en su propia página: Comarrico,
+ *     Cordillera, Gol, Lyne, Monticello, Santander y Tosh.
  *
- * Dónde buscar el reemplazo: la biblioteca de medios del sitio actual en
- * WordPress (dstunja.com/wp-admin -> Medios). Lo ideal es un .svg o un .png
- * con fondo transparente de al menos 600 px de ancho.
+ * gruponutresa.com y chocolates.com.co responden 403 al acceso automatizado,
+ * así que de ahí no se puede sacar nada; si algún día hacen falta más, el
+ * camino es pedirlos por el contacto comercial de la marca.
+ *
+ * Cuatro marcas del portafolio siguen sin logotipo y por eso no están en esta
+ * lista: Copelia, Cruz, Tesalia y Tikys. En el catálogo del PDF solo aparecen
+ * como foto de empaque, y en la web abierta no hay una fuente oficial. Se
+ * siguen mostrando como píldora de texto en el catálogo y en el armador de
+ * pedidos hasta que se consiga el archivo.
  *
  * NUTRESA queda fuera de esta lista a propósito, y por eso su archivo se
  * llama comercial-nutresa.jpg y no nutresa.jpg: con el nombre de la marca lo
