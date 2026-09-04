@@ -51,6 +51,7 @@ import {
   type EstadoCatalogo,
 } from '../../lib/plantillasCatalogo';
 import Icono from '../Icono.astro';
+import LoaderDST from '../LoaderDST.astro';
 import { empresa } from '../../data/site';
 
 /**
@@ -301,6 +302,12 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   [data-cargando='falló'] [data-falla] {
     display: block;
   }
+
+  /* Falló la carga: fuera el logotipo animado. Seguir girando al lado de un
+     mensaje de error hace pensar que todavía está intentándolo. */
+  [data-cargando='falló'] [data-loader] {
+    display: none;
+  }
 </style>
 
 <script type="application/json" id="datos-catalogo" set:html={aJson(catalogo)} is:inline></script>
@@ -524,7 +531,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       para armar tu lista, mira <a
         class="font-semibold text-secondary-dark underline"
         href={ruta('/catalogo/')}>el catálogo de marcas</a
-      > o
+      > o{' '}
       <a
         class="font-semibold text-secondary-dark underline"
         href={`${empresa.whatsapp}?text=${mensajeSinJs}`}
@@ -561,19 +568,34 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   secciones de marca, a varias pantallas de distancia, y un aviso de "esto
   todavía está cargando" que hay que ir a buscar no le sirve a nadie.
 */}
-<p
+<div
   class="mb-6 flex items-center gap-3 text-[14px] text-muted"
   data-cargando=""
   data-solo-js
   role="status"
   aria-live="polite"
 >
-  <span
-    class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-line border-t-secondary"
-    aria-hidden="true"></span>
+  {/* OJO: este contenedor es un <div> y no un <p>. LoaderDST tiene un <div>
+      por raíz, y el navegador cierra cualquier <p> al encontrarse uno: el
+      logotipo terminaría fuera del aviso y el aviso, vacío y sin alto.
+
+      El isotipo de la marca haciendo de indicador de espera (LoaderDST.astro),
+      el mismo que usa el mapa del inicio. Va a 40 px y no a su tamaño natural
+      porque aquí es un renglón, no una pantalla en blanco: debajo ya están
+      impresas las primeras tarjetas y el aviso no debe empujarlas.
+
+      `anuncia={false}`: este contenedor ya es la región viva, y su texto cambia si la
+      carga falla. Dentro de ella el logotipo es decoración.
+
+      Se esconde en el estado de fallo (ver la hoja de estilos de arriba): un
+      logotipo girando junto a "no se pudieron cargar" se contradice. */}
+  <span class="shrink-0" data-loader>
+    <LoaderDST tamano={40} anuncia={false} />
+  </span>
   <span data-espera>Cargando el resto del catálogo, el buscador y los filtros…</span>
   <span data-falla>
-    No se pudieron cargar el buscador ni los filtros. Puedes seguir viendo las referencias de abajo o
+    No se pudieron cargar el buscador ni los filtros. Puedes seguir viendo las referencias de abajo
+    o{' '}
     <a
       class="font-semibold text-secondary-dark underline"
       href={`${empresa.whatsapp}?text=${mensajeSinJs}`}
@@ -581,7 +603,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       rel="noopener">escribirnos por WhatsApp</a
     >.
   </span>
-</p>
+</div>
 
 <div data-resultados class="min-h-[40vh]" set:html={htmlInicial} />
 

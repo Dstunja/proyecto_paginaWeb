@@ -16,8 +16,14 @@
  * interrumpir; si no se pasa `texto`, se lee "Cargando…" aunque no se vea. Con
  * `prefers-reduced-motion` el logotipo se muestra quieto y completo.
  *
+ * Cuando quien lo llama YA tiene su propio `role="status"` alrededor -porque
+ * el texto de la espera cambia según lo que pase, como en el armador de
+ * pedidos- hay que pasarle `anuncia={false}`: dos regiones vivas anidadas se
+ * leen dos veces. Así el logotipo queda como lo que es en ese caso, decoración
+ * del aviso de al lado.
+ *
  * @example <LoaderDST texto="Cargando el mapa…" />
- * @example <LoaderDST tamano={56} />
+ * @example <LoaderDST tamano={40} anuncia={false} />
  */
 interface Props {
   /** Lado del cuadrado en píxeles. */
@@ -26,9 +32,14 @@ interface Props {
   texto?: string;
   /** Clases extra para el contenedor. */
   class?: string;
+  /**
+   * Si anuncia la espera por su cuenta. `false` lo deja mudo y sin
+   * `role="status"`, para meterlo dentro de una región viva que ya exista.
+   */
+  anuncia?: boolean;
 }
 
-const { tamano = 96, texto, class: clase } = Astro.props;
+const { tamano = 96, texto, class: clase, anuncia = true } = Astro.props;
 
 /**
  * Las ocho sillas, en el orden en que se encienden (empezando arriba y
@@ -50,7 +61,11 @@ const SILLAS = [
 const PASO = 0.18;
 ---
 
-<div class:list={['dst-loader-caja', clase]} role="status" aria-live="polite">
+<div
+  class:list={['dst-loader-caja', clase]}
+  role={anuncia ? 'status' : undefined}
+  aria-live={anuncia ? 'polite' : undefined}
+>
   <svg
     class="dst-loader"
     viewBox="0 0 120 120"
@@ -76,13 +91,8 @@ const PASO = 0.18;
     }
   </svg>
 
-  {
-    texto ? (
-      <p class="dst-loader-texto">{texto}</p>
-    ) : (
-      <span class="sr-only">Cargando…</span>
-    )
-  }
+  {texto && <p class="dst-loader-texto">{texto}</p>}
+  {!texto && anuncia && <span class="sr-only">Cargando…</span>}
 </div>
 
 <style>
