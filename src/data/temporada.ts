@@ -2,18 +2,21 @@
  * "Especiales del mes": productos destacados según la temporada o fecha
  * especial que esté corriendo (Amor y Amistad, Halloween, Navidad...).
  *
- * Es contenido que se cambia cada cierto tiempo, no una sección fija del
- * menú: el bloque del inicio aparece solo mientras haya una temporada
- * vigente y desaparece por completo cuando ninguna lo está, así que nunca
- * queda un espacio vacío en la página.
+ * Es contenido que se cambia cada cierto tiempo, no una sección fija del menú:
+ * los productos de aquí aparecen en el inicio solo mientras corre su rango de
+ * fechas y desaparecen solos cuando termina.
  *
  * NO CONFUNDIR CON src/data/especiales.ts
  * ---------------------------------------
  * Este archivo son las TEMPORADAS COMERCIALES del año, que se prenden y
  * apagan solas por fecha. Las COLABORACIONES y ediciones especiales de marca
  * (Festival con KPop Demon Hunters, Jumbo con Ryan Castro) van en
- * especiales.ts, se curan a mano y no dependen del calendario. Las dos
- * secciones conviven en el inicio.
+ * especiales.ts, se curan a mano y no dependen del calendario.
+ *
+ * Los dos archivos se editan por SEPARADO, pero en el inicio se muestran juntos
+ * en un solo bloque, "Novedades y temporada" (NovedadesTemporada.astro):
+ * primero la temporada vigente —tiene fecha de vencimiento— y después los
+ * especiales del mes.
  *
  * FECHAS
  * ------

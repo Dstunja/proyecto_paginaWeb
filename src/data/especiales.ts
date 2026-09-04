@@ -15,6 +15,12 @@
  *     Halloween, Navidad), cada una con su rango de fechas, y se prenden y
  *     apagan solas según el día en que se visite el sitio.
  *
+ * Los dos archivos se editan por SEPARADO, pero en el inicio se muestran juntos
+ * en un solo bloque, "Novedades y temporada" (NovedadesTemporada.astro):
+ * primero la temporada vigente y después los especiales del mes. Para el
+ * visitante las dos cosas son "lo nuevo que hay ahora"; la diferencia entre
+ * curado a mano y activado por fecha es interna.
+ *
  * El catálogo permanente, aparte de las dos, vive en src/data/productos.ts.
  *
  * CÓMO ACTUALIZAR ESTA LISTA CADA MES
@@ -22,9 +28,11 @@
  *  1. Cambiar `periodoEspeciales` al mes que se está mostrando.
  *  2. Dejar en `especialesDelMes` solo los productos vigentes.
  *
- * Si el arreglo queda VACÍO, la sección entera desaparece del inicio: no queda
- * un bloque vacío ni un título sin nada debajo (ver EspecialesMes.astro). Ese
- * es el comportamiento correcto cuando no hay nada especial que mostrar.
+ * Si el arreglo queda VACÍO y además no hay temporada vigente, la sección
+ * entera desaparece del inicio: no queda un bloque vacío ni un título sin nada
+ * debajo (ver NovedadesTemporada.astro). Ese es el comportamiento correcto
+ * cuando no hay nada especial que mostrar. La página /innovacion/ sigue
+ * consumiendo esta lista por su cuenta y no depende de esa sección.
  *
  * IMÁGENES
  * --------

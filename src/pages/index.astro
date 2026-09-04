@@ -3,26 +3,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
 import { logoMarca } from '../lib/imagenes';
 import MapaRed from '../components/MapaRed.astro';
-import EspecialesMes from '../components/EspecialesMes.astro';
+import BuscadorMunicipio from '../components/BuscadorMunicipio.astro';
+import NovedadesTemporada from '../components/NovedadesTemporada.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
-import Testimonio from '../components/Testimonio.astro';
-import Temporada from '../components/Temporada.astro';
 import Resenas from '../components/Resenas.astro';
-import RedesSociales from '../components/RedesSociales.astro';
 import AnaliticaSecciones from '../components/AnaliticaSecciones.astro';
 import {
   cifras,
   marcas,
-  valorAgregado,
   beneficios,
   empresa,
+  CLIENTES_TEXTO,
   HERO_IMAGEN,
   HERO_IMAGEN_ALT,
 } from '../data/site';
-import { departamentos, totalClientes } from '../data/municipios';
-
-const formatoNumero = new Intl.NumberFormat('es-CO');
+import { departamentos } from '../data/municipios';
 
 /* Logos de marca de la franja del inicio. Si el archivo todavía no está en
    public/img/marcas/, se muestra el nombre en texto (ver src/lib/imagenes.ts). */
@@ -31,7 +27,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
 
 <BaseLayout
   title="Distribuciones Santiago de Tunja — Distribuidor Nutresa en Boyacá, Santander y Cundinamarca"
-  description="Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. 21 años de experiencia, 87 municipios cubiertos, 1 punto de venta."
+  description="Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. 21 años de experiencia, 87 municipios cubiertos y más de 7.000 clientes atendidos."
 >
   <!-- HERO -->
   <section class="relative overflow-hidden pt-14 pb-0 tablet:pt-24" data-seccion="hero">
@@ -131,9 +127,10 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
     </div>
   </section>
 
-  <!-- ESPECIALES DEL MES: colaboraciones y ediciones especiales de marca,
-       elegidas a mano (ver src/data/especiales.ts). -->
-  <EspecialesMes />
+  <!-- NOVEDADES Y TEMPORADA: un solo bloque con la temporada vigente
+       (src/data/temporada.ts, activada por fecha) seguida de las
+       colaboraciones del mes (src/data/especiales.ts, curadas a mano). -->
+  <NovedadesTemporada />
 
   <!-- MARCAS -->
   <div class="border-y border-line bg-fondo py-16" data-seccion="marcas">
@@ -164,38 +161,6 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
     </div>
   </div>
 
-  <!-- ESPECIALES DE TEMPORADA: se muestra solo mientras corre una temporada
-       comercial (Amor y Amistad, Halloween, Navidad; ver src/data/temporada.ts). -->
-  <Temporada />
-
-  <!-- VALOR AGREGADO -->
-  <section class="section" data-seccion="valor_agregado">
-    <div class="wrap">
-      <div class="mb-14 max-w-[56ch]">
-        <span class="kicker">Nuestro valor agregado</span>
-        <h2 class="text-[28px] tablet:text-[38px]">
-          Soluciones integrales para hacer crecer a nuestros aliados comerciales
-        </h2>
-      </div>
-      <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3">
-        {
-          valorAgregado.map((item) => (
-            <div class="group glass-card p-8">
-              <span class="icono-chip mb-6 h-12 w-12">
-                <Icono nombre={item.icono} class="h-6 w-6" interactivo={false} />
-              </span>
-              <div class="mb-2 font-display text-sm font-semibold text-accent-text">
-                {item.num}
-              </div>
-              <h3 class="mb-3 text-lg">{item.titulo}</h3>
-              <p class="m-0 text-[14.5px] text-muted">{item.texto}</p>
-            </div>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
   <!-- COBERTURA -->
   <section id="cobertura" class="section border-y border-line bg-fondo" data-seccion="cobertura">
     <div class="wrap">
@@ -203,9 +168,11 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
         <div class="max-w-[52ch]">
           <span class="kicker">Nuestra red</span>
           <h2 class="text-[28px] tablet:text-[38px]">Cobertura nacional</h2>
+          {/* La cifra sale de CLIENTES_TEXTO (src/data/site.ts), la misma que
+              muestra la barra del hero: son el mismo dato y no pueden diferir. */}
           <p class="mt-3 text-muted">
-            Atendemos {formatoNumero.format(totalClientes)} clientes en 87 municipios de tres
-            departamentos. En el mapa marcamos los municipios donde se concentra la red.
+            Atendemos {CLIENTES_TEXTO} clientes en 87 municipios de tres departamentos. En el mapa
+            marcamos los municipios donde se concentra la red.
           </p>
         </div>
 
@@ -224,14 +191,24 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
                 <dd class="mt-1 font-display text-[30px] leading-none font-bold text-primary">
                   {dep.total}
                 </dd>
+                {/* Aquí iba el conteo de clientes por departamento, sacado de
+                    src/data/clientes-municipio.ts. Se quitó porque sumaba una
+                    cifra distinta de la que publica el sitio (CLIENTES_TEXTO) y
+                    dos números que no cuadran se leen como un error. El dato
+                    sigue siendo interno y alimenta el tamaño de los puntos del
+                    mapa. */}
                 <dd class="mt-1 m-0 text-[12.5px] text-muted">
-                  {formatoNumero.format(dep.clientes)} clientes
+                  {dep.total === 1 ? 'municipio' : 'municipios'} con cobertura
                 </dd>
               </div>
             ))
           }
         </dl>
       </div>
+
+      {/* La pregunta que trae a la mayoría de visitantes nuevos, resuelta antes
+          del mapa. Al elegir un municipio, el mapa resalta su punto. */}
+      <BuscadorMunicipio />
 
       <MapaRed />
     </div>
@@ -243,6 +220,10 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
       <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Para tu negocio</span>
         <h2 class="text-[28px] tablet:text-[38px]">Impulsa tu negocio con nuestro respaldo</h2>
+        <p class="mt-4 text-lg text-muted">
+          Soluciones integrales para hacer crecer a nuestros aliados comerciales: portafolio,
+          precio, asesoría y cumplimiento en la entrega.
+        </p>
       </div>
 
       <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
@@ -261,11 +242,6 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
             </a>
           ))
         }
-      </div>
-
-      {/* La resena va envuelta para poder medirla aparte de la seccion que la contiene. */}
-      <div data-seccion="resenas">
-        <Testimonio />
       </div>
     </div>
   </section>
@@ -348,8 +324,8 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
       </div>
     </div>
   </section>
-  <!-- SÍGUENOS -->
-  <RedesSociales />
+  {/* La franja "Estamos en tus redes" se quitó del inicio: los mismos cuatro
+      enlaces ya están en el pie de página, en todas las páginas del sitio. */}
 
   {/* Mide que secciones de esta pagina se llegan a ver (evento seccion_vista). */}
   <AnaliticaSecciones />

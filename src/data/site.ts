@@ -46,10 +46,28 @@ export const navegacion = [
   { texto: 'PQRS', href: '/pqrs/' },
 ] as const;
 
+/**
+ * Cuántos clientes atiende la empresa, en el texto EXACTO que se publica.
+ *
+ * Es una cifra redondeada a la baja y se escribe siempre igual —con el signo
+ * "+" delante y el punto de miles— en todos los lugares donde aparezca: la
+ * barra de cifras del inicio y el encabezado de la sección de cobertura. Antes
+ * cada sitio mostraba un número distinto (el conteo crudo de la base de datos
+ * en cobertura, "1 punto de venta" en la barra), y dos cifras que no cuadran
+ * se leen como un error, no como dos medidas distintas.
+ *
+ * Ojo: src/data/clientes-municipio.ts sí tiene el conteo real por municipio,
+ * pero ese dato es INTERNO —alimenta el tamaño de los puntos del mapa— y no se
+ * publica. Al actualizarlo, esta cifra se revisa aparte y a mano.
+ *
+ * EDITAR AQUÍ cuando la empresa quiera publicar otra cifra.
+ */
+export const CLIENTES_TEXTO = '+7.000';
+
 /** Barra de cifras del hero: cada una con su ícono. */
 export const cifras = [
   { valor: '21', etiqueta: 'años de experiencia', icono: 'award' },
-  { valor: '1', etiqueta: 'punto de venta', icono: 'store' },
+  { valor: CLIENTES_TEXTO, etiqueta: 'clientes atendidos', icono: 'users' },
   { valor: '87', etiqueta: 'municipios', icono: 'map-pin' },
   { valor: '3', etiqueta: 'departamentos', icono: 'map' },
 ] as const;
@@ -95,41 +113,27 @@ export const HERO_IMAGEN = '/img/marca/mascota-camion.jpg';
 export const HERO_IMAGEN_ALT =
   'La mascota de Distribuciones Santiago de Tunja al volante del camión de reparto, cargado con el portafolio';
 
-/** Valor agregado (home). */
-export const valorAgregado = [
-  {
-    num: '01',
-    icono: 'truck',
-    titulo: 'Distribución eficiente',
-    texto:
-      'Llegamos a 87 municipios de tres departamentos, con entregas semanales garantizadas de manera segura y responsable.',
-  },
-  {
-    num: '02',
-    icono: 'package',
-    titulo: 'Portafolio variado',
-    texto:
-      'Contamos con una amplia variedad de productos de la marca Nutresa, una de las compañías de alimentos más importantes de Latinoamérica.',
-  },
-  {
-    num: '03',
-    icono: 'headset',
-    titulo: 'Modelo de atención masivo',
-    texto:
-      'Ofrecemos atención personalizada, televenta y digital (Pideky) para ayudarle a maximizar la rotación de sus inventarios.',
-  },
-] as const;
-
 /**
- * Sección "Para tu negocio" (home).
- * Cada tarjeta es un enlace: además de contar el beneficio, lleva a la página
- * donde se puede actuar sobre él.
+ * Sección "Para tu negocio" (home): la ÚNICA propuesta de valor del inicio.
+ *
+ * Antes había dos bloques diciendo lo mismo con otras palabras —"Nuestro valor
+ * agregado" (01/02/03) y estas cuatro tarjetas—, uno detrás del otro. Se
+ * conservaron las tarjetas, que además de contar el beneficio llevan a la
+ * página donde se puede actuar sobre él, y en ellas se absorbió lo que solo
+ * decía el bloque numerado:
+ *
+ *   01 Distribución eficiente  -> "Entregas confiables" (87 municipios, 3
+ *                                 departamentos, entrega semanal)
+ *   02 Portafolio variado      -> "Productos de calidad" (aliados de Nutresa)
+ *   03 Atención masiva         -> "Asesoría personalizada" (asesor de zona,
+ *                                 televenta y pedido en línea)
  */
 export const beneficios = [
   {
     icono: 'shield-check',
     titulo: 'Productos de calidad',
-    texto: 'Las mejores marcas del país, con manejo y almacenamiento cuidado en toda la ruta.',
+    texto:
+      'El portafolio de Grupo Nutresa y las mejores marcas del país, con manejo y almacenamiento cuidado en toda la ruta.',
     enlace: '/catalogo/',
     enlaceTexto: 'Ver el portafolio',
   },
@@ -143,30 +147,24 @@ export const beneficios = [
   {
     icono: 'user-check',
     titulo: 'Asesoría personalizada',
-    texto: 'Un asesor de tu zona que conoce tu tienda y te ayuda a rotar el inventario.',
+    texto:
+      'Un asesor de tu zona que conoce tu tienda, con televenta y pedido en línea para que rotes el inventario sin esperas.',
     enlace: '/contactanos/',
     enlaceTexto: 'Hablar con un asesor',
   },
   {
-    icono: 'clock',
+    icono: 'truck',
     titulo: 'Entregas confiables',
-    texto: 'Frecuencia semanal y cumplimiento para que tu negocio no se detenga.',
+    texto:
+      'Reparto semanal a 87 municipios de tres departamentos, de forma segura y cumplida, para que tu negocio no se detenga.',
     enlace: '/#cobertura',
     enlaceTexto: 'Ver la cobertura',
   },
 ] as const;
 
-/**
- * EDITAR AQUÍ: testimonio real de un cliente (con su autorización).
- * `foto` puede ser la ruta de una imagen en public/; si queda vacía se
- * muestran las iniciales.
+/*
+ * El testimonio suelto de ejemplo ("María Gómez, Tienda La Economía") se quitó
+ * del inicio: era un cliente inventado presentado como real. Los testimonios
+ * del sitio son ahora únicamente las reseñas de Google (Resenas.astro), que
+ * cualquiera puede ir a verificar en la ficha del negocio.
  */
-export const testimonio = {
-  texto:
-    'Santiago de Tunja es un aliado que siempre está presente en nuestro negocio. Nunca nos han quedado mal con una entrega.',
-  nombre: 'María Gómez',
-  negocio: 'Tienda La Economía',
-  ciudad: 'Duitama',
-  estrellas: 5,
-  foto: '',
-} as const;
