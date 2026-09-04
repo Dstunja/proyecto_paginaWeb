@@ -39,7 +39,7 @@
  * salida por WhatsApp.
  */
 import { getImage } from 'astro:assets';
-import { productos, MARCAS, CATEGORIAS } from '../../data/productos';
+import { productos, MARCAS, CATEGORIAS, SUBCATEGORIAS } from '../../data/productos';
 import { imagenSiExiste, logoMarca } from '../../lib/imagenes';
 import { ruta } from '../../lib/rutas';
 import { TAMANO_TANDA } from '../../data/pedido';
@@ -106,6 +106,7 @@ const catalogo = productos.map((p) => {
     id: p.id,
     marca: p.marca,
     categoria: p.categoria,
+    ...(p.subcategoria ? { subcategoria: p.subcategoria } : {}),
     nombre: p.nombre,
     presentacion: p.presentacion,
     codigo: p.codigo,
@@ -123,6 +124,33 @@ const logos = Object.fromEntries(MARCAS.map((marca) => [marca, logoMarca(marca)]
 
 /** Solo las categorías que efectivamente tienen productos. */
 const categoriasUsadas = CATEGORIAS.filter((c) => productos.some((p) => p.categoria === c));
+
+/**
+ * SUBCATEGORÍAS: EL SEGUNDO NIVEL DEL FILTRO
+ * ------------------------------------------
+ * Las 14 categorías son los chips de la barra; las subcategorías NO lo son.
+ * Poner los dos niveles en la misma tira daría 65 chips en fila y borraría la
+ * jerarquía, que es justamente lo que se quiso arreglar. Van entonces dentro
+ * del panel de "Filtros", como un segundo nivel que solo aparece cuando ya se
+ * eligió la categoría a la que pertenecen.
+ *
+ * Se imprimen los 14 grupos en el build y el script muestra el que toque. Es
+ * marcado de sobra -51 casillas- pero evita tener que armar el panel con
+ * plantillas en el navegador cada vez que se toca un chip, y deja el estado
+ * inicial correcto sin esperar al script.
+ */
+const conteoSub = new Map<string, number>();
+for (const p of productos) {
+  if (p.subcategoria) {
+    const clave = `${p.categoria}|${p.subcategoria}`;
+    conteoSub.set(clave, (conteoSub.get(clave) ?? 0) + 1);
+  }
+}
+
+/** Categorías con subcategorías, ya en el orden en que se ofrecen. */
+const gruposSub = categoriasUsadas
+  .map((c) => ({ categoria: c, subs: SUBCATEGORIAS[c] ?? [] }))
+  .filter((g) => g.subs.length > 0);
 
 /**
  * Cuántas referencias tiene cada marca, y las marcas que tienen alguna.
@@ -347,8 +375,57 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       </button>
     </div>
 
-    {/* --- 3. Panel de marcas, plegado de entrada --- */}
+    {/* --- 3. Panel de filtros (subcategorías y marcas), plegado de entrada --- */}
     <div class="hidden" id="panel-marcas" data-panel-marcas>
+      <div class="flex flex-col gap-3">
+      {/* Subcategorías: el segundo nivel. Cada grupo está oculto hasta que se
+          elige su categoría, y el bloque entero desaparece si ninguna de las
+          categorías elegidas tiene subcategorías. */}
+      <fieldset class="hidden rounded-card border border-line bg-fondo p-4" data-caja-subs>
+        <legend class="sr-only">Afinar dentro de la categoría</legend>
+
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <p
+            class="m-0 font-display text-[12px] font-semibold tracking-[0.12em] text-muted uppercase"
+          >
+            Dentro de la categoría
+          </p>
+          <button
+            type="button"
+            class="hidden text-[13px] font-semibold text-secondary-dark underline"
+            data-limpiar-subs
+          >
+            Quitar subcategorías
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          {
+            gruposSub.map((g) => (
+              <div class="hidden" data-grupo-sub={g.categoria}>
+                <p class="m-0 mb-1.5 text-[13px] font-semibold">{g.categoria}</p>
+                <div class="grid grid-cols-1 gap-1 mob:grid-cols-2 tablet:grid-cols-3">
+                  {g.subs.map((s) => (
+                    <label class="opcion-marca">
+                      <input
+                        type="checkbox"
+                        value={s}
+                        data-sub
+                        data-sub-categoria={g.categoria}
+                      />
+                      <span class="truncate">{s}</span>
+                      <span class="ml-auto text-[12px] font-normal text-muted">
+                        {conteoSub.get(`${g.categoria}|${s}`)}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </fieldset>
+
       <fieldset class="rounded-card border border-line bg-fondo p-4">
         <legend class="sr-only">Filtrar por marca</legend>
 
@@ -384,6 +461,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
           }
         </div>
       </fieldset>
+      </div>
     </div>
   </div>
 </div>
@@ -508,7 +586,12 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
     const indice = new Map<string, string>();
     for (const p of catalogo) {
-      indice.set(p.id, normalizar(`${p.marca} ${p.nombre} ${p.presentacion} ${p.categoria}`));
+      indice.set(
+        p.id,
+        normalizar(
+          `${p.marca} ${p.nombre} ${p.presentacion} ${p.categoria} ${p.subcategoria ?? ''}`,
+        ),
+      );
     }
 
     /** Marcas en el orden en que aparecen, con su listado de productos. */
@@ -528,6 +611,20 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
      */
     const categoriasSel = new Set<string>();
     const marcasSel = new Set<string>();
+    /**
+     * Subcategorías elegidas, agrupadas por la categoría a la que pertenecen.
+     *
+     * Es un segundo nivel, no un filtro más al mismo nivel: una subcategoría
+     * solo AFINA dentro de su categoría, y las demás categorías elegidas no se
+     * ven afectadas. Con "Pastas › Largas" y "Café" puestos a la vez, pasan los
+     * spaghetti y TODO el café, no solo el café que estuviera en una
+     * subcategoría llamada "Largas".
+     *
+     * Se guardan por categoría en vez de en un conjunto plano para que esa
+     * regla se lea directamente en el filtro, y para poder soltar de golpe las
+     * subcategorías de una categoría cuando se apaga su chip.
+     */
+    const subsSel = new Map<string, Set<string>>();
     /**
      * Marcas desplegadas en la vista por secciones. Arranca con la primera, que
      * es justo la que el build dejó abierta en el HTML.
@@ -555,18 +652,30 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       abierta: (marca) => abiertas.has(marca),
     };
 
+    /** Cuántas subcategorías hay puestas, sumando todas las categorías. */
+    const totalSubs = () => {
+      let n = 0;
+      for (const elegidas of subsSel.values()) n += elegidas.size;
+      return n;
+    };
+
     const filtrar = (): ProductoPedido[] => {
       const q = normalizar(consulta.trim());
       return catalogo.filter((p) => {
         if (marcasSel.size && !marcasSel.has(p.marca)) return false;
         if (categoriasSel.size && !categoriasSel.has(p.categoria)) return false;
+        // El segundo nivel solo se aplica dentro de su propia categoría: si
+        // esta no tiene subcategorías puestas, el producto pasa igual.
+        const elegidas = subsSel.get(p.categoria);
+        if (elegidas?.size && !elegidas.has(p.subcategoria ?? '')) return false;
         if (q && !indice.get(p.id)?.includes(q)) return false;
         return true;
       });
     };
 
     /** Sin ningún filtro el catálogo se recorre por marcas; con filtro, plano. */
-    const hayFiltro = () => Boolean(consulta.trim()) || categoriasSel.size > 0 || marcasSel.size > 0;
+    const hayFiltro = () =>
+      Boolean(consulta.trim()) || categoriasSel.size > 0 || marcasSel.size > 0 || totalSubs() > 0;
 
     /**
      * Los filtros activos dichos en palabras: "con 2 categorías y 1 marca".
@@ -584,6 +693,8 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
         partes.push(
           `${categoriasSel.size} ${categoriasSel.size === 1 ? 'categoría' : 'categorías'}`,
         );
+      const subs = totalSubs();
+      if (subs) partes.push(`${subs} ${subs === 1 ? 'subcategoría' : 'subcategorías'}`);
       if (marcasSel.size)
         partes.push(`${marcasSel.size} ${marcasSel.size === 1 ? 'marca' : 'marcas'}`);
       if (!partes.length) return '';
@@ -642,6 +753,25 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     const conteoCategorias = barra.querySelector<HTMLElement>('[data-conteo-categorias]');
     const limpiarTodoBoton = barra.querySelector<HTMLButtonElement>('[data-limpiar]');
     const limpiarMarcasBoton = panelMarcas.querySelector<HTMLButtonElement>('[data-limpiar-marcas]');
+    const cajaSubs = panelMarcas.querySelector<HTMLElement>('[data-caja-subs]');
+    const limpiarSubsBoton = panelMarcas.querySelector<HTMLButtonElement>('[data-limpiar-subs]');
+
+    /**
+     * Muestra los grupos de subcategorías de las categorías elegidas y esconde
+     * los demás; si ninguna de las elegidas tiene segundo nivel, se va la caja
+     * entera. Así el panel nunca ofrece las 51 casillas de golpe: solo las que
+     * afinan algo que ya está puesto.
+     */
+    const pintarSubs = () => {
+      let visibles = 0;
+      panelMarcas.querySelectorAll<HTMLElement>('[data-grupo-sub]').forEach((grupo) => {
+        const mostrar = categoriasSel.has(grupo.dataset.grupoSub ?? '');
+        grupo.classList.toggle('hidden', !mostrar);
+        if (mostrar) visibles++;
+      });
+      cajaSubs?.classList.toggle('hidden', visibles === 0);
+      limpiarSubsBoton?.classList.toggle('hidden', totalSubs() === 0);
+    };
 
     /**
      * Deja la barra contando lo que hay puesto: los dos contadores, el azul
@@ -659,12 +789,18 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
         nodo.textContent = String(n);
         nodo.classList.toggle('hidden', n === 0);
       };
-      contador(conteoMarcas, marcasSel.size);
+      // El botón "Filtros" cuenta todo lo que hay puesto DENTRO de su panel:
+      // las marcas y las subcategorías. Si contara solo las marcas, quien
+      // afinara por subcategoría y cerrara el panel no tendría en pantalla
+      // ninguna señal de que ese filtro sigue aplicado.
+      const enPanel = marcasSel.size + totalSubs();
+      contador(conteoMarcas, enPanel);
       contador(conteoCategorias, categoriasSel.size);
-      botonPanel.dataset.activo = marcasSel.size ? 'si' : 'no';
+      botonPanel.dataset.activo = enPanel ? 'si' : 'no';
       botonCategorias.dataset.activo = categoriasSel.size ? 'si' : 'no';
       limpiarMarcasBoton?.classList.toggle('hidden', marcasSel.size === 0);
       limpiarTodoBoton?.classList.toggle('hidden', !hayFiltro());
+      pintarSubs();
     };
 
     /**
@@ -684,6 +820,20 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       filtroCambio();
     });
 
+    /**
+     * Suelta las subcategorías de una categoría -o de todas, sin argumento- y
+     * desmarca sus casillas. El estado y el formulario tienen que quedar
+     * iguales: una casilla marcada cuyo filtro ya se soltó es una mentira en
+     * pantalla.
+     */
+    const olvidarSubs = (categoria?: string) => {
+      if (categoria) subsSel.delete(categoria);
+      else subsSel.clear();
+      panelMarcas.querySelectorAll<HTMLInputElement>('[data-sub]').forEach((casilla) => {
+        if (!categoria || casilla.dataset.subCategoria === categoria) casilla.checked = false;
+      });
+    };
+
     /** Deja los chips de categoría con el `aria-pressed` que corresponde. */
     const pintarChips = () => {
       tiraCategorias.querySelectorAll<HTMLButtonElement>('[data-categoria]').forEach((chip) => {
@@ -701,10 +851,31 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       const chip = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-categoria]');
       if (!chip) return;
       const categoria = chip.dataset.categoria ?? '';
-      if (!categoria) categoriasSel.clear();
-      else if (categoriasSel.has(categoria)) categoriasSel.delete(categoria);
-      else categoriasSel.add(categoria);
+      if (!categoria) {
+        categoriasSel.clear();
+        olvidarSubs();
+      } else if (categoriasSel.has(categoria)) {
+        categoriasSel.delete(categoria);
+        // Al apagar la categoría se van con ella sus subcategorías: dejarlas
+        // puestas escondería un filtro activo, porque su grupo desaparece del
+        // panel y ya no habría forma de quitarlo.
+        olvidarSubs(categoria);
+      } else {
+        categoriasSel.add(categoria);
+      }
       pintarChips();
+      filtroCambio();
+    });
+
+    panelMarcas.addEventListener('change', (e) => {
+      const casilla = (e.target as HTMLElement).closest<HTMLInputElement>('[data-sub]');
+      if (!casilla) return;
+      const categoria = casilla.dataset.subCategoria ?? '';
+      const elegidas = subsSel.get(categoria) ?? new Set<string>();
+      if (casilla.checked) elegidas.add(casilla.value);
+      else elegidas.delete(casilla.value);
+      if (elegidas.size) subsSel.set(categoria, elegidas);
+      else subsSel.delete(categoria);
       filtroCambio();
     });
 
@@ -745,6 +916,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       buscador.value = '';
       categoriasSel.clear();
       marcasSel.clear();
+      olvidarSubs();
       pintarChips();
       panelMarcas.querySelectorAll<HTMLInputElement>('[data-marca]').forEach((casilla) => {
         casilla.checked = false;
@@ -753,6 +925,10 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     };
 
     limpiarMarcasBoton?.addEventListener('click', limpiarMarcas);
+    limpiarSubsBoton?.addEventListener('click', () => {
+      olvidarSubs();
+      filtroCambio();
+    });
     limpiarTodoBoton?.addEventListener('click', () => {
       limpiarTodo();
       buscador.focus();

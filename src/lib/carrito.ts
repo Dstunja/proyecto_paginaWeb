@@ -33,6 +33,12 @@ export interface ProductoPedido {
   id: string;
   marca: string;
   categoria: string;
+  /**
+   * Segundo nivel de la categoría. Viaja porque el filtro de subcategorías
+   * corre en el navegador; las categorías que no lo tienen -hoy solo
+   * "Untables"- llegan sin el campo.
+   */
+  subcategoria?: string;
   nombre: string;
   presentacion: string;
   codigo: string;
