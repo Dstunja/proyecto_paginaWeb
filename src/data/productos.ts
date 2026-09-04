@@ -67,10 +67,11 @@ export interface Producto {
    * descargadas de tiendanutresaencasa.com se cruzaron por el RefId de VTEX,
    * que es justamente ese código SAP.
    *
-   * QUÉ PASA SI SE DEJA VACÍO: la tarjeta del armador de pedidos muestra el
-   * logotipo de la marca, como hasta ahora. No hay que tocar ningún
-   * componente para prender la foto: basta con dejar el archivo en
-   * src/assets/productos/ y nombrarlo aquí (ver CatalogoPedido.astro).
+   * QUÉ PASA SI SE DEJA VACÍO: la tarjeta del armador de pedidos pinta en su
+   * lugar un degradado de la paleta de marca con el nombre del producto en
+   * grande. No hay que tocar ningún componente para prender la foto: basta
+   * con dejar el archivo en src/assets/productos/ y nombrarlo aquí (ver
+   * CatalogoPedido.astro).
    */
   imagen?: string;
 }

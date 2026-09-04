@@ -95,78 +95,73 @@ export function agruparPorMarca(catalogo: ProductoPedido[]): Map<string, Product
 }
 
 export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = false): string {
-  const logo = estado.logos[p.marca];
   const enPedido = estado.enPedido(p.id);
   const cantidad = estado.cantidad(p.id);
   const nombre = escapar(`${p.nombre} ${p.presentacion}`);
   const carga = ansiosa ? '' : ' loading="lazy"';
 
   /*
-   * EL CUADRO DE 80x80: TRES CASOS
-   * ------------------------------
-   *  1. La referencia tiene FOTO REAL propia (`p.imagen`).
-   *  2. No tiene foto, pero su marca tiene LOGOTIPO. ← la mayoría hoy
-   *  3. No hay ni lo uno ni lo otro: quedan las INICIALES de la marca.
+   * LA FOTO, A SANGRE Y SIN BORDES DUROS
+   * ------------------------------------
+   * La imagen ocupa el ancho completo de la tarjeta en una caja de 4:3 y la
+   * llena con `object-fit: cover`: nunca quedan franjas vacías, venga la foto
+   * cuadrada (que es el caso de las 466 oficiales, de 1000x1000) o apaisada.
+   * Sus bordes superior e inferior se disuelven en el blanco de la tarjeta con
+   * un degradado, así que la foto no se lee como un rectángulo pegado encima
+   * sino como parte de la tarjeta. Es el mismo acabado de "Especiales del mes"
+   * (`.foto-producto` en global.css), aquí resuelto con dos degradados lineales
+   * porque la caja es más pequeña y una máscara elíptica se comería el producto.
    *
-   * En los tres se usa object-contain y nunca object-cover: recortar
-   * mutilaría un logotipo, y en una foto de producto se comería parte del
-   * empaque, que es justo lo que el cliente necesita reconocer para pedir.
+   * El recorte de 4:3 sobre una foto cuadrada se lleva un 12,5 % por arriba y
+   * otro tanto por abajo. En estas fotos de catálogo eso cae sobre el margen
+   * blanco del estudio, no sobre el empaque; en las pocas apaisadas o muy
+   * altas sí puede recortar, y es el precio de que ninguna tarjeta muestre
+   * franjas vacías.
    *
-   * La foto real lleva además el mismo tratamiento que en "Especiales del
-   * mes": encima de una copia desenfocada de ella misma. Las fotos vienen
-   * en cualquier proporción (frascos altos, cajas apaisadas) y el hueco
-   * que deja el contain se rellena con el color de la propia imagen en vez
-   * de una franja blanca. Así una referencia con foto y otra con logotipo,
-   * lado a lado en la misma marca, se leen como la misma tarjeta. El
-   * desenfoque va más corto que en el inicio (blur-md, no blur-xl) porque
-   * aquí el cuadro mide 80 px y no 300: con el radio grande el fondo se
-   * volvía un color plano.
-   *
-   * El logotipo, en cambio, se deja sobre blanco y sin padding: los
-   * archivos de marca ya traen fondo blanco y su propio margen interno, y
-   * agregarle más lo dejaba flotando en medio de un marco vacío.
+   * SIN FOTO: NI LOGOTIPO NI INICIALES
+   * ----------------------------------
+   * Las 245 referencias que todavía no tienen foto ya no caen en el logotipo
+   * de la marca -que se repetía idéntico en toda la sección y no distinguía
+   * una referencia de otra-. En su lugar va un degradado de la paleta de marca
+   * con el NOMBRE del producto compuesto en grande: la tarjeta se llena y, de
+   * paso, dice algo útil. El rótulo va `aria-hidden` porque el mismo nombre
+   * está en el <h3> de abajo y no hay que leerlo dos veces.
    */
   const foto = p.imagen;
-  const medio = foto
-    ? `<div class="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-md" style="background-image:url('${escapar(foto)}')" aria-hidden="true"></div>
-           <img src="${escapar(foto)}" alt=""${carga} class="foto-zoom relative h-full w-full object-contain p-1" />`
-    : logo
-      ? `<img src="${escapar(logo)}" alt=""${carga} class="foto-zoom h-full w-full object-contain" />`
-      : `<span class="font-display text-lg font-bold text-primary/60" aria-hidden="true">${escapar(iniciales(p.marca))}</span>`;
-
-  const fondoCuadro = foto
-    ? 'border-line bg-surface-2'
-    : logo
-      ? 'border-line bg-white'
-      : 'border-transparent bg-primary-soft';
+  const caja = foto
+    ? `<div class="tarjeta-foto">
+             <img src="${escapar(foto)}" alt=""${carga} class="tarjeta-foto__img foto-zoom" />
+           </div>`
+    : `<div class="tarjeta-foto tarjeta-foto--sin-foto">
+             <span class="tarjeta-foto__rotulo" aria-hidden="true">${escapar(p.nombre)}</span>
+           </div>`;
 
   /*
-   * EL PRECIO: solo aparece si la referencia lo tiene
-   * -------------------------------------------------
+   * EL PRECIO: siempre hay renglón
+   * ------------------------------
    * Es el PSP (precio sugerido al público): la corrección manual de
-   * src/data/precios.ts si la hay, y si no el del deck. La mayoría de las
-   * referencias todavía no lo tiene y su tarjeta se pinta igual que antes,
-   * sin renglón de precio: es preferible eso a un "consultar" repetido 600
-   * veces, que solo agregaría ruido a la grilla.
+   * src/data/precios.ts si la hay, y si no el del deck.
    *
    * Va rotulado como SUGERIDO a propósito. Es lo que la tienda le cobra al
    * consumidor, no lo que la tienda le paga al asesor, y sin el rótulo la
    * cifra se leería como el precio del pedido. El aviso de que el asesor
    * confirma precios y disponibilidad sigue estando en el panel del pedido
    * y en el mensaje de WhatsApp (AVISO_PRECIOS).
+   *
+   * Las referencias sin PSP cargado -hoy 599 de 711- no dejan el hueco ni
+   * pintan un $0: dicen "Precio a consultar", que es la verdad y además
+   * mantiene todas las tarjetas de la fila a la misma altura.
    */
   const precio =
     typeof p.psp === 'number'
-      ? `<p class="m-0 mt-1 font-display text-[15px] font-bold text-primary">${escapar(pesos(p.psp))}<span class="ml-1.5 font-sans text-[10.5px] font-semibold tracking-[0.08em] text-muted uppercase">sugerido</span></p>`
-      : '';
+      ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}<span class="precio-tarjeta__nota">sugerido</span></p>`
+      : `<p class="precio-tarjeta precio-tarjeta--consultar">Precio a consultar</p>`;
 
   return `
-        <article class="glass-card flex gap-4 p-4 ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${escapar(p.id)}">
-          <div class="relative grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border ${fondoCuadro}">
-            ${medio}
-          </div>
+        <article class="glass-card flex flex-col overflow-hidden ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${escapar(p.id)}">
+          ${caja}
 
-          <div class="flex min-w-0 flex-1 flex-col gap-2">
+          <div class="flex min-w-0 flex-1 flex-col gap-2 px-4 pb-4">
             <div class="min-w-0">
               <p class="m-0 font-display text-[11px] font-semibold tracking-[0.1em] text-secondary-dark uppercase">${escapar(p.marca)}</p>
               <h3 class="m-0 text-[15px] leading-snug">${escapar(p.nombre)}</h3>

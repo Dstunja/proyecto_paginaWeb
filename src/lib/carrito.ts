@@ -48,8 +48,9 @@ export interface ProductoPedido {
    * Precio sugerido al público, en pesos. Sale del PSP que trae el maestro de
    * productos (extraído del deck) o de la corrección manual en
    * src/data/precios.ts, que manda cuando existe; ver `precioSugerido` en
-   * src/lib/precios.ts. Si no hay ninguno, la referencia se muestra con la
-   * etiqueta "Precio con tu asesor" y no entra en el subtotal orientativo.
+   * src/lib/precios.ts. Si no hay ninguno, la tarjeta del catálogo dice
+   * "Precio a consultar", el panel del pedido "Precio con tu asesor", y la
+   * referencia no entra en el subtotal orientativo.
    */
   psp?: number;
 }

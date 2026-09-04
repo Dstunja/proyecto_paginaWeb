@@ -35,8 +35,9 @@
  *   1. El valor va en PESOS COLOMBIANOS, entero y sin separadores ni símbolo
  *      ($, puntos ni comas): 12900, no '$ 12.900'.
  *   2. Solo referencias cuyo PSP esté CONFIRMADO. Una referencia que no
- *      aparezca en esta lista no muestra precio: dice "Precio con tu asesor",
- *      que es preferible a mostrar una cifra inventada.
+ *      aparezca en esta lista no muestra cifra: la tarjeta del catálogo dice
+ *      "Precio a consultar" y el panel del pedido "Precio con tu asesor", que
+ *      es preferible a mostrar una cifra inventada.
  *   3. El código debe existir tal cual en `codigo` de src/data/productos.ts.
  *      `npm run build` avisa en consola de los códigos que no cuadren (ver
  *      `codigosSinProducto` en src/lib/precios.ts).

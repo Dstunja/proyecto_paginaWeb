@@ -30,8 +30,9 @@
  * Del producto solo viajan los campos que se usan. `codigoParcial`, `embalaje`
  * y `paginaPdf` son notas internas y se quedan en el servidor; el `codigo` SAP
  * viaja porque va en el mensaje que recibe el asesor, no porque se muestre.
- * `precio` viaja solo cuando la referencia lo tiene: hoy son 107 de las 709, y
- * las demás tarjetas simplemente no muestran renglón de precio.
+ * `precio` viaja solo cuando la referencia lo tiene: hoy son 112 de las 711.
+ * Las demás sí muestran renglón de precio, pero con el texto "Precio a
+ * consultar", que se arma en la tarjeta y no hace falta mandar.
  *
  * Sin JavaScript quedan el listado de marcas y las primeras tarjetas, pero no
  * el buscador, los filtros ni el carrito: esos controles se ocultan (no sirve
@@ -59,20 +60,26 @@ import { empresa } from '../../data/site';
  *
  * `imagen` solo viaja cuando la referencia tiene foto propia Y el archivo
  * existe de verdad (ver `fotoDe`, que ya le antepone el `base`). El resto
- * llega sin el campo y la tarjeta cae en el logotipo de la marca. Conectar una
- * foto nueva es entonces solo dejar el archivo en src/assets/productos/ con el
- * código SAP por nombre y nombrarlo en `imagen` dentro de
- * src/data/productos.ts: aquí y en la tarjeta no hay que tocar nada.
+ * llega sin el campo y la tarjeta pinta en su lugar el degradado de marca con
+ * el nombre del producto. Conectar una foto nueva es entonces solo dejar el
+ * archivo en src/assets/productos/ con el código SAP por nombre y nombrarlo en
+ * `imagen` dentro de src/data/productos.ts: aquí y en la tarjeta no hay que
+ * tocar nada.
  */
 /**
  * Fotos oficiales del fabricante, descargadas de la tienda de Nutresa y
  * guardadas en src/assets/productos/ con el CODIGO SAP por nombre de archivo.
  *
  * Van por src/assets/ y no por public/ a proposito: los originales son de
- * 1000-1200 px y pesan entre 20 y 300 KB cada uno, pero en la tarjeta se ven a
- * menos de 200 px. Al pasar por `getImage` el navegador recibe un WebP de
- * 400 px -una fraccion del peso- y el original nunca se publica. Por public/
- * habria que servir los 466 archivos tal cual.
+ * 1000-1200 px y pesan entre 20 y 300 KB cada uno. Al pasar por `getImage` el
+ * navegador recibe un WebP mucho mas liviano y el original nunca se publica.
+ * Por public/ habria que servir los 466 archivos tal cual.
+ *
+ * EL ANCHO: 640 px. La foto ya no es una miniatura de 80 px sino la cabecera
+ * de la tarjeta, a sangre y en 4:3. La tarjeta mas ancha que existe es la de
+ * una sola columna en movil (~470 px de ancho de viewport), y con tres
+ * columnas en escritorio cada una mide ~366 px. 640 cubre el caso mas ancho
+ * con holgura sin cargarle a la pagina un archivo de 1000 px por referencia.
  */
 const archivosFoto = import.meta.glob<{ default: ImageMetadata }>(
   '../../assets/productos/*.{png,jpg,jpeg,webp}',
@@ -81,7 +88,7 @@ const archivosFoto = import.meta.glob<{ default: ImageMetadata }>(
 const fotos: Record<string, string> = {};
 for (const [rutaArchivo, modulo] of Object.entries(archivosFoto)) {
   const nombre = rutaArchivo.split('/').pop() as string;
-  fotos[nombre] = (await getImage({ src: modulo.default, width: 400, format: 'webp' })).src;
+  fotos[nombre] = (await getImage({ src: modulo.default, width: 640, format: 'webp' })).src;
 }
 
 /**
@@ -93,8 +100,8 @@ for (const [rutaArchivo, modulo] of Object.entries(archivosFoto)) {
  *    public/, de las referencias de innovacion.
  *
  * Devuelve null si el archivo no existe, y entonces la tarjeta cae en el
- * logotipo de la marca. Esa red de seguridad es la que evita que una ruta mal
- * escrita saque una imagen rota en el armador.
+ * degradado de marca con el nombre del producto. Esa red de seguridad es la
+ * que evita que una ruta mal escrita saque una imagen rota en el armador.
  */
 function fotoDe(imagen: string | undefined): string | null {
   if (!imagen) return null;
@@ -307,6 +314,173 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
      mensaje de error hace pensar que todavía está intentándolo. */
   [data-cargando='falló'] [data-loader] {
     display: none;
+  }
+
+  /* --- La foto de la tarjeta del catálogo ---------------------------------
+     Va aquí y no en global.css porque estas reglas solo existen para la
+     grilla del armador de pedidos. `is:global` es obligatorio: las tarjetas
+     las pinta JavaScript con innerHTML a partir de las plantillas de
+     src/lib/plantillasCatalogo.ts, así que nunca llevan el atributo de
+     ámbito que Astro le pondría a un <style> normal.
+
+     LA CAJA: 4:3 A SANGRE
+     ---------------------
+     La foto llena el ancho completo de la tarjeta -que es la que lleva el
+     `overflow-hidden` y le recorta las esquinas redondeadas- y la caja fija
+     su alto con `aspect-ratio`. Al declararlo aquí y no depender de que la
+     imagen cargue, la grilla no da ningún salto de maquetación mientras
+     bajan las fotos.
+
+     `object-fit: cover` es lo que garantiza que no queden franjas blancas ni
+     huecos, sea cual sea la proporción del archivo: el navegador recorta lo
+     que sobre por el lado largo. El fondo blanco de la caja es la red de
+     seguridad para el instante anterior a que la foto pinte. */
+  .tarjeta-foto {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background-color: var(--color-surface);
+  }
+
+  /* EL ENCUADRE
+     -----------
+     `object-position` sube el recorte: de una foto cuadrada -que es lo que son
+     las 466 oficiales, de 1000x1000- el 4:3 se lleva un 25 % del alto, y
+     repartirlo por igual arriba y abajo le cortaba el borde superior del
+     empaque, que es donde va la marca. Con el 35 % el recorte cae sobre todo
+     en el pie de la foto: el gramaje, el registro sanitario y la letra menuda,
+     que además es justo la franja que el desvanecido de abajo tapa. */
+  .tarjeta-foto__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 35%;
+  }
+
+  /* EL DESVANECIDO
+     --------------
+     Dos degradados que llevan la foto al color de la tarjeta por arriba y por
+     abajo, para que se funda con ella en vez de cortarse en un filo recto. El
+     de abajo es más largo (38 % del alto) porque ahí es donde la foto se
+     encuentra con el texto; el de arriba (16 %) solo tiene que matar el borde
+     contra la esquina redondeada.
+
+     EL DE ABAJO ARRANCA OPACO, Y NO ES UN CAPRICHO. Casi todas las fotos
+     oficiales de Nutresa traen al pie una franja de publicidad con el gramaje
+     y el nombre comercial repetido ("216 GRAMOS · GALLETAS DUX RELLENAS CON
+     CREMA..."). Si el degradado empieza a desvanecer desde el borde mismo,
+     esa franja se queda a medio borrar y se lee como un fantasma de texto
+     debajo del producto. Con el primer 12 % en blanco pleno la franja
+     desaparece del todo y el degradado empieza donde ya solo hay foto.
+
+     Los topes transparentes se escriben `rgba(255,255,255,0)` y no
+     `transparent` a propósito: es el mismo criterio de `.foto-producto__fondo`
+     en global.css. `transparent` es negro con alfa 0, y un navegador que no
+     interpole con alfa premultiplicado deja una franja gris en medio del
+     degradado. El color opaco sí sale del token, que es el que manda si algún
+     día la tarjeta deja de ser blanca.
+
+     `pointer-events: none` para que el velo no se coma el clic ni el hover de
+     la tarjeta, que es lo que dispara el zoom de la foto. */
+  .tarjeta-foto::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(to bottom, var(--color-surface) 0%, rgba(255, 255, 255, 0) 16%),
+      linear-gradient(
+        to top,
+        var(--color-surface) 0%,
+        var(--color-surface) 12%,
+        rgba(255, 255, 255, 0) 44%
+      );
+  }
+
+  /* SIN FOTO: DEGRADADO DE MARCA CON EL NOMBRE
+     ------------------------------------------
+     Las referencias que todavía no tienen foto (245 de 711) ya no muestran el
+     logotipo de la marca repetido tarjeta tras tarjeta. Llevan el degradado de
+     la paleta -azul de marca abierto hacia el gris muy claro, con un realce
+     radial que le da volumen- y encima el nombre del producto compuesto en la
+     tipografía de titulares. Así ninguna tarjeta queda visualmente vacía y la
+     que no tiene foto sigue diciendo de un vistazo qué es.
+
+     El mismo `::after` de arriba les cae encima, así que también se funden con
+     la tarjeta por los dos bordes; por eso el rótulo va con `z-index: 1`, para
+     quedar por delante del velo y no perder contraste. */
+  .tarjeta-foto--sin-foto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.75rem 1.25rem;
+    background:
+      radial-gradient(circle at 50% 26%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 62%),
+      linear-gradient(150deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  }
+
+  /* El desvanecido de la caja con foto es demasiado para el degradado de
+     marca: sobre un azul saturado, 16 % arriba y 38 % abajo de blanco lo
+     dejaban con un halo gris que parecía un error de carga. Aquí se recorta a
+     una insinuación -lo justo para que el bloque no termine en un filo recto
+     contra la tarjeta- y el color aguanta. */
+  .tarjeta-foto--sin-foto::after {
+    background:
+      linear-gradient(to bottom, var(--color-surface) 0%, rgba(255, 255, 255, 0) 9%),
+      linear-gradient(to top, var(--color-surface) 0%, rgba(255, 255, 255, 0) 20%);
+  }
+
+  .tarjeta-foto__rotulo {
+    position: relative;
+    z-index: 1;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.24;
+    text-align: center;
+    text-wrap: balance;
+    color: #ffffff;
+    text-shadow: 0 1px 10px rgba(8, 32, 99, 0.35);
+  }
+
+  /* --- El precio de la tarjeta -------------------------------------------
+     Va entre el nombre y el selector de cantidad, y SIEMPRE ocupa su
+     renglón: con cifra cuando el PSP está cargado y con "Precio a consultar"
+     cuando no. Que el renglón exista siempre es lo que mantiene alineados el
+     selector y el botón "Agregar" de todas las tarjetas de una misma fila.
+
+     El aviso "a consultar" va en gris y con el peso del cuerpo, no en azul y
+     en negrita como la cifra: es una nota, no un precio, y no debe competir
+     con las tarjetas que sí traen número. */
+  .precio-tarjeta {
+    margin: 0.25rem 0 0;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .precio-tarjeta__nota {
+    margin-left: 0.375rem;
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .precio-tarjeta--consultar {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-muted);
   }
 </style>
 
