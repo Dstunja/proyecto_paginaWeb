@@ -154,7 +154,7 @@ const valores = [
 
       {/* EDITAR AQUÍ: reemplazar con fotos y datos reales del equipo directivo
           (los nombres, cargos y frases viven en src/data/equipo.ts). */}
-      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4" data-revelar-grupo>
         {
           equipoConFoto.map((persona) => (
             <div class="group glass-card flex flex-col items-center p-8 text-center">
@@ -201,7 +201,7 @@ const valores = [
         (unos 455 px): más allá de eso el navegador la agrandaría y se vería
         blanda, igual que con los logotipos de marca.
       */}
-      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2">
+      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2" data-revelar-grupo>
         {
           valores.map((valor) => (
             <div class="group glass-card flex flex-col gap-6 p-8 tablet:flex-row tablet:items-stretch">

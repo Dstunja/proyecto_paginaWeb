@@ -65,7 +65,7 @@ const proceso = [
             formulario de abajo y te contactamos cuando se abra un proceso.
           </p>
         ) : (
-          <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-3">
+          <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-3" data-revelar-grupo>
             {tarjetas.map((vacante) => (
               <article class="group glass-card flex flex-col overflow-hidden">
                 <a
@@ -127,7 +127,7 @@ const proceso = [
         <span class="kicker">Cómo es el proceso</span>
         <h2 class="text-[28px] tablet:text-[38px]">De la hoja de vida al primer día</h2>
       </div>
-      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4" data-revelar-grupo>
         {
           proceso.map((paso, i) => (
             <div class="group glass-card p-8">

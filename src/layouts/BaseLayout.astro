@@ -79,6 +79,29 @@ const jsonLd = {
     <meta name="twitter:image" content={ogUrl} />
 
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+
+    {/*
+      Interruptor del revelado al hacer scroll (ver src/lib/revelado.ts).
+
+      Va aquí, en el <head> y sin `type="module"`, para que se ejecute ANTES de
+      que se pinte el <body>: el CSS esconde lo que se va a revelar solo cuando
+      esta clase está puesta, así que ponerla más tarde haría que el contenido
+      apareciera y se ocultara de golpe.
+
+      La clase se añade únicamente si el navegador tiene IntersectionObserver y
+      el sistema no pide menos movimiento. Si el usuario activa "reducir
+      movimiento", si el navegador es viejo o si no hay JavaScript, la clase no
+      llega, el CSS no aplica y todo el contenido se ve directamente, sin
+      fundido ni desplazamiento.
+    */}
+    <script is:inline>
+      if (
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+        'IntersectionObserver' in window
+      ) {
+        document.documentElement.classList.add('js-revelado');
+      }
+    </script>
   </head>
 
   <body>
@@ -96,5 +119,10 @@ const jsonLd = {
 
     <Footer />
     <WhatsappFlotante />
+
+    {/* Revelado al hacer scroll, en un solo sitio para todo el sitio. */}
+    <script>
+      import '../lib/revelado';
+    </script>
   </body>
 </html>

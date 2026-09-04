@@ -177,7 +177,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
           Soluciones integrales para hacer crecer a nuestros aliados comerciales
         </h2>
       </div>
-      <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3">
+      <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3" data-revelar-grupo>
         {
           valorAgregado.map((item) => (
             <div class="group glass-card p-8">
@@ -245,7 +245,7 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
         <h2 class="text-[28px] tablet:text-[38px]">Impulsa tu negocio con nuestro respaldo</h2>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4">
+      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4" data-revelar-grupo>
         {
           beneficios.map((b) => (
             <a class="tarjeta-int flex flex-col p-8" href={ruta(b.enlace)}>
