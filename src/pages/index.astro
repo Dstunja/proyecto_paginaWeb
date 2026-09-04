@@ -191,28 +191,48 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
       <p class="mb-8 text-center text-[12.5px] font-semibold tracking-[0.14em] text-muted uppercase">
         Marcas que distribuimos
       </p>
-      <ul class="m-0 flex list-none flex-wrap items-center justify-center gap-x-10 gap-y-6 p-0">
-        {
-          logosDeLaFranja.map((marca) => (
-            <li class="flex items-center justify-center" style={`height:${ALTO_FRANJA}px`}>
-              <Image
-                src={marca.imagen}
-                alt={`Logotipo de ${marca.nombre}`}
-                height={marca.alto}
-                densities={[1, 2]}
-                format="webp"
-                quality={90}
-                loading="lazy"
-                decoding="async"
-                class="logo-marca logo-marca-franja"
-              />
-            </li>
-          ))
-        }
-      </ul>
       {/* EDITAR AQUÍ: para sumar una marca a esta franja, deja su logotipo en
           src/assets/marcas/ (nombre en minúsculas y con guiones) y agrégala a
           `marcasDeLaFranja` en src/data/site.ts. */}
+    </div>
+
+    {/* El carrusel sale del `wrap` a propósito: ocupa todo el ancho de la
+        pantalla para que los logotipos entren y salgan por los bordes, que es
+        donde la máscara los difumina.
+
+        La lista se pinta DOS veces (la segunda, oculta para los lectores de
+        pantalla, es solo la costura del bucle). Ver el comentario del CSS.
+
+        Los logotipos van en carga inmediata y no diferida: dentro de un
+        contenedor con overflow:hidden el navegador da por no visible todo lo
+        que queda fuera del recorte, así que con loading="lazy" la segunda
+        copia no llegaría a cargarse y el carrusel mostraría huecos en blanco
+        a mitad de vuelta. Son 22 WebP de 40 px de alto: poco más de 50 KB en
+        total, y la segunda copia reutiliza los mismos archivos ya en caché. */}
+    <div class="marquee-marcas">
+      <div class="marquee-marcas__pista">
+        {
+          [false, true].map((esLaCopia) => (
+            <ul class="marquee-marcas__grupo" aria-hidden={esLaCopia ? 'true' : undefined}>
+              {logosDeLaFranja.map((marca) => (
+                <li style={`height:${ALTO_FRANJA}px`}>
+                  <Image
+                    src={marca.imagen}
+                    alt={esLaCopia ? '' : `Logotipo de ${marca.nombre}`}
+                    height={marca.alto}
+                    densities={[1, 2]}
+                    format="webp"
+                    quality={90}
+                    loading="eager"
+                    decoding="async"
+                    class="logo-marca logo-marca-franja"
+                  />
+                </li>
+              ))}
+            </ul>
+          ))
+        }
+      </div>
     </div>
   </div>
 
@@ -439,16 +459,137 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
 </script>
 
 <style>
+  /* --- Carrusel de marcas -------------------------------------------------
+     La franja desfila sola, en bucle y sin una línea de JavaScript: es una
+     sola animación de CSS sobre la pista.
+
+     El bucle no salta porque la pista lleva la lista DOS veces. Al llegar a
+     translateX(-50%) —justo el ancho de la primera copia— la segunda copia
+     ocupa exactamente el sitio que tenía la primera al arrancar, así que el
+     reinicio del fotograma cae sobre una imagen idéntica y no se ve.
+
+     Por eso la separación entre logotipos NO puede ir con `gap`: un `gap` en
+     la pista separaría también las dos copias entre sí, ese hueco de más
+     entraría en el ancho total y el -50% se quedaría medio hueco corto en
+     cada vuelta. Va como relleno lateral de cada <li>, que sí forma parte del
+     ancho de la copia y por tanto se duplica exacto. */
+  .marquee-marcas {
+    /* Cada logotipo se separa del vecino la suma de los dos rellenos. */
+    --hueco-logos: 3rem;
+    --difuminado-borde: 5rem;
+    overflow: hidden;
+    /* Los logotipos se disuelven en los bordes en vez de cortarse en seco.
+       Con máscara y no con degradados encima: así el efecto no depende de
+       repetir aquí el color de fondo de la sección. */
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--difuminado-borde),
+      #000 calc(100% - var(--difuminado-borde)),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 var(--difuminado-borde),
+      #000 calc(100% - var(--difuminado-borde)),
+      transparent
+    );
+  }
+
+  .marquee-marcas__pista {
+    display: flex;
+    /* Sin `max-content` la pista se quedaría en el ancho de la pantalla y el
+       -50% mediría lo que no es. */
+    width: max-content;
+    /* 40 s por vuelta: a este ancho salen unos 80 px por segundo, un paso de
+       paseo. Con menos, la franja distrae; con más, parece parada. */
+    animation: desfilar-marcas 40s linear infinite;
+    will-change: transform;
+  }
+
+  /* Al pasar el cursor se detiene, para poder mirar un logotipo concreto sin
+     perseguirlo. Hoy dentro no hay nada enfocable, pero `:focus-within` queda
+     puesto para que la pausa también funcione si algún día los logotipos se
+     convierten en enlaces al catálogo. */
+  .marquee-marcas:hover .marquee-marcas__pista,
+  .marquee-marcas:focus-within .marquee-marcas__pista {
+    animation-play-state: paused;
+  }
+
+  .marquee-marcas__grupo {
+    display: flex;
+    flex: none;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .marquee-marcas__grupo > li {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    padding-inline: calc(var(--hueco-logos) / 2);
+  }
+
+  @keyframes desfilar-marcas {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* En pantallas estrechas se acortan el hueco y el difuminado: con 5 rem por
+     lado el degradado se comería casi un logotipo entero. */
+  @media (max-width: 520px) {
+    .marquee-marcas {
+      --hueco-logos: 2.25rem;
+      --difuminado-borde: 2.5rem;
+    }
+  }
+
+  /* Con el sistema puesto en «reducir movimiento» la franja se queda quieta y
+     se recorre a mano. La regla global de global.css solo acorta la duración
+     a 0.01 ms, y eso aquí no basta: la animación seguiría reiniciándose sin
+     parar. Hay que apagarla por nombre.
+
+     Sin animación la segunda copia sería una lista repetida a la vista de
+     quien desplace, así que se retira. */
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-marcas {
+      overflow-x: auto;
+    }
+
+    .marquee-marcas__pista {
+      animation: none !important;
+    }
+
+    .marquee-marcas__grupo[aria-hidden='true'] {
+      display: none;
+    }
+  }
+
   /* El realce parejo y el object-contain vienen de .logo-marca, en
      global.css, que comparten la franja y las fichas del catálogo. Aquí solo
      va lo propio de la franja: sobre el fondo gris los logotipos van algo
      atenuados y recuperan su color al pasar el cursor. */
   .logo-marca-franja {
     opacity: 0.85;
-    transition: opacity 0.2s ease;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease,
+      filter 0.2s ease;
   }
 
   .logo-marca-franja:hover {
     opacity: 1;
+    transform: scale(1.05);
+    /* contrast/saturate hay que repetirlos: `filter` no se acumula entre
+       reglas, la última declaración sustituye entera a la de .logo-marca. */
+    filter: contrast(1.06) saturate(1.04) drop-shadow(0 2px 6px rgba(13, 44, 132, 0.18));
   }
 </style>
