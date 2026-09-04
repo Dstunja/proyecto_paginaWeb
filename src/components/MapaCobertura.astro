@@ -29,8 +29,12 @@ const direccionCompleta = `${empresa.direccion}, ${empresa.ciudad}, ${empresa.de
       enGrid && 'tablet:grid-cols-[1.35fr_.65fr]',
     ]}
   >
+    <!-- `isolate`: mismo motivo que en MapaRed.astro. Los z-index internos de
+         Leaflet llegan a 1000 y, sin un contexto de apilamiento propio,
+         compiten en la raíz del documento contra la barra superior (z-100) y
+         los demás elementos flotantes, montándose encima al hacer scroll. -->
     <div
-      class="glass-card aspect-square min-h-[280px] overflow-hidden tablet:aspect-[4/3] tablet:min-h-[340px]"
+      class="glass-card isolate aspect-square min-h-[280px] overflow-hidden tablet:aspect-[4/3] tablet:min-h-[340px]"
     >
       <div
         id="mapa-sede"
