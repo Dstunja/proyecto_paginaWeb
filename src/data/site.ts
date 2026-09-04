@@ -259,18 +259,3 @@ export const beneficios = [
     enlaceTexto: 'Ver la cobertura',
   },
 ] as const;
-
-/**
- * EDITAR AQUÍ: testimonio real de un cliente (con su autorización).
- * `foto` puede ser la ruta de una imagen en public/; si queda vacía se
- * muestran las iniciales.
- */
-export const testimonio = {
-  texto:
-    'Santiago de Tunja es un aliado que siempre está presente en nuestro negocio. Nunca nos han quedado mal con una entrega.',
-  nombre: 'María Gómez',
-  negocio: 'Tienda La Economía',
-  ciudad: 'Duitama',
-  estrellas: 5,
-  foto: '',
-} as const;

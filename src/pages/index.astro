@@ -7,7 +7,6 @@ import MapaRed from '../components/MapaRed.astro';
 import EspecialesMes from '../components/EspecialesMes.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
-import Testimonio from '../components/Testimonio.astro';
 import Resenas from '../components/Resenas.astro';
 import RedesSociales from '../components/RedesSociales.astro';
 import AnaliticaSecciones from '../components/AnaliticaSecciones.astro';
@@ -277,7 +276,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
   </section>
 
   <!-- PARA TU NEGOCIO -->
-  <section class="section" data-seccion="para_tu_negocio">
+  <section class="section pb-0" data-seccion="para_tu_negocio">
     <div class="wrap">
       <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Para tu negocio</span>
@@ -300,11 +299,6 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
             </a>
           ))
         }
-      </div>
-
-      {/* La resena va envuelta para poder medirla aparte de la seccion que la contiene. */}
-      <div data-seccion="resenas">
-        <Testimonio />
       </div>
     </div>
   </section>
