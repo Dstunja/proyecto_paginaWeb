@@ -71,6 +71,36 @@ export const cobertura = [
  */
 
 /**
+ * Clientes que se MUESTRAN en el resumen de la sección "Cobertura nacional".
+ *
+ * OJO: son cifras de comunicación, no el conteo real. La empresa comunica una
+ * red de 7.000 clientes, así que el titular y los tres contadores de esa
+ * sección salen de aquí y no de la base de datos.
+ *
+ * El conteo real por municipio sigue intacto en src/data/clientes-municipio.ts
+ * y es el que alimenta los puntos del mapa, su tamaño y el buscador. Ese
+ * archivo NO debe tocarse para cuadrar estas cifras.
+ *
+ * El reparto respeta la misma proporción que los datos reales —Boyacá 82,3 %,
+ * Santander 15,2 %, Cundinamarca 2,5 %— para que la foto siga siendo fiel.
+ *
+ * EDITAR AQUÍ si cambia la cifra que se comunica: basta con ajustar los tres
+ * números; el total se calcula sumándolos, así que el texto y los contadores no
+ * pueden quedar contradiciéndose.
+ */
+const CLIENTES_COMUNICADOS = {
+  Boyacá: 5763,
+  Santander: 1063,
+  Cundinamarca: 174,
+} as const;
+
+export const resumenCobertura = {
+  clientesPorDepartamento: CLIENTES_COMUNICADOS,
+  /** Suma de los tres departamentos: 7.000. */
+  totalClientes: Object.values(CLIENTES_COMUNICADOS).reduce((suma, n) => suma + n, 0),
+};
+
+/**
  * EDITAR AQUÍ: URL real de la app / web de Pideky cuando exista.
  * Mientras esté vacía, el botón avisa que falta configurarla.
  */
