@@ -120,14 +120,14 @@ export const marcasDeLaFranja = [
   'Noel',
   'Ducales',
   'Saltín Noel',
-  'Dux', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Dux',
   'Festival',
-  'Sello Rojo', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Sello Rojo',
   'La Bastilla',
   'Colcafé',
   'Matiz', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
   'Jet',
-  'Jumbo', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Jumbo',
   'Corona',
   'Choco Listo', // EDITAR AQUÍ: recorte descuadrado, reemplazar con logo limpio
   'Doria',
@@ -136,6 +136,8 @@ export const marcasDeLaFranja = [
   'La Especial', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
   'Bénet',
   'Badia',
+  'Rica',
+  'Montblanc',
 ] as const;
 
 /*
