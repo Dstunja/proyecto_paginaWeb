@@ -139,7 +139,18 @@ export const resenas: Resena[] = [
 
 /**
  * EDITAR AQUÍ: promedio y total de calificaciones del negocio en Google.
- * Cuando se conecte la API estos dos números llegan en `rating` y
+ *
+ * LOS DOS NÚMEROS DE ABAJO SON DE EJEMPLO Y HAY QUE REEMPLAZARLOS por el dato
+ * real de la ficha de Google Maps del negocio. Desde que se quitó el testimonio
+ * inventado del inicio, esta sección es el ÚNICO testimonio del sitio, y su
+ * valor está justamente en que se puede ir a comprobar: una calificación que no
+ * coincida con la ficha de Google la convierte en lo contrario.
+ *
+ * Cómo obtenerlos a mano, sin API: abrir la ficha del negocio en Google Maps y
+ * copiar la calificación (`promedio`) y el número de opiniones (`total`) tal
+ * como aparecen ahí. Conviene revisarlos cada pocos meses.
+ *
+ * Cuando se conecte la API estos dos números llegan solos en `rating` y
  * `userRatingCount`; el enlace es el de la ficha en Google Maps.
  */
 export const resumenResenas: ResumenResenas = {

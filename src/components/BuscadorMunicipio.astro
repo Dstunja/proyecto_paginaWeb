@@ -1,0 +1,286 @@
+---
+/**
+ * "¿Llegamos a tu municipio?": la pregunta que trae a la mayoría de visitantes
+ * nuevos, resuelta antes del mapa.
+ *
+ * El mapa de la red ya tenía un buscador, pero está dentro de la tarjeta del
+ * mapa y compite con los filtros por departamento; había que llegar hasta allá
+ * y entender que ese campo servía para eso. Este bloque hace la misma pregunta
+ * en grande, encima del mapa, y responde con una frase, no con un punto en un
+ * mapa: "Sí, llegamos a Samacá, Boyacá".
+ *
+ * NO DUPLICA LA BÚSQUEDA
+ * ----------------------
+ * La normalización, el índice y las sugerencias viven en
+ * src/lib/municipios-busqueda.ts y los usan los dos buscadores. Al elegir un
+ * municipio, este componente además avisa por `document` (EVENTO_MUNICIPIO) y
+ * el mapa resalta el punto correspondiente: una sola búsqueda, dos respuestas.
+ *
+ * SIN JAVASCRIPT
+ * --------------
+ * Queda un campo y un botón que no hacen nada, pero debajo sigue estando el
+ * mapa con los 87 municipios dibujados, que es la misma información.
+ */
+import Icono from './Icono.astro';
+import { municipios } from '../data/municipios';
+import { empresa } from '../data/site';
+import { ruta } from '../lib/rutas';
+
+/** Solo lo que el navegador necesita para buscar y responder. */
+const datos = municipios.map((m) => ({
+  nombre: m.nombre,
+  departamento: m.departamento,
+  ...(m.diaRuta ? { diaRuta: m.diaRuta } : {}),
+}));
+
+const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c');
+---
+
+<script type="application/json" id="datos-municipios" set:html={aJson(datos)} is:inline></script>
+
+<div
+  class="glass-card mb-8 p-6 tablet:p-8"
+  data-buscador-cobertura
+  data-ruta-pedido={ruta('/pedido/')}
+  data-whatsapp={empresa.whatsapp}
+>
+  <div class="flex flex-col gap-5 tablet:flex-row tablet:items-end tablet:justify-between">
+    <div class="max-w-[46ch]">
+      <h3 class="m-0 text-[22px] tablet:text-[26px]">¿Llegamos a tu municipio?</h3>
+      <p class="mt-2 mb-0 text-[14.5px] text-muted">
+        Escribe el nombre y te decimos enseguida si tu negocio está dentro de la ruta.
+      </p>
+    </div>
+
+    <form class="relative w-full tablet:w-[380px]" role="search" data-form-cobertura novalidate>
+      <label class="sr-only" for="municipio-cobertura">Nombre de tu municipio</label>
+      <div class="flex gap-2">
+        <div class="relative flex-1">
+          <span
+            class="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted"
+            aria-hidden="true"
+          >
+            <Icono nombre="search" class="h-[18px] w-[18px]" interactivo={false} />
+          </span>
+          <input
+            id="municipio-cobertura"
+            class="field !pl-11"
+            type="search"
+            placeholder="Ej.: Samacá, Chiquinquirá…"
+            autocomplete="off"
+            autocapitalize="words"
+            role="combobox"
+            aria-expanded="false"
+            aria-autocomplete="list"
+            aria-controls="sugerencias-municipio"
+            data-campo-cobertura
+          />
+        </div>
+        <button type="submit" class="btn btn-primary shrink-0 !px-5">
+          <span class="sr-only mob:not-sr-only">Buscar</span>
+          <Icono nombre="arrow-right" class="h-[18px] w-[18px] mob:hidden" />
+        </button>
+      </div>
+
+      {/* Autocompletado. Lo llena el script; con el campo vacío no existe. */}
+      <ul
+        id="sugerencias-municipio"
+        class="absolute inset-x-0 top-full z-30 mt-2 hidden max-h-[260px] list-none overflow-y-auto rounded-2xl border border-line bg-surface p-1.5 shadow-[0_18px_40px_rgba(13,44,132,.16)]"
+        role="listbox"
+        aria-label="Municipios que coinciden"
+        data-sugerencias
+      >
+      </ul>
+    </form>
+  </div>
+
+  {/* Respuesta. Vive fuera del formulario para poder ocupar todo el ancho. */}
+  <div class="mt-6 hidden" role="status" aria-live="polite" data-respuesta></div>
+</div>
+
+<script>
+  import {
+    EVENTO_MUNICIPIO,
+    buscarMunicipio,
+    indexarMunicipios,
+    normalizarMunicipio,
+    sugerirMunicipios,
+    type DetalleMunicipioElegido,
+  } from '../lib/municipios-busqueda';
+  import { limpiarTermino, registrarEvento } from '../lib/analitica';
+
+  /**
+   * Lo que se imprimió en el bloque JSON: un subconjunto de `Municipio`.
+   *
+   * Se declara aquí en vez de importar el tipo de src/data/municipios.ts a
+   * propósito: importar ese módulo arrastraría al navegador las 89 filas de
+   * clientes y el JSON de coordenadas, que aquí no se usan para nada.
+   */
+  interface MunicipioLigero {
+    nombre: string;
+    departamento: string;
+    diaRuta?: string;
+  }
+
+  const caja = document.querySelector<HTMLElement>('[data-buscador-cobertura]');
+  const formulario = document.querySelector<HTMLFormElement>('[data-form-cobertura]');
+  const campo = document.querySelector<HTMLInputElement>('[data-campo-cobertura]');
+  const listaSugerencias = document.querySelector<HTMLUListElement>('[data-sugerencias]');
+  const respuesta = document.querySelector<HTMLElement>('[data-respuesta]');
+
+  if (caja && formulario && campo && listaSugerencias && respuesta) {
+    const nodo = document.getElementById('datos-municipios');
+    let lista: MunicipioLigero[] = [];
+    try {
+      lista = JSON.parse(nodo?.textContent ?? '[]') as MunicipioLigero[];
+    } catch {
+      lista = [];
+    }
+
+    const indice = indexarMunicipios(lista);
+
+    const esc = (v: string) =>
+      v.replace(
+        /[&<>"']/g,
+        (c) =>
+          ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
+      );
+
+    /* La ruta a /pedido/ y el número de WhatsApp los imprime el frontmatter en
+       la caja: aquí no se escriben a mano, y así la ruta sigue pasando por
+       src/lib/rutas.ts y respetando el `base`. */
+    const rutaPedido = caja.dataset.rutaPedido ?? '';
+    const whatsappCon = (texto: string) =>
+      `${caja.dataset.whatsapp ?? ''}?text=${encodeURIComponent(texto)}`;
+
+    // --- Sugerencias --------------------------------------------------------
+    const cerrarSugerencias = () => {
+      listaSugerencias.classList.add('hidden');
+      listaSugerencias.innerHTML = '';
+      campo.setAttribute('aria-expanded', 'false');
+    };
+
+    const pintarSugerencias = () => {
+      const encontrados = sugerirMunicipios(lista, campo.value);
+      if (encontrados.length === 0) {
+        cerrarSugerencias();
+        return;
+      }
+
+      listaSugerencias.innerHTML = encontrados
+        .map(
+          (m) => `
+            <li role="option" aria-selected="false">
+              <button type="button"
+                      class="flex w-full items-baseline gap-2 rounded-xl px-3.5 py-2.5 text-left transition-colors duration-150 hover:bg-primary-soft focus-visible:bg-primary-soft"
+                      data-sugerencia="${esc(m.nombre)}">
+                <span class="font-semibold text-ink">${esc(m.nombre)}</span>
+                <span class="text-[13px] text-muted">${esc(m.departamento)}</span>
+              </button>
+            </li>`,
+        )
+        .join('');
+      listaSugerencias.classList.remove('hidden');
+      campo.setAttribute('aria-expanded', 'true');
+    };
+
+    // --- Respuesta ----------------------------------------------------------
+    const responder = (texto: string) => {
+      const encontrado = buscarMunicipio(indice, texto);
+
+      /* Qué municipios busca la gente y cuáles todavía no tenemos cargados: es
+         la lista de por dónde conviene ampliar la cobertura. El término se
+         limpia por si alguien escribe ahí un correo o un teléfono. */
+      registrarEvento('cobertura_buscar', {
+        municipio: limpiarTermino(texto),
+        encontrado: Boolean(encontrado),
+      });
+
+      respuesta.classList.remove('hidden');
+
+      if (!encontrado) {
+        const mensaje = `Hola, soy de ${texto.trim()} y quiero saber si llegan a mi municipio.`;
+        respuesta.innerHTML = `
+          <div class="rounded-2xl border border-accent/40 bg-accent-soft p-5">
+            <p class="m-0 font-display text-[17px] font-semibold text-accent-text">
+              Aún no llegamos a ${esc(texto.trim())}.
+            </p>
+            <p class="m-0 mt-1.5 text-[14.5px] text-muted">
+              Escríbenos y lo revisamos: la red crece con la demanda de cada zona.
+            </p>
+            <a class="btn btn-whatsapp mt-4" href="${esc(whatsappCon(mensaje))}" target="_blank" rel="noopener">
+              Escribir por WhatsApp
+            </a>
+          </div>`;
+        return;
+      }
+
+      // El mapa resalta el punto: una sola búsqueda, dos respuestas.
+      document.dispatchEvent(
+        new CustomEvent<DetalleMunicipioElegido>(EVENTO_MUNICIPIO, {
+          detail: { nombre: encontrado.nombre },
+        }),
+      );
+
+      /* EDITAR AQUÍ (src/data/municipios.ts, DIAS_DE_RUTA): mientras no haya
+         días de ruta cargados, esta línea no se dibuja. No se inventa ninguno. */
+      const lineaRuta = encontrado.diaRuta
+        ? `<p class="m-0 mt-1.5 text-[14.5px] text-muted">Ruta: ${esc(encontrado.diaRuta)}.</p>`
+        : '';
+
+      respuesta.innerHTML = `
+        <div class="rounded-2xl border border-ok/40 bg-ok/5 p-5">
+          <p class="m-0 font-display text-[17px] font-semibold text-ok">
+            Sí, llegamos a ${esc(encontrado.nombre)}, ${esc(encontrado.departamento)}.
+          </p>
+          ${lineaRuta}
+          <a class="btn btn-accent mt-4" href="${esc(rutaPedido)}">Arma tu pedido</a>
+        </div>`;
+    };
+
+    // --- Interacción --------------------------------------------------------
+    campo.addEventListener('input', () => {
+      respuesta.classList.add('hidden');
+      pintarSugerencias();
+    });
+
+    listaSugerencias.addEventListener('click', (e) => {
+      const boton = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-sugerencia]');
+      if (!boton) return;
+      campo.value = boton.dataset.sugerencia ?? '';
+      cerrarSugerencias();
+      responder(campo.value);
+    });
+
+    formulario.addEventListener('submit', (e) => {
+      e.preventDefault();
+      cerrarSugerencias();
+      const valor = campo.value.trim();
+      if (valor === '') {
+        respuesta.classList.remove('hidden');
+        respuesta.innerHTML = `<p class="m-0 text-[14.5px] text-muted">Escribe el nombre de tu municipio.</p>`;
+        return;
+      }
+      responder(valor);
+    });
+
+    // Al escribir el nombre completo a mano, Enter ya resuelve; con el teclado,
+    // Escape cierra la lista sin perder lo escrito.
+    campo.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') cerrarSugerencias();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!caja.contains(e.target as Node)) cerrarSugerencias();
+    });
+
+    // Coherencia con el buscador del mapa: si allá se encuentra un municipio,
+    // aquí se refleja la misma respuesta en vez de dejar dos estados distintos.
+    document.addEventListener(EVENTO_MUNICIPIO, (e) => {
+      const detalle = (e as CustomEvent<DetalleMunicipioElegido>).detail;
+      if (!detalle?.nombre) return;
+      if (normalizarMunicipio(campo.value) === normalizarMunicipio(detalle.nombre)) return;
+      campo.value = detalle.nombre;
+    });
+  }
+</script>

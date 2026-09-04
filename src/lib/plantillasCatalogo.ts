@@ -143,7 +143,8 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
   /*
    * EL PRECIO: solo aparece si la referencia lo tiene
    * -------------------------------------------------
-   * Es el PSP (precio sugerido al público) del deck. La mayoría de las
+   * Es el PSP (precio sugerido al público): la corrección manual de
+   * src/data/precios.ts si la hay, y si no el del deck. La mayoría de las
    * referencias todavía no lo tiene y su tarjeta se pinta igual que antes,
    * sin renglón de precio: es preferible eso a un "consultar" repetido 600
    * veces, que solo agregaría ruido a la grilla.
@@ -155,8 +156,8 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * y en el mensaje de WhatsApp (AVISO_PRECIOS).
    */
   const precio =
-    typeof p.precio === 'number'
-      ? `<p class="m-0 mt-1 font-display text-[15px] font-bold text-primary">${escapar(pesos(p.precio))}<span class="ml-1.5 font-sans text-[10.5px] font-semibold tracking-[0.08em] text-muted uppercase">sugerido</span></p>`
+    typeof p.psp === 'number'
+      ? `<p class="m-0 mt-1 font-display text-[15px] font-bold text-primary">${escapar(pesos(p.psp))}<span class="ml-1.5 font-sans text-[10.5px] font-semibold tracking-[0.08em] text-muted uppercase">sugerido</span></p>`
       : '';
 
   return `

@@ -1,14 +1,27 @@
 ---
-import { empresa, redes, navegacion } from '../data/site';
+import { empresa, redes, navegacion, PIDEKY_URL } from '../data/site';
 import Logo from './Logo.astro';
 import Icono from './Icono.astro';
 import { ruta } from '../lib/rutas';
 
 const anio = new Date().getFullYear();
 
+/**
+ * Canales de atención.
+ *
+ * EDITAR AQUÍ (src/data/site.ts, PIDEKY_URL): mientras esa variable esté vacía,
+ * Pideky NO aparece en esta lista. Antes había un enlace "Pideky" que llevaba a
+ * un ancla del inicio, no a Pideky, y el botón de esa sección apuntaba a `#`:
+ * un canal que se anuncia y no lleva a ninguna parte cuesta más confianza de la
+ * que gana. En cuanto se llene la URL, el enlace reaparece solo, aquí y en el
+ * inicio.
+ */
 const canales = [
   { icono: 'whatsapp', texto: 'WhatsApp', href: empresa.whatsapp, externo: true },
-  { icono: 'shopping-cart', texto: 'Pideky', href: '/#haz-tu-pedido', externo: false },
+  ...(PIDEKY_URL.trim() !== ''
+    ? [{ icono: 'shopping-cart', texto: 'Pideky', href: PIDEKY_URL, externo: true }]
+    : []),
+  { icono: 'shopping-cart', texto: 'Arma tu pedido', href: '/pedido/', externo: false },
   { icono: 'headset', texto: 'PQRS', href: '/pqrs/', externo: false },
   { icono: 'users', texto: 'Trabaja con nosotros', href: '/empleos/', externo: false },
 ];
@@ -26,25 +39,34 @@ const canales = [
           Cundinamarca.
         </p>
 
-        <div class="mt-8 flex gap-3">
+        {/* Cada red con su NOMBRE al lado del ícono. Un ícono suelto obliga a
+            reconocer el logotipo, y el de X o el de un canal de WhatsApp no
+            todo el mundo los distingue; el nombre lo resuelve sin ambigüedad y
+            deja el enlace legible también para un lector de pantalla. Las
+            direcciones salen de `redes` (src/data/site.ts): aquí no hay
+            ninguna escrita a mano. */}
+        <ul class="m-0 mt-8 flex list-none flex-wrap gap-2.5 p-0">
           {
             redes.map((red) => (
-              <a
-                href={red.url}
-                target="_blank"
-                rel="noopener"
-                aria-label={red.nombre}
-                class="glass group flex h-10 w-10 items-center justify-center rounded-full
-                       text-muted transition-all duration-300 hover:-translate-y-0.5
-                       hover:border-accent hover:bg-accent hover:text-ink-dark
-                       focus-visible:border-accent focus-visible:bg-accent
-                       focus-visible:text-ink-dark"
-              >
-                <Icono nombre={red.icono} class="h-4 w-4" />
-              </a>
+              <li>
+                <a
+                  href={red.url}
+                  target="_blank"
+                  rel="noopener"
+                  aria-label={`${red.nombre} — se abre en una pestaña nueva`}
+                  class="glass group inline-flex items-center gap-2.5 rounded-full py-2 pr-4 pl-3
+                         text-[14px] font-semibold text-muted transition-all duration-300
+                         hover:-translate-y-0.5 hover:border-accent hover:bg-accent
+                         hover:text-ink-dark focus-visible:border-accent
+                         focus-visible:bg-accent focus-visible:text-ink-dark"
+                >
+                  <Icono nombre={red.icono} class="h-4 w-4" />
+                  {red.nombre}
+                </a>
+              </li>
             ))
           }
-        </div>
+        </ul>
       </div>
 
       <div>

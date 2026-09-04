@@ -4,18 +4,36 @@
  *
  * Mismo lenguaje que el hero de la portada: mucho aire, jerarquía tipográfica
  * marcada y ancho de lectura acotado sobre el fondo medianoche.
+ *
+ * Trae también la ruta de migas ("Inicio › Catálogo"). Va aquí y no en cada
+ * página porque todas las internas usan este encabezado: así ninguna se queda
+ * sin migas por olvido, y el inicio —que no usa PageHero— no las tiene, que es
+ * lo correcto.
  */
+import Breadcrumb from './Breadcrumb.astro';
+
 interface Props {
   kicker: string;
   titulo: string;
   texto?: string;
+  /**
+   * Nombre de la página en las migas, cuando no puede salir del mapa de
+   * `titulosDePagina` (src/data/site.ts): hoy, las rutas dinámicas de
+   * /empleos/[slug]/, donde el nombre es el de cada vacante.
+   *
+   * Se pasa aparte de `titulo` porque el h1 suele ser una frase completa
+   * ("Elige lo que necesita tu negocio") y las migas necesitan un rótulo corto.
+   */
+  migaTitulo?: string;
 }
 
-const { kicker, titulo, texto } = Astro.props;
+const { kicker, titulo, texto, migaTitulo } = Astro.props;
 ---
 
 <section class="relative overflow-hidden border-b border-line pt-16 pb-16 tablet:pt-24 tablet:pb-20">
   <div class="wrap">
+    <Breadcrumb titulo={migaTitulo} pathname={Astro.url.pathname} />
+
     <div class="max-w-[70ch]">
       <span class="kicker">{kicker}</span>
       <h1 class="text-[34px] mob:text-[40px] tablet:text-[52px]">{titulo}</h1>

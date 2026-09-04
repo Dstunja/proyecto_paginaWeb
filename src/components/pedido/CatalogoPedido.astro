@@ -41,6 +41,7 @@
 import { getImage } from 'astro:assets';
 import { productos, MARCAS, CATEGORIAS, SUBCATEGORIAS } from '../../data/productos';
 import { imagenSiExiste, logoMarcaImagen } from '../../lib/imagenes';
+import { codigosSinProducto, precioSugerido } from '../../lib/precios';
 import { ruta } from '../../lib/rutas';
 import { TAMANO_TANDA } from '../../data/pedido';
 import {
@@ -102,6 +103,11 @@ function fotoDe(imagen: string | undefined): string | null {
 
 const catalogo = productos.map((p) => {
   const imagen = fotoDe(p.imagen);
+  // El precio se resuelve aquí, en el build: manda la corrección manual de
+  // src/data/precios.ts y, si no hay, el PSP que el maestro trajo del deck
+  // (ver `precioSugerido` en src/lib/precios.ts). Solo viaja al navegador el de
+  // las referencias que lo tienen; las demás llegan sin el campo.
+  const psp = precioSugerido(p);
   return {
     id: p.id,
     marca: p.marca,
@@ -111,9 +117,22 @@ const catalogo = productos.map((p) => {
     presentacion: p.presentacion,
     codigo: p.codigo,
     ...(imagen ? { imagen } : {}),
-    ...(typeof p.precio === 'number' ? { precio: p.precio } : {}),
+    ...(psp !== null ? { psp } : {}),
   };
 });
+
+/** Cuántas referencias tienen precio sugerido: se dice bajo el buscador. */
+const conPrecio = catalogo.filter((p) => 'psp' in p).length;
+
+/* Aviso de mantenimiento, solo en consola durante `npm run build`: un código de
+   src/data/precios.ts que no corresponda a ninguna referencia no rompe nada,
+   pero conviene limpiarlo antes de que se acumulen. */
+const sobrantes = codigosSinProducto(productos);
+if (sobrantes.length > 0) {
+  console.warn(
+    `[precios] ${sobrantes.length} código(s) de src/data/precios.ts no existen en el catálogo: ${sobrantes.join(', ')}`,
+  );
+}
 
 /**
  * Logotipo de cada marca, si ya está subido a src/assets/marcas/.
@@ -322,12 +341,14 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
         >
           <Icono nombre="search" class="h-[18px] w-[18px]" interactivo={false} />
         </span>
-        <label class="sr-only" for="buscador">Buscar producto por nombre o presentación</label>
+        <label class="sr-only" for="buscador">
+          Buscar producto por nombre, marca, categoría o presentación
+        </label>
         <input
           id="buscador"
           type="search"
           class="field !pl-11"
-          placeholder="Buscar producto o presentación…"
+          placeholder="Buscar por producto, marca o categoría…"
           autocomplete="off"
           data-buscador
         />
@@ -515,9 +536,21 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 </noscript>
 
 {/* ---- Resultados ---- */}
-<p class="mb-6 text-[14.5px] text-muted" role="status" aria-live="polite" data-conteo>
-  {conteoInicial}
-</p>
+<div class="mb-6 flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+  <p class="m-0 text-[14.5px] text-muted" role="status" aria-live="polite" data-conteo>
+    {conteoInicial}
+  </p>
+
+  {/* Cuántas referencias traen precio. Se dice una sola vez, aquí, en vez de
+      repetir un "consultar" en las tarjetas que no lo tienen. */}
+  {
+    conPrecio > 0 && (
+      <p class="m-0 text-[13.5px] text-muted">
+        {conPrecio} de {catalogo.length} con precio sugerido de referencia.
+      </p>
+    )
+  }
+</div>
 
 {/*
   Aviso del PASO 2: las tarjetas de abajo ya están, lo que falta es el resto
@@ -742,7 +775,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       if (hayFiltro()) {
         const lista = filtrar();
         conteo.textContent = lista.length
-          ? `${lista.length} ${lista.length === 1 ? 'producto' : 'productos'}${descripcionFiltros()}.`
+          ? `${lista.length} de ${catalogo.length} ${lista.length === 1 ? 'producto' : 'productos'}${descripcionFiltros()}.`
           : `Ningún producto coincide${descripcionFiltros()}.`;
         contenedor.innerHTML = lista.length
           ? grilla(lista, '', estado)

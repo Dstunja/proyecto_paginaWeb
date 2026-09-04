@@ -20,6 +20,7 @@ import {
   WHATSAPP_NUMERO,
 } from '../data/pedido';
 import { empresa } from '../data/site';
+import { formatearPesos, resumirPrecios, type ResumenPrecios } from './precios';
 
 /**
  * Producto tal como lo necesita el navegador.
@@ -44,11 +45,13 @@ export interface ProductoPedido {
   codigo: string;
   imagen?: string;
   /**
-   * PSP en pesos, solo en las referencias cuya página del deck lo declara.
-   * Se muestra en la tarjeta del catálogo; no entra en el mensaje al asesor,
-   * que sigue siendo una lista de referencias y cantidades.
+   * Precio sugerido al público, en pesos. Sale del PSP que trae el maestro de
+   * productos (extraído del deck) o de la corrección manual en
+   * src/data/precios.ts, que manda cuando existe; ver `precioSugerido` en
+   * src/lib/precios.ts. Si no hay ninguno, la referencia se muestra con la
+   * etiqueta "Precio con tu asesor" y no entra en el subtotal orientativo.
    */
-  precio?: number;
+  psp?: number;
 }
 
 /** Datos de contacto que acompañan al pedido. */
@@ -228,6 +231,21 @@ export function totalReferencias(pedido: Pedido): number {
   return pedido.items.length;
 }
 
+/**
+ * Subtotal orientativo del pedido, resuelto contra el catálogo en memoria.
+ *
+ * Las referencias sin precio confirmado no se cuentan: el resumen dice de
+ * cuántas de cuántas sale el número, para que nunca se lea como un total.
+ */
+export function resumenDelPedido(pedido: Pedido): ResumenPrecios {
+  return resumirPrecios(
+    pedido.items.map((item) => ({
+      cantidad: item.cantidad,
+      psp: obtenerProducto(item.id)?.psp ?? null,
+    })),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Mensaje para el asesor
 // ---------------------------------------------------------------------------
@@ -237,7 +255,10 @@ function lineaDeItem(item: ItemPedido): string {
   const p = obtenerProducto(item.id);
   if (!p) return `${item.cantidad} × (referencia ${item.id})`;
   const codigo = p.codigo ? ` — cód. ${p.codigo}` : '';
-  return `${item.cantidad} × ${p.nombre} (${p.presentacion})${codigo}`;
+  // El precio de referencia va también en el mensaje: así el asesor ve con qué
+  // cifra hizo cuentas el cliente y sobre qué tiene que confirmar.
+  const precio = typeof p.psp === 'number' ? ` — ref. ${formatearPesos(p.psp)}` : '';
+  return `${item.cantidad} × ${p.nombre} (${p.presentacion})${codigo}${precio}`;
 }
 
 /** Encabezado con los datos del negocio; omite lo que no se haya llenado. */
@@ -261,10 +282,24 @@ function titulo(pedido: Pedido): string {
   return `*Productos* (${referencias} ${r}, ${unidades} ${u})`;
 }
 
+/**
+ * Línea de subtotal del mensaje. Se omite entera si ninguna referencia del
+ * pedido tiene precio confirmado: un "subtotal: $ 0" confundiría al asesor más
+ * de lo que ayuda.
+ */
+function lineaSubtotal(pedido: Pedido): string {
+  const resumen = resumenDelPedido(pedido);
+  if (resumen.conPrecio === 0) return '';
+  const alcance = resumen.completo
+    ? ''
+    : ` (parcial: ${resumen.conPrecio} de ${resumen.total} referencias con precio de referencia)`;
+  return `\n\n*Subtotal de referencia:* ${formatearPesos(resumen.subtotal)}${alcance}`;
+}
+
 /** Mensaje completo, sin recortar. Es también el texto del botón "Copiar". */
 export function mensajePedido(pedido: Pedido): string {
   const lineas = pedido.items.map(lineaDeItem);
-  return `${encabezado(pedido)}${titulo(pedido)}\n${lineas.join('\n')}\n\n${AVISO_PRECIOS}`;
+  return `${encabezado(pedido)}${titulo(pedido)}\n${lineas.join('\n')}${lineaSubtotal(pedido)}\n\n${AVISO_PRECIOS}`;
 }
 
 /** Cuánto ocupa el texto dentro de la URL, ya codificado. */

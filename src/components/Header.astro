@@ -8,14 +8,21 @@ import { ruta, esActual } from '../lib/rutas';
 const actual = Astro.url.pathname;
 
 /**
- * El botón "Haz tu pedido" lleva a /pedido/, no a WhatsApp: ahora existe una
- * página que hace exactamente lo que promete, y desde ella se sigue llegando a
- * WhatsApp con la lista ya escrita. WhatsApp directo queda a un toque en el
- * botón flotante y en el pie de página.
+ * "Arma tu pedido" es la acción principal del sitio y por eso vive fuera de la
+ * navegación, como una PÍLDORA NARANJA a la derecha del menú, visible en todas
+ * las páginas y en todos los anchos.
  *
- * El carrito no se suma a `navegacion` a propósito: el menú horizontal aparece
- * a 1100 px y con siete enlaces ya va justo. Va como botón de ícono, que
- * además es donde se espera encontrar el contador y se ve igual en móvil.
+ * No está en `navegacion` a propósito: entre siete enlaces de texto iguales, el
+ * que importa se pierde. Y el naranja (#F5A623) es en este sitio el color de la
+ * llamada destacada; el azul de la barra ya lo llevan el logo y los enlaces.
+ *
+ * La píldora ES TAMBIÉN EL CARRITO: lleva el total de unidades del pedido en
+ * curso. Antes eran dos elementos separados —un botón "Haz tu pedido" y un
+ * ícono de carrito— que apuntaban a la misma página, y en móvil se llevaban
+ * entre los dos casi todo el espacio de la barra.
+ *
+ * En /pedido/ el script del panel intercepta el clic y abre el panel en vez de
+ * recargar la página; por eso `data-abrir-pedido` solo se pone allí.
  */
 const enPedido = esActual('/pedido/', actual);
 ---
@@ -23,78 +30,72 @@ const enPedido = esActual('/pedido/', actual);
 {/* Barra fija de vidrio esmerilado: el contenido se desliza por debajo.
     La altura vive en --nav-h (global.css) y `main` reserva ese espacio. */}
 <header class="barra-fija fixed inset-x-0 top-0 z-[100]">
-  <div class="wrap flex h-[var(--nav-h)] items-center justify-between gap-6">
+  <div class="wrap flex h-[var(--nav-h)] items-center justify-between gap-3 nav:gap-6">
     <Logo href={ruta('/')} />
 
+    {/* Menú. Bajo 1100 px es un panel a pantalla completa que se abre con la
+        hamburguesa; a partir de ahí, la fila de enlaces de siempre. */}
     <nav
       id="main-nav"
-      class="barra-fija invisible absolute inset-x-0 top-full z-40 flex -translate-y-[130%] flex-col bg-canvas
-             items-start gap-5 px-6 py-6 opacity-0
-             shadow-[0_18px_40px_rgba(13,44,132,.12)]
-             transition-[transform,opacity,visibility] duration-300 ease-out
-             data-[open=true]:visible data-[open=true]:translate-y-0 data-[open=true]:opacity-100
-             nav:static nav:visible nav:z-auto nav:translate-y-0 nav:flex-row
-             nav:items-center nav:gap-6 [@media(min-width:1250px)]:gap-8 nav:border-0 nav:bg-transparent nav:p-0
-             nav:opacity-100 nav:shadow-none nav:backdrop-blur-none nav:transition-none"
+      class="menu-movil bg-canvas nav:static nav:visible nav:h-auto nav:translate-y-0 nav:overflow-visible
+             nav:bg-transparent nav:opacity-100 nav:transition-none"
       data-open="false"
+      aria-label="Navegación principal"
     >
-      {
-        navegacion.map((item) => {
-          const activo = esActual(item.href, actual);
-          return (
-            <a
-              href={ruta(item.href)}
-              aria-current={activo ? 'page' : undefined}
-              class:list={[
-                'relative py-1 font-display text-[13px] font-semibold tracking-[0.08em] uppercase transition-colors duration-200 hover:text-secondary-dark',
-                activo
-                  ? "text-ink after:absolute after:inset-x-0 after:-bottom-1 after:h-[2px] after:rounded-full after:bg-accent after:content-['']"
-                  : 'text-muted',
-              ]}
-            >
-              {item.texto}
-            </a>
-          );
-        })
-      }
-
-      {/* En el menú desplegable el pedido va con su nombre completo: el botón
-          de ícono de la barra no dice a dónde lleva. */}
-      <a
-        href={ruta('/pedido/')}
-        class="btn btn-primary w-full !py-2.5 !text-[12.5px] tracking-[0.08em] uppercase nav:hidden"
+      <div
+        class="flex h-full flex-col gap-1 overflow-y-auto px-6 pt-4 pb-10
+               nav:h-auto nav:flex-row nav:items-center nav:gap-6 nav:overflow-visible nav:p-0
+               [@media(min-width:1250px)]:gap-8"
       >
-        <Icono nombre="shopping-cart" class="h-4 w-4" />
-        Arma tu pedido
-      </a>
+        {
+          navegacion.map((item) => {
+            const activo = esActual(item.href, actual);
+            return (
+              <a
+                href={ruta(item.href)}
+                aria-current={activo ? 'page' : undefined}
+                class:list={[
+                  'relative border-b border-line py-4 font-display text-[15px] font-semibold tracking-[0.06em] uppercase transition-colors duration-200 hover:text-secondary-dark',
+                  'nav:border-0 nav:py-1 nav:text-[13px] nav:tracking-[0.08em]',
+                  activo
+                    ? "text-ink nav:after:absolute nav:after:inset-x-0 nav:after:-bottom-1 nav:after:h-[2px] nav:after:rounded-full nav:after:bg-accent nav:after:content-['']"
+                    : 'text-muted',
+                ]}
+              >
+                {item.texto}
+              </a>
+            );
+          })
+        }
+
+        {/* La misma acción destacada, al final de la lista: en un menú abierto a
+            pantalla completa la píldora de la barra queda tapada. */}
+        <a
+          href={ruta('/pedido/')}
+          class="btn btn-accent mt-6 w-full !py-3 tracking-[0.08em] uppercase nav:hidden"
+        >
+          <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
+          Arma tu pedido
+        </a>
+      </div>
     </nav>
 
     <div class="flex items-center gap-1.5 nav:gap-3">
-      {/* Carrito con el total de unidades. Se ve en todos los anchos: es el
-          único indicador de que hay un pedido a medio armar. En /pedido/ el
-          script del panel intercepta el clic y lo abre sin recargar. */}
+      {/* Acción principal + carrito, en un solo control. */}
       <a
         href={ruta('/pedido/')}
         data-abrir-pedido={enPedido ? '' : undefined}
         aria-haspopup={enPedido ? 'dialog' : undefined}
-        class="group relative grid h-11 w-11 place-items-center rounded-full text-ink transition-colors duration-200 hover:bg-secondary-soft hover:text-primary"
-        aria-label="Ver mi pedido"
+        class="btn btn-accent relative whitespace-nowrap !px-4 !py-2.5 !text-[12px] tracking-[0.06em] uppercase mob:!px-5 mob:!text-[12.5px] mob:tracking-[0.08em]"
       >
-        <Icono nombre="shopping-cart" class="h-[22px] w-[22px]" />
+        <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
+        Arma tu pedido
         <span
-          class="absolute -top-0.5 -right-0.5 min-w-[20px] rounded-full bg-accent px-1.5 py-0.5 text-center font-display text-[11px] leading-tight font-bold text-ink-dark"
+          class="absolute -top-1 -right-1 min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 text-center font-display text-[11px] leading-tight font-bold text-white"
           data-total-unidades
           data-contador-barra
           hidden>0</span
         >
-      </a>
-
-      <a
-        class="btn btn-primary hidden whitespace-nowrap !px-5 !py-2.5 !text-[12.5px] tracking-[0.08em] uppercase nav:inline-flex"
-        href={ruta('/pedido/')}
-      >
-        Haz tu pedido
-        <Icono nombre="arrow-right" class="h-4 w-4" />
       </a>
 
       <button
@@ -113,6 +114,74 @@ const enPedido = esActual('/pedido/', actual);
   </div>
 </header>
 
+<style>
+  /**
+   * Menú móvil: panel que ocupa la pantalla por debajo de la barra.
+   *
+   * Antes era un desplegable que crecía hacia abajo con los siete enlaces
+   * apretados; en un teléfono no cabían y el último quedaba fuera de la
+   * pantalla. Ahora ocupa todo el alto disponible, los enlaces van apilados con
+   * separadores y, si aún así no cupieran, el panel se desplaza por dentro.
+   *
+   * `visibility` (y no solo `opacity`) saca su contenido del orden de
+   * tabulación mientras está cerrado: sin eso, tabulando desde el logo se
+   * pasaba por siete enlaces invisibles. El cambio de `visibility` no se
+   * interpola: al cerrar se aplaza hasta que termina el desplazamiento y al
+   * abrir ocurre de inmediato, para que el foco se pueda dar enseguida.
+   */
+  .menu-movil {
+    position: fixed;
+    inset: var(--nav-h) 0 0 0;
+    /* Por encima de la barra fija del carrito (z-150, PanelPedido.astro): con
+       el menú abierto esa barra tapaba su último enlace. Sigue por debajo del
+       aviso de cookies (z-180) y del panel del pedido (z-200), que son
+       diálogos y deben poder aparecer encima de todo. No hace falta pasar del
+       z-100 de la barra superior porque el menú empieza justo debajo de ella y
+       nunca se solapan. */
+    z-index: 160;
+    height: calc(100dvh - var(--nav-h));
+    overflow: hidden;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition:
+      transform 0.25s ease-out,
+      opacity 0.25s ease-out,
+      visibility 0s linear 0.25s;
+  }
+
+  .menu-movil[data-open='true'] {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition:
+      transform 0.25s ease-out,
+      opacity 0.25s ease-out,
+      visibility 0s;
+  }
+
+  /* A partir de 1100 px vuelve a ser una fila normal dentro de la barra: se
+     anula todo lo de arriba, incluido el `position: fixed`. */
+  @media (min-width: 1100px) {
+    .menu-movil {
+      position: static;
+      inset: auto;
+      height: auto;
+      overflow: visible;
+      visibility: visible;
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .menu-movil {
+      transition: none;
+    }
+  }
+</style>
+
 <script>
   import { alCambiarPedido, leerPedido, totalUnidades, type Pedido } from '../lib/carrito';
 
@@ -120,27 +189,69 @@ const enPedido = esActual('/pedido/', actual);
   const nav = document.getElementById('main-nav');
 
   if (toggle && nav) {
+    /** Enlaces y botones del menú que pueden recibir el foco. */
+    const enfocables = () => [
+      ...nav.querySelectorAll<HTMLElement>('a[href], button:not(:disabled)'),
+    ];
+
+    const abrir = () => {
+      nav.dataset.open = 'true';
+      toggle.setAttribute('aria-expanded', 'true');
+      toggle.setAttribute('aria-label', 'Cerrar menú');
+      // El panel tapa la página: si no se bloquea, el fondo se desplaza detrás.
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => enfocables()[0]?.focus());
+    };
+
+    const cerrar = (devolverFoco = true) => {
+      if (nav.dataset.open !== 'true') return;
+      nav.dataset.open = 'false';
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-label', 'Abrir menú');
+      document.body.style.overflow = '';
+      if (devolverFoco) toggle.focus();
+    };
+
     toggle.addEventListener('click', () => {
-      const abierto = nav.dataset.open !== 'true';
-      nav.dataset.open = String(abierto);
-      toggle.setAttribute('aria-expanded', String(abierto));
-      toggle.setAttribute('aria-label', abierto ? 'Cerrar menú' : 'Abrir menú');
+      if (nav.dataset.open === 'true') cerrar();
+      else abrir();
     });
 
-    // Cerrar al navegar dentro de la misma página (anclas) o con Escape.
+    // Al navegar se cierra: sin esto, volver atrás en el navegador deja el
+    // menú abierto encima de la página nueva.
     nav.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('a')) {
-        nav.dataset.open = 'false';
-        toggle.setAttribute('aria-expanded', 'false');
-      }
+      if ((e.target as HTMLElement).closest('a')) cerrar(false);
     });
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && nav.dataset.open === 'true') {
-        nav.dataset.open = 'false';
-        toggle.setAttribute('aria-expanded', 'false');
-        toggle.focus();
+      if (nav.dataset.open !== 'true') return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        cerrar();
+        return;
       }
+
+      // Mientras el menú tapa la página, el foco no debe salirse de él.
+      if (e.key === 'Tab') {
+        const candidatos = [toggle, ...enfocables()];
+        const primero = candidatos[0]!;
+        const ultimo = candidatos[candidatos.length - 1]!;
+        if (e.shiftKey && document.activeElement === primero) {
+          e.preventDefault();
+          ultimo.focus();
+        } else if (!e.shiftKey && document.activeElement === ultimo) {
+          e.preventDefault();
+          primero.focus();
+        }
+      }
+    });
+
+    // Al pasar a escritorio el panel deja de existir como tal: si quedó abierto,
+    // el `overflow: hidden` del body se quedaría pegado.
+    const anchoEscritorio = window.matchMedia('(min-width: 1100px)');
+    anchoEscritorio.addEventListener('change', (e) => {
+      if (e.matches) cerrar(false);
     });
   }
 
@@ -159,8 +270,8 @@ const enPedido = esActual('/pedido/', actual);
       enlaceCarrito.setAttribute(
         'aria-label',
         total === 0
-          ? 'Ver mi pedido (vacío)'
-          : `Ver mi pedido: ${total} ${total === 1 ? 'unidad' : 'unidades'}`,
+          ? 'Arma tu pedido'
+          : `Arma tu pedido — llevas ${total} ${total === 1 ? 'unidad' : 'unidades'}`,
       );
     };
 

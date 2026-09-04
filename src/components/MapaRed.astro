@@ -1,7 +1,6 @@
 ---
-import Icono from './Icono.astro';
 import LoaderDST from './LoaderDST.astro';
-import { departamentos, municipios, totalMunicipios } from '../data/municipios';
+import { departamentos, totalMunicipios } from '../data/municipios';
 
 /**
  * Mapa de cobertura: una pieza visual fija, no un mapa para explorar.
@@ -14,7 +13,9 @@ import { departamentos, municipios, totalMunicipios } from '../data/municipios';
  *
  * El mapa no se arrastra ni hace zoom con la rueda; el encuadre es siempre el
  * mismo. Lo único interactivo es la ficha con el nombre del municipio que sale
- * al pasar el mouse o tocar un punto, más los filtros y el buscador de arriba.
+ * al pasar el mouse o tocar un punto, más los filtros por departamento. La
+ * búsqueda por municipio vive en BuscadorMunicipio.astro, encima de esta
+ * tarjeta, y le pide al mapa que resalte el punto elegido.
  *
  * Los municipios salen de la base de datos real (src/data/clientes-municipio.ts)
  * y las coordenadas de la caché de src/data/coordenadas.json. El número de
@@ -49,28 +50,11 @@ const listaDepartamentos =
       }
     </div>
 
-    <form class="flex w-full gap-2 tablet:w-auto" id="buscador-mapa" role="search">
-      <label class="sr-only" for="buscar-municipio">Buscar municipio</label>
-      <input
-        class="field !w-full !py-2.5 tablet:!w-[240px]"
-        id="buscar-municipio"
-        name="municipio"
-        type="search"
-        list="lista-municipios"
-        placeholder="Busca tu municipio…"
-        autocomplete="off"
-      />
-      <datalist id="lista-municipios">
-        {municipios.map((m) => <option value={m.nombre} />)}
-      </datalist>
-      <button
-        class="group flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-semibold text-white transition-colors duration-200 hover:bg-primary-dark"
-        type="submit"
-      >
-        <Icono nombre="search" class="h-[18px] w-[18px]" />
-        <span class="sr-only mob:not-sr-only">Buscar</span>
-      </button>
-    </form>
+    {/* Aquí vivía un segundo campo de búsqueda de municipios. Se quitó al
+        agregar el buscador destacado "¿Llegamos a tu municipio?" justo encima
+        de esta tarjeta (BuscadorMunicipio.astro): dos campos que preguntan lo
+        mismo, uno debajo del otro, solo obligan a elegir cuál usar. Al buscar
+        allá, este mapa resalta el punto (evento EVENTO_MUNICIPIO). */}
   </div>
 
   <!-- MAPA -->
@@ -109,13 +93,6 @@ const listaDepartamentos =
         <LoaderDST texto="Cargando el mapa…" />
       </div>
 
-      <!-- Aviso del buscador: aparece sobre el mapa al buscar. -->
-      <p
-        id="aviso-mapa"
-        class="pointer-events-none absolute inset-x-4 top-4 z-[500] m-0 hidden rounded-xl bg-surface px-4 py-2.5 text-[14px] font-medium shadow-[0_8px_24px_rgba(13,44,132,.16)] tablet:inset-x-auto tablet:left-1/2 tablet:-translate-x-1/2"
-        role="status"
-      >
-      </p>
     </div>
   </div>
 
@@ -332,7 +309,11 @@ const listaDepartamentos =
   import 'leaflet/dist/leaflet.css';
   import { municipios, colorDepartamento, sede, type Municipio } from '../data/municipios';
   import { FONDO } from '../lib/mapa-base';
-  import { limpiarTermino, registrarEvento } from '../lib/analitica';
+  import {
+    EVENTO_MUNICIPIO,
+    normalizarMunicipio,
+    type DetalleMunicipioElegido,
+  } from '../lib/municipios-busqueda';
 
   const contenedor = document.getElementById('mapa-red');
 
@@ -359,12 +340,11 @@ const listaDepartamentos =
     // Fondo a color de OpenStreetMap (ver src/lib/mapa-base.ts).
     const teselas = L.tileLayer(FONDO.url, FONDO.opciones).addTo(mapa);
 
-    const normalizar = (texto: string) =>
-      texto
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .trim();
+    /* La normalización es la MISMA que usa el buscador destacado de arriba
+       (src/lib/municipios-busqueda.ts). Si cada uno tuviera su propia copia,
+       bastaría con tocar una para que uno encontrara "chiquinquira" y el otro
+       no, sin que nada avisara. */
+    const normalizar = normalizarMunicipio;
 
     /**
      * Ficha que se muestra al pasar el mouse o al tocar el punto: el nombre del
@@ -544,48 +524,14 @@ const listaDepartamentos =
       });
     });
 
-    // ---- Buscador -----------------------------------------------------------
-    const formulario = document.getElementById('buscador-mapa') as HTMLFormElement | null;
-    const campo = document.getElementById('buscar-municipio') as HTMLInputElement | null;
-    const aviso = document.getElementById('aviso-mapa');
-
-    function mostrarAviso(texto: string, ok: boolean) {
-      if (!aviso) return;
-      aviso.textContent = texto;
-      aviso.classList.remove('hidden');
-      aviso.style.color = ok ? 'var(--color-ok)' : 'var(--color-accent-text)';
-    }
-
-    formulario?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const valor = campo?.value.trim() ?? '';
-      if (!valor) {
-        mostrarAviso('Escribe el nombre de tu municipio.', false);
-        return;
-      }
-
-      const clave = normalizar(valor);
-      const encontrado = puntos.get(clave);
-
-      /* Que municipios busca la gente y cuales todavia no tenemos cargados:
-         es la lista de por donde conviene ampliar la cobertura. El termino se
-         limpia por si alguien escribe ahi un correo o un telefono. */
-      registrarEvento('cobertura_buscar', {
-        municipio: limpiarTermino(valor),
-        encontrado: Boolean(encontrado),
-      });
-
-      if (!encontrado) {
-        mostrarAviso(
-          `Por ahora no tenemos cobertura confirmada en "${valor}". Escríbenos y lo validamos.`,
-          false,
-        );
-        return;
-      }
-
-      const { marcador, municipio } = encontrado;
-      mostrarAviso(`Sí, llegamos a ${municipio.nombre}, ${municipio.departamento}.`, true);
-
+    /**
+     * Trae el punto al frente, le abre la ficha y lo engorda un momento.
+     *
+     * Vive aparte del formulario porque también lo dispara el buscador
+     * destacado de arriba (BuscadorMunicipio.astro): allá se hace la búsqueda
+     * y aquí solo se responde, sin repetir la lógica de encontrar el municipio.
+     */
+    function resaltar({ marcador, municipio }: { marcador: L.CircleMarker; municipio: Municipio }) {
       // Si estaba filtrado por otro departamento, se vuelven a mostrar todos.
       botones.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === 'todos')));
       capas.forEach((capa) => capa.addTo(mapa));
@@ -599,8 +545,17 @@ const listaDepartamentos =
         () => marcador.setStyle({ weight: 2, radius: radio(municipio.clientes) }),
         2500,
       );
-    });
+    }
 
-    campo?.addEventListener('input', () => aviso?.classList.add('hidden'));
+    /* El buscador destacado de la cabecera avisa por `document` cuál municipio
+       eligió la persona; el mapa se limita a señalarlo. Los dos componentes
+       empaquetan su script por separado, así que el evento es lo único que
+       comparten. */
+    document.addEventListener(EVENTO_MUNICIPIO, (e) => {
+      const detalle = (e as CustomEvent<DetalleMunicipioElegido>).detail;
+      if (!detalle?.nombre) return;
+      const encontrado = puntos.get(normalizarMunicipio(detalle.nombre));
+      if (encontrado) resaltar(encontrado);
+    });
   }
 </script>

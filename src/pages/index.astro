@@ -4,18 +4,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
 import { altoSeguroLogo, logoMarcaImagen } from '../lib/imagenes';
 import MapaRed from '../components/MapaRed.astro';
+import BuscadorMunicipio from '../components/BuscadorMunicipio.astro';
 import EspecialesMes from '../components/EspecialesMes.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
 import Resenas from '../components/Resenas.astro';
-import RedesSociales from '../components/RedesSociales.astro';
 import AnaliticaSecciones from '../components/AnaliticaSecciones.astro';
 import {
   cifras,
   marcasDeLaFranja,
-  valorAgregado,
   beneficios,
   empresa,
+  CLIENTES_TEXTO,
+  PIDEKY_URL,
   HERO_IMAGEN,
   HERO_IMAGEN_ALT,
   resumenCobertura,
@@ -26,6 +27,15 @@ import {
 import { departamentos } from '../data/municipios';
 
 const formatoNumero = new Intl.NumberFormat('es-CO');
+
+/**
+ * EDITAR AQUÍ (src/data/site.ts, PIDEKY_URL): mientras esa variable esté vacía,
+ * la tarjeta de Pideky de "Haz tu pedido" no se dibuja y la sección queda con
+ * los canales que sí funcionan. Anunciar un canal cuyo botón no lleva a ninguna
+ * parte cuesta más confianza de la que gana. Al llenar la URL, la tarjeta
+ * reaparece sola y la rejilla vuelve a dos columnas.
+ */
+const hayPideky = PIDEKY_URL.trim() !== '';
 
 /* Franja "Marcas que distribuimos".
 
@@ -54,7 +64,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
 
 <BaseLayout
   title="Distribuciones Santiago de Tunja — Distribuidor Nutresa en Boyacá, Santander y Cundinamarca"
-  description="Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. 21 años de experiencia, 87 municipios cubiertos, 1 punto de venta."
+  description="Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. 21 años de experiencia, 87 municipios cubiertos y más de 7.000 clientes atendidos."
 >
   <!-- HERO -->
   <section class="relative overflow-hidden pt-14 pb-0 tablet:pt-24" data-seccion="hero">
@@ -206,34 +216,6 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
     </div>
   </div>
 
-  <!-- VALOR AGREGADO -->
-  <section class="section" data-seccion="valor_agregado">
-    <div class="wrap">
-      <div class="mb-14 max-w-[56ch]">
-        <span class="kicker">Nuestro valor agregado</span>
-        <h2 class="text-[28px] tablet:text-[38px]">
-          Soluciones integrales para hacer crecer a nuestros aliados comerciales
-        </h2>
-      </div>
-      <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3" data-revelar-grupo>
-        {
-          valorAgregado.map((item) => (
-            <div class="group glass-card p-8">
-              <span class="icono-chip mb-6 h-12 w-12">
-                <Icono nombre={item.icono} class="h-6 w-6" interactivo={false} />
-              </span>
-              <div class="mb-2 font-display text-sm font-semibold text-accent-text">
-                {item.num}
-              </div>
-              <h3 class="mb-3 text-lg">{item.titulo}</h3>
-              <p class="m-0 text-[14.5px] text-muted">{item.texto}</p>
-            </div>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
   <!-- COBERTURA -->
   <section id="cobertura" class="section border-y border-line bg-fondo" data-seccion="cobertura">
     <div class="wrap">
@@ -241,9 +223,11 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
         <div class="max-w-[52ch]">
           <span class="kicker">Nuestra red</span>
           <h2 class="text-[28px] tablet:text-[38px]">Cobertura nacional</h2>
+          {/* La cifra sale de CLIENTES_TEXTO (src/data/site.ts), la misma que
+              muestra la barra del hero: son el mismo dato y no pueden diferir. */}
           <p class="mt-3 text-muted">
-            Atendemos {formatoNumero.format(resumenCobertura.totalClientes)} clientes en 87 municipios
-            de tres departamentos. En el mapa marcamos los municipios donde se concentra la red.
+            Atendemos {CLIENTES_TEXTO} clientes en 87 municipios de tres departamentos. En el mapa
+            marcamos los municipios donde se concentra la red.
           </p>
         </div>
 
@@ -262,6 +246,12 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
                 <dd class="mt-1 font-display text-[30px] leading-none font-bold text-primary">
                   {dep.total}
                 </dd>
+                {/* Aquí iba el conteo de clientes por departamento, sacado de
+                    src/data/clientes-municipio.ts. Se quitó porque sumaba una
+                    cifra distinta de la que publica el sitio (CLIENTES_TEXTO) y
+                    dos números que no cuadran se leen como un error. El dato
+                    sigue siendo interno y alimenta el tamaño de los puntos del
+                    mapa. */}
                 <dd class="mt-1 m-0 text-[12.5px] text-muted">
                   {formatoNumero.format(resumenCobertura.clientesPorDepartamento[dep.nombre])} clientes
                 </dd>
@@ -270,6 +260,10 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
           }
         </dl>
       </div>
+
+      {/* La pregunta que trae a la mayoría de visitantes nuevos, resuelta antes
+          del mapa. Al elegir un municipio, el mapa resalta su punto. */}
+      <BuscadorMunicipio />
 
       <MapaRed />
     </div>
@@ -281,6 +275,10 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
       <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Para tu negocio</span>
         <h2 class="text-[28px] tablet:text-[38px]">Impulsa tu negocio con nuestro respaldo</h2>
+        <p class="mt-4 text-lg text-muted">
+          Soluciones integrales para hacer crecer a nuestros aliados comerciales: portafolio,
+          precio, asesoría y cumplimiento en la entrega.
+        </p>
       </div>
 
       <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4" data-revelar-grupo>
@@ -319,7 +317,12 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
         <p class="mt-4 text-lg text-muted">Elige el canal que prefieras.</p>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 tablet:grid-cols-2">
+      <div
+        class:list={[
+          'grid grid-cols-1 gap-6',
+          hayPideky ? 'tablet:grid-cols-2' : 'mx-auto max-w-[520px]',
+        ]}
+      >
         <div class="group glass-card flex flex-col items-center p-10 text-center">
           <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-whatsapp/15 text-whatsapp transition-all duration-300 group-hover:scale-105 group-hover:bg-whatsapp group-hover:text-white group-focus-within:scale-105">
             <Icono nombre="whatsapp" class="h-8 w-8" interactivo={false} />
@@ -339,16 +342,20 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
           </a>
         </div>
 
-        <div class="group glass-card flex flex-col items-center p-10 text-center">
-          <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/15 text-accent transition-all duration-300 group-hover:scale-105 group-hover:bg-accent group-hover:text-ink-dark group-focus-within:scale-105">
-            <Icono nombre="shopping-cart" class="h-8 w-8" interactivo={false} />
-          </span>
-          <h3 class="mt-6 text-xl">Pideky</h3>
-          <p class="mt-3 mb-8 max-w-[30ch] text-[14.5px] text-muted">
-            Haz tu pedido en línea de manera rápida, sin registro previo.
-          </p>
-          <BotonPideky />
-        </div>
+        {
+          hayPideky && (
+            <div class="group glass-card flex flex-col items-center p-10 text-center">
+              <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent/15 text-accent transition-all duration-300 group-hover:scale-105 group-hover:bg-accent group-hover:text-ink-dark group-focus-within:scale-105">
+                <Icono nombre="shopping-cart" class="h-8 w-8" interactivo={false} />
+              </span>
+              <h3 class="mt-6 text-xl">Pideky</h3>
+              <p class="mt-3 mb-8 max-w-[30ch] text-[14.5px] text-muted">
+                Haz tu pedido en línea de manera rápida, sin registro previo.
+              </p>
+              <BotonPideky />
+            </div>
+          )
+        }
       </div>
 
       <div class="glass-card mt-6 flex flex-wrap items-center justify-between gap-6 px-8 py-7">
@@ -381,8 +388,8 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
       </div>
     </div>
   </section>
-  <!-- SÍGUENOS -->
-  <RedesSociales />
+  {/* La franja "Estamos en tus redes" se quitó del inicio: los mismos cuatro
+      enlaces ya están en el pie de página, en todas las páginas del sitio. */}
 
   {/* Mide que secciones de esta pagina se llegan a ver (evento seccion_vista). */}
   <AnaliticaSecciones />

@@ -4,15 +4,31 @@
  * manda al asesor.
  *
  * En escritorio es un cajón que entra por la derecha; en móvil, una hoja que
- * sube desde abajo. Es el mismo elemento: solo cambia de qué lado entra (ver
- * el bloque <style>).
+ * sube desde abajo (bottom sheet). Es el mismo elemento: solo cambia de qué
+ * lado entra (ver el bloque <style>).
  *
- * No hay servidor: el pedido se entrega por WhatsApp con el texto ya escrito,
- * y el botón "Copiar pedido" deja la misma lista en el portapapeles para
- * pegarla donde haga falta (un correo, otro chat).
+ * CARRITO SIEMPRE VISIBLE
+ * -----------------------
+ * En móvil y tableta el pedido se resume en una BARRA FIJA al borde inferior
+ * de la pantalla, que dice cuántas unidades van y abre la hoja. Antes el panel
+ * vivía al final de la página y, eligiendo productos, el cliente no tenía forma
+ * de ver qué llevaba sin desplazarse hasta abajo. Con el pedido vacío la barra
+ * no se dibuja: no hay nada que resumir y taparía el último producto sin
+ * ofrecer nada a cambio.
+ *
+ * DOS PASOS
+ * ---------
+ * Paso 1: elegir productos. Paso 2: los datos del negocio, que solo aparecen al
+ * pulsar "Enviar pedido por WhatsApp" con al menos una referencia. Pedir el
+ * nombre del negocio y el teléfono a alguien que todavía no ha agregado nada es
+ * un formulario en blanco defendiendo la puerta.
+ *
+ * No hay servidor: el pedido se entrega por WhatsApp con el texto ya escrito, y
+ * "Copiar pedido" deja la misma lista en el portapapeles para pegarla donde
+ * haga falta (un correo, otro chat).
  */
 import { municipios } from '../../data/municipios';
-import { AVISO_PRECIOS } from '../../data/pedido';
+import { PRECIOS_ACTUALIZADOS } from '../../data/precios';
 import { empresa } from '../../data/site';
 import Icono from '../Icono.astro';
 
@@ -20,30 +36,47 @@ import Icono from '../Icono.astro';
 const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
   a.localeCompare(b, 'es'),
 );
+
+/**
+ * Nota de precios: una sola vez, al pie del panel, en vez de repetida en cada
+ * una de las 709 tarjetas del catálogo.
+ */
+const NOTA_PRECIOS =
+  'Precios de referencia. El valor final lo confirma tu asesor según tu zona y volumen.';
 ---
 
-{/* Botón flotante: barra ancha en móvil, píldora en escritorio. Aparece solo
-    cuando hay algo en el pedido; con el pedido vacío, la puerta de entrada es
-    el carrito de la barra superior. */}
-<button
-  type="button"
-  class="btn btn-primary fixed right-4 bottom-4 left-4 z-[150] hidden shadow-[0_14px_34px_rgba(13,44,132,.34)] tablet:left-auto"
-  data-abrir-pedido
-  data-flotante
-  aria-haspopup="dialog"
+{/* ---- Carrito siempre visible ----
+    Barra a lo ancho en móvil y tableta; píldora suelta en escritorio, donde el
+    panel es un cajón lateral y una barra a todo lo ancho sería desmedida.
+    El script le quita `hidden` en cuanto hay algo en el pedido. */}
+<div
+  class="fixed inset-x-0 bottom-0 z-[150] border-t border-line bg-surface/95 px-4 py-3 shadow-[0_-10px_30px_rgba(13,44,132,.16)] backdrop-blur-[var(--blur-glass)] tablet:inset-x-auto tablet:right-6 tablet:bottom-6 tablet:border-0 tablet:bg-transparent tablet:p-0 tablet:shadow-none tablet:backdrop-blur-none"
+  data-barra-pedido
+  hidden
 >
-  <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
-  Ver mi pedido
-  <span
-    class="ml-1 rounded-full bg-white/20 px-2.5 py-0.5 text-[13px] font-bold"
-    data-total-flotante>0</span
+  <button
+    type="button"
+    class="btn btn-primary w-full shadow-[0_14px_34px_rgba(13,44,132,.34)] tablet:w-auto"
+    data-abrir-pedido
+    data-boton-barra
+    aria-haspopup="dialog"
+    aria-controls="panel-pedido"
+    aria-expanded="false"
   >
-</button>
+    <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
+    {/* El contador se anuncia solo: quien usa lector de pantalla se entera de
+        que el pedido subió sin tener que ir a buscar la barra. */}
+    <span data-texto-barra aria-live="polite">0 unidades</span>
+    <span aria-hidden="true" class="opacity-60">·</span>
+    Ver pedido
+  </button>
+</div>
 
 {/* Velo: oscurece la página y cierra el panel al tocarlo. */}
 <div class="velo-pedido" data-velo hidden></div>
 
 <aside
+  id="panel-pedido"
   class="panel-pedido flex flex-col bg-surface"
   role="dialog"
   aria-modal="true"
@@ -54,7 +87,7 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
   {/* --- Cabecera --- */}
   <header class="flex items-center gap-4 border-b border-line px-6 py-5">
     <h2 id="titulo-pedido" class="m-0 flex-1 text-[19px]">Mi pedido</h2>
-    <p class="m-0 text-[13px] text-muted" data-resumen>0 unidades</p>
+    <p class="m-0 text-[13px] text-muted" data-resumen>Vacío</p>
     <button
       type="button"
       class="grid h-10 w-10 place-items-center rounded-full text-ink transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
@@ -68,89 +101,40 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
   {/* --- Lista de referencias --- */}
   <div class="min-h-0 flex-1 overflow-y-auto px-6">
     <p class="hidden py-12 text-center text-[14.5px] text-muted" data-vacio>
-      Todavía no has agregado productos. Busca en el catálogo y toca
+      Aún no has agregado productos. Busca en el catálogo y toca
       <strong class="text-ink">Agregar</strong>.
     </p>
     <ul class="m-0 list-none p-0" data-lista></ul>
   </div>
 
-  {/* --- Datos del negocio y envío --- */}
-  <form class="border-t border-line px-6 py-5" data-formulario novalidate>
-    <div class="grid grid-cols-1 gap-3 mob:grid-cols-2">
-      <div class="mob:col-span-2">
-        <label class="field-label" for="pedido-negocio">Nombre del negocio *</label>
-        <input
-          class="field"
-          id="pedido-negocio"
-          name="negocio"
-          type="text"
-          required
-          autocomplete="organization"
-          data-campo="negocio"
-        />
+  {/* --- Pie: subtotal, envío y datos ---
+      Todo el pie desaparece con el pedido vacío: sin productos no hay nada que
+      sumar, nada que enviar y nada que preguntar. */}
+  <div class="hidden border-t border-line px-6 py-5" data-pie>
+    {/* Subtotal orientativo. Lo escribe el script, que es quien sabe qué
+        referencias del pedido tienen precio confirmado. */}
+    <div class="mb-4 hidden" data-bloque-subtotal>
+      <div class="flex items-baseline justify-between gap-4">
+        <span class="text-[14px] text-muted" data-etiqueta-subtotal>Subtotal de referencia</span>
+        <span class="font-display text-[22px] font-bold text-primary" data-valor-subtotal></span>
       </div>
-
-      <div>
-        <label class="field-label" for="pedido-municipio">Municipio *</label>
-        <input
-          class="field"
-          id="pedido-municipio"
-          name="municipio"
-          type="text"
-          required
-          list="municipios-cobertura"
-          autocomplete="address-level2"
-          data-campo="municipio"
-        />
-        <datalist id="municipios-cobertura">
-          {sugerencias.map((m) => <option value={m} />)}
-        </datalist>
-      </div>
-
-      <div>
-        <label class="field-label" for="pedido-contacto">Nombre de contacto *</label>
-        <input
-          class="field"
-          id="pedido-contacto"
-          name="contacto"
-          type="text"
-          required
-          autocomplete="name"
-          data-campo="contacto"
-        />
-      </div>
-
-      <div class="mob:col-span-2">
-        <label class="field-label" for="pedido-telefono">Teléfono (opcional)</label>
-        <input
-          class="field"
-          id="pedido-telefono"
-          name="telefono"
-          type="tel"
-          inputmode="tel"
-          autocomplete="tel"
-          data-campo="telefono"
-        />
-      </div>
+      <p class="m-0 mt-1 hidden text-[12.5px] text-muted" data-detalle-subtotal></p>
     </div>
 
-    <p class="mt-4 mb-0 text-[13px] text-muted">{AVISO_PRECIOS}</p>
-
-    <p
-      class="mt-3 mb-0 hidden text-[13.5px] font-semibold"
-      role="status"
-      aria-live="polite"
-      data-aviso
-    >
+    {/* La única nota de precios de toda la página. */}
+    <p class="m-0 mb-4 text-[12.5px] text-muted">
+      {NOTA_PRECIOS}
+      {PRECIOS_ACTUALIZADOS && <> Actualizados en {PRECIOS_ACTUALIZADOS}.</>}
     </p>
 
-    <div class="mt-4 flex flex-col gap-2.5">
-      <button type="submit" class="btn btn-whatsapp w-full" data-enviar>
+    {/* ---- PASO 1: la lista ---- */}
+    <div data-bloque-paso="1">
+      <button type="button" class="btn btn-whatsapp w-full" data-ir-a-datos>
         Enviar pedido por WhatsApp
         <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
       </button>
 
-      <div class="flex gap-2.5">
+      <div class="mt-2.5 flex gap-2.5">
         <button type="button" class="btn btn-secondary flex-1 !px-4" data-copiar>
           <Icono nombre="copy" class="h-4 w-4" />
           Copiar pedido
@@ -162,10 +146,99 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
           aria-label="Vaciar el pedido"
         >
           <Icono nombre="trash" class="h-4 w-4" />
-          Vaciar
+          Vaciar pedido
         </button>
       </div>
     </div>
+
+    {/* ---- PASO 2: los datos del negocio ---- */}
+    <form data-formulario data-bloque-paso="2" novalidate hidden>
+      <p class="m-0 mb-4 text-[13.5px] text-muted">
+        Último paso: dinos a quién atiende el asesor. Tu pedido no se pierde.
+      </p>
+
+      <div class="grid grid-cols-1 gap-3 mob:grid-cols-2">
+        <div class="mob:col-span-2">
+          <label class="field-label" for="pedido-negocio">Nombre del negocio *</label>
+          <input
+            class="field"
+            id="pedido-negocio"
+            name="negocio"
+            type="text"
+            required
+            autocomplete="organization"
+            data-campo="negocio"
+          />
+        </div>
+
+        <div>
+          <label class="field-label" for="pedido-municipio">Municipio *</label>
+          <input
+            class="field"
+            id="pedido-municipio"
+            name="municipio"
+            type="text"
+            required
+            list="municipios-cobertura"
+            autocomplete="address-level2"
+            data-campo="municipio"
+          />
+          <datalist id="municipios-cobertura">
+            {sugerencias.map((m) => <option value={m} />)}
+          </datalist>
+        </div>
+
+        <div>
+          <label class="field-label" for="pedido-contacto">Nombre de contacto *</label>
+          <input
+            class="field"
+            id="pedido-contacto"
+            name="contacto"
+            type="text"
+            required
+            autocomplete="name"
+            data-campo="contacto"
+          />
+        </div>
+
+        <div class="mob:col-span-2">
+          <label class="field-label" for="pedido-telefono">Teléfono *</label>
+          <input
+            class="field"
+            id="pedido-telefono"
+            name="telefono"
+            type="tel"
+            required
+            inputmode="numeric"
+            autocomplete="tel"
+            placeholder="3106232429"
+            aria-describedby="ayuda-telefono"
+            data-campo="telefono"
+          />
+          <p id="ayuda-telefono" class="m-0 mt-1 text-[12.5px] text-muted">
+            10 dígitos, sin indicativo de país.
+          </p>
+        </div>
+      </div>
+
+      <p
+        class="mt-3 mb-0 hidden text-[13.5px] font-semibold"
+        role="status"
+        aria-live="polite"
+        data-aviso
+      >
+      </p>
+
+      <div class="mt-4 flex flex-col gap-2.5">
+        <button type="submit" class="btn btn-whatsapp w-full">
+          Abrir WhatsApp con mi pedido
+          <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
+        </button>
+        <button type="button" class="btn btn-secondary w-full" data-volver-a-lista>
+          Volver a la lista
+        </button>
+      </div>
+    </form>
 
     <p class="mt-4 mb-0 text-center text-[13px] text-muted">
       ¿Prefieres que te lo tomen por chat?
@@ -176,7 +249,7 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
         rel="noopener">Escríbenos sin pedido armado</a
       >.
     </p>
-  </form>
+  </div>
 </aside>
 
 <style>
@@ -201,6 +274,13 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
     z-index: 200;
     inset: auto 0 0 0;
     max-height: 88vh;
+    /* La hoja nunca puede crecer más allá de la pantalla: en el paso 2 el pie
+       lleva los cuatro campos del negocio y, sin este desplazamiento, el botón
+       de "Volver a la lista" quedaba por debajo del borde inferior y no había
+       forma de alcanzarlo. La lista de referencias conserva su propio
+       desplazamiento para el paso 1, que es cuando puede ser larga. */
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border-top-left-radius: 24px;
     border-top-right-radius: 24px;
     box-shadow: 0 -18px 50px rgba(13, 44, 132, 0.22);
@@ -255,11 +335,13 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
     mensajeParaUrl,
     mensajePedido,
     obtenerProducto,
+    resumenDelPedido,
     sumarCantidad,
     totalUnidades,
     vaciarPedido,
     type Pedido,
   } from '../../lib/carrito';
+  import { formatearPesos } from '../../lib/precios';
   import { CANTIDAD_MAXIMA } from '../../data/pedido';
   import { registrarEvento } from '../../lib/analitica';
 
@@ -268,11 +350,28 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
   const lista = document.querySelector<HTMLUListElement>('[data-lista]');
   const vacio = document.querySelector<HTMLElement>('[data-vacio]');
   const resumen = document.querySelector<HTMLElement>('[data-resumen]');
+  const pie = document.querySelector<HTMLElement>('[data-pie]');
+  const paso1 = document.querySelector<HTMLElement>('[data-bloque-paso="1"]');
   const formulario = document.querySelector<HTMLFormElement>('[data-formulario]');
   const aviso = document.querySelector<HTMLElement>('[data-aviso]');
-  const flotante = document.querySelector<HTMLElement>('[data-flotante]');
+  const barra = document.querySelector<HTMLElement>('[data-barra-pedido]');
+  const botonBarra = document.querySelector<HTMLElement>('[data-boton-barra]');
+  const textoBarra = document.querySelector<HTMLElement>('[data-texto-barra]');
 
-  if (panel && velo && lista && vacio && resumen && formulario && aviso && flotante) {
+  if (
+    panel &&
+    velo &&
+    lista &&
+    vacio &&
+    resumen &&
+    pie &&
+    paso1 &&
+    formulario &&
+    aviso &&
+    barra &&
+    botonBarra &&
+    textoBarra
+  ) {
     let pedido: Pedido = leerPedido();
     /** A quién se le devuelve el foco al cerrar. */
     let origenFoco: HTMLElement | null = null;
@@ -286,6 +385,61 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
 
     const unidades = (n: number) => `${n} ${n === 1 ? 'unidad' : 'unidades'}`;
 
+    // --- Pasos --------------------------------------------------------------
+    /**
+     * Vuelve al paso 1 (la lista). Se llama también al vaciar el pedido y al
+     * cerrar el panel: dejar el formulario abierto sobre una lista vacía es la
+     * pantalla que este cambio venía a quitar.
+     */
+    const volverALista = () => {
+      formulario.hidden = true;
+      paso1.hidden = false;
+      avisar('');
+    };
+
+    const irADatos = () => {
+      if (pedido.items.length === 0) return;
+      paso1.hidden = true;
+      formulario.hidden = false;
+      // El primer campo toma el foco: en móvil abre el teclado ya en su sitio.
+      panel.querySelector<HTMLInputElement>('[data-campo="negocio"]')?.focus();
+    };
+
+    // --- Subtotal orientativo -----------------------------------------------
+    const bloqueSubtotal = panel.querySelector<HTMLElement>('[data-bloque-subtotal]');
+    const etiquetaSubtotal = panel.querySelector<HTMLElement>('[data-etiqueta-subtotal]');
+    const valorSubtotal = panel.querySelector<HTMLElement>('[data-valor-subtotal]');
+    const detalleSubtotal = panel.querySelector<HTMLElement>('[data-detalle-subtotal]');
+
+    /**
+     * Pinta el subtotal solo si al menos una referencia tiene precio.
+     *
+     * Cuando no todas lo tienen se rotula como PARCIAL y se dice de cuántas
+     * sale: un número presentado como total, faltándole la mitad de las líneas,
+     * es peor que no mostrar nada, porque parece exacto.
+     */
+    const pintarSubtotal = () => {
+      if (!bloqueSubtotal || !etiquetaSubtotal || !valorSubtotal || !detalleSubtotal) return;
+      const r = resumenDelPedido(pedido);
+
+      if (r.conPrecio === 0) {
+        bloqueSubtotal.classList.add('hidden');
+        return;
+      }
+
+      bloqueSubtotal.classList.remove('hidden');
+      valorSubtotal.textContent = formatearPesos(r.subtotal);
+
+      if (r.completo) {
+        etiquetaSubtotal.textContent = 'Subtotal de referencia';
+        detalleSubtotal.classList.add('hidden');
+      } else {
+        etiquetaSubtotal.textContent = 'Subtotal parcial';
+        detalleSubtotal.textContent = `${r.conPrecio} de ${r.total} productos con precio de referencia; el resto lo cotiza tu asesor.`;
+        detalleSubtotal.classList.remove('hidden');
+      }
+    };
+
     // --- Lista --------------------------------------------------------------
     const pintarLista = () => {
       const activo = document.activeElement;
@@ -297,12 +451,24 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
           const nombre = p ? `${p.nombre} (${p.presentacion})` : item.id;
           const marca = p?.marca ?? '';
 
+          /* Precio de la línea: la cifra de la referencia y, si lleva más de
+             una unidad, cuánto suma. Sin dato confirmado, la etiqueta corta. */
+          const precio =
+            typeof p?.psp === 'number'
+              ? `<p class="m-0 mt-0.5 text-[12.5px] text-muted">${esc(formatearPesos(p.psp))} c/u${
+                  item.cantidad > 1
+                    ? ` · <span class="font-semibold text-ink">${esc(formatearPesos(p.psp * item.cantidad))}</span>`
+                    : ''
+                }</p>`
+              : `<p class="m-0 mt-0.5 text-[12.5px] text-muted">Precio con tu asesor</p>`;
+
           return `
             <li class="flex gap-3 border-b border-line py-4" data-item="${esc(item.id)}">
               <div class="min-w-0 flex-1">
                 ${marca ? `<p class="m-0 font-display text-[11px] font-semibold tracking-[0.1em] text-secondary-dark uppercase">${esc(marca)}</p>` : ''}
                 <p class="m-0 text-[14.5px] leading-snug font-semibold text-ink">${esc(p?.nombre ?? item.id)}</p>
                 <p class="m-0 text-[13px] text-muted">${esc(p?.presentacion ?? '')}</p>
+                ${precio}
               </div>
 
               <div class="flex shrink-0 flex-col items-end gap-2">
@@ -329,17 +495,21 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
 
       const total = totalUnidades(pedido);
       const referencias = pedido.items.length;
+
       resumen.textContent = referencias
         ? `${referencias} ${referencias === 1 ? 'referencia' : 'referencias'} · ${unidades(total)}`
         : 'Vacío';
       vacio.classList.toggle('hidden', referencias > 0);
 
-      // Botón flotante. Al quitarle `hidden`, la clase .btn le devuelve el
-      // display que le corresponde. El contador de la barra superior lo pinta
-      // Header.astro, que escucha el mismo evento.
-      flotante.classList.toggle('hidden', referencias === 0);
-      const contadorFlotante = flotante.querySelector<HTMLElement>('[data-total-flotante]');
-      if (contadorFlotante) contadorFlotante.textContent = String(total);
+      // Sin productos no hay subtotal, ni envío, ni datos que pedir.
+      pie.classList.toggle('hidden', referencias === 0);
+      if (referencias === 0) volverALista();
+      pintarSubtotal();
+
+      // Barra fija: solo con algo dentro. El contador de la barra superior lo
+      // pinta Header.astro, que escucha el mismo evento.
+      barra.hidden = referencias === 0;
+      textoBarra.textContent = unidades(total);
 
       if (foco) {
         panel.querySelector<HTMLElement>(`[data-foco="${CSS.escape(foco)}"]`)?.focus();
@@ -357,6 +527,7 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
     const abrir = (origen?: HTMLElement) => {
       origenFoco = origen ?? (document.activeElement as HTMLElement | null);
       panel.dataset.abierto = 'true';
+      botonBarra.setAttribute('aria-expanded', 'true');
       velo.hidden = false;
       document.body.style.overflow = 'hidden';
       // Todo lo demás espera al cuadro siguiente: la opacidad del velo necesita
@@ -371,11 +542,15 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
     const cerrar = () => {
       if (panel.dataset.abierto !== 'true') return;
       panel.dataset.abierto = 'false';
+      botonBarra.setAttribute('aria-expanded', 'false');
       velo.removeAttribute('data-visible');
       document.body.style.overflow = '';
       window.setTimeout(() => {
         if (panel.dataset.abierto !== 'true') velo.hidden = true;
       }, 300);
+      // El formulario se cierra con el panel: al volver, la puerta de entrada
+      // vuelve a ser la lista.
+      volverALista();
       origenFoco?.focus();
       origenFoco = null;
     };
@@ -452,12 +627,17 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
       guardarPedido(pedido);
     });
 
+    panel.querySelector('[data-ir-a-datos]')?.addEventListener('click', irADatos);
+    panel.querySelector('[data-volver-a-lista]')?.addEventListener('click', () => {
+      volverALista();
+      panel.querySelector<HTMLElement>('[data-ir-a-datos]')?.focus();
+    });
+
     panel.querySelector('[data-vaciar]')?.addEventListener('click', () => {
       if (pedido.items.length === 0) return;
       if (!window.confirm('¿Quitar todas las referencias del pedido?')) return;
       pedido = vaciarPedido(pedido);
       guardarPedido(pedido);
-      avisar('Pedido vacío.', 'ok');
     });
 
     // --- Datos del negocio --------------------------------------------------
@@ -483,11 +663,25 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
     });
 
     // --- Avisos -------------------------------------------------------------
-    const avisar = (texto: string, tono: 'ok' | 'error' = 'ok') => {
+    function avisar(texto: string, tono: 'ok' | 'error' = 'ok') {
+      if (!aviso) return;
       aviso.textContent = texto;
       aviso.classList.toggle('hidden', texto === '');
       aviso.classList.toggle('text-ok', tono === 'ok');
       aviso.classList.toggle('text-accent-text', tono === 'error');
+    }
+
+    /**
+     * Teléfono colombiano: 10 dígitos.
+     *
+     * Se cuentan los dígitos y ya: la gente escribe espacios, guiones y
+     * paréntesis, y rechazar "310 623 2429" por el formato sería castigar a
+     * quien lo escribió bien. Sí se admite el prefijo +57 o 57 delante, que
+     * algunos teclados agregan solos, y se descuenta antes de contar.
+     */
+    const telefonoValido = (valor: string): boolean => {
+      const digitos = valor.replace(/\D/g, '').replace(/^57(?=\d{10}$)/, '');
+      return /^\d{10}$/.test(digitos);
     };
 
     /** Comprueba lo mínimo y marca el primer campo que falta. */
@@ -503,6 +697,14 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
         campo.setAttribute('aria-invalid', 'true');
         campo.focus();
         avisar('Completa los datos del negocio para que el asesor sepa a quién atender.', 'error');
+        return false;
+      }
+
+      const telefono = panel.querySelector<HTMLInputElement>('[data-campo="telefono"]');
+      if (telefono && !telefonoValido(telefono.value)) {
+        telefono.setAttribute('aria-invalid', 'true');
+        telefono.focus();
+        avisar('El teléfono debe tener 10 dígitos, por ejemplo 3106232429.', 'error');
         return false;
       }
 
@@ -537,6 +739,9 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
       // terminara de copiarse el texto, el navegador la bloquearía.
       window.open(enlaceWhatsapp(texto), '_blank', 'noopener');
 
+      /* El pedido NO se vacía al enviarlo: es normal que el cliente vuelva a
+         ajustar cantidades y mande una corrección. Para eso está "Vaciar
+         pedido", que además pide confirmación. */
       if (recortado) {
         void copiarAlPortapapeles(mensajePedido(pedido)).then((copiado) => {
           avisar(
@@ -552,16 +757,12 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
     });
 
     panel.querySelector('[data-copiar]')?.addEventListener('click', () => {
-      if (pedido.items.length === 0) {
-        avisar('El pedido está vacío.', 'error');
-        return;
-      }
+      if (pedido.items.length === 0) return;
       void copiarAlPortapapeles(mensajePedido(pedido)).then((copiado) => {
-        avisar(
+        window.alert(
           copiado
             ? 'Pedido copiado. Ya puedes pegarlo donde lo necesites.'
-            : 'Tu navegador no dejó copiar. Selecciona el texto del pedido a mano.',
-          copiado ? 'ok' : 'error',
+            : 'Tu navegador no dejó copiar. Abre el pedido y selecciona el texto a mano.',
         );
       });
     });

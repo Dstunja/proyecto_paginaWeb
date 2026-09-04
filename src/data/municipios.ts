@@ -34,7 +34,38 @@ export interface Municipio {
   lng: number;
   /** Clientes atendidos en el municipio. */
   clientes: number;
+  /**
+   * Días en que pasa la ruta de reparto, tal como se quiere leer:
+   * 'martes y viernes', 'miércoles'. El buscador "¿Llegamos a tu municipio?"
+   * lo muestra como "Ruta: martes y viernes" cuando está presente y, cuando no,
+   * simplemente no dice nada del día.
+   *
+   * HOY ESTÁ VACÍO PARA TODOS LOS MUNICIPIOS: el dato no existe en ninguna de
+   * las dos fuentes (ni en el Excel de clientes ni en las coordenadas), y no se
+   * inventa ninguno. Prometerle a un tendero que la ruta pasa un martes y que
+   * no pase es peor que no decírselo.
+   */
+  diaRuta?: string;
 }
+
+/**
+ * EDITAR AQUÍ: días de ruta por municipio.
+ *
+ * Formato: `'Nombre del municipio': 'días tal como se quieren leer'`. El nombre
+ * va como aparece en src/data/clientes-municipio.ts (sin tildes está bien: la
+ * comparación las ignora).
+ *
+ *     export const DIAS_DE_RUTA: Record<string, string> = {
+ *       'Tunja': 'lunes a viernes',
+ *       'Chiquinquira': 'martes y viernes',
+ *       'Villa De Leyva': 'jueves',
+ *     };
+ *
+ * De dónde sacar el dato: de la programación de rutas del área comercial. No
+ * hace falta llenarlos todos de una vez —los que falten simplemente no muestran
+ * día— pero conviene que un municipio no aparezca con un día equivocado.
+ */
+export const DIAS_DE_RUTA: Record<string, string> = {};
 
 interface EntradaCoordenada {
   lat: number;
@@ -62,17 +93,32 @@ function nombreOficial(nombreCrudo: string, entrada: EntradaCoordenada): string 
   return candidato && sinTildes(candidato) === sinTildes(nombreCrudo) ? candidato : nombreCrudo;
 }
 
+/**
+ * Día de ruta del municipio, comparando sin tildes ni mayúsculas para que
+ * escribirlo como "Chiquinquirá" o "Chiquinquira" en DIAS_DE_RUTA dé igual.
+ */
+const RUTAS_NORMALIZADAS = new Map(
+  Object.entries(DIAS_DE_RUTA).map(([nombre, dias]) => [sinTildes(nombre), dias]),
+);
+
+function buscarDiaDeRuta(nombreCrudo: string): string | undefined {
+  const dias = RUTAS_NORMALIZADAS.get(sinTildes(nombreCrudo));
+  return dias && dias.trim() !== '' ? dias.trim() : undefined;
+}
+
 export const municipios: Municipio[] = clientesPorMunicipio
   .filter((fila) => fila.departamento in NOMBRE_DEPARTAMENTO)
   .map((fila) => {
     const entrada = cache[fila.municipio];
     if (!entrada) return null;
+    const diaRuta = buscarDiaDeRuta(fila.municipio);
     return {
       nombre: nombreOficial(fila.municipio, entrada),
       departamento: NOMBRE_DEPARTAMENTO[fila.departamento],
       lat: entrada.lat,
       lng: entrada.lng,
       clientes: fila.clientes,
+      ...(diaRuta ? { diaRuta } : {}),
     };
   })
   .filter((m): m is Municipio => m !== null);
