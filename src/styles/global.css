@@ -221,6 +221,21 @@
 }
 
 @layer components {
+  /* --- Logotipos de marca -------------------------------------------------
+     Los logotipos del portafolio vienen de fuentes muy distintas (unos del
+     manual de marca, otros recortados de un empaque), asi que llegan con
+     densidades de tinta dispares. Un realce leve e igual para todos los
+     empareja sin que ninguno se note retocado.
+
+     El tamano NO se pone aqui: cada logotipo lo calcula su pagina con
+     altoSeguroLogo (src/lib/imagenes.ts) y lo aplica <Image>, para que
+     ninguno se muestre por encima de su resolucion real. */
+  .logo-marca {
+    max-width: 100%;
+    object-fit: contain;
+    filter: contrast(1.06) saturate(1.04);
+  }
+
   /* --- Bloques oscuros sobre el sitio claro -------------------------------
      El pie de página y algún panel de marca van en azul oscuro. En vez de
      cambiar clase por clase, se reescriben aquí los tokens de texto, líneas y

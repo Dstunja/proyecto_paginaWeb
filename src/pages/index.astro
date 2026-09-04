@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
-import { logoMarcaImagen } from '../lib/imagenes';
+import { altoSeguroLogo, logoMarcaImagen } from '../lib/imagenes';
 import MapaRed from '../components/MapaRed.astro';
 import EspecialesMes from '../components/EspecialesMes.astro';
 import BotonPideky from '../components/BotonPideky.astro';
@@ -32,12 +32,11 @@ const formatoNumero = new Intl.NumberFormat('es-CO');
    marca sin archivo (o con el archivo renombrado) simplemente no aparece, en
    vez de mostrarse como texto suelto o como imagen rota.
 
-   Cada logo se muestra a un tamaño calculado, no impuesto por el CSS: la
-   altura nunca pasa de la mitad de la altura real del archivo, de modo que la
-   copia @2x del srcset todavía cabe dentro de la resolución original y ningún
-   logo se agranda por encima de lo que da. Por eso Corona, que es el archivo
-   más pequeño, se ve un punto más bajo que el resto: es preferible a verlo
-   borroso en una pantalla retina. */
+   Cada logo se muestra a un tamaño calculado, no impuesto por el CSS (ver
+   altoSeguroLogo en src/lib/imagenes.ts): ninguno se agranda por encima de la
+   resolución que da su archivo. Por eso Corona, el archivo más pequeño, se ve
+   un punto más bajo que el resto, y La Especial, que es muy alargada, se ve
+   más baja todavía: es preferible a verlas borrosas en una pantalla retina. */
 const ALTO_FRANJA = 40;
 const ANCHO_MAXIMO_FRANJA = 130;
 
@@ -45,18 +44,9 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
   const imagen = logoMarcaImagen(nombre);
   if (!imagen) return []; // marca sin archivo de logo: fuera de la franja
 
-  const alto = Math.min(
-    ALTO_FRANJA,
-    Math.floor((imagen.height - 1) / 2), // nunca por encima de su resolución real
-    Math.floor((ANCHO_MAXIMO_FRANJA * imagen.height) / imagen.width), // logos muy alargados
-  );
-  // El píxel que se descuenta antes de partir a la mitad absorbe el redondeo
-  // del ancho: sin él, un logo de alto impar como Corona (62 px) pediría una
-  // copia @2x un píxel más ancha que su propio archivo.
-  //
   // Solo se pasa el alto: <Image> deriva el ancho de la relación de aspecto
   // real del archivo, así el atributo width y la imagen generada coinciden.
-  return [{ nombre, imagen, alto }];
+  return [{ nombre, imagen, alto: altoSeguroLogo(imagen, ALTO_FRANJA, ANCHO_MAXIMO_FRANJA) }];
 });
 ---
 
@@ -185,7 +175,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
                 quality={90}
                 loading="lazy"
                 decoding="async"
-                class="logo-marca"
+                class="logo-marca logo-marca-franja"
               />
             </li>
           ))
@@ -438,22 +428,16 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
 </script>
 
 <style>
-  /* Franja "Marcas que distribuimos".
-
-     Los 15 logotipos vienen de fuentes distintas (unos recortados de un
-     empaque, otros del manual de marca), así que llegan con densidades de
-     tinta muy dispares. Un realce leve e igual para todos los empareja sin
-     que ninguno se note retocado; el ancho y el alto los pone <Image> con el
-     tamaño exacto de cada uno, aquí no se escala nada. */
-  .logo-marca {
-    max-width: 100%;
-    object-fit: contain;
-    filter: contrast(1.06) saturate(1.04);
+  /* El realce parejo y el object-contain vienen de .logo-marca, en
+     global.css, que comparten la franja y las fichas del catálogo. Aquí solo
+     va lo propio de la franja: sobre el fondo gris los logotipos van algo
+     atenuados y recuperan su color al pasar el cursor. */
+  .logo-marca-franja {
     opacity: 0.85;
     transition: opacity 0.2s ease;
   }
 
-  .logo-marca:hover {
+  .logo-marca-franja:hover {
     opacity: 1;
   }
 </style>

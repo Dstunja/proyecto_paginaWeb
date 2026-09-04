@@ -130,6 +130,19 @@ const LOGOS_POR_SLUG: Record<string, ImageMetadata> = Object.fromEntries(
 );
 
 /**
+ * El mismo índice, con las claves sin guiones ('chocolisto', 'saltinnoel'...).
+ *
+ * Sirve para que una marca escrita de dos maneras en el sitio encuentre igual
+ * su archivo: el catálogo extraído del PDF dice 'Chocolisto' en una palabra
+ * mientras el resto del sitio escribe 'Choco Listo', y ambas deben llegar a
+ * choco-listo.jpg. Solo se consulta si falla la búsqueda exacta, así que no
+ * cambia el resultado de ninguna marca que ya cruzaba.
+ */
+const LOGOS_SIN_GUIONES: Record<string, ImageMetadata> = Object.fromEntries(
+  Object.entries(LOGOS_POR_SLUG).map(([clave, imagen]) => [clave.replace(/-/g, ''), imagen]),
+);
+
+/**
  * Imagen del logotipo de una marca, lista para el <Image> de astro:assets.
  *
  * Devuelve el `ImageMetadata` completo (con el ancho y el alto reales del
@@ -138,16 +151,35 @@ const LOGOS_POR_SLUG: Record<string, ImageMetadata> = Object.fromEntries(
  * quien la use decida el respaldo: mostrar el nombre en texto u omitirla.
  */
 export function logoMarcaImagen(nombre: string): ImageMetadata | null {
-  return LOGOS_POR_SLUG[slug(nombre)] ?? null;
+  const clave = slug(nombre);
+  return LOGOS_POR_SLUG[clave] ?? LOGOS_SIN_GUIONES[clave.replace(/-/g, '')] ?? null;
 }
 
 /**
- * URL del logotipo de una marca, o null si todavía no tiene archivo.
+ * Alto al que se puede mostrar un logotipo sin agrandarlo, dentro de una caja.
  *
- * Es la versión en texto plano de `logoMarcaImagen`, para los sitios donde
- * hace falta una cadena y no un componente: un `<img>` normal o los datos que
- * se serializan a JSON para el armador de pedidos.
+ * Devuelve el mayor alto que cumple tres condiciones a la vez: cabe en la
+ * caja, no supera la mitad del alto real del archivo —para que la copia @2x
+ * del srcset siga cabiendo dentro de la resolución original— y no desborda el
+ * ancho de la caja cuando el logotipo es muy alargado.
+ *
+ * El píxel que se descuenta antes de partir a la mitad absorbe el redondeo
+ * del ancho: sin él, un logotipo de alto impar como Corona (62 px) pediría
+ * una copia @2x un píxel más ancha que su propio archivo.
+ *
+ * Es la regla que mantiene parejos los logotipos de la franja del inicio y
+ * las fichas del catálogo, que vienen de fuentes y resoluciones muy
+ * distintas: ninguno se estira por encima de lo que da su archivo.
  */
-export function logoMarca(nombre: string): string | null {
-  return logoMarcaImagen(nombre)?.src ?? null;
+export function altoSeguroLogo(
+  imagen: ImageMetadata,
+  altoMaximo: number,
+  anchoMaximo: number,
+): number {
+  return Math.min(
+    altoMaximo,
+    Math.floor((imagen.height - 1) / 2),
+    Math.floor((anchoMaximo * imagen.height) / imagen.width),
+  );
 }
+

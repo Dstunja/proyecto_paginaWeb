@@ -18,7 +18,8 @@
  * al catálogo de marcas y a WhatsApp.
  */
 import { productos, MARCAS, CATEGORIAS } from '../../data/productos';
-import { imagenSiExiste, logoMarca } from '../../lib/imagenes';
+import { getImage } from 'astro:assets';
+import { imagenSiExiste, logoMarcaImagen } from '../../lib/imagenes';
 import { ruta } from '../../lib/rutas';
 import Icono from '../Icono.astro';
 import LoaderDST from '../LoaderDST.astro';
@@ -50,8 +51,36 @@ const catalogo = productos.map((p) => {
  * Logotipo de cada marca, si ya está subido a src/assets/marcas/.
  * Es el respaldo de las referencias que todavía no tienen foto propia; si
  * tampoco hay logotipo, la tarjeta muestra las iniciales de la marca.
+ *
+ * Aquí las tarjetas las arma JavaScript en el navegador a partir de este
+ * JSON, así que no se puede usar <Image> y hace falta una URL suelta. Con
+ * `getImage` se consigue igual la copia optimizada en WebP: una sola por
+ * marca, del tamaño del cuadro más grande donde aparece un logotipo en esta
+ * pantalla (80x80, o 160 px para las pantallas de alta densidad), que sirve
+ * también para el emblema de 32 px de la cabecera de cada marca.
+ *
+ * `escala` nunca pasa de 1: un archivo más pequeño que la caja se sirve tal
+ * cual en vez de agrandarse, que es el mismo criterio de altoSeguroLogo.
  */
-const logos = Object.fromEntries(MARCAS.map((marca) => [marca, logoMarca(marca)]));
+const LADO_LOGO = 160;
+
+const logos = Object.fromEntries(
+  await Promise.all(
+    MARCAS.map(async (marca) => {
+      const imagen = logoMarcaImagen(marca);
+      if (!imagen) return [marca, null] as const;
+
+      const escala = Math.min(1, LADO_LOGO / imagen.width, LADO_LOGO / imagen.height);
+      const optimizada = await getImage({
+        src: imagen,
+        width: Math.round(imagen.width * escala),
+        format: 'webp',
+        quality: 90,
+      });
+      return [marca, optimizada.src] as const;
+    }),
+  ),
+);
 
 /** Solo las categorías que efectivamente tienen productos. */
 const categoriasUsadas = CATEGORIAS.filter((c) => productos.some((p) => p.categoria === c));
