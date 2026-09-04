@@ -323,157 +323,93 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
      src/lib/plantillasCatalogo.ts, así que nunca llevan el atributo de
      ámbito que Astro le pondría a un <style> normal.
 
-     LA CAJA: 4:3 A SANGRE, 16:10 EN UNA SOLA COLUMNA
-     -----------------------------------------------
-     La foto llena el ancho completo de la tarjeta -que es la que lleva el
-     `overflow-hidden` y le recorta las esquinas redondeadas- y la caja fija
-     su alto con `aspect-ratio`. Al declararlo aquí y no depender de que la
-     imagen cargue, la grilla no da ningún salto de maquetación mientras
-     bajan las fotos.
+     LA CAJA: 1:1, LA MISMA EN TODAS LAS TARJETAS Y EN TODAS LAS ANCHURAS
+     -------------------------------------------------------------------
+     El cuadrado no es una preferencia estética: es el formato real del
+     archivo. Las fotos oficiales que se descargaron de la tienda de Nutresa
+     y viven en src/assets/productos/ son de 1000x1000, con el producto
+     centrado sobre fondo blanco. Con la caja en 1:1 y `object-fit: cover` el
+     navegador no tiene nada que recortar -la foto y el marco tienen la misma
+     proporción-, así que el empaque se ve entero y centrado, que es
+     justamente lo que se pide. Cualquier otra proporción, 4:3 incluido,
+     obligaría a cortar: en 4:3 se perdería un 25 % del alto, y sin
+     desvanecido ese corte se vería como un filo recto sobre la letra menuda
+     del empaque.
 
-     `object-fit: cover` es lo que garantiza que no queden franjas blancas ni
-     huecos, sea cual sea la proporción del archivo: el navegador recorta lo
-     que sobre por el lado largo. El fondo blanco de la caja es la red de
-     seguridad para el instante anterior a que la foto pinte.
+     La proporción es ÚNICA: no cambia con el ancho de la pantalla. Todas las
+     tarjetas de una fila miden lo mismo y la grilla no da saltos.
 
-     POR QUÉ LA PROPORCIÓN CAMBIA EN MÓVIL
-     -------------------------------------
-     Con 4:3 y una sola columna la foto se lleva 293 px de alto en una
-     pantalla de 390, la tarjeta entera pasa de 500 px y por el armador se
-     avanza de dos en dos referencias. En 16:10 la foto baja a 244 px: se
-     ganan unos 50 px por tarjeta sin que el producto se vea apretado, porque
-     el recorte extra sale del pie de la foto, que es justo donde el
-     desvanecido de abajo ya estaba tapando la franja publicitaria del
-     empaque. En cuanto la grilla pasa a dos columnas la tarjeta deja de ser
-     ancha y el 4:3 vuelve a ser el encuadre correcto.
+     El `aspect-ratio` se declara aquí y no depende de que la imagen cargue,
+     así que la grilla tampoco se mueve mientras bajan las fotos. El gris de
+     fondo es solo la red de seguridad para ese instante: se usa el token
+     `--color-fondo` (#f5f7fa), el gris muy claro de la paleta, en vez de un
+     gris cualquiera.
 
-     EL CORTE VA EN 900 px, y no es una elección aparte: es
-     `--breakpoint-tablet`, el mismo punto donde la grilla pasa de una a dos
-     columnas (`tablet:grid-cols-2` en `grilla`, src/lib/plantillasCatalogo.ts).
-     La proporción sigue al NÚMERO DE COLUMNAS, no al nombre del aparato: una
-     tableta en vertical también cae aquí, y ahí la tarjeta es igual de ancha
-     y de alta que en un teléfono. Va con `max-width` en píxeles y no con
-     `width <` para no depender de la sintaxis de rangos, que Safari solo
-     entiende desde la 16.4. Si algún día se mueve el punto de quiebre en
-     global.css, hay que moverlo también aquí. */
+     `overflow: hidden` sigue haciendo falta para el acercamiento suave al
+     pasar el mouse (`.foto-zoom` en global.css), que es la única
+     transformación que queda sobre la foto. */
   .tarjeta-foto {
-    position: relative;
     width: 100%;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 1 / 1;
     overflow: hidden;
-    background-color: var(--color-surface);
+    background-color: var(--color-fondo);
   }
 
-  @media (max-width: 899.98px) {
-    .tarjeta-foto {
-      aspect-ratio: 16 / 10;
-    }
-  }
+  /* SIN VELOS NI DEGRADADOS. Aquí vivían dos `linear-gradient` que llevaban
+     los bordes de la foto al blanco de la tarjeta. Se quitaron a propósito:
+     la foto se ve nítida y completa dentro de su marco, sin nada encima. Como
+     el fondo de estas fotos es blanco y la tarjeta también, los bordes se
+     siguen leyendo limpios sin necesidad de fundirlos.
 
-  /* EL ENCUADRE
-     -----------
-     `object-position` sube el recorte: de una foto cuadrada -que es lo que son
-     las 466 oficiales, de 1000x1000- el 4:3 se lleva un 25 % del alto, y
-     repartirlo por igual arriba y abajo le cortaba el borde superior del
-     empaque, que es donde va la marca. Con el 35 % el recorte cae sobre todo
-     en el pie de la foto: el gramaje, el registro sanitario y la letra menuda,
-     que además es justo la franja que el desvanecido de abajo tapa. */
+     `object-position: center` deja el producto centrado. Con la caja en 1:1 y
+     un archivo cuadrado no hay recorte que colocar, pero se declara igual
+     para las pocas referencias cuya foto no es cuadrada -las de innovación
+     que viven sueltas en public/img/-: ahí el recorte se reparte por igual a
+     los dos lados en vez de comerse un extremo. */
   .tarjeta-foto__img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: 50% 35%;
+    object-position: center;
   }
 
-  /* EL DESVANECIDO
-     --------------
-     Dos degradados que llevan la foto al color de la tarjeta por arriba y por
-     abajo, para que se funda con ella en vez de cortarse en un filo recto. El
-     de abajo es más largo (38 % del alto) porque ahí es donde la foto se
-     encuentra con el texto; el de arriba (16 %) solo tiene que matar el borde
-     contra la esquina redondeada.
+  /* SIN FOTO: COLOR SÓLIDO DE MARCA CON EL NOMBRE
+     ---------------------------------------------
+     Las referencias que todavía no tienen foto (245 de 711) no dejan el marco
+     vacío ni caen en el logotipo de la marca repetido tarjeta tras tarjeta:
+     llevan el azul oscuro de la paleta, plano, con el nombre del producto
+     centrado en la tipografía de titulares. La caja mide exactamente lo mismo
+     que la de una foto, así que la tarjeta no cambia de tamaño según tenga
+     imagen o no y las filas siguen cuadrando.
 
-     EL DE ABAJO ARRANCA OPACO, Y NO ES UN CAPRICHO. Casi todas las fotos
-     oficiales de Nutresa traen al pie una franja de publicidad con el gramaje
-     y el nombre comercial repetido ("216 GRAMOS · GALLETAS DUX RELLENAS CON
-     CREMA..."). Si el degradado empieza a desvanecer desde el borde mismo,
-     esa franja se queda a medio borrar y se lee como un fantasma de texto
-     debajo del producto. Con el primer 12 % en blanco pleno la franja
-     desaparece del todo y el degradado empieza donde ya solo hay foto.
-
-     Los topes transparentes se escriben `rgba(255,255,255,0)` y no
-     `transparent` a propósito: es el mismo criterio de `.foto-producto__fondo`
-     en global.css. `transparent` es negro con alfa 0, y un navegador que no
-     interpole con alfa premultiplicado deja una franja gris en medio del
-     degradado. El color opaco sí sale del token, que es el que manda si algún
-     día la tarjeta deja de ser blanca.
-
-     `pointer-events: none` para que el velo no se coma el clic ni el hover de
-     la tarjeta, que es lo que dispara el zoom de la foto. */
-  .tarjeta-foto::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(to bottom, var(--color-surface) 0%, rgba(255, 255, 255, 0) 16%),
-      linear-gradient(
-        to top,
-        var(--color-surface) 0%,
-        var(--color-surface) 12%,
-        rgba(255, 255, 255, 0) 44%
-      );
-  }
-
-  /* SIN FOTO: DEGRADADO DE MARCA CON EL NOMBRE
-     ------------------------------------------
-     Las referencias que todavía no tienen foto (245 de 711) ya no muestran el
-     logotipo de la marca repetido tarjeta tras tarjeta. Llevan el degradado de
-     la paleta -azul de marca abierto hacia el gris muy claro, con un realce
-     radial que le da volumen- y encima el nombre del producto compuesto en la
-     tipografía de titulares. Así ninguna tarjeta queda visualmente vacía y la
-     que no tiene foto sigue diciendo de un vistazo qué es.
-
-     El mismo `::after` de arriba les cae encima, así que también se funden con
-     la tarjeta por los dos bordes; por eso el rótulo va con `z-index: 1`, para
-     quedar por delante del velo y no perder contraste. */
+     El azul es `--color-primary` (#0D2C84), el primario del manual de marca.
+     Contra el blanco del rótulo da 12:1 de contraste, muy por encima del AAA,
+     así que el nombre no necesita ni sombra ni velo para leerse. */
   .tarjeta-foto--sin-foto {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.75rem 1.25rem;
-    background:
-      radial-gradient(circle at 50% 26%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 62%),
-      linear-gradient(150deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    padding: 1.75rem 1.5rem;
+    background-color: var(--color-primary);
   }
 
-  /* El desvanecido de la caja con foto es demasiado para el degradado de
-     marca: sobre un azul saturado, 16 % arriba y 38 % abajo de blanco lo
-     dejaban con un halo gris que parecía un error de carga. Aquí se recorta a
-     una insinuación -lo justo para que el bloque no termine en un filo recto
-     contra la tarjeta- y el color aguanta. */
-  .tarjeta-foto--sin-foto::after {
-    background:
-      linear-gradient(to bottom, var(--color-surface) 0%, rgba(255, 255, 255, 0) 9%),
-      linear-gradient(to top, var(--color-surface) 0%, rgba(255, 255, 255, 0) 20%);
-  }
-
+  /* El nombre se corta a cuatro líneas: con la caja cuadrada caben de sobra,
+     y el tope evita que una referencia de nombre larguísimo empuje el texto
+     fuera del marco. `text-wrap: balance` reparte las líneas para que no
+     quede una palabra suelta al final. */
   .tarjeta-foto__rotulo {
-    position: relative;
-    z-index: 1;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 4;
     overflow: hidden;
     font-family: var(--font-display);
-    font-size: 19px;
+    font-size: 20px;
     font-weight: 700;
-    line-height: 1.24;
+    line-height: 1.28;
     text-align: center;
     text-wrap: balance;
     color: #ffffff;
-    text-shadow: 0 1px 10px rgba(8, 32, 99, 0.35);
   }
 
   /* --- El precio de la tarjeta -------------------------------------------

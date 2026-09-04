@@ -101,31 +101,28 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
   const carga = ansiosa ? '' : ' loading="lazy"';
 
   /*
-   * LA FOTO, A SANGRE Y SIN BORDES DUROS
-   * ------------------------------------
-   * La imagen ocupa el ancho completo de la tarjeta en una caja de 4:3 y la
-   * llena con `object-fit: cover`: nunca quedan franjas vacías, venga la foto
-   * cuadrada (que es el caso de las 466 oficiales, de 1000x1000) o apaisada.
-   * Sus bordes superior e inferior se disuelven en el blanco de la tarjeta con
-   * un degradado, así que la foto no se lee como un rectángulo pegado encima
-   * sino como parte de la tarjeta. Es el mismo acabado de "Especiales del mes"
-   * (`.foto-producto` en global.css), aquí resuelto con dos degradados lineales
-   * porque la caja es más pequeña y una máscara elíptica se comería el producto.
+   * LA FOTO, EN UN MARCO CUADRADO Y SIN NADA ENCIMA
+   * -----------------------------------------------
+   * La imagen ocupa el ancho completo de la tarjeta en una caja de 1:1 y la
+   * llena con `object-fit: cover`, así que no quedan franjas vacías. El
+   * cuadrado sale del formato real del archivo: las 466 fotos oficiales son
+   * de 1000x1000, de modo que marco y foto tienen la misma proporción y no
+   * hay recorte que hacer -el empaque se ve entero y centrado-.
    *
-   * El recorte de 4:3 sobre una foto cuadrada se lleva un 12,5 % por arriba y
-   * otro tanto por abajo. En estas fotos de catálogo eso cae sobre el margen
-   * blanco del estudio, no sobre el empaque; en las pocas apaisadas o muy
-   * altas sí puede recortar, y es el precio de que ninguna tarjeta muestre
-   * franjas vacías.
+   * La caja mide lo mismo en todas las tarjetas y en todas las anchuras de
+   * pantalla, y no lleva ningún velo, degradado ni máscara encima. Aquí hubo
+   * un desvanecido a los bordes; se quitó a propósito, y por eso el ancho de
+   * la caja lo pone el CSS y no hay ningún elemento de adorno en el marcado.
    *
    * SIN FOTO: NI LOGOTIPO NI INICIALES
    * ----------------------------------
    * Las 245 referencias que todavía no tienen foto ya no caen en el logotipo
    * de la marca -que se repetía idéntico en toda la sección y no distinguía
-   * una referencia de otra-. En su lugar va un degradado de la paleta de marca
-   * con el NOMBRE del producto compuesto en grande: la tarjeta se llena y, de
-   * paso, dice algo útil. El rótulo va `aria-hidden` porque el mismo nombre
-   * está en el <h3> de abajo y no hay que leerlo dos veces.
+   * una referencia de otra-. En su lugar va el azul oscuro de la paleta, en
+   * plano, con el NOMBRE del producto compuesto en grande: la caja mide
+   * exactamente igual que la de una foto, así que la tarjeta no cambia de
+   * tamaño según tenga imagen o no. El rótulo va `aria-hidden` porque el
+   * mismo nombre está en el <h3> de abajo y no hay que leerlo dos veces.
    */
   const foto = p.imagen;
   const caja = foto
