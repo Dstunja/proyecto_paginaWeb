@@ -93,6 +93,7 @@ const columnas = resenas.length >= 4 ? 'tablet:grid-cols-4' : 'tablet:grid-cols-
                 href={resumen.url}
                 target="_blank"
                 rel="noopener"
+                data-cta="resenas"
               >
                 Ver todas las reseñas
                 <Icono nombre="arrow-right" class="h-4 w-4" interactivo={false} />
@@ -145,7 +146,13 @@ const columnas = resenas.length >= 4 ? 'tablet:grid-cols-4' : 'tablet:grid-cols-
                 <div class="min-w-0">
                   <p class="m-0 truncate font-display text-[14.5px] font-semibold text-ink">
                     {resena.url ? (
-                      <a class="hover:text-secondary-dark" href={resena.url} target="_blank" rel="noopener">
+                      <a
+                        class="hover:text-secondary-dark"
+                        href={resena.url}
+                        target="_blank"
+                        rel="noopener"
+                        data-cta="resena_autor"
+                      >
                         {resena.autor}
                       </a>
                     ) : (
@@ -166,6 +173,7 @@ const columnas = resenas.length >= 4 ? 'tablet:grid-cols-4' : 'tablet:grid-cols-
             href={resumen.url}
             target="_blank"
             rel="noopener"
+            data-cta="resenas"
           >
             Cuéntanos tu experiencia en Google
           </a>

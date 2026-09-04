@@ -4,6 +4,7 @@ import PageHero from '../components/PageHero.astro';
 import FormularioMailto from '../components/FormularioMailto.astro';
 import Icono from '../components/Icono.astro';
 import { empresa } from '../data/site';
+import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
 const tipos = [
   {
@@ -70,7 +71,8 @@ const tipos = [
           solicitud, conforme a la Ley 1581 de 2012 y a nuestra política de tratamiento de datos.
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
-          También puedes radicar presencialmente en {empresa.direccion}, {empresa.ciudad}, o al
+          También puedes radicar presencialmente en{' '}
+          <EnlaceUbicacion>{empresa.direccion}, {empresa.ciudad}</EnlaceUbicacion>, o al
           correo{' '}
           <a class="font-semibold text-secondary-dark underline" href={`mailto:${empresa.email}`}>
             {empresa.email}</a

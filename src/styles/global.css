@@ -236,6 +236,34 @@
     filter: contrast(1.06) saturate(1.04);
   }
 
+  /* --- La direccion de la sede, cuando es enlace --------------------------
+     La direccion se muestra en varias paginas y en todas lleva al mismo sitio
+     en Google Maps (empresa.mapsUrl, sobre la coordenada exacta de la sede).
+     El texto no puede cambiar de tamano ni de color: en el pie va sobre azul
+     oscuro y en las paginas legales va dentro de un parrafo corrido, asi que
+     cualquier color propio desentonaria en uno de los dos.
+
+     Lo unico que se suma es el subrayado, y tenue: al pasar el mouse o al
+     recibir el foco de teclado sube a la intensidad del texto. Asi se nota
+     que es clicable sin convertirlo en un enlace de color.
+
+     El pie lo usa SIN subrayado (ver EnlaceUbicacion.astro, prop `subrayado`)
+     porque alli el correo y el telefono, que estan al lado, tampoco lo llevan:
+     se distinguen con el cambio de color al pasar el mouse. */
+  .enlace-ubicacion {
+    text-decoration-line: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+    text-underline-offset: 3px;
+    transition:
+      color 200ms ease,
+      text-decoration-color 200ms ease;
+  }
+
+  .enlace-ubicacion:hover,
+  .enlace-ubicacion:focus-visible {
+    text-decoration-color: currentColor;
+  }
+
   /* --- Bloques oscuros sobre el sitio claro -------------------------------
      El pie de página y algún panel de marca van en azul oscuro. En vez de
      cambiar clase por clase, se reescriben aquí los tokens de texto, líneas y

@@ -1,5 +1,6 @@
 ---
 import { empresa } from '../data/site';
+import EnlaceUbicacion from './EnlaceUbicacion.astro';
 import { sede } from '../data/municipios';
 
 /**
@@ -43,6 +44,7 @@ const direccionCompleta = `${empresa.direccion}, ${empresa.ciudad}, ${empresa.de
         data-lng={sede.lng}
         data-direccion={direccionCompleta}
         data-empresa={empresa.nombre}
+        data-maps={empresa.mapsUrl}
         role="application"
         aria-label={`Mapa de la sede principal en ${direccionCompleta}`}
       >
@@ -52,7 +54,7 @@ const direccionCompleta = `${empresa.direccion}, ${empresa.ciudad}, ${empresa.de
     <aside class="glass-card flex h-full flex-col p-8">
       <h4 class="mb-3 text-base">Sede principal</h4>
       <p class="mb-2.5 text-[15px] text-muted">
-        {empresa.direccion}<br />{empresa.ciudad}, {empresa.departamento}
+        <EnlaceUbicacion>{empresa.direccion}<br />{empresa.ciudad}, {empresa.departamento}</EnlaceUbicacion>
       </p>
       <p class="mb-7 font-semibold">
         <a class="hover:text-accent-text" href={`tel:${empresa.telefonoE164}`}>{empresa.telefono}</a>
@@ -102,8 +104,13 @@ const direccionCompleta = `${empresa.direccion}, ${empresa.ciudad}, ${empresa.de
       keyboard: true,
     })
       .addTo(mapa)
+      // La dirección del globo también abre la sede en Google Maps, igual que
+      // la de la ficha de al lado: es el mismo texto y se espera que haga lo
+      // mismo. Los dos valores salen de data-* del contenedor, así que siguen
+      // viniendo de src/data/site.ts y no hay ninguna URL escrita a mano aquí.
       .bindPopup(
-        `<strong>${contenedor.dataset.empresa}</strong><br>${contenedor.dataset.direccion}`,
+        `<strong>${contenedor.dataset.empresa}</strong><br>` +
+          `<a class="enlace-ubicacion" href="${contenedor.dataset.maps}" target="_blank" rel="noopener">${contenedor.dataset.direccion}</a>`,
       );
   }
 </script>
@@ -155,5 +162,13 @@ const direccionCompleta = `${empresa.direccion}, ${empresa.ciudad}, ${empresa.de
   :global(#mapa-sede .leaflet-control-zoom a) {
     color: var(--color-primary) !important;
     border-radius: 8px !important;
+  }
+
+  /* Leaflet pinta de azul cualquier enlace dentro del mapa. La dirección del
+     globo del marcador es el mismo texto que el de la ficha de al lado y debe
+     leerse igual: hereda el color del globo y solo se distingue por el
+     subrayado tenue de .enlace-ubicacion. */
+  :global(#mapa-sede .leaflet-popup-content a) {
+    color: inherit;
   }
 </style>

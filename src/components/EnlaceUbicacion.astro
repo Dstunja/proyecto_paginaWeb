@@ -1,0 +1,46 @@
+---
+/**
+ * La dirección de la sede, enlazada a su ubicación exacta en Google Maps.
+ *
+ * La dirección aparece en varias páginas —el pie la repite en las 13— y en
+ * todas debe llevar al mismo sitio. Este componente guarda el destino y el
+ * comportamiento de enlace en un único lugar: el `href` sale siempre de
+ * `empresa.mapsUrl` (src/data/site.ts), que apunta a la COORDENADA medida a
+ * mano sobre la puerta de la oficina y no a una búsqueda por texto, que Google
+ * resolvía dejando el punto corrido unas cuadras.
+ *
+ * El texto lo pone quien lo usa, por `slot`, porque no todas las páginas lo
+ * escriben igual: el pie dice "dirección, ciudad", el mapa de la sede parte la
+ * ciudad a otro renglón y las páginas legales lo meten dentro de una frase.
+ * Así el componente no impone una redacción y sigue habiendo un solo enlace.
+ *
+ * EDITAR AQUÍ no hace falta para cambiar la dirección ni la coordenada: ambas
+ * viven en src/data/site.ts y src/data/coordenadas.json.
+ */
+import { empresa } from '../data/site';
+
+interface Props {
+  /** Clases del contexto: tamaño, color y disposición los pone quien lo usa. */
+  class?: string;
+  /**
+   * Subrayado tenue que se intensifica al pasar el mouse.
+   *
+   * Va activado por defecto porque dentro de un párrafo corrido es lo único
+   * que delata que la dirección es clicable. Se apaga donde el enlace ya se
+   * anuncia de otra forma —en el pie, donde el correo y el teléfono de al lado
+   * tampoco lo llevan y se distinguen por el cambio de color—.
+   */
+  subrayado?: boolean;
+}
+
+const { class: clase, subrayado = true } = Astro.props;
+---
+
+<a
+  href={empresa.mapsUrl}
+  target="_blank"
+  rel="noopener"
+  class:list={[subrayado && 'enlace-ubicacion', clase]}
+>
+  <slot />
+</a>

@@ -2,6 +2,7 @@
 import { empresa, redes, navegacion, PIDEKY_URL } from '../data/site';
 import Logo from './Logo.astro';
 import Icono from './Icono.astro';
+import EnlaceUbicacion from './EnlaceUbicacion.astro';
 import { ruta } from '../lib/rutas';
 
 const anio = new Date().getFullYear();
@@ -40,11 +41,11 @@ const canales = [
         </p>
 
         {/* Cada red con su NOMBRE al lado del ícono. Un ícono suelto obliga a
-            reconocer el logotipo, y el de X o el de un canal de WhatsApp no
-            todo el mundo los distingue; el nombre lo resuelve sin ambigüedad y
-            deja el enlace legible también para un lector de pantalla. Las
-            direcciones salen de `redes` (src/data/site.ts): aquí no hay
-            ninguna escrita a mano. */}
+            reconocer el logotipo, y el de un canal de WhatsApp no todo el mundo
+            lo distingue; el nombre lo resuelve sin ambigüedad y deja el enlace
+            legible también para un lector de pantalla. Las direcciones salen de
+            `redes` (src/data/site.ts): aquí no hay ninguna escrita a mano, y
+            para quitar o sumar una red se edita esa lista, no esta plantilla. */}
         <ul class="m-0 mt-8 flex list-none flex-wrap gap-2.5 p-0">
           {
             redes.map((red) => (
@@ -129,9 +130,20 @@ const canales = [
               {empresa.telefono}
             </a>
           </li>
-          <li class="flex items-center gap-3 text-[14.5px] text-muted">
-            <Icono nombre="map-pin" class="h-4 w-4" interactivo={false} />
-            {empresa.direccion}, {empresa.ciudad}
+          {/* La dirección se lee igual que el correo y el teléfono de arriba
+              —mismo tamaño, mismo color, mismo cambio a naranja al pasar el
+              mouse— y como ellos es un enlace: abre la sede en Google Maps.
+              Por eso va sin subrayado: en esta columna lo que anuncia que algo
+              es clicable es el color, y un subrayado solo aquí desalinearía la
+              lista. El destino sale de EnlaceUbicacion.astro. */}
+          <li>
+            <EnlaceUbicacion
+              subrayado={false}
+              class="group flex items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
+            >
+              <Icono nombre="map-pin" class="h-4 w-4" />
+              {empresa.direccion}, {empresa.ciudad}
+            </EnlaceUbicacion>
           </li>
         </ul>
       </div>

@@ -34,6 +34,16 @@
     if (/facebook\.com/i.test(href)) return 'facebook';
     if (/(\/\/|\.)(x\.com|twitter\.com)/i.test(href)) return 'x';
     if (/pideky/i.test(href)) return 'pideky';
+    // Buscar la sede: la dirección del pie y del resto de páginas (ver
+    // EnlaceUbicacion.astro) y el botón "Cómo llegar" del mapa de la sede,
+    // que van todos a la misma coordenada exacta.
+    //
+    // OJO: la sección de reseñas del inicio también enlaza a Google Maps, pero
+    // a la ficha del negocio y no a la ubicación. Esos enlaces llevan su propio
+    // `data-cta` ('resenas' y 'resena_autor'), que se resuelve más arriba y
+    // gana a esta regla; sin él caerían aquí y las dos intenciones quedarían
+    // contadas como una sola.
+    if (/google\.[a-z.]+\/maps/i.test(href)) return 'ubicacion';
 
     // --- Páginas del sitio: se compara el final de la ruta, para que el
     //     prefijo `base` de GitHub Pages (/proyecto_paginaWeb) no estorbe ---

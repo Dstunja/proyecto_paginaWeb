@@ -42,13 +42,20 @@ export const empresa = {
   mapsUrl: `https://www.google.com/maps/search/?api=1&query=${SEDE.lat},${SEDE.lng}`,
 } as const;
 
+/**
+ * Redes sociales de la empresa, en el orden en que salen en el pie.
+ *
+ * Solo van las que la empresa usa de verdad. Facebook y X se quitaron de aquí
+ * —no de la plantilla— a propósito: ocultarlos con CSS habría dejado el enlace
+ * en el HTML y la cuenta seguiría anunciándose sin que nadie la atienda.
+ *
+ * Ojo al quitar o agregar: esta lista alimenta dos cosas a la vez, los botones
+ * del pie (Footer.astro) y el `sameAs` de los datos estructurados de la
+ * organización (BaseLayout.astro), que es lo que le dice a un buscador qué
+ * perfiles son oficialmente de esta empresa. Una cuenta que se saca de aquí
+ * deja de declararse como oficial.
+ */
 export const redes = [
-  {
-    nombre: 'Facebook',
-    icono: 'facebook',
-    url: 'https://www.facebook.com/p/Distribuciones-Santiago-de-Tunja-61552074267660/',
-  },
-  { nombre: 'X', icono: 'x', url: 'https://x.com/DSTunja123' },
   { nombre: 'Instagram', icono: 'instagram', url: 'https://www.instagram.com/dis.santiagotunja/' },
   {
     nombre: 'WhatsApp',

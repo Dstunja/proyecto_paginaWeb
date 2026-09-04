@@ -19,6 +19,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { ruta } from '../lib/rutas';
 import { empresa } from '../data/site';
+import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
 const actualizado = '3 de septiembre de 2026';
 
@@ -64,9 +65,10 @@ const queNoSeRecoge = [
 
       <h2 class="mt-10 text-[24px] tablet:text-[28px]">1. Quién responde por tus datos</h2>
       <p class="mt-4 text-muted">
-        {empresa.razonSocial}, con sede en {empresa.direccion}, {empresa.ciudad}, {
-          empresa.departamento
-        }, es la responsable del tratamiento de los datos personales recogidos a través de este
+        {empresa.razonSocial}, con sede en{' '}
+        <EnlaceUbicacion
+          >{empresa.direccion}, {empresa.ciudad}, {empresa.departamento}</EnlaceUbicacion
+        >, es la responsable del tratamiento de los datos personales recogidos a través de este
         sitio. Para cualquier solicitud relacionada con tus datos puedes escribir a{' '}
         <a class="font-semibold text-secondary-dark underline" href={`mailto:${empresa.email}`}
           >{empresa.email}</a
