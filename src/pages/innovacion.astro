@@ -92,7 +92,7 @@ const novedades = [
             />
 
             {novedades.map((novedad) => (
-              <li class="group relative">
+              <li class="group relative" data-articulo={novedad.titulo}>
                 <span
                   class="absolute top-2 -left-8 flex h-4 w-4 items-center justify-center rounded-full border-2 border-accent bg-surface transition-transform duration-300 group-hover:scale-125 tablet:-left-12"
                   aria-hidden="true"
@@ -189,3 +189,50 @@ const novedades = [
     </div>
   </section>
 </BaseLayout>
+
+{/* Analitica de lectura.
+
+    Esta pagina es una linea de tiempo: las novedades no tienen pagina propia
+    que se pueda "abrir", asi que se cuenta como leida la que se alcanza a ver
+    en pantalla, y se marca articulo_completado cuando el recorrido pasa el
+    90 % de la pagina. */}
+<script>
+  import { registrarEvento } from '../lib/analitica';
+
+  const articulos = document.querySelectorAll<HTMLElement>('[data-articulo]');
+
+  if (articulos.length > 0 && 'IntersectionObserver' in window) {
+    const leidos = new Set<string>();
+
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        for (const entrada of entradas) {
+          if (!entrada.isIntersecting) continue;
+          const titulo = (entrada.target as HTMLElement).dataset.articulo ?? '';
+          observador.unobserve(entrada.target);
+          if (titulo === '' || leidos.has(titulo)) continue;
+          leidos.add(titulo);
+          registrarEvento('articulo_leer', { articulo: titulo });
+        }
+      },
+      { threshold: 0.4 },
+    );
+
+    articulos.forEach((articulo) => observador.observe(articulo));
+  }
+
+  // Recorrido completo: una sola vez por visita.
+  let completado = false;
+
+  const revisarScroll = () => {
+    if (completado) return;
+    const alto = document.documentElement.scrollHeight - window.innerHeight;
+    if (alto <= 0) return; // la pagina cabe entera: no hay recorrido que medir
+    if ((window.scrollY / alto) * 100 < 90) return;
+    completado = true;
+    window.removeEventListener('scroll', revisarScroll);
+    registrarEvento('articulo_completado');
+  };
+
+  window.addEventListener('scroll', revisarScroll, { passive: true });
+</script>

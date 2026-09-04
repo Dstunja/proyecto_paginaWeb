@@ -1,7 +1,8 @@
 ---
+import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
-import { logoMarca } from '../lib/imagenes';
+import { altoSeguroLogo, logoMarcaImagen } from '../lib/imagenes';
 import PageHero from '../components/PageHero.astro';
 import Icono from '../components/Icono.astro';
 import { empresa } from '../data/site';
@@ -49,14 +50,29 @@ const categorias = [
 /**
  * Logo de cada marca, si ya está subido.
  *
- * EDITAR AQUÍ: los logos van en public/img/marcas/ con el nombre de la marca
+ * EDITAR AQUÍ: los logos van en src/assets/marcas/ con el nombre de la marca
  * en minúsculas y con guiones: 'Saltín Noel' -> saltin-noel.png
  * (también sirven .svg, .webp o .jpg). Mientras el archivo no exista, la marca
  * se sigue mostrando como píldora de texto, sin imágenes rotas.
+ *
+ * El alto de cada logotipo se calcula, no se impone por CSS: es el mismo
+ * criterio de la franja del inicio (altoSeguroLogo), de modo que ninguno se
+ * muestre por encima de la resolución real de su archivo ni siquiera en la
+ * copia @2x que reciben las pantallas de alta densidad.
  */
+const ALTO_FICHA = 36;
+const ANCHO_FICHA = 80; // la ficha mide 100x48 y lleva 10 px de aire a cada lado
+
 const categoriasConLogos = categorias.map((cat) => ({
   ...cat,
-  marcas: cat.marcas.map((marca) => ({ nombre: marca, logo: logoMarca(marca) })),
+  marcas: cat.marcas.map((marca) => {
+    const imagen = logoMarcaImagen(marca);
+    return {
+      nombre: marca,
+      imagen,
+      alto: imagen ? altoSeguroLogo(imagen, ALTO_FICHA, ANCHO_FICHA) : 0,
+    };
+  }),
 }));
 
 const mensajeWhatsapp = encodeURIComponent(
@@ -87,24 +103,29 @@ const mensajeWhatsapp = encodeURIComponent(
               <p class="m-0 text-[14.5px] text-muted">{cat.texto}</p>
               {/*
                 Fichas de marca. Todas miden lo mismo (100x48) y el logo va
-                centrado con object-contain, así que ninguno sale estirado por
-                más que las imágenes de origen vayan de 1,22 a 3,27 de relación
-                de aspecto. El fondo blanco es a propósito: varios de estos
+                centrado, a la altura que le permita su propia resolución, así
+                que ninguno sale estirado ni agrandado por más que las imágenes
+                de origen vayan de 1,22 a 5,34 de relación de aspecto. El fondo blanco es a propósito: varios de estos
                 archivos no son logos recortados sino capturas con fondo
                 blanco, y asi se funden con la ficha en vez de verse pegados.
 
-                Las marcas sin archivo en public/img/marcas/ caen en la ficha
+                Las marcas sin archivo en src/assets/marcas/ caen en la ficha
                 de texto, que mide igual de alto para que las filas cuadren.
               */}
               <ul class="m-0 mt-5 flex list-none flex-wrap items-center gap-2.5 p-0">
                 {cat.marcas.map((marca) =>
-                  marca.logo ? (
+                  marca.imagen ? (
                     <li class="flex h-12 w-[100px] items-center justify-center rounded-xl border border-line bg-white px-2.5 py-1.5 transition-all duration-200 hover:border-secondary/50 hover:shadow-[0_6px_18px_rgba(13,44,132,.1)]">
-                      <img
-                        src={marca.logo}
-                        alt={marca.nombre}
+                      <Image
+                        src={marca.imagen}
+                        alt={`Logotipo de ${marca.nombre}`}
+                        height={marca.alto}
+                        densities={[1, 2]}
+                        format="webp"
+                        quality={90}
                         loading="lazy"
-                        class="max-h-full max-w-full object-contain"
+                        decoding="async"
+                        class="logo-marca"
                       />
                     </li>
                   ) : (

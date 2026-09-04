@@ -117,7 +117,14 @@ const canales = [
 
     <div class="flex flex-wrap items-center justify-between gap-3 pt-8 text-[13px] text-muted/70">
       <span>© {anio} {empresa.razonSocial} Todos los derechos reservados.</span>
-      <span class="tracking-[0.08em] uppercase">Boyacá · Santander · Cundinamarca</span>
+      <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {/* La ley de proteccion de datos pide que la politica se pueda
+            encontrar desde cualquier pagina. */}
+        <a class="underline transition-colors duration-200 hover:text-accent" href={ruta('/privacidad/')}>
+          Tratamiento de datos
+        </a>
+        <span class="tracking-[0.08em] uppercase">Boyacá · Santander · Cundinamarca</span>
+      </div>
     </div>
   </div>
 </footer>

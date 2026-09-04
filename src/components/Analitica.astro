@@ -1,0 +1,73 @@
+---
+/**
+ * Carga de Google Analytics 4. Va una sola vez, dentro del <head> del layout.
+ *
+ * CUÁNDO SE CARGA
+ * ---------------
+ * Solo si hay un ID de medición en PUBLIC_GA_ID y la compilación es de
+ * producción. En `npm run dev` nunca se inyecta nada: las pruebas locales no
+ * ensucian las estadísticas de la empresa.
+ *
+ * DÓNDE VIVE EL ID
+ * ----------------
+ * En el secreto PUBLIC_GA_ID del repositorio (GitHub → Settings → Secrets and
+ * variables → Actions), que el workflow pasa como variable de entorno al
+ * compilar. No se escribe en el código. Ver docs/ANALITICA.md.
+ *
+ * CONSENTIMIENTO
+ * --------------
+ * Se arranca con `analytics_storage: 'denied'` (Consent Mode). GA4 recibe las
+ * páginas vistas y los eventos, pero sin escribir cookies ni identificar al
+ * visitante entre sesiones, hasta que la persona acepta en la franja de
+ * AvisoCookies.astro. Es lo que exige la Ley 1581 de 2012 en Colombia.
+ */
+const ID = import.meta.env.PUBLIC_GA_ID ?? '';
+
+/** Sin ID o en desarrollo no se carga absolutamente nada. */
+const activo = ID.trim() !== '' && import.meta.env.PROD;
+
+const src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ID)}`;
+
+/**
+ * Arranque de gtag. Va como texto para poder inyectar el ID sin exponerlo en
+ * un archivo del repositorio, y `is:inline` porque debe ejecutarse antes que
+ * cualquier `registrarEvento` de los componentes.
+ */
+const arranque = `
+window.dataLayer = window.dataLayer || [];
+function gtag(){ window.dataLayer.push(arguments); }
+window.gtag = gtag;
+
+// Por defecto NADA se almacena: ni cookies de analítica ni publicidad.
+gtag('consent', 'default', {
+  analytics_storage: 'denied',
+  ad_storage: 'denied',
+  ad_user_data: 'denied',
+  ad_personalization: 'denied',
+});
+
+// Si la persona ya aceptó en una visita anterior, se restablece su decisión
+// antes del primer page_view para no perder esa visita.
+try {
+  if (window.localStorage.getItem('dst_consentimiento') === 'aceptado') {
+    gtag('consent', 'update', { analytics_storage: 'granted' });
+  }
+} catch (e) {}
+
+gtag('js', new Date());
+gtag('config', ${JSON.stringify(ID)}, {
+  anonymize_ip: true,
+  send_page_view: true,
+});
+`.trim();
+---
+
+{
+  activo && (
+    <>
+      <script is:inline set:html={arranque} />
+      {/* `async`: la analítica nunca debe retrasar el pintado de la página. */}
+      <script is:inline async src={src} />
+    </>
+  )
+}

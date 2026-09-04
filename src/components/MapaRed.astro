@@ -1,5 +1,6 @@
 ---
 import Icono from './Icono.astro';
+import LoaderDST from './LoaderDST.astro';
 import { departamentos, municipios, totalMunicipios } from '../data/municipios';
 
 /**
@@ -101,6 +102,14 @@ const listaDepartamentos =
       >
       </div>
 
+      {/* Espera real: Leaflet se descarga, arma los 87 puntos y pide las teselas
+          al servidor de mapas. Hasta que eso termina, aqui solo habria un
+          rectangulo gris. La capa hereda las esquinas redondeadas del marco. */}
+      <div class="dst-capa-carga tablet:rounded-2xl" data-cargando-mapa>
+        <LoaderDST texto="Cargando el mapa…" />
+      </div>
+
+      <!-- Aviso del buscador: aparece sobre el mapa al buscar. -->
       <p
         id="aviso-mapa"
         class="pointer-events-none absolute inset-x-4 top-4 z-[500] m-0 hidden rounded-xl bg-surface px-4 py-2.5 text-[14px] font-medium shadow-[0_8px_24px_rgba(13,44,132,.16)] tablet:inset-x-auto tablet:left-1/2 tablet:-translate-x-1/2"
@@ -323,6 +332,7 @@ const listaDepartamentos =
   import 'leaflet/dist/leaflet.css';
   import { municipios, colorDepartamento, sede, type Municipio } from '../data/municipios';
   import { FONDO } from '../lib/mapa-base';
+  import { limpiarTermino, registrarEvento } from '../lib/analitica';
 
   const contenedor = document.getElementById('mapa-red');
 
@@ -347,7 +357,7 @@ const listaDepartamentos =
     });
 
     // Fondo a color de OpenStreetMap (ver src/lib/mapa-base.ts).
-    L.tileLayer(FONDO.url, FONDO.opciones).addTo(mapa);
+    const teselas = L.tileLayer(FONDO.url, FONDO.opciones).addTo(mapa);
 
     const normalizar = (texto: string) =>
       texto
@@ -365,6 +375,22 @@ const listaDepartamentos =
      */
     const ficha = (municipio: Municipio) =>
       `<strong>${municipio.nombre}</strong><span class="depto">${municipio.departamento}</span>`;
+
+    // ---- Retirada de la animacion de carga ----
+    const capaCarga = document.querySelector<HTMLElement>('[data-cargando-mapa]');
+
+    /** Se retira con un fundido de 250 ms y luego se quita del arbol. */
+    const ocultarCarga = () => {
+      if (!capaCarga || capaCarga.dataset.fuera === 'true') return;
+      capaCarga.dataset.fuera = 'true';
+      window.setTimeout(() => capaCarga.remove(), 260);
+    };
+
+    // Cuando terminan de llegar las teselas visibles el mapa ya se ve entero.
+    teselas.on('load', ocultarCarga);
+    // Red lenta o servidor de teselas caido: el mapa igual es utilizable con
+    // los puntos y el fondo gris, asi que la capa nunca se queda pegada.
+    window.setTimeout(ocultarCarga, 6000);
 
     /** Una capa por departamento, para poder filtrar. */
     const capas = new Map<string, L.LayerGroup>();
@@ -540,6 +566,15 @@ const listaDepartamentos =
 
       const clave = normalizar(valor);
       const encontrado = puntos.get(clave);
+
+      /* Que municipios busca la gente y cuales todavia no tenemos cargados:
+         es la lista de por donde conviene ampliar la cobertura. El termino se
+         limpia por si alguien escribe ahi un correo o un telefono. */
+      registrarEvento('cobertura_buscar', {
+        municipio: limpiarTermino(valor),
+        encontrado: Boolean(encontrado),
+      });
+
       if (!encontrado) {
         mostrarAviso(
           `Por ahora no tenemos cobertura confirmada en "${valor}". Escríbenos y lo validamos.`,

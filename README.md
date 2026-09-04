@@ -72,7 +72,6 @@ public/
   favicon.ico / apple-touch-icon.png / icon-192.png / icon-512.png
   icons/whatsapp.svg       Ícono oficial de WhatsApp, también disponible suelto.
   img/empleos/             Fotos y flyers de las vacantes.
-  img/marcas/              Logotipos de las marcas que se distribuyen.
   img/innovacion/          Imágenes de las novedades.
   og.png, robots.txt
 scripts/build-og.mjs       Genera la tarjeta Open Graph con Playwright.
@@ -112,14 +111,20 @@ todavía no existe**: el sitio la reemplaza solo.
 | --- | --- | --- | --- |
 | `img/empleos/` | Foto o flyer de cada vacante | El que diga `imagen` en `src/data/vacantes.ts` | Marcador azul con el nombre del cargo |
 | `img/innovacion/` | Imagen de cada novedad | El que diga `imagen` en `src/data/innovaciones.ts` | Marcador azul con el título |
-| `img/marcas/` | Logotipo de cada marca | El nombre de la marca en minúsculas y con guiones | La marca se muestra como píldora de texto |
+| `src/assets/marcas/` | Logotipo de cada marca (no va en `public/`) | El nombre de la marca en minúsculas y con guiones | La marca se muestra como píldora de texto, y en la franja del inicio no se muestra |
 
-**Logos de marca**: el archivo se busca por el nombre de la marca en minúsculas
-y sin tildes. `Saltín Noel` → `saltin-noel.png`, `Choco Listo` →
-`choco-listo.png`. Sirven `.png`, `.svg`, `.webp`, `.jpg` y `.avif`. Se muestran
-a una altura fija de 36 px para que queden parejos aunque cada logo tenga
-proporciones distintas, y aparecen tanto en el catálogo como en la franja de
-marcas del inicio.
+**Logos de marca**: van en `src/assets/marcas/` (no en `public/`), porque solo
+las imágenes de `src/` pasan por el optimizador de Astro y así cada logo se
+sirve en el tamaño justo y con versión @2x para pantallas de alta densidad. El
+archivo se busca por el nombre de la marca en minúsculas y sin tildes:
+`Saltín Noel` → `saltin-noel.png`, `Choco Listo` → `choco-listo.png`. Sirven
+`.png`, `.svg`, `.webp`, `.jpg` y `.avif`; entre más grande sea el original,
+mejor, y como mínimo el doble del tamaño al que se muestra.
+
+La franja "Marcas que distribuimos" del inicio muestra **solo** las marcas con
+logotipo, listadas en `marcasDeLaFranja` (`src/data/site.ts`); ninguna se
+muestra ahí como texto. El catálogo y el armador de pedidos sí siguen mostrando
+las marcas sin logo como píldora de texto.
 
 **Tamaños recomendados**: 1200×900 (4:3) para las tarjetas de vacantes y
 1200×675 (16:9) para innovación. El flyer vertical de una convocatoria también

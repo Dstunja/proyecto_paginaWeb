@@ -54,6 +54,80 @@ export const cifras = [
   { valor: '3', etiqueta: 'departamentos', icono: 'map' },
 ] as const;
 
+/**
+ * Marcas de la franja "Marcas que distribuimos" del inicio.
+ *
+ * Es una fila de logotipos, así que aquí solo van las marcas que tienen su
+ * archivo en src/assets/marcas/: una marca en texto plano en medio de los
+ * logos se lee como un hueco, no como una marca más. Las demás del portafolio
+ * siguen apareciendo en el catálogo y en el armador de pedidos, que sí las
+ * muestran como píldora de texto cuando no hay logo.
+ *
+ * El inicio filtra esta lista contra los archivos que existen de verdad (ver
+ * src/pages/index.astro), de modo que si un logo se borra o se renombra, la
+ * marca desaparece de la franja en vez de dejar una imagen rota.
+ *
+ * El listado completo del portafolio, con las 34 marcas del catálogo, está en
+ * src/data/productos.ts (MARCAS); esta lista no lo reemplaza.
+ */
+export const marcasDeLaFranja = [
+  'Zenú', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Noel',
+  'Ducales',
+  'Saltín Noel',
+  'Dux', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Festival',
+  'Sello Rojo', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'La Bastilla',
+  'Colcafé',
+  'Matiz', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Jet',
+  'Jumbo', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Corona',
+  'Choco Listo', // EDITAR AQUÍ: recorte descuadrado, reemplazar con logo limpio
+  'Doria',
+  'Gol',
+  'Haka',
+  'La Especial', // EDITAR AQUÍ: foto de empaque, reemplazar con logo limpio
+  'Bénet',
+  'Badia',
+] as const;
+
+/*
+ * Los siete logotipos marcados arriba no son logotipos sino recortes de una
+ * foto del empaque, así que tienen poco detalle real y se ven blandos al lado
+ * de los demás. No hay forma de inventarles resolución desde el código: hay
+ * que reemplazar el archivo en src/assets/marcas/.
+ *
+ * Por orden de urgencia:
+ *   - Dux: el recorte deja ver pedazos de los sellos de advertencia
+ *     nutricional ("EXCESO GRASAS SATURADAS") y texto cortado del empaque.
+ *   - La Especial y Matiz: recortes con bordes del empaque a la vista.
+ *   - Choco Listo: el logotipo queda descuadrado y cortado por la derecha.
+ *   - Zenú, Sello Rojo y Jumbo: los tres que ya venían de antes.
+ *
+ * Dónde buscar el reemplazo: la biblioteca de medios del sitio actual en
+ * WordPress (dstunja.com/wp-admin -> Medios). Lo ideal es un .svg o un .png
+ * con fondo transparente de al menos 600 px de ancho.
+ *
+ * NUTRESA queda fuera de esta lista a propósito, y por eso su archivo se
+ * llama comercial-nutresa.jpg y no nutresa.jpg: con el nombre de la marca lo
+ * tomarían solas la franja y la píldora del catálogo, y el logotipo es el
+ * corporativo de "Comercial Nutresa", la comercializadora del grupo, no la
+ * marca de producto "Nutresa" del portafolio. En una franja titulada "Marcas
+ * que distribuimos" invierte la relación real —DST distribuye PARA Comercial
+ * Nutresa, no distribuye a Comercial Nutresa— y en la categoría "Nueces y
+ * otros" del catálogo confundiría la marca de frutos secos con la razón
+ * social. Mientras tanto Nutresa se sigue mostrando como texto.
+ *
+ * Para activarlo, si se decide que sí representa bien a la marca: renombrar
+ * el archivo a nutresa.jpg y agregar 'Nutresa' a la lista de arriba.
+ */
+
+/**
+ * Nombres de marca del portafolio, para textos y referencias generales.
+ * Para la franja de logos del inicio se usa `marcasDeLaFranja`.
+ */
 export const marcas = [
   'Nutresa', 'Zenú', 'Noel', 'Ducales', 'Saltín Noel', 'Sello Rojo', 'La Especial',
   'Rica', 'Choco Listo', 'Matiz', 'La Bastilla', 'Dux', 'Jumbo', 'Corona', 'Jet',

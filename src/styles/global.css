@@ -68,6 +68,15 @@
 
   --radius-card: 18px;
 
+  /* --- Animacion de carga (LoaderDST.astro) ---
+     La geometria es el isotipo de la marca: la "mesa" central y las ocho
+     "sillas" alrededor. Los colores son los de la paleta, no los del demo
+     original. Se declaran como tokens propios para que un bloque oscuro
+     (.sobre-oscuro) pueda subirlos de tono sin tocar el componente. */
+  --color-loader-mesa: #0d2c84; /* azul oscuro de marca */
+  --color-loader-silla: #1e88e5; /* azul */
+  --color-loader-acento: #f5a623; /* naranja: la primera silla del ciclo */
+
   --container-site: 1180px;
 
   /* Puntos de quiebre propios: las rejillas cambian a 900px y el menú
@@ -76,6 +85,38 @@
   --breakpoint-mob: 520px;
   --breakpoint-tablet: 900px;
   --breakpoint-nav: 1100px;
+}
+
+/* --- Animacion de carga (LoaderDST.astro) -----------------------------------
+   La mesa respira y las ocho sillas se encienden en circulo, una tras otra:
+   ciclo de 1,6 s con 0,18 s de diferencia entre sillas. */
+@keyframes dst-mesa {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes dst-silla {
+  0%,
+  55%,
+  100% {
+    opacity: 0.22;
+  }
+  8%,
+  30% {
+    opacity: 1;
+  }
+}
+
+/* Retirada del loader cuando lo que se esperaba ya esta listo. */
+@keyframes dst-loader-sale {
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes mvFade {
@@ -180,6 +221,21 @@
 }
 
 @layer components {
+  /* --- Logotipos de marca -------------------------------------------------
+     Los logotipos del portafolio vienen de fuentes muy distintas (unos del
+     manual de marca, otros recortados de un empaque), asi que llegan con
+     densidades de tinta dispares. Un realce leve e igual para todos los
+     empareja sin que ninguno se note retocado.
+
+     El tamano NO se pone aqui: cada logotipo lo calcula su pagina con
+     altoSeguroLogo (src/lib/imagenes.ts) y lo aplica <Image>, para que
+     ninguno se muestre por encima de su resolucion real. */
+  .logo-marca {
+    max-width: 100%;
+    object-fit: contain;
+    filter: contrast(1.06) saturate(1.04);
+  }
+
   /* --- Bloques oscuros sobre el sitio claro -------------------------------
      El pie de página y algún panel de marca van en azul oscuro. En vez de
      cambiar clase por clase, se reescriben aquí los tokens de texto, líneas y
@@ -196,6 +252,9 @@
     --color-glass: rgba(255, 255, 255, 0.08);
     --color-glass-strong: rgba(255, 255, 255, 0.14);
     --color-glass-border: rgba(255, 255, 255, 0.22);
+    /* Sobre azul oscuro la mesa azul de marca desaparece: se aclara. */
+    --color-loader-mesa: #ffffff;
+    --color-loader-silla: #90caf9;
     color: var(--color-ink);
   }
 
@@ -371,6 +430,26 @@
   .btn-whatsapp:focus-visible {
     filter: brightness(1.05);
     box-shadow: 0 14px 32px rgba(37, 211, 102, 0.38);
+  }
+
+  /* --- Capa de espera sobre un contenedor -------------------------------
+     Tapa el hueco (un mapa, una lista) mientras se carga y se retira con un
+     fundido de 250 ms. El elemento se quita del DOM al terminar la animacion;
+     `forwards` evita que reaparezca en el ultimo fotograma. */
+  .dst-capa-carga {
+    position: absolute;
+    inset: 0;
+    z-index: 400;
+    display: grid;
+    place-items: center;
+    /* `--color-base` se renombro a `--color-fondo` (ver la nota del bloque de
+       tokens): sin este cambio la capa quedaria transparente. */
+    background: var(--color-fondo);
+  }
+
+  .dst-capa-carga[data-fuera='true'] {
+    pointer-events: none;
+    animation: dst-loader-sale 0.25s ease-out forwards;
   }
 
   .kicker {
@@ -613,6 +692,10 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+  /* El loader se apaga en su propio componente (LoaderDST.astro): sus estilos
+     tienen ambito y ganan a cualquier regla global, asi que la excepcion tiene
+     que vivir alli para que el logotipo quede quieto Y completo. */
+
   .btn:hover,
   .btn:focus-visible,
   .glass-card:hover,

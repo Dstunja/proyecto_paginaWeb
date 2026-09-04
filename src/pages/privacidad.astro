@@ -1,0 +1,146 @@
+---
+/**
+ * Política de tratamiento de datos personales.
+ *
+ * ⚠️ BORRADOR. El texto de abajo es una base redactada a partir de lo que el
+ * sitio hace hoy (formularios que abren el gestor de correo, pedidos que se
+ * envían por WhatsApp y analítica con Google Analytics 4). NO ha sido revisado
+ * por un abogado. Antes de publicarlo en dstunja.com hay que:
+ *
+ *   1. Confirmar la razón social, el NIT y la dirección de notificaciones.
+ *   2. Definir el correo del responsable de atender peticiones de datos.
+ *   3. Fijar los plazos reales de conservación de las hojas de vida y de las
+ *      PQRS radicadas.
+ *   4. Que lo revise el área jurídica o un abogado de protección de datos.
+ *
+ * Al terminar la revisión, borrar el aviso de BORRADOR de esta página.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { ruta } from '../lib/rutas';
+import { empresa } from '../data/site';
+
+const actualizado = '3 de septiembre de 2026';
+
+/** Eventos y datos que recoge la analítica, para poder listarlos sin repetir. */
+const queSeRecoge = [
+  'Páginas visitadas, orden en que se visitan y tiempo aproximado en cada una.',
+  'Secciones del inicio que se alcanzan a ver y botones de contacto que se pulsan.',
+  'Ciudad aproximada (deducida de la dirección IP, que se anonimiza), tipo de dispositivo y navegador.',
+  'Origen de la visita: buscador, red social o enlace directo.',
+];
+
+const queNoSeRecoge = [
+  'Tu nombre, tu correo, tu teléfono o los datos de tu negocio.',
+  'El contenido de los pedidos que armas, ni los mensajes que envías por WhatsApp.',
+  'Términos de búsqueda que parezcan datos personales: si escribes una arroba o una secuencia larga de dígitos, el término se reemplaza por «[omitido]» antes de salir de tu navegador.',
+];
+---
+
+<BaseLayout
+  title="Política de tratamiento de datos — Distribuciones Santiago de Tunja"
+  description="Cómo Distribuciones Santiago de Tunja recoge, usa y protege los datos personales de quienes visitan dstunja.com, conforme a la Ley 1581 de 2012."
+>
+  <PageHero
+    kicker="Protección de datos"
+    titulo="Política de tratamiento de datos personales"
+    texto="Qué datos recogemos en este sitio, para qué los usamos y cómo puedes pedirnos que los corrijamos o los eliminemos."
+  />
+
+  <section class="section">
+    <div class="wrap max-w-[76ch]">
+      {/* EDITAR AQUÍ: quitar este aviso cuando el área jurídica valide el texto. */}
+      <div class="mb-12 rounded-card border border-accent/45 bg-accent/12 px-6 py-5">
+        <p class="m-0 font-display text-[15px] font-semibold text-accent-text">
+          Borrador pendiente de revisión legal
+        </p>
+        <p class="mt-2 mb-0 text-[14.5px] text-muted">
+          Este texto es una base preparada a partir de lo que el sitio hace hoy. Debe revisarlo el
+          área jurídica antes de publicarse en el dominio definitivo.
+        </p>
+      </div>
+
+      <p class="text-[13.5px] text-muted">Última actualización: {actualizado}</p>
+
+      <h2 class="mt-10 text-[24px] tablet:text-[28px]">1. Quién responde por tus datos</h2>
+      <p class="mt-4 text-muted">
+        {empresa.razonSocial}, con sede en {empresa.direccion}, {empresa.ciudad}, {
+          empresa.departamento
+        }, es la responsable del tratamiento de los datos personales recogidos a través de este
+        sitio. Para cualquier solicitud relacionada con tus datos puedes escribir a{' '}
+        <a class="font-semibold text-secondary-dark underline" href={`mailto:${empresa.email}`}
+          >{empresa.email}</a
+        > o llamar al {empresa.telefono}.
+      </p>
+
+      <h2 class="mt-12 text-[24px] tablet:text-[28px]">2. Qué datos recogemos</h2>
+      <p class="mt-4 text-muted">
+        <strong class="text-ink">Los que tú nos escribes.</strong> Los formularios de contacto, PQRS
+        y postulación de empleo no se envían a ningún servidor nuestro: abren tu propio gestor de
+        correo con el mensaje ya redactado, y los datos llegan a nosotros como un correo corriente.
+        El armador de pedidos guarda tu lista y los datos de tu negocio únicamente en tu navegador,
+        y el mensaje se envía por WhatsApp cuando tú lo decides.
+      </p>
+      <p class="mt-4 text-muted">
+        <strong class="text-ink">Estadísticas de uso.</strong> Usamos Google Analytics 4 para
+        entender cómo se navega el sitio. Esa herramienta recoge:
+      </p>
+      <ul class="mt-4 flex list-disc flex-col gap-2 pl-6 text-muted">
+        {queSeRecoge.map((linea) => <li class="text-[15px]">{linea}</li>)}
+      </ul>
+      <p class="mt-6 text-muted">La analítica <strong class="text-ink">no</strong> recoge:</p>
+      <ul class="mt-4 flex list-disc flex-col gap-2 pl-6 text-muted">
+        {queNoSeRecoge.map((linea) => <li class="text-[15px]">{linea}</li>)}
+      </ul>
+
+      <h2 class="mt-12 text-[24px] tablet:text-[28px]">3. Para qué los usamos</h2>
+      <p class="mt-4 text-muted">
+        Para atender tus solicitudes comerciales, tramitar las PQRS que radicas, adelantar procesos
+        de selección de personal y tomar decisiones sobre el contenido del sitio (qué secciones
+        ampliar, cuáles simplificar). No usamos tus datos con fines distintos a estos ni los
+        entregamos a terceros para su propio provecho comercial.
+      </p>
+
+      <h2 class="mt-12 text-[24px] tablet:text-[28px]">4. Cookies y consentimiento</h2>
+      <p class="mt-4 text-muted">
+        La primera vez que entras aparece una franja para que decidas. Mientras no aceptes, la
+        analítica funciona en modo restringido: no se guardan cookies en tu equipo ni se te
+        identifica entre visitas. Si aceptas, Google Analytics guarda una cookie propia para
+        distinguir visitas nuevas de visitas repetidas. Tu decisión se recuerda en tu navegador y
+        puedes cambiarla borrando los datos del sitio.
+      </p>
+
+      <h2 class="mt-12 text-[24px] tablet:text-[28px]">5. Tus derechos</h2>
+      <p class="mt-4 text-muted">
+        Conforme a la Ley 1581 de 2012 y al Decreto 1074 de 2015, puedes conocer, actualizar y
+        rectificar tus datos; solicitar prueba de la autorización que otorgaste; ser informado sobre
+        el uso que les hemos dado; revocar la autorización o pedir su supresión cuando no exista un
+        deber legal o contractual que nos obligue a conservarlos; y presentar quejas ante la
+        Superintendencia de Industria y Comercio.
+      </p>
+      <p class="mt-4 text-muted">
+        Para ejercerlos escríbenos a{' '}
+        <a class="font-semibold text-secondary-dark underline" href={`mailto:${empresa.email}`}
+          >{empresa.email}</a
+        > o radica tu solicitud por el <a
+          class="font-semibold text-secondary-dark underline"
+          href={ruta('/pqrs/')}>formulario de PQRS</a
+        >. Respondemos en los plazos que fija la ley.
+      </p>
+
+      <h2 class="mt-12 text-[24px] tablet:text-[28px]">6. Conservación</h2>
+      <p class="mt-4 text-muted">
+        {/* EDITAR AQUÍ: plazos reales acordados con la empresa. */}
+        Conservamos los datos el tiempo necesario para cumplir la finalidad que motivó su
+        recolección y las obligaciones legales aplicables. Los informes de Google Analytics se
+        conservan según la configuración de retención de la propiedad.
+      </p>
+
+      <h2 class="mt-12 text-[24px] tablet:text-[28px]">7. Cambios</h2>
+      <p class="mt-4 text-muted">
+        Si modificamos esta política publicaremos la nueva versión en esta misma dirección y
+        cambiaremos la fecha de actualización.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,69 @@
+---
+/**
+ * Evento `clic_cta`: qué canal de contacto elige la gente.
+ *
+ * Se resuelve con UN solo escucha delegado en `document` que deduce el destino
+ * a partir del `href` del enlace. Así ningún componente cambia: no hay que ir
+ * marcando botón por botón, y un enlace nuevo a WhatsApp o a PQRS queda medido
+ * solo. Si alguna vez hace falta forzar un destino distinto al que se deduce,
+ * basta con poner `data-cta="loquesea"` en el elemento.
+ *
+ * Va en el layout, así que mide todas las páginas.
+ */
+---
+
+<script>
+  import { registrarEvento } from '../lib/analitica';
+
+  /**
+   * Nombre corto del destino de un enlace, o `null` si no es una llamada a la
+   * acción que interese medir (un ancla interna, el logo, un "ver más"...).
+   */
+  function destinoDe(elemento: HTMLElement): string | null {
+    const manual = elemento.dataset.cta;
+    if (manual) return manual;
+
+    const href = elemento.getAttribute('href') ?? '';
+    if (href === '' || href === '#') return null;
+
+    // --- Canales de contacto y redes: se reconocen por el dominio ---
+    if (/^mailto:/i.test(href)) return 'correo';
+    if (/^tel:/i.test(href)) return 'telefono';
+    if (/(^|\/\/|\.)(wa\.me|whatsapp\.com)/i.test(href)) return 'whatsapp';
+    if (/instagram\.com/i.test(href)) return 'instagram';
+    if (/facebook\.com/i.test(href)) return 'facebook';
+    if (/(\/\/|\.)(x\.com|twitter\.com)/i.test(href)) return 'x';
+    if (/pideky/i.test(href)) return 'pideky';
+
+    // --- Páginas del sitio: se compara el final de la ruta, para que el
+    //     prefijo `base` de GitHub Pages (/proyecto_paginaWeb) no estorbe ---
+    const camino = href.split('#')[0]!.split('?')[0]!.replace(/\/+$/, '');
+    const paginas: Record<string, string> = {
+      pedido: 'pedido',
+      pqrs: 'pqrs',
+      empleos: 'empleos',
+      catalogo: 'catalogo',
+      contactanos: 'contactanos',
+      innovacion: 'innovacion',
+      nosotros: 'nosotros',
+    };
+    const ultimo = camino.slice(camino.lastIndexOf('/') + 1);
+    if (paginas[ultimo]) return paginas[ultimo];
+
+    // El pie de página enlaza a la franja de pedido del inicio.
+    if (href.includes('#haz-tu-pedido')) return 'pedido';
+
+    return null;
+  }
+
+  document.addEventListener('click', (evento) => {
+    const objetivo = evento.target;
+    if (!(objetivo instanceof Element)) return;
+
+    const enlace = objetivo.closest<HTMLElement>('a[href], [data-cta]');
+    if (!enlace) return;
+
+    const destino = destinoDe(enlace);
+    if (destino) registrarEvento('clic_cta', { destino });
+  });
+</script>

@@ -1,0 +1,144 @@
+---
+/**
+ * Animación de carga de la marca.
+ *
+ * Es el isotipo de Distribuciones Santiago de Tunja convertido en indicador de
+ * espera: la "mesa" del centro respira y las ocho "sillas" de alrededor (las
+ * diagonales en rombo, como en el logotipo real) se encienden en círculo, una
+ * cada 0,18 s, en un ciclo de 1,6 s.
+ *
+ * SVG en línea, no `<img>`: así hereda los tokens de color de global.css
+ * (`--color-loader-mesa`, `--color-loader-silla`, `--color-loader-acento`) y
+ * se aclara solo dentro de un bloque `.sobre-oscuro`, donde el azul de marca
+ * quedaría invisible. Los keyframes viven en global.css con el prefijo `dst-`.
+ *
+ * Accesibilidad: `role="status"` con `aria-live="polite"` anuncia la espera sin
+ * interrumpir; si no se pasa `texto`, se lee "Cargando…" aunque no se vea. Con
+ * `prefers-reduced-motion` el logotipo se muestra quieto y completo.
+ *
+ * @example <LoaderDST texto="Cargando el mapa…" />
+ * @example <LoaderDST tamano={56} />
+ */
+interface Props {
+  /** Lado del cuadrado en píxeles. */
+  tamano?: number;
+  /** Texto visible bajo el logotipo. Si se omite, queda solo para lectores. */
+  texto?: string;
+  /** Clases extra para el contenedor. */
+  class?: string;
+}
+
+const { tamano = 96, texto, class: clase } = Astro.props;
+
+/**
+ * Las ocho sillas, en el orden en que se encienden (empezando arriba y
+ * girando en el sentido de las agujas del reloj). Las diagonales van giradas
+ * 45°, que es lo que las convierte en rombos.
+ */
+const SILLAS = [
+  { x: 52.5, y: 8.5, giro: null },
+  { x: 83.61, y: 21.39, giro: '45 91.11 28.89' },
+  { x: 96.5, y: 52.5, giro: null },
+  { x: 83.61, y: 83.61, giro: '45 91.11 91.11' },
+  { x: 52.5, y: 96.5, giro: null },
+  { x: 21.39, y: 83.61, giro: '45 28.89 91.11' },
+  { x: 8.5, y: 52.5, giro: null },
+  { x: 21.39, y: 21.39, giro: '45 28.89 28.89' },
+];
+
+/** Diferencia entre una silla y la siguiente, en segundos. */
+const PASO = 0.18;
+---
+
+<div class:list={['dst-loader-caja', clase]} role="status" aria-live="polite">
+  <svg
+    class="dst-loader"
+    viewBox="0 0 120 120"
+    width={tamano}
+    height={tamano}
+    aria-hidden="true"
+    focusable="false"
+  >
+    <rect class="dst-mesa" x="38" y="38" width="44" height="44" rx="10" />
+    {
+      SILLAS.map((silla, i) => (
+        <rect
+          class:list={['dst-silla', i === 0 && 'dst-silla-acento']}
+          x={silla.x}
+          y={silla.y}
+          width="15"
+          height="15"
+          rx="2.5"
+          transform={silla.giro ? `rotate(${silla.giro})` : undefined}
+          style={`animation-delay:${(i * PASO).toFixed(2)}s`}
+        />
+      ))
+    }
+  </svg>
+
+  {
+    texto ? (
+      <p class="dst-loader-texto">{texto}</p>
+    ) : (
+      <span class="sr-only">Cargando…</span>
+    )
+  }
+</div>
+
+<style>
+  .dst-loader-caja {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9rem;
+  }
+
+  .dst-loader {
+    display: block;
+    /* El SVG hereda el color; los `fill` van abajo para poder usar tokens. */
+    overflow: visible;
+  }
+
+  .dst-mesa {
+    fill: var(--color-loader-mesa);
+    transform-origin: center;
+    animation: dst-mesa 1.6s ease-in-out infinite;
+  }
+
+  .dst-silla {
+    fill: var(--color-loader-silla);
+    opacity: 0.22;
+    animation: dst-silla 1.6s linear infinite;
+  }
+
+  /* La primera del ciclo va en naranja: marca dónde empieza la vuelta y trae
+     el tercer color de la paleta sin ensuciar el conjunto. */
+  .dst-silla-acento {
+    fill: var(--color-loader-acento);
+  }
+
+  /* Menos movimiento: el logotipo se ve quieto y COMPLETO.
+     La regla global de prefers-reduced-motion deja la animacion en 0,01 ms,
+     lo que congelaria las sillas en su fotograma de reposo (22 % de opacidad)
+     y se veria como un logotipo a medio encender. Aqui se apaga la animacion
+     y se devuelven todas las piezas a plena opacidad. */
+  @media (prefers-reduced-motion: reduce) {
+    .dst-mesa,
+    .dst-silla {
+      animation: none;
+      opacity: 1;
+    }
+  }
+
+  .dst-loader-texto {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    text-align: center;
+  }
+</style>

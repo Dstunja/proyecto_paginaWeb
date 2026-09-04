@@ -38,7 +38,7 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
   description={vacante.resumen}
 >
   <!-- ENCABEZADO -->
-  <section class="border-b border-line bg-fondo pt-14 pb-12">
+  <section class="border-b border-line bg-fondo pt-14 pb-12" data-vacante={vacante.cargo}>
     <div class="wrap">
       <a
         class="group mb-6 inline-flex items-center gap-2 text-[14.5px] font-semibold text-secondary-dark"
@@ -178,6 +178,7 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
             <a
               class="btn btn-primary"
               href={ruta(`/empleos/?cargo=${encodeURIComponent(vacante.cargo)}#postular`)}
+              data-postular-vacante
             >
               Postularme a esta vacante
             </a>
@@ -211,3 +212,20 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
     )
   }
 </BaseLayout>
+
+{/* Que convocatorias se leen y desde cuales se da el paso de postularse.
+    El nombre del cargo se toma del marcado (data-vacante), que es lo unico
+    que este script comparte con la pagina. */}
+<script>
+  import { registrarEvento } from '../../lib/analitica';
+
+  const vacante = document.querySelector<HTMLElement>('[data-vacante]')?.dataset.vacante ?? '';
+
+  if (vacante) {
+    registrarEvento('vacante_ver', { vacante });
+
+    document.querySelector('[data-postular-vacante]')?.addEventListener('click', () => {
+      registrarEvento('vacante_postular', { vacante });
+    });
+  }
+</script>

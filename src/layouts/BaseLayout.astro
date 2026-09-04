@@ -11,6 +11,9 @@ import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WhatsappFlotante from '../components/WhatsappFlotante.astro';
+import Analitica from '../components/Analitica.astro';
+import AnaliticaEnlaces from '../components/AnaliticaEnlaces.astro';
+import AvisoCookies from '../components/AvisoCookies.astro';
 import { empresa, redes } from '../data/site';
 
 interface Props {
@@ -102,6 +105,9 @@ const jsonLd = {
         document.documentElement.classList.add('js-revelado');
       }
     </script>
+
+    {/* Estadisticas de uso. No se inyecta nada sin PUBLIC_GA_ID ni en desarrollo. */}
+    <Analitica />
   </head>
 
   <body>
@@ -119,6 +125,8 @@ const jsonLd = {
 
     <Footer />
     <WhatsappFlotante />
+    <AvisoCookies />
+    <AnaliticaEnlaces />
 
     {/* Revelado al hacer scroll, en un solo sitio para todo el sitio. */}
     <script>

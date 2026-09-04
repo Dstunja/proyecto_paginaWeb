@@ -261,6 +261,7 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
     type Pedido,
   } from '../../lib/carrito';
   import { CANTIDAD_MAXIMA } from '../../data/pedido';
+  import { registrarEvento } from '../../lib/analitica';
 
   const panel = document.querySelector<HTMLElement>('[data-panel]');
   const velo = document.querySelector<HTMLElement>('[data-velo]');
@@ -429,9 +430,15 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
       }
 
       if ((e.target as HTMLElement).closest('[data-quitar]')) {
+        // Se lee ANTES de quitarla: despues ya no esta en el pedido.
+        const producto = obtenerProducto(id);
         pedido = fijarCantidad(pedido, id, 0);
         guardarPedido(pedido);
         avisar('');
+        registrarEvento('pedido_quitar', {
+          codigo_sap: producto?.codigo ?? id,
+          marca: producto?.marca ?? '',
+        });
       }
     });
 
@@ -515,6 +522,15 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
     formulario.addEventListener('submit', (e) => {
       e.preventDefault();
       if (!validar()) return;
+
+      /* Solo el tamano del pedido: ni el negocio, ni el contacto, ni el
+         telefono, ni el municipio salen del navegador. */
+      registrarEvento('pedido_enviar', {
+        items: pedido.items.length,
+        marcas_distintas: new Set(
+          pedido.items.map((item) => obtenerProducto(item.id)?.marca).filter(Boolean),
+        ).size,
+      });
 
       const { texto, recortado, omitidas } = mensajeParaUrl(pedido);
       // La ventana se abre dentro del propio clic: si se esperara a que
