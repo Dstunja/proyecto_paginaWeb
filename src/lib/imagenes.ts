@@ -102,15 +102,52 @@ function buscarConCualquierExtension(rutaPublica: string): string | null {
 }
 
 /**
- * Logo de una marca comercial, si ya está subido a public/img/marcas/.
+ * Logotipos de marca, importados desde src/assets/marcas/.
  *
- * Busca por el nombre convertido a slug y prueba las extensiones habituales:
- * 'Choco Listo' -> public/img/marcas/choco-listo.png (o .svg, .webp...).
- * Devuelve null cuando todavía no existe, para que quien llame muestre el
- * nombre en texto y no una imagen rota.
+ * Viven en src/ y no en public/ a propósito: solo las imágenes de src/ pasan
+ * por el optimizador de Astro (astro:assets), que es lo que permite servir
+ * cada logo en el tamaño justo y con versión @2x para pantallas de alta
+ * densidad. Astro las copia a la salida con un nombre con hash, así que la
+ * URL final ya lleva el `base` del sitio y no hace falta pasarla por `ruta`.
+ *
+ * EDITAR AQUÍ: para agregar el logotipo de una marca, deja el archivo en
+ * src/assets/marcas/ con el nombre de la marca en minúsculas y con guiones:
+ * 'Saltín Noel' -> saltin-noel.png (también sirven .svg, .webp, .jpg o .avif).
+ * Entre mejor sea la resolución original, mejor se ve en pantallas retina:
+ * como mínimo el doble del tamaño al que se muestra.
+ */
+const LOGOS_MARCA = import.meta.glob<{ default: ImageMetadata }>(
+  '../assets/marcas/*.{png,jpg,jpeg,webp,avif,svg}',
+  { eager: true },
+);
+
+/** { 'saltin-noel': ImageMetadata, ... }, indexado por el nombre del archivo. */
+const LOGOS_POR_SLUG: Record<string, ImageMetadata> = Object.fromEntries(
+  Object.entries(LOGOS_MARCA).map(([archivo, modulo]) => [
+    archivo.replace(/^.*\//, '').replace(/\.[a-z0-9]+$/i, ''),
+    modulo.default,
+  ]),
+);
+
+/**
+ * Imagen del logotipo de una marca, lista para el <Image> de astro:assets.
+ *
+ * Devuelve el `ImageMetadata` completo (con el ancho y el alto reales del
+ * archivo), que es lo que necesita <Image> para generar los tamaños y el
+ * srcset. Devuelve null cuando la marca todavía no tiene archivo, para que
+ * quien la use decida el respaldo: mostrar el nombre en texto u omitirla.
+ */
+export function logoMarcaImagen(nombre: string): ImageMetadata | null {
+  return LOGOS_POR_SLUG[slug(nombre)] ?? null;
+}
+
+/**
+ * URL del logotipo de una marca, o null si todavía no tiene archivo.
+ *
+ * Es la versión en texto plano de `logoMarcaImagen`, para los sitios donde
+ * hace falta una cadena y no un componente: un `<img>` normal o los datos que
+ * se serializan a JSON para el armador de pedidos.
  */
 export function logoMarca(nombre: string): string | null {
-  const base = `/img/marcas/${slug(nombre)}`;
-  const encontrada = EXTENSIONES.map((ext) => base + ext).find(existeEnPublico);
-  return encontrada ? ruta(encontrada) : null;
+  return logoMarcaImagen(nombre)?.src ?? null;
 }

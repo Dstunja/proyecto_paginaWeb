@@ -1,7 +1,8 @@
 ---
+import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
-import { logoMarca } from '../lib/imagenes';
+import { logoMarcaImagen } from '../lib/imagenes';
 import MapaRed from '../components/MapaRed.astro';
 import EspecialesMes from '../components/EspecialesMes.astro';
 import BotonPideky from '../components/BotonPideky.astro';
@@ -13,7 +14,7 @@ import RedesSociales from '../components/RedesSociales.astro';
 import AnaliticaSecciones from '../components/AnaliticaSecciones.astro';
 import {
   cifras,
-  marcas,
+  marcasDeLaFranja,
   valorAgregado,
   beneficios,
   empresa,
@@ -24,9 +25,39 @@ import { departamentos, totalClientes } from '../data/municipios';
 
 const formatoNumero = new Intl.NumberFormat('es-CO');
 
-/* Logos de marca de la franja del inicio. Si el archivo todavía no está en
-   public/img/marcas/, se muestra el nombre en texto (ver src/lib/imagenes.ts). */
-const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(marca) }));
+/* Franja "Marcas que distribuimos".
+
+   Solo entran las marcas que ya tienen su logotipo en src/assets/marcas/: la
+   lista de src/data/site.ts se filtra contra los archivos reales, así que una
+   marca sin archivo (o con el archivo renombrado) simplemente no aparece, en
+   vez de mostrarse como texto suelto o como imagen rota.
+
+   Cada logo se muestra a un tamaño calculado, no impuesto por el CSS: la
+   altura nunca pasa de la mitad de la altura real del archivo, de modo que la
+   copia @2x del srcset todavía cabe dentro de la resolución original y ningún
+   logo se agranda por encima de lo que da. Por eso Corona, que es el archivo
+   más pequeño, se ve un punto más bajo que el resto: es preferible a verlo
+   borroso en una pantalla retina. */
+const ALTO_FRANJA = 40;
+const ANCHO_MAXIMO_FRANJA = 130;
+
+const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
+  const imagen = logoMarcaImagen(nombre);
+  if (!imagen) return []; // marca sin archivo de logo: fuera de la franja
+
+  const alto = Math.min(
+    ALTO_FRANJA,
+    Math.floor((imagen.height - 1) / 2), // nunca por encima de su resolución real
+    Math.floor((ANCHO_MAXIMO_FRANJA * imagen.height) / imagen.width), // logos muy alargados
+  );
+  // El píxel que se descuenta antes de partir a la mitad absorbe el redondeo
+  // del ancho: sin él, un logo de alto impar como Corona (62 px) pediría una
+  // copia @2x un píxel más ancha que su propio archivo.
+  //
+  // Solo se pasa el alto: <Image> deriva el ancho de la relación de aspecto
+  // real del archivo, así el atributo width y la imagen generada coinciden.
+  return [{ nombre, imagen, alto }];
+});
 ---
 
 <BaseLayout
@@ -141,26 +172,28 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
       <p class="mb-8 text-center text-[12.5px] font-semibold tracking-[0.14em] text-muted uppercase">
         Marcas que distribuimos
       </p>
-      <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-5">
+      <ul class="m-0 flex list-none flex-wrap items-center justify-center gap-x-10 gap-y-6 p-0">
         {
-          marcasConLogo.map((marca) =>
-            marca.logo ? (
-              <img
-                src={marca.logo}
-                alt={marca.nombre}
+          logosDeLaFranja.map((marca) => (
+            <li class="flex items-center justify-center" style={`height:${ALTO_FRANJA}px`}>
+              <Image
+                src={marca.imagen}
+                alt={`Logotipo de ${marca.nombre}`}
+                height={marca.alto}
+                densities={[1, 2]}
+                format="webp"
+                quality={90}
                 loading="lazy"
-                class="h-10 w-auto max-w-[130px] object-contain opacity-80 transition-opacity duration-200 hover:opacity-100"
+                decoding="async"
+                class="logo-marca"
               />
-            ) : (
-              <span class="font-display text-[15px] font-semibold text-muted transition-colors duration-200 hover:text-primary">
-                {marca.nombre}
-              </span>
-            ),
-          )
+            </li>
+          ))
         }
-      </div>
-      {/* EDITAR AQUÍ: cuando tengas los logotipos autorizados de cada marca,
-          reemplaza estos nombres por <img> con los archivos en public/marcas/. */}
+      </ul>
+      {/* EDITAR AQUÍ: para sumar una marca a esta franja, deja su logotipo en
+          src/assets/marcas/ (nombre en minúsculas y con guiones) y agrégala a
+          `marcasDeLaFranja` en src/data/site.ts. */}
     </div>
   </div>
 
@@ -403,3 +436,24 @@ const marcasConLogo = marcas.map((marca) => ({ nombre: marca, logo: logoMarca(ma
     cifras.forEach((cifra) => observador.observe(cifra));
   }
 </script>
+
+<style>
+  /* Franja "Marcas que distribuimos".
+
+     Los 15 logotipos vienen de fuentes distintas (unos recortados de un
+     empaque, otros del manual de marca), así que llegan con densidades de
+     tinta muy dispares. Un realce leve e igual para todos los empareja sin
+     que ninguno se note retocado; el ancho y el alto los pone <Image> con el
+     tamaño exacto de cada uno, aquí no se escala nada. */
+  .logo-marca {
+    max-width: 100%;
+    object-fit: contain;
+    filter: contrast(1.06) saturate(1.04);
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+  }
+
+  .logo-marca:hover {
+    opacity: 1;
+  }
+</style>

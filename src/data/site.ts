@@ -54,6 +54,57 @@ export const cifras = [
   { valor: '3', etiqueta: 'departamentos', icono: 'map' },
 ] as const;
 
+/**
+ * Marcas de la franja "Marcas que distribuimos" del inicio.
+ *
+ * Es una fila de logotipos, así que aquí solo van las marcas que tienen su
+ * archivo en src/assets/marcas/: una marca en texto plano en medio de los
+ * logos se lee como un hueco, no como una marca más. Las demás del portafolio
+ * (Nutresa, Noel, La Especial, Rica, Choco Listo, Matiz, Dux…) siguen
+ * apareciendo en el catálogo y en el armador de pedidos, que sí las muestran
+ * como píldora de texto cuando no hay logo.
+ *
+ * El inicio filtra esta lista contra los archivos que existen de verdad (ver
+ * src/pages/index.astro), de modo que si un logo se borra o se renombra, la
+ * marca desaparece de la franja en vez de dejar una imagen rota.
+ *
+ * El listado completo del portafolio, con las 34 marcas del catálogo, está en
+ * src/data/productos.ts (MARCAS); esta lista no lo reemplaza.
+ */
+export const marcasDeLaFranja = [
+  'Zenú', // EDITAR AQUÍ: reemplazar con logo limpio en mejor calidad
+  'Ducales',
+  'Saltín Noel',
+  'Festival',
+  'Sello Rojo', // EDITAR AQUÍ: reemplazar con logo limpio en mejor calidad
+  'La Bastilla',
+  'Colcafé',
+  'Jet',
+  'Jumbo', // EDITAR AQUÍ: reemplazar con logo limpio en mejor calidad
+  'Corona',
+  'Doria',
+  'Gol',
+  'Haka',
+  'Bénet',
+  'Badia',
+] as const;
+
+/*
+ * Los tres logos marcados arriba (Zenú, Sello Rojo y Jumbo) son fotos
+ * recortadas, no logotipos vectoriales: tienen poco detalle real y se ven algo
+ * blandos al lado de los demás. No hay forma de inventarles resolución desde
+ * el código; hay que reemplazar el archivo.
+ *
+ * Dónde buscar el reemplazo: la biblioteca de medios del sitio actual en
+ * WordPress (dstunja.com/wp-admin -> Medios), donde es probable que ya existan
+ * versiones más limpias. Lo ideal es un .svg o un .png con fondo transparente
+ * de al menos 600 px de ancho.
+ */
+
+/**
+ * Nombres de marca del portafolio, para textos y referencias generales.
+ * Para la franja de logos del inicio se usa `marcasDeLaFranja`.
+ */
 export const marcas = [
   'Nutresa', 'Zenú', 'Noel', 'Ducales', 'Saltín Noel', 'Sello Rojo', 'La Especial',
   'Rica', 'Choco Listo', 'Matiz', 'La Bastilla', 'Dux', 'Jumbo', 'Corona', 'Jet',
