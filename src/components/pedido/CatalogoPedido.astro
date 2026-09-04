@@ -13,10 +13,13 @@
  * Del producto solo viajan los campos que se usan. `codigoParcial`, `embalaje`
  * y `paginaPdf` son notas internas y se quedan en el servidor; el `codigo` SAP
  * viaja porque va en el mensaje que recibe el asesor, no porque se muestre.
+ * `precio` viaja solo cuando la referencia lo tiene: hoy son 107 de las 709, y
+ * las demás tarjetas simplemente no muestran renglón de precio.
  *
  * Sin JavaScript no hay listado (todo el armador lo es): el `<noscript>` manda
  * al catálogo de marcas y a WhatsApp.
  */
+import { getImage } from 'astro:assets';
 import { productos, MARCAS, CATEGORIAS } from '../../data/productos';
 import { imagenSiExiste, logoMarca } from '../../lib/imagenes';
 import { ruta } from '../../lib/rutas';
@@ -26,14 +29,52 @@ import Icono from '../Icono.astro';
  * Lo que se le manda al navegador de cada producto.
  *
  * `imagen` solo viaja cuando la referencia tiene foto propia Y el archivo
- * existe de verdad en public/ (`imagenSiExiste` ya le antepone el `base`).
- * Hoy son las siete referencias confirmadas contra su código SAP; el resto
- * llega sin el campo y la tarjeta cae en el logotipo de la marca. Conectar
- * una foto nueva es entonces solo llenar `imagen` en src/data/productos.ts:
- * aquí y en la tarjeta no hay que tocar nada.
+ * existe de verdad (ver `fotoDe`, que ya le antepone el `base`). El resto
+ * llega sin el campo y la tarjeta cae en el logotipo de la marca. Conectar una
+ * foto nueva es entonces solo dejar el archivo en src/assets/productos/ con el
+ * código SAP por nombre y nombrarlo en `imagen` dentro de
+ * src/data/productos.ts: aquí y en la tarjeta no hay que tocar nada.
  */
+/**
+ * Fotos oficiales del fabricante, descargadas de la tienda de Nutresa y
+ * guardadas en src/assets/productos/ con el CODIGO SAP por nombre de archivo.
+ *
+ * Van por src/assets/ y no por public/ a proposito: los originales son de
+ * 1000-1200 px y pesan entre 20 y 300 KB cada uno, pero en la tarjeta se ven a
+ * menos de 200 px. Al pasar por `getImage` el navegador recibe un WebP de
+ * 400 px -una fraccion del peso- y el original nunca se publica. Por public/
+ * habria que servir los 466 archivos tal cual.
+ */
+const archivosFoto = import.meta.glob<{ default: ImageMetadata }>(
+  '../../assets/productos/*.{png,jpg,jpeg,webp}',
+  { eager: true },
+);
+const fotos: Record<string, string> = {};
+for (const [rutaArchivo, modulo] of Object.entries(archivosFoto)) {
+  const nombre = rutaArchivo.split('/').pop() as string;
+  fotos[nombre] = (await getImage({ src: modulo.default, width: 400, format: 'webp' })).src;
+}
+
+/**
+ * Resuelve el campo `imagen` de una referencia, que admite dos formas:
+ *
+ *  - nombre de archivo suelto ("1078187.png"): foto oficial en
+ *    src/assets/productos/, optimizada arriba.
+ *  - ruta absoluta ("/img/innovacion/...jpg"): las fotos que ya estaban en
+ *    public/, de las referencias de innovacion.
+ *
+ * Devuelve null si el archivo no existe, y entonces la tarjeta cae en el
+ * logotipo de la marca. Esa red de seguridad es la que evita que una ruta mal
+ * escrita saque una imagen rota en el armador.
+ */
+function fotoDe(imagen: string | undefined): string | null {
+  if (!imagen) return null;
+  if (imagen.startsWith('/')) return imagenSiExiste(imagen);
+  return fotos[imagen] ?? null;
+}
+
 const catalogo = productos.map((p) => {
-  const imagen = imagenSiExiste(p.imagen);
+  const imagen = fotoDe(p.imagen);
   return {
     id: p.id,
     marca: p.marca,
@@ -42,6 +83,7 @@ const catalogo = productos.map((p) => {
     presentacion: p.presentacion,
     codigo: p.codigo,
     ...(imagen ? { imagen } : {}),
+    ...(typeof p.precio === 'number' ? { precio: p.precio } : {}),
   };
 });
 
@@ -221,6 +263,20 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
     const unidades = (n: number) => `${n} ${n === 1 ? 'unidad' : 'unidades'}`;
 
+    /**
+     * Precio en pesos, sin decimales y con punto de miles: $22.000.
+     *
+     * Se escribe con `Intl` y no a mano porque el separador de miles en
+     * es-CO es el punto y el navegador ya sabe ponerlo; `maximumFractionDigits: 0`
+     * evita el ",00" que no aporta nada en una lista de precios de tienda.
+     */
+    const formatoPesos = new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    });
+    const pesos = (n: number) => formatoPesos.format(n);
+
     const cantidadEnTarjeta = (id: string) => cantidades.get(id) ?? 1;
 
     const filtrar = (): ProductoPedido[] => {
@@ -282,6 +338,25 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
           ? 'border-line bg-white'
           : 'border-transparent bg-primary-soft';
 
+      /*
+       * EL PRECIO: solo aparece si la referencia lo tiene
+       * -------------------------------------------------
+       * Es el PSP (precio sugerido al público) del deck. La mayoría de las
+       * referencias todavía no lo tiene y su tarjeta se pinta igual que antes,
+       * sin renglón de precio: es preferible eso a un "consultar" repetido 600
+       * veces, que solo agregaría ruido a la grilla.
+       *
+       * Va rotulado como SUGERIDO a propósito. Es lo que la tienda le cobra al
+       * consumidor, no lo que la tienda le paga al asesor, y sin el rótulo la
+       * cifra se leería como el precio del pedido. El aviso de que el asesor
+       * confirma precios y disponibilidad sigue estando en el panel del pedido
+       * y en el mensaje de WhatsApp (AVISO_PRECIOS).
+       */
+      const precio =
+        typeof p.precio === 'number'
+          ? `<p class="m-0 mt-1 font-display text-[15px] font-bold text-primary">${esc(pesos(p.precio))}<span class="ml-1.5 font-sans text-[10.5px] font-semibold tracking-[0.08em] text-muted uppercase">sugerido</span></p>`
+          : '';
+
       return `
         <article class="glass-card flex gap-4 p-4 ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${esc(p.id)}">
           <div class="relative grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border ${fondoCuadro}">
@@ -293,6 +368,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
               <p class="m-0 font-display text-[11px] font-semibold tracking-[0.1em] text-secondary-dark uppercase">${esc(p.marca)}</p>
               <h3 class="m-0 text-[15px] leading-snug">${esc(p.nombre)}</h3>
               <p class="m-0 text-[13px] text-muted">${esc(p.presentacion)}</p>
+              ${precio}
             </div>
 
             <div class="mt-auto flex flex-wrap items-center gap-2">

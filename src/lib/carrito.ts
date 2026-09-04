@@ -37,6 +37,12 @@ export interface ProductoPedido {
   presentacion: string;
   codigo: string;
   imagen?: string;
+  /**
+   * PSP en pesos, solo en las referencias cuya página del deck lo declara.
+   * Se muestra en la tarjeta del catálogo; no entra en el mensaje al asesor,
+   * que sigue siendo una lista de referencias y cantidades.
+   */
+  precio?: number;
 }
 
 /** Datos de contacto que acompañan al pedido. */
