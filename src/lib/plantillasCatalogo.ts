@@ -19,7 +19,8 @@
  * mismo resultado en Node y en el navegador (ver `pesos`).
  */
 
-import type { ProductoPedido } from './carrito';
+import { detalleReferencia, type ProductoPedido } from './carrito';
+import { SIN_PSP } from './precios';
 import { CANTIDAD_MAXIMA, TAMANO_TANDA } from '../data/pedido';
 
 /**
@@ -146,13 +147,14 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * y en el mensaje de WhatsApp (AVISO_PRECIOS).
    *
    * Las referencias sin PSP cargado -hoy 599 de 711- no dejan el hueco ni
-   * pintan un $0: dicen "Precio a consultar", que es la verdad y además
-   * mantiene todas las tarjetas de la fila a la misma altura.
+   * pintan un $0: dicen lo que diga `SIN_PSP` (src/lib/precios.ts), que es la
+   * misma frase que usa el panel del pedido, y además mantiene todas las
+   * tarjetas de la fila a la misma altura.
    */
   const precio =
     typeof p.psp === 'number'
       ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}<span class="precio-tarjeta__nota">sugerido</span></p>`
-      : `<p class="precio-tarjeta precio-tarjeta--consultar">Precio a consultar</p>`;
+      : `<p class="precio-tarjeta precio-tarjeta--consultar">${escapar(SIN_PSP)}</p>`;
 
   return `
         <article class="glass-card flex flex-col overflow-hidden ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${escapar(p.id)}">
@@ -162,7 +164,7 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
             <div class="min-w-0">
               <p class="m-0 font-display text-[11px] font-semibold tracking-[0.1em] text-secondary-dark uppercase">${escapar(p.marca)}</p>
               <h3 class="m-0 text-[15px] leading-snug">${escapar(p.nombre)}</h3>
-              <p class="m-0 text-[13px] text-muted">${escapar(p.presentacion)}</p>
+              <p class="m-0 text-[13px] text-muted">${escapar(detalleReferencia(p))}</p>
               ${precio}
             </div>
 

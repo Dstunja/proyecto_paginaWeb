@@ -47,6 +47,20 @@ export function precioSugerido(producto: ConCodigo): number | null {
   return typeof delDeck === 'number' && Number.isFinite(delDeck) && delDeck > 0 ? delDeck : null;
 }
 
+/**
+ * Lo que se escribe cuando una referencia no tiene PSP confirmado.
+ *
+ * Vive aquí, en una constante, y no suelto en cada plantilla: el aviso sale
+ * hoy en la tarjeta del catálogo y en la línea del panel del pedido, y si cada
+ * vista trae su propia frase acaban diciendo cosas distintas para el mismo
+ * caso -que es exactamente lo que pasaba antes, con "Precio a consultar" en la
+ * tarjeta y "Precio con tu asesor" en el panel-.
+ *
+ * Es texto de interfaz, no un dato: el criterio de cuándo aplica lo pone
+ * `precioSugerido`, que devuelve `null`.
+ */
+export const SIN_PSP = 'Precio a consultar';
+
 /** `$ 12.900`. Sin decimales: los precios de tienda van en pesos redondos. */
 export function formatearPesos(valor: number): string {
   return new Intl.NumberFormat('es-CO', {

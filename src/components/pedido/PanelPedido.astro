@@ -334,6 +334,7 @@ const NOTA_PRECIOS =
     leerPedido,
     mensajeParaUrl,
     mensajePedido,
+    detalleReferencia,
     obtenerProducto,
     resumenDelPedido,
     sumarCantidad,
@@ -341,7 +342,7 @@ const NOTA_PRECIOS =
     vaciarPedido,
     type Pedido,
   } from '../../lib/carrito';
-  import { formatearPesos } from '../../lib/precios';
+  import { formatearPesos, SIN_PSP } from '../../lib/precios';
   import { CANTIDAD_MAXIMA } from '../../data/pedido';
   import { registrarEvento } from '../../lib/analitica';
 
@@ -452,7 +453,9 @@ const NOTA_PRECIOS =
           const marca = p?.marca ?? '';
 
           /* Precio de la línea: la cifra de la referencia y, si lleva más de
-             una unidad, cuánto suma. Sin dato confirmado, la etiqueta corta. */
+             una unidad, cuánto suma. Sin dato confirmado va `SIN_PSP`, la
+             MISMA frase que pinta la tarjeta del catálogo: el panel y la
+             grilla hablan del mismo producto y no pueden decirlo distinto. */
           const precio =
             typeof p?.psp === 'number'
               ? `<p class="m-0 mt-0.5 text-[12.5px] text-muted">${esc(formatearPesos(p.psp))} c/u${
@@ -460,14 +463,14 @@ const NOTA_PRECIOS =
                     ? ` · <span class="font-semibold text-ink">${esc(formatearPesos(p.psp * item.cantidad))}</span>`
                     : ''
                 }</p>`
-              : `<p class="m-0 mt-0.5 text-[12.5px] text-muted">Precio con tu asesor</p>`;
+              : `<p class="m-0 mt-0.5 text-[12.5px] text-muted">${esc(SIN_PSP)}</p>`;
 
           return `
             <li class="flex gap-3 border-b border-line py-4" data-item="${esc(item.id)}">
               <div class="min-w-0 flex-1">
                 ${marca ? `<p class="m-0 font-display text-[11px] font-semibold tracking-[0.1em] text-secondary-dark uppercase">${esc(marca)}</p>` : ''}
                 <p class="m-0 text-[14.5px] leading-snug font-semibold text-ink">${esc(p?.nombre ?? item.id)}</p>
-                <p class="m-0 text-[13px] text-muted">${esc(p?.presentacion ?? '')}</p>
+                <p class="m-0 text-[13px] text-muted">${esc(p ? detalleReferencia(p) : '')}</p>
                 ${precio}
               </div>
 

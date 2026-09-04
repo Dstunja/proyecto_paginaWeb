@@ -27,9 +27,13 @@
  * script arranca no repinta nada, adopta lo que ya está en pantalla y solo le
  * aplica el pedido guardado. Por eso no hay parpadeo ni salto de la grilla.
  *
- * Del producto solo viajan los campos que se usan. `codigoParcial`, `embalaje`
- * y `paginaPdf` son notas internas y se quedan en el servidor; el `codigo` SAP
- * viaja porque va en el mensaje que recibe el asesor, no porque se muestre.
+ * Del producto solo viajan los campos que se usan. `embalaje` y `paginaPdf`
+ * son notas internas y se quedan en el servidor. El `codigo` SAP viaja por dos
+ * razones: va en el mensaje que recibe el asesor y ahora además se MUESTRA, en
+ * el renglón de detalle de la tarjeta ("400 g · Cód. 1046509"). Por eso viaja
+ * también `codigoParcial`, pero solo en las 27 referencias que lo tienen en
+ * `true`: son las que no pueden enseñar el código porque el deck de origen
+ * solo traía sus últimos dígitos (ver `detalleReferencia` en src/lib/carrito.ts).
  * `precio` viaja solo cuando la referencia lo tiene: hoy son 112 de las 711.
  * Las demás sí muestran renglón de precio, pero con el texto "Precio a
  * consultar", que se arma en la tarjeta y no hace falta mandar.
@@ -124,6 +128,11 @@ const catalogo = productos.map((p) => {
     nombre: p.nombre,
     presentacion: p.presentacion,
     codigo: p.codigo,
+    /* Solo viaja cuando es `true`, que son 27 de las 711: la tarjeta y el
+       panel muestran el código SAP y con este campo saben cuáles NO pueden
+       enseñarlo porque el deck solo traía los últimos dígitos. Mandarlo
+       siempre costaría el campo en las 711 para informar de 27. */
+    ...(p.codigoParcial ? { codigoParcial: true } : {}),
     ...(imagen ? { imagen } : {}),
     ...(psp !== null ? { psp } : {}),
   };
