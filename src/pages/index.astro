@@ -5,7 +5,7 @@ import { ruta } from '../lib/rutas';
 import { altoSeguroLogo, logoMarcaImagen } from '../lib/imagenes';
 import MapaRed from '../components/MapaRed.astro';
 import BuscadorMunicipio from '../components/BuscadorMunicipio.astro';
-import NovedadesTemporada from '../components/NovedadesTemporada.astro';
+import EspecialesMes from '../components/EspecialesMes.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
 import Resenas from '../components/Resenas.astro';
@@ -86,12 +86,24 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
             Distribuimos productos de consumo masivo a negocios de Boyacá, Santander y
             Cundinamarca, con entregas semanales y asesoría cercana.
           </p>
+          {/* `data-magnetico`: los dos CTA de la portada se estiran unos
+              píxeles hacia el cursor cuando pasa cerca. Solo con ratón y solo
+              si el sistema no pide menos movimiento; lo gobierna
+              src/lib/interacciones.ts. */}
           <div class="mt-10 flex flex-wrap gap-4">
-            <a class="btn btn-whatsapp" href={empresa.whatsapp} target="_blank" rel="noopener">
+            <a
+              class="btn btn-whatsapp"
+              href={empresa.whatsapp}
+              target="_blank"
+              rel="noopener"
+              data-magnetico
+            >
               Haz tu pedido
               <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
             </a>
-            <a class="btn btn-secondary" href={ruta('/catalogo/')}>Conoce nuestro portafolio</a>
+            <a class="btn btn-secondary" href={ruta('/catalogo/')} data-magnetico>
+              Conoce nuestro portafolio
+            </a>
           </div>
         </div>
 
@@ -102,10 +114,15 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
              src/data/site.ts. El object-cover recorta cualquier foto al mismo
              formato 5:4, así que sirve tanto horizontal como vertical. */
           HERO_IMAGEN ? (
+            /* `data-parallax`: la foto se desplaza unos píxeles más despacio
+               que el texto al hacer scroll, para dar profundidad. El recorrido
+               son 16 px como máximo; lo gobierna src/lib/interacciones.ts y se
+               apaga solo con "reducir movimiento". */
             <img
               src={ruta(HERO_IMAGEN)}
               alt={HERO_IMAGEN_ALT}
-              class="aspect-[5/4] w-full rounded-[28px] object-cover shadow-[0_28px_60px_rgba(13,44,132,.22)]"
+              class="aspect-[5/4] w-full rounded-[28px] object-cover shadow-[0_28px_60px_rgba(13,44,132,.22)] will-change-transform"
+              data-parallax
             />
           ) : (
             /* Sin foto todavía: panel de marca. Al definir HERO_IMAGEN en
@@ -164,10 +181,9 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
     </div>
   </section>
 
-  <!-- NOVEDADES Y TEMPORADA: un solo bloque con la temporada vigente
-       (src/data/temporada.ts, activada por fecha) seguida de las
-       colaboraciones del mes (src/data/especiales.ts, curadas a mano). -->
-  <NovedadesTemporada />
+  <!-- ESPECIALES DEL MES: colaboraciones y ediciones especiales de marca,
+       elegidas a mano (ver src/data/especiales.ts). -->
+  <EspecialesMes />
 
   <!-- MARCAS -->
   <div class="border-y border-line bg-fondo py-16" data-seccion="marcas">
@@ -230,12 +246,6 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
                 <dd class="mt-1 font-display text-[30px] leading-none font-bold text-primary">
                   {dep.total}
                 </dd>
-                {/* Aquí iba el conteo de clientes por departamento, sacado de
-                    src/data/clientes-municipio.ts. Se quitó porque sumaba una
-                    cifra distinta de la que publica el sitio (CLIENTES_TEXTO) y
-                    dos números que no cuadran se leen como un error. El dato
-                    sigue siendo interno y alimenta el tamaño de los puntos del
-                    mapa. */}
                 <dd class="mt-1 m-0 text-[12.5px] text-muted">
                   {formatoNumero.format(resumenCobertura.clientesPorDepartamento[dep.nombre])} clientes
                 </dd>
@@ -254,7 +264,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
   </section>
 
   <!-- PARA TU NEGOCIO -->
-  <section class="section" data-seccion="para_tu_negocio">
+  <section class="section pb-0" data-seccion="para_tu_negocio">
     <div class="wrap">
       <div class="mb-14 max-w-[56ch]">
         <span class="kicker">Para tu negocio</span>

@@ -1,0 +1,266 @@
+---
+import Icono from './Icono.astro';
+import { ruta } from '../lib/rutas';
+import { imagenOMarcador } from '../lib/imagenes';
+import { especialesDelMes, periodoEspeciales, hayEspecialesDelMes } from '../data/especiales';
+
+/**
+ * "Especiales del mes": las ediciones especiales y colaboraciones vigentes.
+ *
+ * Es la única franja del inicio en tono naranja de marca. El resto del sitio
+ * es blanco y gris con el azul de la marca, así que el naranja —el color de
+ * las llamadas destacadas— alcanza para que se lea como contenido de
+ * temporada, distinto del catálogo permanente, sin inventarse un estilo aparte.
+ *
+ * El contenido vive en src/data/especiales.ts y cambia mes a mes. Si ahí no
+ * queda ningún producto, este componente no dibuja nada: se prefiere que la
+ * sección desaparezca antes que dejar un título con un hueco debajo.
+ *
+ * Es la única franja de destacados del inicio: muestra las colaboraciones de
+ * marca del mes, elegidas a mano.
+ *
+ * REJILLA O CARRUSEL
+ * ------------------
+ * Hasta tres productos van en rejilla, todos a la vista. Con más, la sección
+ * pasa a un carrusel horizontal: tres tarjetas visibles en escritorio, dos en
+ * tableta y una y "un poquito" de la siguiente en móvil, para que se note que
+ * hay más. Se mueve con los botones de la cabecera o deslizando; sin
+ * JavaScript sigue siendo una fila que se desplaza con el dedo o la rueda.
+ * Es un carrusel a propósito y no una rejilla de nueve: nueve tarjetas
+ * grandes seguidas convertían el inicio en un catálogo.
+ *
+ * FOTOS
+ * -----
+ * Las fotos de producto vienen en cualquier proporción (frascos altos, cajas
+ * apaisadas). La tarjeta las encaja completas (object-contain) sobre una copia
+ * desenfocada de la misma foto, así ninguna se recorta y el hueco que queda
+ * alrededor toma el color de la propia imagen en vez de un gris ajeno.
+ * Mientras no exista el archivo, se usa un marcador de posición con el nombre
+ * del producto (ver src/lib/imagenes.ts).
+ */
+const productos = especialesDelMes.map((producto) => ({
+  ...producto,
+  ...imagenOMarcador(producto.imagen, producto.nombre, 1000, 750),
+}));
+
+const esCarrusel = productos.length > 3;
+
+/** Con rejilla: columnas según cuántos productos haya. */
+const columnas =
+  productos.length === 1
+    ? 'max-w-[440px]'
+    : productos.length === 2
+      ? 'mob:grid-cols-2'
+      : 'mob:grid-cols-2 tablet:grid-cols-3';
+---
+
+{
+  hayEspecialesDelMes && (
+    <section id="especiales" class="section border-y border-line bg-accent-soft">
+      <div class="wrap">
+        <div class="mb-12 flex flex-col gap-6 tablet:flex-row tablet:items-end tablet:justify-between">
+          <div class="max-w-[54ch]">
+            <span class="kicker">Especiales del mes</span>
+            <h2 class="text-[28px] tablet:text-[38px]">Ediciones especiales que están sonando</h2>
+            <p class="mt-3 mb-0 text-muted">
+              Cada mes traemos las colaboraciones y ediciones de temporada de nuestras marcas.
+              Pregúntale a tu asesor por la disponibilidad en tu zona.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3 tablet:justify-end">
+            {/* El mes va en una píldora blanca: deja claro de un vistazo que
+                esto es contenido que rota, no una sección fija del catálogo. */}
+            <p class="m-0 inline-flex shrink-0 items-center gap-2 rounded-full border border-accent/40 bg-surface px-4 py-2 font-display text-[13px] font-semibold text-accent-text">
+              <Icono nombre="calendar" class="h-4 w-4" interactivo={false} />
+              {periodoEspeciales}
+            </p>
+
+            {esCarrusel && (
+              /* Flechas del carrusel. Van en la cabecera y no encima de las
+                 tarjetas para no tapar las fotos. Se ocultan en móvil, donde
+                 lo natural es deslizar. */
+              <div class="hidden gap-2 mob:flex" data-controles>
+                <button
+                  type="button"
+                  class="flecha-carrusel"
+                  data-prev
+                  aria-label="Ver productos anteriores"
+                >
+                  <Icono nombre="arrow-right" class="h-4 w-4 rotate-180" interactivo={false} />
+                </button>
+                <button type="button" class="flecha-carrusel" data-next aria-label="Ver más productos">
+                  <Icono nombre="arrow-right" class="h-4 w-4" interactivo={false} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/*
+          Revelado al hacer scroll: en rejilla cada tarjeta entra por su cuenta
+          y escalonada; en carrusel no, porque las tarjetas que quedan fuera por
+          la derecha nunca llegarían a entrar en pantalla y se quedarían
+          invisibles para siempre, así que se revela la pista completa de una
+          vez. Ver src/lib/revelado.ts.
+        */}
+        <div
+          class:list={[
+            esCarrusel
+              ? /* Pista del carrusel. En móvil se sale del margen de la página
+                   (-mx / px) para que las tarjetas lleguen al borde y se vea
+                   asomar la siguiente. */
+                'pista-carrusel -mx-6 flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth px-6 pb-3 mob:-mx-8 mob:scroll-pl-8 mob:px-8 tablet:mx-0 tablet:gap-8 tablet:scroll-pl-0 tablet:px-0 motion-reduce:scroll-auto'
+              : ['grid gap-6 tablet:gap-8', columnas],
+          ]}
+          data-revelar-grupo={esCarrusel ? undefined : ''}
+          data-revelar={esCarrusel ? '' : undefined}
+          data-pista={esCarrusel ? '' : undefined}
+          data-carrusel={esCarrusel ? '' : undefined}
+          role={esCarrusel ? 'region' : undefined}
+          aria-label={esCarrusel ? 'Especiales del mes' : undefined}
+          tabindex={esCarrusel ? '0' : undefined}
+        >
+          {productos.map((producto) => (
+            <article
+              class:list={[
+                'glass-card relative flex flex-col overflow-hidden',
+                esCarrusel &&
+                  'w-[84%] shrink-0 snap-start mob:w-[calc(50%-12px)] tablet:w-[calc((100%-64px)/3)]',
+              ]}
+            >
+              {/* Filo naranja permanente: en las tarjetas del resto del sitio
+                  este filo solo aparece al pasar el mouse, así que dejarlo
+                  fijo aquí marca la diferencia sin cambiar el lenguaje. */}
+              <span class="h-1 shrink-0 bg-accent" aria-hidden="true" />
+
+              {/* Foto integrada: telón de marca + sombra de contacto + máscara
+                  de bordes + velo de color. Antes aquí iba una copia
+                  desenfocada de la propia foto como relleno, que era justo lo
+                  que hacía chocar el verde de una tarjeta con el marrón de la
+                  siguiente. Ver `.foto-producto` en src/styles/global.css. */}
+              <div class="foto-producto aspect-[4/3]">
+                <span class="foto-producto__fondo" aria-hidden="true" />
+                <span class="foto-producto__sombra" aria-hidden="true" />
+                <div class="foto-producto__marco">
+                  <img
+                    src={producto.src}
+                    alt={producto.esMarcador ? '' : `${producto.nombre} — ${producto.descripcion}`}
+                    width="1000"
+                    height="750"
+                    loading="lazy"
+                    class="foto-producto__img"
+                  />
+                </div>
+                <span class="foto-producto__velo" aria-hidden="true" />
+
+                {/* z-10: las etiquetas van por encima del velo de color, que
+                    ocupa toda la caja. Sin esto el multiply les caería encima
+                    y les bajaría el contraste del texto. */}
+                <span class="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 font-display text-[12px] font-semibold text-ink-dark shadow-[0_6px_16px_rgba(245,166,35,.4)]">
+                  <Icono nombre="sparkles" class="h-3.5 w-3.5" interactivo={false} />
+                  Especial del mes
+                </span>
+
+                {producto.etiqueta && (
+                  <span class="absolute top-4 right-4 z-10 rounded-full bg-surface/95 px-3 py-1.5 font-display text-[12px] font-semibold text-accent-text shadow-[0_4px_12px_rgba(13,44,132,.14)]">
+                    {producto.etiqueta}
+                  </span>
+                )}
+              </div>
+
+              <div class="flex flex-1 flex-col p-6">
+                <p class="m-0 text-[12px] font-semibold tracking-[0.12em] text-secondary-dark uppercase">
+                  {producto.marca}
+                </p>
+                <h3 class="mt-2 text-[18px]">{producto.nombre}</h3>
+                <p class="mt-2 mb-0 text-[14px] text-muted">{producto.descripcion}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <a
+          class="group mt-10 inline-flex items-center gap-2 font-display text-[15px] font-semibold text-primary transition-colors duration-200 hover:text-secondary-dark"
+          href={ruta('/catalogo/')}
+        >
+          Ver todo el catálogo
+          <Icono
+            nombre="arrow-right"
+            class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+            interactivo={false}
+          />
+        </a>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  /* La pista se desplaza sin mostrar barra: el movimiento ya lo anuncian las
+     flechas y la tarjeta que asoma por el borde. */
+  .pista-carrusel {
+    scrollbar-width: none;
+  }
+  .pista-carrusel::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Flechas: mismo lenguaje que los botones píldora, en versión redonda. */
+  .flecha-carrusel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    border: 1px solid var(--color-primary);
+    background: var(--color-surface);
+    color: var(--color-primary);
+    transition:
+      background-color 0.2s ease-out,
+      opacity 0.2s ease-out,
+      transform 0.2s ease-out;
+  }
+  .flecha-carrusel:hover:not(:disabled),
+  .flecha-carrusel:focus-visible:not(:disabled) {
+    background: var(--color-primary-soft);
+    transform: translateY(-2px);
+  }
+  .flecha-carrusel:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+</style>
+
+<script>
+  /**
+   * Flechas del carrusel: cada clic avanza una tarjeta (ancho + separación)
+   * y las flechas se apagan al llegar a cada extremo. El desplazamiento en sí
+   * es del navegador (scroll-snap), así que deslizar con el dedo o con la
+   * rueda funciona igual con o sin este script.
+   */
+  document.querySelectorAll<HTMLElement>('[data-carrusel]').forEach((pista) => {
+    const seccion = pista.closest('section');
+    const prev = seccion?.querySelector<HTMLButtonElement>('[data-prev]');
+    const next = seccion?.querySelector<HTMLButtonElement>('[data-next]');
+    if (!prev || !next) return;
+
+    const paso = () => {
+      const tarjeta = pista.firstElementChild as HTMLElement | null;
+      const separacion = parseFloat(getComputedStyle(pista).columnGap) || 0;
+      return (tarjeta?.getBoundingClientRect().width ?? pista.clientWidth) + separacion;
+    };
+
+    const actualizar = () => {
+      prev.disabled = pista.scrollLeft <= 2;
+      next.disabled = pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 2;
+    };
+
+    prev.addEventListener('click', () => pista.scrollBy({ left: -paso(), behavior: 'smooth' }));
+    next.addEventListener('click', () => pista.scrollBy({ left: paso(), behavior: 'smooth' }));
+    pista.addEventListener('scroll', actualizar, { passive: true });
+    window.addEventListener('resize', actualizar);
+    actualizar();
+  });
+</script>

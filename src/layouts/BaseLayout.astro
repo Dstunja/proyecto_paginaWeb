@@ -128,9 +128,13 @@ const jsonLd = {
     <AvisoCookies />
     <AnaliticaEnlaces />
 
-    {/* Revelado al hacer scroll, en un solo sitio para todo el sitio. */}
+    {/* Revelado al hacer scroll y capa de interacción (parallax del hero,
+        botones magnéticos), en un solo sitio para todo el sitio. Los dos
+        módulos comprueban por su cuenta la clase `js-revelado`, así que con
+        "reducir movimiento" activado no enganchan nada. */}
     <script>
       import '../lib/revelado';
+      import '../lib/interacciones';
     </script>
   </body>
 </html>
