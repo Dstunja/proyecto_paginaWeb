@@ -390,10 +390,10 @@
   }
 
   /* --- Píldora de filtro -------------------------------------------------
-     Chips de marca del armador de pedidos. Mismo lenguaje que los botones:
-     píldora, Montserrat SemiBold y azul de marca cuando está activa. El
-     estado se declara con `aria-pressed`, así que la lectura por teclado y
-     por lector de pantalla es la misma que se ve. */
+     Chips de categoría del armador de pedidos. Mismo lenguaje que los
+     botones: píldora, Montserrat SemiBold y azul de marca cuando está
+     activa. El estado se declara con `aria-pressed`, así que la lectura por
+     teclado y por lector de pantalla es la misma que se ve. */
   .chip-filtro {
     @apply inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-surface
            px-4 py-2 font-display text-[13.5px] font-semibold whitespace-nowrap text-muted
@@ -407,6 +407,84 @@
 
   .chip-filtro[aria-pressed='true'] {
     @apply border-transparent bg-primary text-white;
+  }
+
+  /* Una píldora que no filtra por sí misma sino que abre algo (el panel de
+     marcas, la tira completa de categorías) se marca como "tiene filtros
+     puestos" en azul claro, no en azul lleno: el azul lleno significa
+     "este filtro está activo" y aquí el filtro activo está en otra parte. */
+  .chip-filtro[data-activo='si'] {
+    @apply border-secondary bg-secondary-soft text-primary;
+  }
+
+  /* Contador de filtros activos que va dentro de una píldora: "Filtros (3)".
+     Es la única pista de que hay marcas puestas cuando el panel está
+     plegado, así que va en azul lleno para que se vea a un metro. */
+  .conteo-filtro {
+    @apply inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary
+           px-1.5 text-[11.5px] leading-none font-bold text-white;
+  }
+
+  .chip-filtro[aria-pressed='true'] .conteo-filtro {
+    @apply bg-white text-primary;
+  }
+
+  /* --- Tira de categorías ------------------------------------------------
+     Por defecto es UNA fila que se desplaza de lado: así la barra fija no se
+     come la primera pantalla en el móvil. El botón "Categorías" la abre en
+     varias filas para ver las 38 de un golpe, con tope de alto para que el
+     panel no empuje los resultados fuera de la vista. */
+  .tira-categorias {
+    @apply -mx-1 flex flex-1 gap-2 overflow-x-auto px-1 pb-1;
+    /* El chip que queda cortado en el borde es la única señal de que la tira
+       sigue. Sin el degradado se lee como si el botón de al lado lo estuviera
+       tapando, que es un defecto; desvanecido se lee como "hay más". */
+    mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent);
+  }
+
+  .tira-categorias[data-abierta='si'] {
+    @apply max-h-[9.5rem] flex-wrap overflow-x-hidden overflow-y-auto;
+    /* Abierta el corte pasa a ser horizontal: la fila que queda a medias en el
+       borde de abajo avisa de que se puede seguir bajando. */
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 2rem), transparent);
+  }
+
+  /* Cerrada se esconde la barra de desplazamiento horizontal: se comería
+     parte de los 38 px de alto de la fila y el degradado ya avisa de que la
+     tira sigue. Abierta NO se esconde: ahí la barra vertical es la señal de
+     cuánto falta por bajar, que el degradado solo no alcanza a dar. */
+  .tira-categorias:not([data-abierta='si']) {
+    scrollbar-width: none;
+  }
+
+  .tira-categorias:not([data-abierta='si'])::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* --- Casilla de marca (panel "Filtros") ---------------------------------
+     Toda la fila es el objetivo de clic, no solo el cuadrito: en el móvil
+     acertarle a 16 px es incómodo. El nombre puede ser largo ("Setas de
+     Cuivá"), así que se recorta con puntos suspensivos antes que romper la
+     rejilla de cuatro columnas. */
+  .opcion-marca {
+    @apply flex cursor-pointer items-center gap-2.5 rounded-xl border border-transparent
+           px-2.5 py-2 text-[14px] text-ink transition-colors duration-200;
+  }
+
+  .opcion-marca:hover {
+    @apply border-line bg-surface;
+  }
+
+  .opcion-marca:has(input:focus-visible) {
+    @apply border-secondary bg-surface;
+  }
+
+  .opcion-marca:has(input:checked) {
+    @apply border-secondary/50 bg-secondary-soft font-semibold text-primary;
+  }
+
+  .opcion-marca input {
+    @apply h-4 w-4 shrink-0 accent-primary;
   }
 
   /* --- Control de cantidad (− / campo / +) --------------------------------
@@ -476,6 +554,52 @@
     @apply bg-secondary text-white;
     border-color: transparent;
     transform: scale(1.06);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   REVELADO AL HACER SCROLL
+   ---------------------------------------------------------------------------
+   El elemento entra con un fundido y un desplazamiento corto hacia arriba la
+   primera vez que asoma. La lógica está en src/lib/revelado.ts; aquí solo vive
+   el aspecto, para poder ajustar duración y curva en un único sitio.
+
+   TODO cuelga de `.js-revelado`, la clase que el <head> pone en <html> solo si
+   hay IntersectionObserver y el sistema no pide menos movimiento. Sin esa
+   clase estas reglas no aplican y el contenido se ve de una vez: así ni un
+   usuario sin JavaScript ni uno con "reducir movimiento" se queda mirando una
+   página en blanco. Por eso el estado inicial se escribe aquí y no en el
+   script: si se ocultara desde JavaScript habría un parpadeo al cargar.
+
+   La animación se declara con `backwards` y no con `forwards` a propósito. Con
+   `backwards` el elemento se queda en el fotograma inicial durante el retraso
+   del escalonado y, al terminar, vuelve a su estado natural. Con `forwards` se
+   quedaría clavado en `transform: none` y anularía los desplazamientos de
+   :hover de .glass-card y .tarjeta-int. */
+@media (prefers-reduced-motion: no-preference) {
+  .js-revelado [data-revelar]:not([data-revelado]),
+  .js-revelado [data-revelar-grupo] > *:not([data-revelado]) {
+    opacity: 0;
+  }
+
+  .js-revelado [data-revelar][data-revelado],
+  .js-revelado [data-revelar-grupo] > [data-revelado] {
+    /* 500 ms y una curva que frena al final: se nota, pero no compite con el
+       conteo de las cifras del hero (900 ms), que es la animación protagonista
+       de la portada. */
+    animation: revelar 500ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: var(--retraso-revelado, 0ms);
+  }
+}
+
+@keyframes revelar {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
