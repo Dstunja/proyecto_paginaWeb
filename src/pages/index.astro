@@ -246,12 +246,6 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
                 <dd class="mt-1 font-display text-[30px] leading-none font-bold text-primary">
                   {dep.total}
                 </dd>
-                {/* Aquí iba el conteo de clientes por departamento, sacado de
-                    src/data/clientes-municipio.ts. Se quitó porque sumaba una
-                    cifra distinta de la que publica el sitio (CLIENTES_TEXTO) y
-                    dos números que no cuadran se leen como un error. El dato
-                    sigue siendo interno y alimenta el tamaño de los puntos del
-                    mapa. */}
                 <dd class="mt-1 m-0 text-[12.5px] text-muted">
                   {formatoNumero.format(resumenCobertura.clientesPorDepartamento[dep.nombre])} clientes
                 </dd>
