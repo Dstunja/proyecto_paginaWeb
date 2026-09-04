@@ -39,10 +39,10 @@ const tipos = [
         </p>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-3">
+      <div class="flex flex-wrap justify-center gap-6">
         {
           tipos.map((tipo) => (
-            <div class="group glass-card p-8">
+            <div class="group glass-card w-full p-8 mob:w-[calc((100%-1.5rem)/2)] tablet:w-[calc((100%-3rem)/3)]">
               <span class="icono-chip mb-5 h-12 w-12">
                 <Icono nombre={tipo.icono} class="h-6 w-6" interactivo={false} />
               </span>
@@ -51,20 +51,6 @@ const tipos = [
             </div>
           ))
         }
-
-        {/* EDITAR AQUÍ: confirmar con la empresa el plazo real de respuesta. */}
-        <div class="group glass-card p-8">
-          <span class="icono-chip mb-5 h-12 w-12">
-            <Icono nombre="clock" class="h-6 w-6" interactivo={false} />
-          </span>
-          <h3 class="mb-2 text-lg">¿Cuánto tardamos?</h3>
-          <p class="m-0 text-[14.5px] text-muted">
-            Respondemos en un plazo máximo de 15 días hábiles. Si es urgente, escríbenos por{' '}
-            <a class="font-semibold text-secondary-dark underline" href={empresa.whatsapp} target="_blank" rel="noopener">
-              WhatsApp</a
-            >.
-          </p>
-        </div>
       </div>
     </div>
   </section>

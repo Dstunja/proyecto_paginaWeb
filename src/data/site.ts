@@ -292,10 +292,3 @@ export const beneficios = [
     enlaceTexto: 'Ver la cobertura',
   },
 ] as const;
-
-/*
- * El testimonio suelto de ejemplo ("María Gómez, Tienda La Economía") se quitó
- * del inicio: era un cliente inventado presentado como real. Los testimonios
- * del sitio son ahora únicamente las reseñas de Google (Resenas.astro), que
- * cualquiera puede ir a verificar en la ficha del negocio.
- */

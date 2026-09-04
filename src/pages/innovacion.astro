@@ -101,23 +101,25 @@ const novedades = [
                 <article class="glass-card overflow-hidden">
                   <div class="grid grid-cols-1 items-stretch tablet:grid-cols-[.85fr_1.15fr]">
                     {novedad.esEspecial ? (
-                      /* Foto de producto: puede ser vertical u horizontal, así
-                         que se encaja completa sobre una copia desenfocada de
-                         sí misma en vez de recortarla (igual que en el inicio). */
-                      <div class="relative aspect-[16/9] overflow-hidden bg-surface-2 tablet:aspect-auto tablet:min-h-[260px]">
-                        <div
-                          class="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-xl"
-                          style={`background-image:url('${novedad.src}')`}
-                          aria-hidden="true"
-                        />
-                        <img
-                          src={novedad.src}
-                          alt=""
-                          width="1200"
-                          height="675"
-                          loading="lazy"
-                          class="absolute inset-0 h-full w-full object-contain p-4"
-                        />
+                      /* Foto de producto encajada completa (puede venir
+                         vertical u horizontal) sobre el mismo telón de marca
+                         que usan las tarjetas del inicio, para que los
+                         especiales se vean igual en los dos sitios. Ver
+                         `.foto-producto` en src/styles/global.css. */
+                      <div class="foto-producto aspect-[16/9] tablet:aspect-auto tablet:min-h-[260px]">
+                        <span class="foto-producto__fondo" aria-hidden="true" />
+                        <span class="foto-producto__sombra" aria-hidden="true" />
+                        <div class="foto-producto__marco">
+                          <img
+                            src={novedad.src}
+                            alt=""
+                            width="1200"
+                            height="675"
+                            loading="lazy"
+                            class="foto-producto__img"
+                          />
+                        </div>
+                        <span class="foto-producto__velo" aria-hidden="true" />
                       </div>
                     ) : (
                       <img
