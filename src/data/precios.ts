@@ -59,4 +59,4 @@ export const PRECIOS_SUGERIDOS: Record<string, number> = {};
  * EDITAR AQUÍ junto con la lista: un precio de referencia sin fecha envejece
  * sin que nadie se dé cuenta.
  */
-export const PRECIOS_ACTUALIZADOS = '';
+export const PRECIOS_ACTUALIZADOS = 'agosto de 2026';
