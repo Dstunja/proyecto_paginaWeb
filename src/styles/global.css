@@ -504,7 +504,8 @@
   /* --- Cortina de carga entre paginas (BaseLayout.astro) ----------------
      La hermana a pantalla completa de `.dst-capa-carga`: tapa el hueco en
      blanco que queda al pasar de una pagina a la siguiente. Se pinta ya
-     visible con el HTML y el script del <head> la retira tras `window.load`.
+     visible con el HTML y el script del <head> la retira en cuanto el DOM
+     esta listo.
 
      Sin JavaScript no aparece NUNCA. Solo se muestra si ese script pone
      `js-cortina` en el <html>, igual que `js-revelado` con el revelado al
@@ -529,7 +530,11 @@
 
   #dst-cortina[data-fuera='true'] {
     pointer-events: none;
-    animation: dst-loader-sale 0.25s ease-out forwards;
+    /* 0,15 s, no los 0,25 s de `.dst-capa-carga`: esta tapa el paso de una
+       pagina a otra y ahi cada milisegundo se nota. Tiene que ir a la par con
+       `FUNDIDO` en el script de BaseLayout.astro, que es quien la esconde al
+       terminar; si uno de los dos cambia sin el otro, se ve un corte seco. */
+    animation: dst-loader-sale 0.15s ease-out forwards;
   }
 
   /* Ya retirada. El `!important` hace falta porque la regla de arriba, con

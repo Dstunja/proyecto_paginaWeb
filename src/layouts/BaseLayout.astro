@@ -125,13 +125,35 @@ const jsonLd = {
         raiz.classList.add('js-cortina');
         raiz.classList.add('dst-con-cortina');
 
-        var APARICION = performance.now();
-        var MINIMO = 400; // lo minimo que se deja ver la animacion
-        var FUNDIDO = 250; // lo que tarda el desvanecido (global.css)
-        var TOPE = 5000; // si `load` no llega, el sitio no se queda tapado
+        var MINIMO = 250; // lo minimo que se deja ver la animacion
+        var FUNDIDO = 150; // lo que tarda el desvanecido (global.css)
+        var TOPE = 5000; // si el DOM no termina, el sitio no se queda tapado
+        var LLAVE = 'dst-cortina-desde';
         var quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
         var salvavidas;
         var fuera = false;
+
+        /*
+          Desde cuando lleva puesta la cortina. Va en hora de reloj y no en
+          `performance.now()` porque hay que compararlo ENTRE documentos, y ese
+          reloj se pone a cero en cada pagina.
+
+          Si venimos de pulsar un enlace de la casa, la cortina se puso antes
+          de la navegacion y la pagina anterior dejo la hora apuntada. Contar
+          desde ahi es lo que evita sumar dos esperas seguidas: la de la
+          pagina que se va y otra vez la de la que llega.
+        */
+        var DESDE = Date.now();
+        try {
+          var apuntada = parseInt(sessionStorage.getItem(LLAVE), 10);
+          sessionStorage.removeItem(LLAVE);
+          // Solo si es de hace nada. Una hora vieja -de una navegacion que se
+          // quedo a medias- acortaria la espera en vez de alargarla, pero mas
+          // vale no fiarse de un dato que puede llevar ahi horas.
+          if (apuntada && Date.now() - apuntada < 10000) DESDE = apuntada;
+        } catch (e) {
+          // Almacenamiento capado por el navegador: se cuenta desde esta pagina.
+        }
 
         function retirar(deGolpe) {
           if (fuera) return;
@@ -157,6 +179,13 @@ const jsonLd = {
           capa.removeAttribute('data-fuera');
           capa.hidden = false;
           raiz.classList.add('dst-con-cortina');
+          // La hora del clic viaja con la navegacion: la pagina que llega
+          // cuenta su minimo desde aqui y no desde que se pinto.
+          try {
+            sessionStorage.setItem(LLAVE, String(Date.now()));
+          } catch (e) {
+            // Sin almacenamiento se cuenta desde la pagina nueva, como antes.
+          }
           // Si la navegacion no llega a ocurrir (el usuario la cancela, o el
           // enlace acaba siendo una descarga), la cortina no se queda puesta.
           clearTimeout(salvavidas);
@@ -165,16 +194,23 @@ const jsonLd = {
           }, TOPE);
         }
 
-        function alTerminarLaCarga() {
+        function alEstarListoElDom() {
           // Con "reducir movimiento" no se hace esperar a nadie: fuera ya.
-          var falta = quieto ? 0 : Math.max(0, MINIMO - (performance.now() - APARICION));
+          var falta = quieto ? 0 : Math.max(0, MINIMO - (Date.now() - DESDE));
           setTimeout(function () {
             retirar(quieto);
           }, falta);
         }
 
-        if (document.readyState === 'complete') alTerminarLaCarga();
-        else addEventListener('load', alTerminarLaCarga, { once: true });
+        // `DOMContentLoaded` y no `load`: en cuanto el HTML esta analizado, el
+        // contenido ya esta en pantalla y no hay nada que tapar. Esperar a
+        // `load` era esperar ademas a las imagenes y a las tipografias, que es
+        // lo que hacia que la cortina se sintiera lenta.
+        if (document.readyState === 'loading') {
+          addEventListener('DOMContentLoaded', alEstarListoElDom, { once: true });
+        } else {
+          alEstarListoElDom();
+        }
 
         salvavidas = setTimeout(function () {
           retirar(false);
@@ -222,7 +258,7 @@ const jsonLd = {
     {/*
       Cortina de carga: tapa el hueco en blanco entre una pagina y la
       siguiente. Se pinta lo primero para que no haya un fotograma sin ella, y
-      el script del <head> la retira tras `window.load`.
+      el script del <head> la retira en cuanto el DOM esta listo.
 
       `aria-hidden`: es decoracion. El contenido de la pagina ya esta en el
       DOM y un lector de pantalla lo recorre sin esperar a nadie, asi que
