@@ -1,22 +1,45 @@
-# Proyecto: sitio web Distribuciones Santiago de Tunja (dstunja.com)
+# Proyecto: sitio web Distribuciones Santiago de Tunja (dominio futuro: dstunja.com)
 
 Stack: Astro + Tailwind 4 + TypeScript.
 
 ## Reglas de trabajo
 
 - Después de cada cambio significativo: `git add . && git commit -m "mensaje descriptivo" && git push`.
-- La página se publica en **Vercel** (plan Hobby) con el dominio dstunja.com.
-- En `astro.config.mjs` debe estar SIEMPRE:
-  site: 'https://dstunja.com'
-  sin `base` (el sitio vive en la raíz del dominio)
-  adapter: vercel(), output: 'static'
-  Las páginas siguen siendo estáticas. Solo `src/pages/api/**` corre como función,
-  y cada ruta lo pide a mano con `export const prerender = false`.
-  Las rutas a imágenes/estilos siguen pasando por `import.meta.env.BASE_URL` o por
-  `src/lib/rutas.ts`: así el `base` se puede volver a poner sin tocarlas una a una.
-- El workflow `.github/workflows/deploy.yml` sigue publicando en GitHub Pages, pero
-  esa copia quedó rota al quitar el `base` y allí no hay funciones. Ver el apartado
-  de despliegue de `docs/PQRS-ADJUNTOS.md`.
+- **Dos destinos de publicación**, y cada uno necesita un `site`/`base` distinto:
+  - **Vercel** (plan Hobby), la publicación principal: <https://paginaweb-beta-coral.vercel.app>.
+    Cuelga de la raíz del dominio, así que va **sin `base`**. Despliega solo, con
+    cada push a `main`.
+  - **GitHub Pages** (espejo de revisión interna, `.github/workflows/deploy.yml`):
+    <https://dstunja.github.io/proyecto_paginaWeb>. Es un *project site*: cuelga de
+    `/proyecto_paginaWeb`, así que necesita `base: '/proyecto_paginaWeb'`. Sin él,
+    los archivos de `/_astro/` dan 404 y el sitio se ve sin estilos.
+- En `astro.config.mjs`, `site` y `base` son **condicionales**: se eligen según la
+  variable de entorno `VERCEL`, que Vercel define con valor `'1'` en todos sus
+  builds (producción y preview). Las URLs están en constantes al principio del
+  archivo: `SITIO_VERCEL`, `SITIO_GITHUB_PAGES` y `BASE_GITHUB_PAGES`. No dejar
+  ninguno de los dos fijo: romperías uno de los dos despliegues.
+- **`dstunja.com` NO se usa como `site` todavía.** Hoy ese dominio sirve otra
+  página, una instalación de WordPress ajena a este proyecto. Ponerlo haría que el
+  canonical, el Open Graph y el sitemap del sitio entero apuntaran a una web que no
+  es esta. Se usará cuando el dominio apunte a Vercel, no antes.
+- **Cómo migrar a dstunja.com** el día que el dominio ya apunte a Vercel:
+  1. En `astro.config.mjs`, cambiar `SITIO_VERCEL` a `'https://dstunja.com'`.
+  2. En `public/robots.txt`, cambiar la línea `Sitemap:` a
+     `https://dstunja.com/sitemap-index.xml`. Ese archivo es estático (se copia tal
+     cual desde `public/`), así que no se entera del `site` y hay que tocarlo a mano.
+  No hace falta nada más: canonical, Open Graph y sitemap salen de `site`.
+- `output: 'static'` y `adapter: vercel()` en los dos builds. Las páginas siguen
+  siendo estáticas. Solo `src/pages/api/**` corre como función, y cada ruta lo pide
+  a mano con `export const prerender = false`. Esas funciones **solo existen en
+  Vercel**: en GitHub Pages no hay backend y el formulario de PQRS cae al correo en
+  vez de radicar.
+- Con el adaptador puesto, el build deja el sitio en **`dist/client/`**, no en
+  `dist/` (`dist/server/` es la función). Por eso el workflow de Pages usa
+  `withastro/action@v5` con `out-dir: dist/client`: la v3 no acepta ese parámetro y
+  publicaba el sitio colgando de `/client/`.
+- Las rutas internas (enlaces, imágenes, estilos) nunca se escriben a mano: pasan
+  por `ruta()` de `src/lib/rutas.ts` o por `import.meta.env.BASE_URL`. Así el mismo
+  código sirve con `base` y sin él, sin tocar los componentes uno a uno.
 - La radicación de PQRS necesita variables de entorno (Blob, Resend, Turnstile).
   Están documentadas en `.env.example` y en `docs/PQRS-ADJUNTOS.md`.
 

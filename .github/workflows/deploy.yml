@@ -1,8 +1,14 @@
 # Publicacion del sitio en GitHub Pages (revision interna).
 #
 # El sitio queda en https://dstunja.github.io/proyecto_paginaWeb, que es el
-# `site` + `base` configurados en astro.config.mjs. Si algun dia se cambia el
-# nombre del repositorio, hay que actualizar el `base` de ese archivo.
+# `site` + `base` configurados en astro.config.mjs. Ese `base` solo se aplica
+# cuando la variable de entorno VERCEL NO esta definida, que es justo el caso
+# de este workflow: aqui compila GitHub Actions, no Vercel. Si algun dia se
+# cambia el nombre del repositorio, hay que actualizar el `base` de ese archivo.
+#
+# Este es un espejo estatico: en GitHub Pages no hay funciones, asi que las
+# rutas de src/pages/api/ no existen y el formulario de PQRS cae al correo en
+# vez de radicar. La radicacion de verdad solo funciona en Vercel.
 #
 # Requisito en el repositorio: Settings > Pages > Source = "GitHub Actions".
 name: Desplegar en GitHub Pages
@@ -35,9 +41,15 @@ jobs:
         uses: actions/checkout@v4
 
       # La accion oficial de Astro instala dependencias, ejecuta `astro build`
-      # y sube dist/ como artefacto de Pages.
+      # y sube el resultado como artefacto de Pages.
+      #
+      # Hace falta la v5 (y no la v3) porque es la primera que acepta
+      # `out-dir`. Con el adaptador de Vercel puesto, Astro ya no deja el sitio
+      # en dist/ sino en dist/client/ (dist/server/ es la funcion, que aqui no
+      # sirve para nada). Subiendo dist/ a secas, Pages publicaba el sitio
+      # colgando de /client/ y la direccion daba 404.
       - name: Compilar el sitio con Astro
-        uses: withastro/action@v3
+        uses: withastro/action@v5
         # El ID de Google Analytics no vive en el codigo: se guarda como
         # secreto del repositorio (Settings > Secrets and variables > Actions)
         # y solo existe durante la compilacion. Si el secreto no esta definido
@@ -48,6 +60,7 @@ jobs:
         with:
           node-version: 22
           package-manager: npm
+          out-dir: dist/client
 
   deploy:
     name: Publicar
