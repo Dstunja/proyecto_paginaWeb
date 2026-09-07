@@ -1,7 +1,7 @@
 /**
  * Verificación de la analítica con un navegador de verdad.
  *
- * Comprueba tres cosas sobre el sitio YA COMPILADO en dist/:
+ * Comprueba tres cosas sobre el sitio YA COMPILADO en dist/client/:
  *
  *   a) Sin PUBLIC_GA_ID no se inyecta ningún script de Google.
  *   b) Con un ID de prueba, gtag se carga y `window.dataLayer` recibe
@@ -20,9 +20,9 @@
  *   PUBLIC_GA_ID=G-XXXXXXXX npm run build          (sustituir por el de prueba)
  *   node scripts/verificar-analitica.mjs --con-id   -> casos (b) y (c)
  *
- * Al terminar, `npm run build` otra vez sin la variable deja dist/ limpio.
+ * Al terminar, `npm run build` otra vez sin la variable deja dist/client/ limpio.
  *
- * Sirve dist/ con un servidor estático propio (sin dependencias nuevas) en el
+ * Sirve dist/client/ con un servidor estático propio (sin dependencias nuevas) en el
  * puerto 4321, respetando el `base` de astro.config.mjs.
  */
 import { createServer } from 'node:http';
@@ -30,7 +30,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { chromium } from 'playwright';
 
-const RAIZ = join(process.cwd(), 'dist');
+const RAIZ = join(process.cwd(), 'dist', 'client');
 const BASE = '/proyecto_paginaWeb';
 const PUERTO = 4321;
 const CON_ID = process.argv.includes('--con-id');
@@ -49,7 +49,7 @@ const TIPOS = {
   '.xml': 'application/xml',
 };
 
-/** Servidor estático mínimo sobre dist/, con el prefijo `base`. */
+/** Servidor estático mínimo sobre dist/client/, con el prefijo `base`. */
 function servir() {
   return new Promise((listo) => {
     const servidor = createServer(async (peticion, respuesta) => {

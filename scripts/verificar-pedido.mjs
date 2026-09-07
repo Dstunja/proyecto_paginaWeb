@@ -1,7 +1,7 @@
 /**
  * Verificación del armador de pedidos con un navegador de verdad.
  *
- * Comprueba sobre el sitio YA COMPILADO en dist/, en móvil (375 px) y en
+ * Comprueba sobre el sitio YA COMPILADO en dist/client/, en móvil (375 px) y en
  * escritorio (1280 px):
  *
  *   1. Con el pedido vacío no se ve la barra fija del carrito, ni el pie del
@@ -27,7 +27,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { chromium } from 'playwright';
 
-const RAIZ = join(process.cwd(), 'dist');
+const RAIZ = join(process.cwd(), 'dist', 'client');
 const BASE = '/proyecto_paginaWeb';
 const PUERTO = 4322;
 

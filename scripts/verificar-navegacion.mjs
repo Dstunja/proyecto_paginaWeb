@@ -1,6 +1,6 @@
 /**
  * Verificación de la barra, el menú móvil, las migas y los enlaces a Pideky,
- * con un navegador de verdad sobre el sitio YA COMPILADO en dist/.
+ * con un navegador de verdad sobre el sitio YA COMPILADO en dist/client/.
  *
  * Comprueba, en móvil (375 px) y escritorio (1280 px):
  *
@@ -22,7 +22,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { chromium } from 'playwright';
 
-const RAIZ = join(process.cwd(), 'dist');
+const RAIZ = join(process.cwd(), 'dist', 'client');
 const BASE = '/proyecto_paginaWeb';
 const PUERTO = 4324;
 
