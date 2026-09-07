@@ -1,32 +1,38 @@
 /**
- * Verificación del campo de archivos de soporte de la PQRS, con un navegador
- * de verdad y archivos de verdad.
+ * Verificación del formulario de PQRS con un navegador de verdad y archivos de
+ * verdad, sobre el sitio YA COMPILADO en dist/.
  *
- * Comprueba sobre el sitio YA COMPILADO en dist/:
+ * Se comprueban dos cosas distintas:
  *
- *   1. El campo solo existe para Queja y Reclamo. Con Petición, Sugerencia o
- *      Felicitación está oculto, el input queda deshabilitado y el nombre del
- *      campo NO aparece en el FormData: no se procesa.
- *   2. Al cambiar de Queja a un tipo sin soporte se limpia lo seleccionado, y
- *      al volver a Queja la lista está vacía.
- *   3. Un archivo válido (PNG, PDF, DOCX, DOC) se acepta y se muestra con su
- *      nombre y su tamaño, con botón para quitarlo.
- *   4. Se rechaza el formato no permitido (.txt), la doble extensión
- *      (factura.exe.pdf) y el archivo cuyo CONTENIDO no corresponde a la
- *      extensión (un texto plano renombrado a .pdf).
- *   5. Se rechaza el archivo que supera el máximo de 5 MB.
- *   6. No se pueden adjuntar más de 3 archivos.
- *   7. El texto de ayuda y el atributo accept son los que se prometieron.
+ * A) EL CAMPO DE SOPORTE, que no toca la red:
+ *   1. Solo existe para Queja y Reclamo. Con Petición, Sugerencia o
+ *      Felicitación está oculto y el input deshabilitado.
+ *   2. Al cambiar a un tipo sin soporte se limpia lo seleccionado.
+ *   3. Un archivo válido de cada formato se acepta y se lista con su tamaño.
+ *   4. Se rechazan el formato no permitido, la doble extensión, el contenido
+ *      que no corresponde a la extensión y el exceso de peso.
+ *   5. No se pueden adjuntar más de 3 archivos.
  *
- * Los archivos de prueba se generan en el directorio temporal del sistema, no
- * dentro del repositorio: así no se cuelan en ningún commit.
+ * B) LA RADICACIÓN, interceptando las llamadas con `page.route()`:
+ *   6. Sin adjuntos: se llama a POST /api/pqrs y sale la pantalla con el
+ *      radicado, la fecha y el botón de copiar.
+ *   7. Con adjuntos: se llama a POST /api/pqrs/token con el sessionId, el tipo
+ *      y el token de Turnstile, y con una ruta bajo pqrs/pendientes/{sessionId}/.
+ *   8. Un 400 del servidor se muestra tal cual y NO abre el gestor de correo.
+ *   9. Si la API no contesta, se cae al respaldo por correo con un aviso que
+ *      dice que así no queda radicada.
+ *
+ * El script de Cloudflare Turnstile también se intercepta: se sirve un doble
+ * que devuelve un token de mentira. Así la prueba no depende de la red ni de
+ * tener claves reales.
  *
  * Uso:
  *   npm run build
  *   node scripts/verificar-pqrs.mjs
  *
- * No necesita dependencias nuevas: Playwright ya está en devDependencies y el
- * servidor estático es el mismo patrón de scripts/verificar-pedido.mjs.
+ * Sin dependencias nuevas: Playwright ya está en devDependencies. Los archivos
+ * de prueba se generan en el directorio temporal del sistema, no en el
+ * repositorio.
  */
 import { createServer } from 'node:http';
 import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
@@ -35,8 +41,8 @@ import { extname, join, normalize } from 'node:path';
 import { crc32 } from 'node:zlib';
 import { chromium } from 'playwright';
 
-const RAIZ = join(process.cwd(), 'dist');
-const BASE = '/proyecto_paginaWeb';
+// Con el adaptador de Vercel el sitio estatico queda en dist/client.
+const RAIZ = join(process.cwd(), 'dist', 'client');
 const PUERTO = 4323;
 
 const TIPOS = {
@@ -57,7 +63,6 @@ function servir() {
   return new Promise((listo) => {
     const servidor = createServer(async (peticion, respuesta) => {
       let ruta = decodeURIComponent(new URL(peticion.url, 'http://x').pathname);
-      if (ruta.startsWith(BASE)) ruta = ruta.slice(BASE.length);
       if (ruta.endsWith('/')) ruta += 'index.html';
       if (ruta === '') ruta = '/index.html';
 
@@ -89,81 +94,53 @@ const comprobar = (descripcion, ok, detalle = '') => {
   console.log(`${ok ? '  OK  ' : ' FALLA'}  ${descripcion}${detalle ? ` — ${detalle}` : ''}`);
 };
 
-const url = (camino) => `http://localhost:${PUERTO}${BASE}${camino}`;
+const url = (camino) => `http://localhost:${PUERTO}${camino}`;
 
 // --- Archivos de prueba -----------------------------------------------------
 
-/**
- * ZIP mínimo pero estructuralmente correcto con una entrada almacenada (sin
- * comprimir). Se usa para fabricar un .docx creíble: lo que mira el detector es
- * la firma PK y la presencia de la carpeta "word/".
- */
+/** ZIP mínimo con una entrada almacenada, para hacer un .docx creíble. */
 function zipConUnaEntrada(nombreEntrada, contenido) {
   const nombre = Buffer.from(nombreEntrada, 'utf8');
   const datos = Buffer.from(contenido, 'utf8');
   const suma = crc32(datos);
 
   const local = Buffer.alloc(30);
-  local.writeUInt32LE(0x04034b50, 0); // firma de cabecera local
-  local.writeUInt16LE(20, 4); // versión necesaria
-  local.writeUInt16LE(0, 6); // banderas
-  local.writeUInt16LE(0, 8); // método: almacenado
-  local.writeUInt16LE(0, 10); // hora
-  local.writeUInt16LE(0, 12); // fecha
+  local.writeUInt32LE(0x04034b50, 0);
+  local.writeUInt16LE(20, 4);
+  local.writeUInt16LE(0, 8);
   local.writeUInt32LE(suma, 14);
-  local.writeUInt32LE(datos.length, 18); // tamaño comprimido
-  local.writeUInt32LE(datos.length, 22); // tamaño original
+  local.writeUInt32LE(datos.length, 18);
+  local.writeUInt32LE(datos.length, 22);
   local.writeUInt16LE(nombre.length, 26);
-  local.writeUInt16LE(0, 28); // campo extra
 
   const central = Buffer.alloc(46);
-  central.writeUInt32LE(0x02014b50, 0); // firma del directorio central
-  central.writeUInt16LE(20, 4); // versión de creación
-  central.writeUInt16LE(20, 6); // versión necesaria
-  central.writeUInt16LE(0, 8);
-  central.writeUInt16LE(0, 10);
-  central.writeUInt16LE(0, 12);
-  central.writeUInt16LE(0, 14);
+  central.writeUInt32LE(0x02014b50, 0);
+  central.writeUInt16LE(20, 4);
+  central.writeUInt16LE(20, 6);
   central.writeUInt32LE(suma, 16);
   central.writeUInt32LE(datos.length, 20);
   central.writeUInt32LE(datos.length, 24);
   central.writeUInt16LE(nombre.length, 28);
-  central.writeUInt16LE(0, 30); // extra
-  central.writeUInt16LE(0, 32); // comentario
-  central.writeUInt16LE(0, 34); // disco
-  central.writeUInt16LE(0, 36); // atributos internos
-  central.writeUInt32LE(0, 38); // atributos externos
-  central.writeUInt32LE(0, 42); // desplazamiento de la cabecera local
 
   const inicioCentral = local.length + nombre.length + datos.length;
-  const tamanoCentral = central.length + nombre.length;
-
   const fin = Buffer.alloc(22);
-  fin.writeUInt32LE(0x06054b50, 0); // firma del fin del directorio central
-  fin.writeUInt16LE(0, 4);
-  fin.writeUInt16LE(0, 6);
-  fin.writeUInt16LE(1, 8); // entradas en este disco
-  fin.writeUInt16LE(1, 10); // entradas en total
-  fin.writeUInt32LE(tamanoCentral, 12);
+  fin.writeUInt32LE(0x06054b50, 0);
+  fin.writeUInt16LE(1, 8);
+  fin.writeUInt16LE(1, 10);
+  fin.writeUInt32LE(central.length + nombre.length, 12);
   fin.writeUInt32LE(inicioCentral, 16);
-  fin.writeUInt16LE(0, 20); // comentario
 
   return Buffer.concat([local, nombre, datos, central, nombre, fin]);
 }
 
-/** PNG real de 1x1 px transparente. */
 const PNG_1X1 = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
   'base64',
 );
-
-/** PDF real mínimo: cabecera, un objeto, tabla xref y %%EOF. */
 const PDF_MINIMO = Buffer.from(
   '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n',
   'latin1',
 );
-
-/** Firma del contenedor OLE2/CFB, que es lo que usa Word 97-2003 (.doc). */
 const OLE2 = Buffer.concat([
   Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]),
   Buffer.alloc(1024),
@@ -177,9 +154,6 @@ async function prepararArchivos() {
     'word/document.xml',
     '<?xml version="1.0"?><w:document xmlns:w="x"><w:body/></w:document>',
   );
-
-  // El PNG enorme lleva la firma correcta: así se demuestra que lo que lo
-  // rechaza es el peso y no el formato (el tamaño se revisa antes que el MIME).
   const pngEnorme = Buffer.concat([PNG_1X1, Buffer.alloc(6 * 1024 * 1024)]);
 
   const archivos = {
@@ -202,8 +176,6 @@ async function prepararArchivos() {
     writeFile(archivos.docValido, OLE2),
     writeFile(archivos.texto, 'Esto es un archivo de texto plano.\n'),
     writeFile(archivos.dobleExtension, PDF_MINIMO),
-    // Extensión .pdf pero contenido de texto: solo lo caza la lectura de los
-    // primeros bytes, que es justo lo que se quiere probar.
     writeFile(archivos.pdfFalso, 'MZ Esto no es un PDF, es texto plano disfrazado.\n'),
     writeFile(archivos.pesado, pngEnorme),
     writeFile(archivos.extra1, PNG_1X1),
@@ -213,12 +185,105 @@ async function prepararArchivos() {
   return archivos;
 }
 
-// --- Comprobaciones ---------------------------------------------------------
+// --- Dobles de red ----------------------------------------------------------
 
-async function revisar(navegador, archivos, etiqueta, viewport) {
-  console.log(`\n=== ${etiqueta} (${viewport.width}px) ===\n`);
+/**
+ * Doble del script de Turnstile.
+ *
+ * Implementa la parte de la API que usa src/lib/turnstile-cliente.ts: render
+ * devuelve un id, execute llama al callback con un token de mentira. Se sirve
+ * en lugar del script de Cloudflare para que la prueba no necesite red.
+ */
+const TURNSTILE_FALSO = `
+  (function () {
+    var callbacks = {};
+    var contador = 0;
+    window.turnstile = {
+      render: function (contenedor, opciones) {
+        var id = 'widget-' + ++contador;
+        callbacks[id] = opciones.callback;
+        return id;
+      },
+      execute: function (id) {
+        var cb = callbacks[id];
+        if (cb) setTimeout(function () { cb('token-de-prueba-' + Date.now()); }, 10);
+      },
+      reset: function () {},
+      remove: function () {},
+    };
+    if (window.alTurnstileListo) window.alTurnstileListo();
+  })();
+`;
+
+/** Instala los dobles y devuelve el registro de lo que se pidió. */
+async function instalarDobles(pagina, plan) {
+  const registro = { token: [], radicar: [] };
+
+  await pagina.route('https://challenges.cloudflare.com/**', (ruta) =>
+    ruta.fulfill({ status: 200, contentType: 'text/javascript', body: TURNSTILE_FALSO }),
+  );
+
+  await pagina.route('**/api/pqrs/token', async (ruta) => {
+    registro.token.push(JSON.parse(ruta.request().postData() ?? '{}'));
+    // Se responde con un error para no tener que remedar todo el protocolo de
+    // subida de Vercel Blob: lo que se está comprobando aquí es que el
+    // navegador PIDE el token con los datos correctos.
+    await ruta.fulfill({
+      status: 400,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: false, errores: ['Subida rechazada por la prueba.'] }),
+    });
+  });
+
+  await pagina.route('**/api/pqrs', async (ruta) => {
+    registro.radicar.push(JSON.parse(ruta.request().postData() ?? '{}'));
+    if (plan.radicar === 'caida') {
+      await ruta.abort('connectionrefused');
+      return;
+    }
+    if (plan.radicar === 'error') {
+      await ruta.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: false, errores: ['El municipio es obligatorio.'] }),
+      });
+      return;
+    }
+    await ruta.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        radicado: 'PQRS-20260907-A7K2M9',
+        fecha: '7 de septiembre de 2026, 9:15',
+      }),
+    });
+  });
+
+  // Chromium no emite ningún evento observable al abrir un mailto:, así que el
+  // formulario marca `data-respaldo="correo"` en su raíz antes de navegar y eso
+  // es lo que se comprueba.
+
+  return registro;
+}
+
+async function rellenarFormulario(pagina, tipo = 'Queja') {
+  await pagina.selectOption('#tipo-pqrs', tipo);
+  await pagina.fill('#nombre-pqrs', 'Cristian Amaya');
+  await pagina.fill('#telefono-pqrs', '3106232429');
+  await pagina.fill('#correo-pqrs', 'practicaspasantiasdst@gmail.com');
+  await pagina.fill('#municipio-pqrs', 'Tunja');
+  await pagina.fill('#descripcion-pqrs', 'Prueba automática del formulario de PQRS.');
+  await pagina.check('#autorizacion-pqrs');
+}
+
+// --- A) El campo de soporte -------------------------------------------------
+
+async function revisarCampo(navegador, archivos, etiqueta, viewport) {
+  console.log(`\n=== A) Campo de soporte · ${etiqueta} (${viewport.width}px) ===\n`);
   const contexto = await navegador.newContext({ viewport });
   const pagina = await contexto.newPage();
+  await instalarDobles(pagina, { radicar: 'ok' });
 
   await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
   await pagina.waitForTimeout(300);
@@ -231,33 +296,17 @@ async function revisar(navegador, archivos, etiqueta, viewport) {
   const error = pagina.locator('[data-adjuntos] [data-error]');
   const tipo = pagina.locator('#tipo-pqrs');
 
-  /** Lee lo que vería el backend: las claves del FormData del formulario. */
-  const clavesDelEnvio = () =>
-    pagina.evaluate(() => {
-      const form = document.querySelector('form[data-mailto]');
-      return [...new FormData(form).keys()];
-    });
-
   const adjuntar = async (...rutas) => {
     await entrada.setInputFiles(rutas);
-    // La validación lee los primeros bytes de cada archivo: es asíncrona.
     await pagina.waitForTimeout(400);
   };
 
-  // ---- 1. El campo solo existe para Queja y Reclamo -----------------------
+  // ---- 1. Solo para Queja y Reclamo ---------------------------------------
   comprobar(
-    `${etiqueta}: con "Petición" (valor por defecto) el campo de soporte no se ve`,
+    `${etiqueta}: con "Petición" el campo de soporte no se ve`,
     !(await bloque.isVisible()),
   );
-  comprobar(
-    `${etiqueta}: con "Petición" el input está deshabilitado`,
-    await entrada.isDisabled(),
-  );
-  comprobar(
-    `${etiqueta}: con "Petición" el adjunto no viaja en el envío`,
-    !(await clavesDelEnvio()).includes('soporte-pqrs'),
-    (await clavesDelEnvio()).join(', '),
-  );
+  comprobar(`${etiqueta}: con "Petición" el input está deshabilitado`, await entrada.isDisabled());
 
   for (const sinSoporte of ['Sugerencia', 'Felicitación']) {
     await tipo.selectOption(sinSoporte);
@@ -277,7 +326,7 @@ async function revisar(navegador, archivos, etiqueta, viewport) {
     );
   }
 
-  // ---- 7. Ayuda y accept --------------------------------------------------
+  // ---- Ayuda y accept ------------------------------------------------------
   const ayuda = (await pagina.locator('[data-adjuntos] [data-ayuda]').textContent()) ?? '';
   comprobar(
     `${etiqueta}: el texto de ayuda enumera formatos y peso máximo`,
@@ -290,9 +339,8 @@ async function revisar(navegador, archivos, etiqueta, viewport) {
     accept === '.pdf,.doc,.docx,.jpg,.jpeg,.png',
     accept ?? '(sin accept)',
   );
-  comprobar(`${etiqueta}: el input admite varios archivos`, await entrada.evaluate((e) => e.multiple));
 
-  // ---- 3. Archivo válido --------------------------------------------------
+  // ---- 3. Archivos válidos -------------------------------------------------
   await adjuntar(archivos.pngValido);
   comprobar(
     `${etiqueta}: un PNG válido se acepta y aparece en la lista`,
@@ -304,12 +352,7 @@ async function revisar(navegador, archivos, etiqueta, viewport) {
     fila.includes('foto-del-producto.png') && /\d+\s?(B|KB|MB)/.test(fila) && fila.includes('Quitar'),
     fila,
   );
-  comprobar(
-    `${etiqueta}: con adjunto válido el campo sí viaja en el envío`,
-    (await clavesDelEnvio()).includes('soporte-pqrs'),
-  );
 
-  // Quitar lo deja como estaba.
   await lista.locator('[data-quitar]').first().click();
   await pagina.waitForTimeout(150);
   comprobar(
@@ -318,7 +361,6 @@ async function revisar(navegador, archivos, etiqueta, viewport) {
       (await entrada.evaluate((e) => e.files.length)) === 0,
   );
 
-  // El resto de formatos permitidos, uno a uno.
   for (const [nombre, ruta] of [
     ['un PDF', archivos.pdfValido],
     ['un DOCX', archivos.docxValido],
@@ -335,61 +377,44 @@ async function revisar(navegador, archivos, etiqueta, viewport) {
     await pagina.waitForTimeout(120);
   }
 
-  // ---- 4. Formatos rechazados --------------------------------------------
-  await adjuntar(archivos.texto);
-  comprobar(
-    `${etiqueta}: un .txt se rechaza por formato no permitido`,
-    (await lista.locator('li').count()) === 0 &&
-      /formato no permitido/i.test((await error.textContent()) ?? ''),
-    ((await error.textContent()) ?? '').trim(),
-  );
+  // ---- 4. Rechazos ---------------------------------------------------------
+  const rechazos = [
+    ['un .txt se rechaza por formato no permitido', archivos.texto, /formato no permitido/i],
+    ['"factura.exe.pdf" se rechaza por doble extensión', archivos.dobleExtension, /doble extensión/i],
+    [
+      'un texto renombrado a .pdf se rechaza por su contenido real',
+      archivos.pdfFalso,
+      /no reconocemos el contenido|no corresponde a la extensión/i,
+    ],
+    ['un archivo de más de 5 MB se rechaza por peso', archivos.pesado, /máximo es 5 MB/i],
+  ];
 
-  await adjuntar(archivos.dobleExtension);
-  comprobar(
-    `${etiqueta}: "factura.exe.pdf" se rechaza por doble extensión`,
-    (await lista.locator('li').count()) === 0 &&
-      /doble extensión/i.test((await error.textContent()) ?? ''),
-    ((await error.textContent()) ?? '').trim(),
-  );
+  for (const [descripcion, ruta, patron] of rechazos) {
+    await adjuntar(ruta);
+    const texto = ((await error.textContent()) ?? '').trim();
+    comprobar(
+      `${etiqueta}: ${descripcion}`,
+      (await lista.locator('li').count()) === 0 && patron.test(texto),
+      texto,
+    );
+  }
 
-  await adjuntar(archivos.pdfFalso);
-  comprobar(
-    `${etiqueta}: un texto renombrado a .pdf se rechaza por su contenido real`,
-    (await lista.locator('li').count()) === 0 &&
-      /no reconocemos el contenido|no corresponde a la extensión/i.test(
-        (await error.textContent()) ?? '',
-      ),
-    ((await error.textContent()) ?? '').trim(),
-  );
-
-  // ---- 5. Tamaño excedido -------------------------------------------------
-  await adjuntar(archivos.pesado);
-  comprobar(
-    `${etiqueta}: un archivo de más de 5 MB se rechaza por peso`,
-    (await lista.locator('li').count()) === 0 &&
-      /máximo es 5 MB/i.test((await error.textContent()) ?? ''),
-    ((await error.textContent()) ?? '').trim(),
-  );
-
-  // ---- 6. Tope de tres archivos -------------------------------------------
+  // ---- 5. Tope de tres -----------------------------------------------------
   await adjuntar(archivos.pngValido, archivos.pdfValido, archivos.extra1);
   comprobar(
     `${etiqueta}: se admiten tres archivos a la vez`,
     (await lista.locator('li').count()) === 3 && !(await error.isVisible()),
-    ((await error.textContent()) ?? '').trim(),
   );
 
   await adjuntar(archivos.extra2);
   comprobar(
     `${etiqueta}: el cuarto archivo se rechaza y avisa del tope`,
     (await lista.locator('li').count()) === 3 &&
-      /máximo 3 archivos|Solo puedes adjuntar 3 archivos/i.test(
-        (await error.textContent()) ?? '',
-      ),
+      /Solo puedes adjuntar 3 archivos/i.test((await error.textContent()) ?? ''),
     ((await error.textContent()) ?? '').trim(),
   );
 
-  // ---- 2. Cambiar a un tipo sin soporte limpia la selección ---------------
+  // ---- 2. Cambio de tipo ---------------------------------------------------
   await tipo.selectOption('Petición');
   await pagina.waitForTimeout(200);
   comprobar(
@@ -397,11 +422,6 @@ async function revisar(navegador, archivos, etiqueta, viewport) {
     !(await bloque.isVisible()) &&
       (await entrada.isDisabled()) &&
       (await entrada.evaluate((e) => e.files.length)) === 0,
-  );
-  comprobar(
-    `${etiqueta}: tras el cambio de tipo el adjunto ya no viaja en el envío`,
-    !(await clavesDelEnvio()).includes('soporte-pqrs'),
-    (await clavesDelEnvio()).join(', '),
   );
 
   await tipo.selectOption('Queja');
@@ -411,33 +431,183 @@ async function revisar(navegador, archivos, etiqueta, viewport) {
     (await bloque.isVisible()) && (await lista.locator('li').count()) === 0,
   );
 
-  // ---- El aviso de envío recuerda adjuntar los archivos -------------------
-  await adjuntar(archivos.pngValido);
-  await pagina.fill('#nombre-pqrs', 'Cristian Amaya');
-  await pagina.fill('#telefono-pqrs', '3106232429');
-  await pagina.fill('#correo-pqrs', 'practicaspasantiasdst@gmail.com');
-  await pagina.fill('#municipio-pqrs', 'Tunja');
-  await pagina.fill('#descripcion-pqrs', 'Prueba automática del campo de soporte.');
-  await pagina.check('#autorizacion-pqrs');
-  await pagina.click('form[data-mailto] button[type="submit"]');
-  await pagina.waitForTimeout(300);
-  const aviso = (await pagina.locator('form[data-mailto] [data-aviso]').textContent()) ?? '';
-  comprobar(
-    `${etiqueta}: al enviar con adjunto, el aviso recuerda adjuntarlo al correo`,
-    /adjunta el archivo|adjunta los \d+ archivos/i.test(aviso),
-    aviso.trim(),
-  );
+  await contexto.close();
+}
+
+// --- B) La radicación -------------------------------------------------------
+
+async function revisarRadicacion(navegador, archivos) {
+  console.log('\n=== B) Radicación contra la API (interceptada) ===\n');
+  const contexto = await navegador.newContext({ viewport: { width: 1280, height: 900 } });
+
+  // ---- 6. Camino feliz sin adjuntos ---------------------------------------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+
+    const confirmacion = pagina.locator('[data-confirmacion]');
+    comprobar('Sin adjuntos: se llamó a POST /api/pqrs una vez', registro.radicar.length === 1);
+    comprobar(
+      'Sin adjuntos: el cuerpo lleva los campos del formulario, no multipart',
+      registro.radicar[0]?.nombre === 'Cristian Amaya' &&
+        registro.radicar[0]?.municipio === 'Tunja' &&
+        registro.radicar[0]?.autorizacion === true,
+      JSON.stringify(registro.radicar[0] ?? {}).slice(0, 100),
+    );
+    comprobar(
+      'Sin adjuntos: el cuerpo lleva sessionId con forma de UUID y token de Turnstile',
+      /^[0-9a-f-]{36}$/.test(registro.radicar[0]?.sessionId ?? '') &&
+        String(registro.radicar[0]?.turnstileToken ?? '').startsWith('token-de-prueba-'),
+    );
+    comprobar('Sin adjuntos: aparece la pantalla de confirmación', await confirmacion.isVisible());
+    comprobar(
+      'Sin adjuntos: se muestran el radicado y la fecha',
+      (await pagina.locator('[data-radicado]').textContent()) === 'PQRS-20260907-A7K2M9' &&
+        ((await pagina.locator('[data-fecha]').textContent()) ?? '').includes('septiembre'),
+    );
+    comprobar(
+      'Sin adjuntos: el formulario desaparece y no se abrió el gestor de correo',
+      !(await pagina.locator('[data-form]').isVisible()) && !(await pagina.locator('[data-pqrs][data-respaldo]').count()),
+    );
+
+    // Botón de copiar
+    await contexto.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await pagina.click('[data-copiar]');
+    await pagina.waitForTimeout(250);
+    const portapapeles = await pagina.evaluate(() => navigator.clipboard.readText());
+    comprobar(
+      'Sin adjuntos: el botón copia el radicado al portapapeles',
+      portapapeles === 'PQRS-20260907-A7K2M9',
+      portapapeles,
+    );
+    await pagina.close();
+  }
+
+  // ---- 7. Con adjuntos: se pide el token de subida -------------------------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Queja');
+    await pagina.setInputFiles('#soporte-pqrs', [archivos.pngValido]);
+    await pagina.waitForTimeout(500);
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(1500);
+
+    comprobar('Con adjuntos: se pidió el token a POST /api/pqrs/token', registro.token.length >= 1);
+
+    const carga = JSON.parse(registro.token[0]?.payload?.clientPayload ?? '{}');
+    const rutaPedida = registro.token[0]?.payload?.pathname ?? '';
+    comprobar(
+      'Con adjuntos: el clientPayload lleva sessionId, tipo y token de Turnstile',
+      /^[0-9a-f-]{36}$/.test(carga.sessionId ?? '') &&
+        carga.tipo === 'Queja' &&
+        String(carga.turnstileToken ?? '').startsWith('token-de-prueba-'),
+      JSON.stringify(carga).slice(0, 120),
+    );
+    comprobar(
+      'Con adjuntos: la ruta pedida cuelga de pqrs/pendientes/{sessionId}/',
+      rutaPedida.startsWith(`pqrs/pendientes/${carga.sessionId}/`) && rutaPedida.endsWith('.png'),
+      rutaPedida,
+    );
+    comprobar(
+      'Con adjuntos: si la subida falla no se radica y se explica el motivo',
+      registro.radicar.length === 0 &&
+        /No pudimos subir/i.test((await pagina.locator('[data-lista-errores]').textContent()) ?? ''),
+      ((await pagina.locator('[data-lista-errores]').textContent()) ?? '').trim().slice(0, 90),
+    );
+    comprobar(
+      'Con adjuntos: una subida fallida no abre el gestor de correo',
+      !(await pagina.locator('[data-pqrs][data-respaldo]').count()),
+    );
+    await pagina.close();
+  }
+
+  // ---- 8. Error 400 del servidor ------------------------------------------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'error' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+
+    const errores = (await pagina.locator('[data-lista-errores]').textContent()) ?? '';
+    comprobar(
+      'Error 400: se muestra el mensaje que devolvió el servidor',
+      errores.includes('El municipio es obligatorio.'),
+      errores.trim(),
+    );
+    comprobar(
+      'Error 400: NO se cae al gestor de correo y el formulario sigue a la vista',
+      !(await pagina.locator('[data-pqrs][data-respaldo]').count()) && (await pagina.locator('[data-form]').isVisible()),
+    );
+    comprobar(
+      'Error 400: el botón de enviar vuelve a quedar disponible',
+      !(await pagina.locator('[data-enviar]').isDisabled()),
+    );
+    await pagina.close();
+  }
+
+  // ---- 9. API caída: respaldo por correo -----------------------------------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'caida' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(1200);
+
+    const aviso = (await pagina.locator('[data-form] [data-aviso]').textContent()) ?? '';
+    comprobar(
+      'API caída: se avisa de que así la solicitud NO queda radicada',
+      /NO queda radicada/i.test(aviso),
+      aviso.trim().slice(0, 110),
+    );
+    comprobar(
+      'API caída: se abre el gestor de correo como respaldo',
+      (await pagina.locator('[data-pqrs][data-respaldo="correo"]').count()) === 1,
+    );
+    comprobar(
+      'API caída: no se muestra pantalla de confirmación con radicado falso',
+      !(await pagina.locator('[data-confirmacion]').isVisible()),
+    );
+    await pagina.close();
+  }
 
   await contexto.close();
 }
+
+// --- Ejecución --------------------------------------------------------------
 
 const archivos = await prepararArchivos();
 const servidor = await servir();
 const navegador = await chromium.launch();
 
 try {
-  await revisar(navegador, archivos, 'Móvil', { width: 375, height: 720 });
-  await revisar(navegador, archivos, 'Escritorio', { width: 1280, height: 800 });
+  await revisarCampo(navegador, archivos, 'Móvil', { width: 375, height: 720 });
+  await revisarCampo(navegador, archivos, 'Escritorio', { width: 1280, height: 800 });
+  await revisarRadicacion(navegador, archivos);
 } finally {
   await navegador.close();
   servidor.close();

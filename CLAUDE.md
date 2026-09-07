@@ -5,11 +5,20 @@ Stack: Astro + Tailwind 4 + TypeScript.
 ## Reglas de trabajo
 
 - Después de cada cambio significativo: `git add . && git commit -m "mensaje descriptivo" && git push`.
-- La página se publica en GitHub Pages (solo para revisión interna). El deploy final será en Hostinger con el dominio dstunja.com; no configurar nada de Hostinger todavía.
+- La página se publica en **Vercel** (plan Hobby) con el dominio dstunja.com.
 - En `astro.config.mjs` debe estar SIEMPRE:
-  site: 'https://dstunja.github.io'
-  base: '/proyecto_paginaWeb'
-  No cambiar estos valores. Todas las rutas a imágenes/estilos deben respetar el `base` (usar `import.meta.env.BASE_URL` o rutas relativas).
+  site: 'https://dstunja.com'
+  sin `base` (el sitio vive en la raíz del dominio)
+  adapter: vercel(), output: 'static'
+  Las páginas siguen siendo estáticas. Solo `src/pages/api/**` corre como función,
+  y cada ruta lo pide a mano con `export const prerender = false`.
+  Las rutas a imágenes/estilos siguen pasando por `import.meta.env.BASE_URL` o por
+  `src/lib/rutas.ts`: así el `base` se puede volver a poner sin tocarlas una a una.
+- El workflow `.github/workflows/deploy.yml` sigue publicando en GitHub Pages, pero
+  esa copia quedó rota al quitar el `base` y allí no hay funciones. Ver el apartado
+  de despliegue de `docs/PQRS-ADJUNTOS.md`.
+- La radicación de PQRS necesita variables de entorno (Blob, Resend, Turnstile).
+  Están documentadas en `.env.example` y en `docs/PQRS-ADJUNTOS.md`.
 
 ## Marca
 

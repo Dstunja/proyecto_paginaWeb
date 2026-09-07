@@ -44,8 +44,14 @@ src/
                            a los archivos de public/. OBLIGATORIO usarlo.
   lib/mapa-base.ts         Teselas de los mapas (OpenStreetMap / CARTO).
   lib/adjuntos.ts          Reglas de los archivos de soporte de la PQRS:
-                           formatos, peso y saneado del nombre. Sirve igual en
-                           el navegador y en un servidor (ver docs/PQRS-ADJUNTOS.md).
+                           formatos, peso y saneado del nombre. El mismo archivo
+                           lo usan el navegador y las funciones de servidor.
+  lib/turnstile-cliente.ts Widget antirrobots de Cloudflare en el navegador.
+  lib/pqrs/                Servidor de la radicacion: configuracion, radicado,
+                           Turnstile, limite de tasa, Vercel Blob, correos con
+                           Resend y la orquestacion (radicar.ts, con pruebas).
+  pages/api/pqrs/          Funciones de Vercel: token de subida, radicacion y
+                           cron de limpieza. Ver docs/PQRS-ADJUNTOS.md.
   lib/imagenes.ts          Imágenes con reemplazo automático: si el archivo aún
                            no existe se muestra un marcador de posición (o el
                            nombre en texto, para los logos de marca).
@@ -63,9 +69,13 @@ src/
     MapaRed.astro          Mapa interactivo de cobertura: un punto por
                            municipio, filtros por departamento y buscador.
     BotonPideky.astro      Botón de Pideky.
-    FormularioMailto.astro Formularios de contacto, empleos y PQRS.
+    FormularioMailto.astro Formularios de contacto y empleos (abren el gestor
+                           de correo). La PQRS ya no lo usa.
     CampoAdjuntos.astro    Archivos de soporte de la PQRS. Solo aparece
                            cuando el tipo es Queja o Reclamo.
+    FormularioPqrs.astro   Formulario de PQRS que radica de verdad: sube los
+                           soportes a Vercel Blob, llama a /api/pqrs y muestra
+                           el numero de radicado.
     PageHero.astro         Encabezado de las páginas internas.
   pages/                   Una página por archivo: index, nosotros, catalogo,
                            innovacion, empleos, contactanos, pqrs y 404.

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
-import FormularioMailto from '../components/FormularioMailto.astro';
+import FormularioPqrs from '../components/FormularioPqrs.astro';
 import CampoAdjuntos from '../components/CampoAdjuntos.astro';
 import Icono from '../components/Icono.astro';
 import { empresa } from '../data/site';
@@ -65,7 +65,8 @@ const tipos = [
         <h2 class="text-[28px] tablet:text-[38px]">Formulario de PQRS</h2>
         <p class="mt-3 text-muted">
           Diligencia los campos marcados con * y describe lo ocurrido con el mayor detalle posible:
-          fecha, municipio, punto de venta y número de factura si aplica.
+          fecha, municipio, punto de venta y número de factura si aplica. Al enviar te damos un
+          número de radicado.
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
           Al enviar autorizas el tratamiento de tus datos personales para gestionar y responder tu
@@ -82,7 +83,7 @@ const tipos = [
       </div>
 
       <div class="glass-card p-8">
-        <FormularioMailto asunto="PQRS desde dstunja.com" boton="Enviar PQRS">
+        <FormularioPqrs boton="Enviar PQRS">
           <div>
             <label class="field-label" for="tipo-pqrs">Tipo de solicitud *</label>
             <select class="field" id="tipo-pqrs" name="tipo-pqrs" required>
@@ -145,15 +146,14 @@ const tipos = [
               Autorizo el tratamiento de mis datos personales para la gestión de esta solicitud. *
             </span>
           </label>
-        </FormularioMailto>
+        </FormularioPqrs>
 
         <p class="mt-6 mb-0 border-t border-line pt-5 text-[13px] text-muted">
-          Nota técnica: este formulario abre tu gestor de correo con la solicitud lista para enviar.
-          Un correo así no puede llevar adjuntos por sí solo, de modo que los archivos de soporte se
-          listan por su nombre y hay que arrastrarlos al mensaje antes de mandarlo. Para dejar
-          constancia automática de la radicación y guardar los soportes hace falta un endpoint real:
-          el contrato, la migración de <code>pqrs_adjuntos</code> y las reglas de seguridad están en{' '}
-          <code>docs/PQRS-ADJUNTOS.md</code>.
+          Al enviar, tu solicitud queda radicada con un número y una fecha, y los archivos de soporte
+          se guardan en un almacenamiento privado. Recibirás el radicado por correo. Si en ese
+          momento el servicio no estuviera disponible, el formulario abre tu gestor de correo como
+          respaldo y te avisa de que así la solicitud NO queda radicada.{' '}
+          Detalles técnicos en <code>docs/PQRS-ADJUNTOS.md</code>.
         </p>
       </div>
     </div>

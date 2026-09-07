@@ -15,7 +15,6 @@
  * aquí sino en src/lib/adjuntos.ts, para poder reutilizarlas tal cual el día que
  * exista un endpoint de verdad. Ver docs/PQRS-ADJUNTOS.md.
  */
-import Icono from './Icono.astro';
 import {
   ACEPTA,
   FORMATOS_LEGIBLES,
@@ -87,12 +86,6 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
 
   <ul class="mt-3 hidden list-none space-y-2 p-0" data-lista></ul>
 
-  <p class="mt-3 mb-0 hidden text-[13px] text-muted" data-recordatorio>
-    <Icono nombre="paperclip" class="mr-1 inline-block h-4 w-4 align-[-3px]" interactivo={false} />
-    Al enviar se abrirá tu gestor de correo con la solicitud lista. Acuérdate de{' '}
-    <strong class="font-semibold text-ink">adjuntar ahí estos archivos</strong>: el correo no puede
-    llevarlos por sí solo.
-  </p>
 </div>
 
 <script>
@@ -109,11 +102,10 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
     const entrada = bloque.querySelector<HTMLInputElement>('[data-entrada]');
     const lista = bloque.querySelector<HTMLUListElement>('[data-lista]');
     const error = bloque.querySelector<HTMLElement>('[data-error]');
-    const recordatorio = bloque.querySelector<HTMLElement>('[data-recordatorio]');
     const selector = document.getElementById(
       bloque.dataset.controlador ?? '',
     ) as HTMLSelectElement | null;
-    if (!entrada || !lista || !error || !recordatorio || !selector) return;
+    if (!entrada || !lista || !error || !selector) return;
 
     const maxArchivos = Number(bloque.dataset.maxArchivos) || MAX_ARCHIVOS_POR_DEFECTO;
     const maxMb = Number(bloque.dataset.maxMb) || MAX_MB_POR_DEFECTO;
@@ -131,7 +123,7 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
     }
 
     function pintar() {
-      if (!lista || !recordatorio) return;
+      if (!lista) return;
       lista.textContent = '';
 
       elegidos.forEach((archivo) => {
@@ -176,7 +168,6 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
       });
 
       lista.classList.toggle('hidden', elegidos.length === 0);
-      recordatorio.classList.toggle('hidden', elegidos.length === 0);
     }
 
     /**
@@ -210,7 +201,7 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
       }
 
       // Mientras se leen las firmas de los archivos el envío queda bloqueado:
-      // `reportValidity()` de FormularioMailto respeta la validez personalizada.
+      // `reportValidity()` de FormularioPqrs respeta la validez personalizada.
       entrada.setCustomValidity('Estamos revisando los archivos, espera un momento.');
 
       const problemas: string[] = [];

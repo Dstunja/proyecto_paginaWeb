@@ -2,19 +2,29 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
+import vercel from '@astrojs/vercel';
 
-// Publicacion actual: GitHub Pages, solo para revision interna. El sitio vive
-// en https://dstunja.github.io/proyecto_paginaWeb, asi que `base` debe llevar
-// el nombre del repositorio y todas las rutas a imagenes, estilos y enlaces
-// internos tienen que respetarlo (ver src/lib/rutas.ts e import.meta.env.BASE_URL).
+// Publicacion actual: Vercel (plan Hobby), con el dominio propio dstunja.com.
 //
-// AL PASAR A HOSTINGER (dominio propio dstunja.com):
-//   1. Cambiar site a 'https://dstunja.com'
-//   2. Eliminar la linea `base` (el sitio quedara en la raiz del dominio)
-// No hace falta tocar nada mas: las rutas se recalculan solas a partir de BASE_URL.
+// El sitio sigue siendo ESTATICO: `output: 'static'` compila todas las paginas
+// a HTML en el build. Lo unico que corre como funcion son las rutas que se
+// marcan a mano con `export const prerender = false`, que hoy son las de
+// src/pages/api/pqrs/ (radicacion de PQRS, tokens de subida y limpieza).
+// Con el adaptador puesto, Astro genera una funcion solo para esas rutas.
+//
+// Ya no hay `base`: el sitio vive en la raiz del dominio. Las rutas internas
+// siguen pasando por src/lib/rutas.ts e import.meta.env.BASE_URL, asi que no
+// hubo que tocarlas una a una; BASE_URL vale '/' y todo se recalcula solo.
+//
+// OJO CON GITHUB PAGES: .github/workflows/deploy.yml sigue publicando en
+// https://dstunja.github.io/proyecto_paginaWeb, y sin `base` esa copia queda
+// rota (los archivos de /_astro/ dan 404). Si se quiere conservar ese espejo
+// hay que devolver el `base` detras de una variable de entorno o retirar el
+// workflow. Ver docs/PQRS-ADJUNTOS.md, apartado de despliegue.
 export default defineConfig({
-  site: 'https://dstunja.github.io',
-  base: '/proyecto_paginaWeb',
+  site: 'https://dstunja.com',
+  output: 'static',
+  adapter: vercel(),
   integrations: [sitemap()],
   vite: {
     plugins: [tailwindcss()],

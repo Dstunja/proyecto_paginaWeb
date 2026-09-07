@@ -2,18 +2,16 @@
 import { empresa } from '../data/site';
 
 /**
- * Formulario sin servidor.
+ * Formulario que abre el gestor de correo.
  *
- * El sitio es 100 % estático (Cloudflare, sin backend), así que el formulario
- * NO envía nada por sí mismo: arma un correo con lo que escribió la persona y
- * lo abre en su gestor de correo. Es la opción que funciona sin depender de
- * ningún servicio externo.
+ * Lo usan CONTACTO y EMPLEOS, que son páginas estáticas: no envían nada por sí
+ * mismas, arman un correo con lo que escribió la persona y lo abren en su
+ * gestor. Para esos dos casos basta, porque no hay nada de lo que dejar
+ * constancia ni plazo legal que contar.
  *
- * PARA PRODUCCIÓN se recomienda conectar un endpoint real (una Cloudflare
- * Function, Formspree, Web3Forms…) y cambiar `action`/`method` de este <form>:
- * así la solicitud queda registrada aunque la persona no tenga cliente de
- * correo configurado. Para PQRS esto es especialmente importante, porque la
- * empresa debe poder demostrar la fecha de radicación y la respuesta.
+ * La PQRS ya NO usa este componente: radica de verdad contra /api/pqrs y sube
+ * los soportes a Vercel Blob. Ver src/components/FormularioPqrs.astro. Si algún
+ * día contacto o empleos necesitan constancia, el camino es el mismo.
  */
 interface Props {
   asunto: string;
@@ -45,8 +43,6 @@ const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
 </form>
 
 <script>
-  import { nombreParaMostrar } from '../lib/adjuntos';
-
   const ETIQUETAS: Record<string, string> = {};
 
   document.querySelectorAll<HTMLFormElement>('form[data-mailto]').forEach((form) => {
@@ -61,26 +57,11 @@ const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
 
       const datos = new FormData(form);
       const lineas: string[] = [];
-      const adjuntos: string[] = [];
 
       for (const [nombre, valor] of datos.entries()) {
-        // Un mailto: no puede llevar archivos. Lo mas que se puede hacer es
-        // nombrarlos en el cuerpo para que la persona los arrastre al correo
-        // y para que quien reciba la PQRS sepa que evidencia deberia venir.
-        if (valor instanceof File) {
-          if (valor.size > 0) adjuntos.push(nombreParaMostrar(valor.name));
-          continue;
-        }
         if (typeof valor !== 'string' || valor.trim() === '') continue;
         const etiqueta = ETIQUETAS[nombre] ?? nombre;
         lineas.push(`${etiqueta}: ${valor.trim()}`);
-      }
-
-      if (adjuntos.length > 0) {
-        lineas.push('');
-        lineas.push(`Archivos de soporte anunciados (${adjuntos.length}):`);
-        adjuntos.forEach((nombre) => lineas.push(`  - ${nombre}`));
-        lineas.push('IMPORTANTE: adjunta estos archivos al correo antes de enviarlo.');
       }
 
       const destinatario = form.dataset.destinatario ?? '';
@@ -90,9 +71,7 @@ const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
       const aviso = form.querySelector<HTMLElement>('[data-aviso]');
       if (aviso) {
         aviso.textContent =
-          adjuntos.length > 0
-            ? `Abrimos tu gestor de correo con la solicitud lista. Antes de enviarla, adjunta ${adjuntos.length === 1 ? 'el archivo' : `los ${adjuntos.length} archivos`} que seleccionaste.`
-            : 'Abrimos tu gestor de correo con la solicitud lista para enviar. Si no se abrió, escríbenos por WhatsApp.';
+          'Abrimos tu gestor de correo con la solicitud lista para enviar. Si no se abrió, escríbenos por WhatsApp.';
         aviso.classList.remove('hidden');
       }
 

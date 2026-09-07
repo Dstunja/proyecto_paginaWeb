@@ -1,0 +1,440 @@
+---
+/**
+ * Formulario de PQRS con radicación de verdad.
+ *
+ * FLUJO
+ *   1. Si hay archivos, se sube cada uno DIRECTAMENTE a Vercel Blob con
+ *      `upload()`. No pasan por la función: una función de Vercel rechaza
+ *      cuerpos de más de 4,5 MB y el tope por archivo es 5 MB.
+ *   2. Se manda el resto del formulario a /api/pqrs como JSON, con las rutas de
+ *      los blobs ya subidos.
+ *   3. Se enseña el radicado y la fecha, con botón de copiar.
+ *
+ * RESPALDO. Si la API no contesta (red caída, o el sitio servido desde un
+ * espejo estático sin funciones) se cae al `mailto:` de siempre, pero con un
+ * aviso claro de que eso NO es una radicación y de que los archivos hay que
+ * adjuntarlos a mano. Un error 400 o 403 no activa el respaldo: ahí la API sí
+ * contestó y lo que hay que hacer es enseñar el motivo.
+ */
+import { empresa } from '../data/site';
+import Icono from './Icono.astro';
+
+interface Props {
+  boton?: string;
+  destinatario?: string;
+}
+
+const { boton = 'Enviar PQRS', destinatario = empresa.email } = Astro.props;
+
+const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'public' : 'private';
+---
+
+<div
+  data-pqrs
+  data-turnstile-key={claveTurnstile}
+  data-blob-access={accesoBlob}
+  data-destinatario={destinatario}
+>
+  <form data-form class="grid grid-cols-1 gap-5" novalidate={false}>
+    <slot />
+
+    <!-- Turnstile en modo `interaction-only`: normalmente no se ve nada. -->
+    <div data-turnstile class="empty:hidden"></div>
+
+    <div class="flex flex-wrap items-center gap-4">
+      <button type="submit" class="btn btn-primary" data-enviar>{boton}</button>
+      <a class="btn btn-secondary" href={empresa.whatsapp} target="_blank" rel="noopener">
+        Prefiero WhatsApp
+      </a>
+    </div>
+
+    <!-- Progreso de subida, una fila por archivo -->
+    <ul data-progreso class="m-0 hidden list-none space-y-2 p-0"></ul>
+
+    <!-- Errores devueltos por el servidor -->
+    <div
+      data-errores
+      class="hidden rounded-xl border border-accent-text/30 bg-accent-soft px-4 py-3"
+      role="alert"
+    >
+      <p class="m-0 mb-1 font-display text-[14px] font-semibold text-accent-text">
+        No pudimos radicar tu solicitud
+      </p>
+      <ul data-lista-errores class="m-0 list-disc space-y-1 pl-5 text-[14px] text-ink"></ul>
+    </div>
+
+    <p data-aviso class="m-0 hidden text-[14.5px]" role="status" aria-live="polite"></p>
+  </form>
+
+  <!-- Pantalla de confirmación -->
+  <div data-confirmacion class="hidden" role="status" aria-live="polite">
+    <span class="icono-chip mb-5 h-12 w-12">
+      <Icono nombre="circle-check" class="h-6 w-6" interactivo={false} />
+    </span>
+    <h3 class="mb-2 text-[22px]">Radicamos tu solicitud</h3>
+    <p class="mb-6 text-muted">
+      Guarda este número: con él puedes hacer seguimiento. También te lo enviamos por correo.
+    </p>
+
+    <div class="mb-6 rounded-xl border border-line bg-fondo p-5">
+      <p class="kicker mb-2">Número de radicado</p>
+      <div class="flex flex-wrap items-center gap-3">
+        <code
+          data-radicado
+          class="font-display text-[22px] font-bold tracking-[0.04em] text-primary"></code>
+        <button type="button" class="btn btn-secondary px-4 py-2 text-[13.5px]" data-copiar>
+          Copiar
+        </button>
+      </div>
+      <p class="kicker mt-5 mb-2">Fecha de radicación</p>
+      <p data-fecha class="m-0 text-[15px]"></p>
+    </div>
+
+    <p class="m-0 text-[14.5px] text-muted">
+      Respondemos en un plazo máximo de 15 días hábiles.
+    </p>
+    <p data-avisos-envio class="mt-4 mb-0 hidden text-[13.5px] text-accent-text"></p>
+  </div>
+</div>
+
+<script>
+  import { upload } from '@vercel/blob/client';
+  import { extensionDe, nombreParaMostrar, formatearTamano } from '../lib/adjuntos';
+  import { prepararTurnstile, tokenTurnstile } from '../lib/turnstile-cliente';
+
+  /** Campo del formulario -> clave del JSON que espera /api/pqrs. */
+  const CAMPOS: Record<string, string> = {
+    'tipo-pqrs': 'tipo',
+    'nombre-pqrs': 'nombre',
+    'documento-pqrs': 'documento',
+    'telefono-pqrs': 'telefono',
+    'correo-pqrs': 'correo',
+    'municipio-pqrs': 'municipio',
+    'descripcion-pqrs': 'descripcion',
+  };
+
+  interface AdjuntoSubido {
+    url: string;
+    pathname: string;
+    nombreOriginal: string;
+    tamano: number;
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-pqrs]').forEach((raiz) => {
+    const form = raiz.querySelector<HTMLFormElement>('[data-form]');
+    const cajaTurnstile = raiz.querySelector<HTMLElement>('[data-turnstile]');
+    const progreso = raiz.querySelector<HTMLUListElement>('[data-progreso]');
+    const cajaErrores = raiz.querySelector<HTMLElement>('[data-errores]');
+    const listaErrores = raiz.querySelector<HTMLUListElement>('[data-lista-errores]');
+    const aviso = raiz.querySelector<HTMLElement>('[data-aviso]');
+    const confirmacion = raiz.querySelector<HTMLElement>('[data-confirmacion]');
+    const botonEnviar = raiz.querySelector<HTMLButtonElement>('[data-enviar]');
+    if (!form || !cajaTurnstile || !progreso || !cajaErrores || !listaErrores) return;
+    if (!aviso || !confirmacion || !botonEnviar) return;
+
+    const claveTurnstile = raiz.dataset.turnstileKey ?? '';
+    const acceso = raiz.dataset.blobAccess === 'public' ? 'public' : 'private';
+    const destinatario = raiz.dataset.destinatario ?? '';
+
+    let turnstileListo = false;
+    if (claveTurnstile) {
+      prepararTurnstile(cajaTurnstile, claveTurnstile).then(
+        () => {
+          turnstileListo = true;
+        },
+        () => {
+          turnstileListo = false;
+        },
+      );
+    }
+
+    /**
+     * Token de Turnstile, o cadena vacía si el sitio no tiene clave configurada.
+     *
+     * Devolver vacío en vez de reventar hace que el error salga del servidor
+     * ("la comprobación antirrobots no está configurada"), que es un mensaje
+     * entendible, en lugar de caer al respaldo por correo sin explicar nada.
+     */
+    async function token(): Promise<string> {
+      if (!claveTurnstile) return '';
+      return tokenTurnstile();
+    }
+
+    // --- Pintado ------------------------------------------------------------
+
+    function mostrarErrores(mensajes: string[]) {
+      listaErrores!.textContent = '';
+      for (const mensaje of mensajes) {
+        const item = document.createElement('li');
+        item.textContent = mensaje;
+        listaErrores!.append(item);
+      }
+      cajaErrores!.classList.toggle('hidden', mensajes.length === 0);
+      if (mensajes.length > 0) cajaErrores!.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function avisar(texto: string, tono: 'ok' | 'error' | 'neutro' = 'neutro') {
+      aviso!.textContent = texto;
+      aviso!.classList.toggle('hidden', texto === '');
+      aviso!.classList.toggle('text-ok', tono === 'ok');
+      aviso!.classList.toggle('text-accent-text', tono === 'error');
+      aviso!.classList.toggle('text-muted', tono === 'neutro');
+    }
+
+    /** Una fila de progreso por archivo; devuelve cómo actualizarla. */
+    function filaProgreso(nombre: string, tamano: number) {
+      const fila = document.createElement('li');
+      fila.className = 'rounded-xl border border-line bg-fondo px-3 py-2';
+
+      const cabecera = document.createElement('div');
+      cabecera.className = 'flex items-baseline justify-between gap-3';
+
+      const etiqueta = document.createElement('span');
+      etiqueta.className = 'truncate text-[14px] font-semibold text-ink';
+      etiqueta.textContent = nombre;
+
+      const estado = document.createElement('span');
+      estado.className = 'shrink-0 text-[12.5px] text-muted';
+      estado.textContent = `0 % · ${formatearTamano(tamano)}`;
+
+      cabecera.append(etiqueta, estado);
+
+      const canal = document.createElement('div');
+      canal.className = 'mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2';
+      const barra = document.createElement('div');
+      barra.className = 'h-full w-0 rounded-full bg-secondary transition-all duration-200';
+      canal.append(barra);
+
+      fila.append(cabecera, canal);
+      progreso!.append(fila);
+      progreso!.classList.remove('hidden');
+
+      return {
+        avanzar(porcentaje: number) {
+          barra.style.width = `${porcentaje}%`;
+          estado.textContent = `${Math.round(porcentaje)} % · ${formatearTamano(tamano)}`;
+        },
+        terminar() {
+          barra.style.width = '100%';
+          barra.classList.remove('bg-secondary');
+          barra.classList.add('bg-ok');
+          estado.textContent = `Subido · ${formatearTamano(tamano)}`;
+        },
+        fallar() {
+          barra.classList.remove('bg-secondary');
+          barra.classList.add('bg-accent');
+          estado.textContent = 'No se pudo subir';
+        },
+      };
+    }
+
+    // --- Envío --------------------------------------------------------------
+
+    function datosDelFormulario() {
+      const datos = new FormData(form!);
+      const cuerpo: Record<string, unknown> = {};
+      for (const [campo, clave] of Object.entries(CAMPOS)) {
+        const valor = datos.get(campo);
+        cuerpo[clave] = typeof valor === 'string' ? valor : '';
+      }
+      cuerpo.autorizacion = datos.get('autorizacion-pqrs') !== null;
+      return cuerpo;
+    }
+
+    function archivosElegidos(): File[] {
+      const entrada = form!.querySelector<HTMLInputElement>('[data-adjuntos] [data-entrada]');
+      if (!entrada || entrada.disabled) return [];
+      return Array.from(entrada.files ?? []);
+    }
+
+    async function subirArchivos(sessionId: string, tipo: string): Promise<AdjuntoSubido[]> {
+      const archivos = archivosElegidos();
+      if (archivos.length === 0) return [];
+
+      progreso!.textContent = '';
+      const subidos: AdjuntoSubido[] = [];
+
+      for (const archivo of archivos) {
+        const nombre = nombreParaMostrar(archivo.name);
+        const barra = filaProgreso(nombre, archivo.size);
+        // La ruta la propone el navegador pero el servidor la comprueba contra
+        // la sesión: el UUID solo sirve para no chocar entre archivos.
+        const ruta = `pqrs/pendientes/${sessionId}/${crypto.randomUUID()}${extensionDe(archivo.name)}`;
+
+        try {
+          const resultado = await upload(ruta, archivo, {
+            access: acceso,
+            handleUploadUrl: '/api/pqrs/token',
+            contentType: archivo.type || undefined,
+            clientPayload: JSON.stringify({
+              sessionId,
+              tipo,
+              turnstileToken: await token(),
+            }),
+            onUploadProgress: ({ percentage }) => barra.avanzar(percentage),
+          });
+          barra.terminar();
+          subidos.push({
+            url: resultado.url,
+            pathname: resultado.pathname,
+            nombreOriginal: nombre,
+            tamano: archivo.size,
+          });
+        } catch (fallo) {
+          barra.fallar();
+          throw new Error(`No pudimos subir «${nombre}»: ${(fallo as Error).message}`);
+        }
+      }
+
+      return subidos;
+    }
+
+    /**
+     * Respaldo por correo. NO es una radicación y así se dice: sin número, sin
+     * constancia y con los archivos por adjuntar a mano.
+     */
+    function caerAlCorreo(motivo: string) {
+      const datos = new FormData(form!);
+      const lineas: string[] = [];
+      form!.querySelectorAll<HTMLLabelElement>('label[for]').forEach((label) => {
+        const valor = datos.get(label.htmlFor);
+        if (typeof valor !== 'string' || valor.trim() === '') return;
+        lineas.push(`${label.textContent?.replace(/\*/g, '').trim()}: ${valor.trim()}`);
+      });
+
+      const archivos = archivosElegidos().map((a) => nombreParaMostrar(a.name));
+      if (archivos.length > 0) {
+        lineas.push('', `Archivos de soporte (${archivos.length}):`);
+        archivos.forEach((n) => lineas.push(`  - ${n}`));
+        lineas.push('IMPORTANTE: adjunta estos archivos al correo antes de enviarlo.');
+      }
+
+      const cuerpo = `${lineas.join('\n')}\n\n---\nEnviado desde dstunja.com`;
+      avisar(
+        `${motivo} Abrimos tu gestor de correo con la solicitud. Ojo: así NO queda radicada ` +
+          'con número, y los archivos tienes que adjuntarlos tú.',
+        'error',
+      );
+      // Queda anotado en el DOM que se usó el respaldo: lo comprueba
+      // scripts/verificar-pqrs.mjs, porque el navegador no emite ningún evento
+      // observable al abrir un mailto:.
+      raiz.dataset.respaldo = 'correo';
+
+      window.location.href =
+        `mailto:${destinatario}?subject=${encodeURIComponent('PQRS desde dstunja.com')}` +
+        `&body=${encodeURIComponent(cuerpo)}`;
+    }
+
+    function mostrarConfirmacion(radicado: string, fecha: string, avisos: string[]) {
+      form!.classList.add('hidden');
+      confirmacion!.classList.remove('hidden');
+      confirmacion!.querySelector('[data-radicado]')!.textContent = radicado;
+      confirmacion!.querySelector('[data-fecha]')!.textContent = fecha;
+
+      const cajaAvisos = confirmacion!.querySelector<HTMLElement>('[data-avisos-envio]');
+      if (cajaAvisos && avisos.length > 0) {
+        cajaAvisos.textContent =
+          'Tu solicitud quedó guardada, pero hubo un problema al enviar los correos: ' +
+          `${avisos.join(' ')} Anota el radicado por si acaso.`;
+        cajaAvisos.classList.remove('hidden');
+      }
+      confirmacion!.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    form.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      if (!form.reportValidity()) return;
+
+      mostrarErrores([]);
+      botonEnviar.disabled = true;
+      const textoBoton = botonEnviar.textContent;
+
+      try {
+        if (claveTurnstile && !turnstileListo) {
+          // Un último intento: puede que el script tardara más que la persona.
+          await prepararTurnstile(cajaTurnstile, claveTurnstile);
+          turnstileListo = true;
+        }
+
+        const cuerpo = datosDelFormulario();
+        const sessionId = crypto.randomUUID();
+
+        botonEnviar.textContent = 'Subiendo archivos…';
+        avisar('Subiendo los archivos de soporte…');
+        const adjuntos = await subirArchivos(sessionId, String(cuerpo.tipo ?? ''));
+
+        botonEnviar.textContent = 'Radicando…';
+        avisar('Radicando tu solicitud…');
+
+        const respuesta = await fetch('/api/pqrs', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            ...cuerpo,
+            sessionId,
+            turnstileToken: await token(),
+            adjuntos,
+          }),
+        });
+
+        // Un espejo estático sin funciones devuelve HTML, no JSON.
+        const tipoRespuesta = respuesta.headers.get('content-type') ?? '';
+        if (!tipoRespuesta.includes('application/json')) {
+          caerAlCorreo('La radicación en línea no está disponible en esta dirección.');
+          return;
+        }
+
+        const datos = (await respuesta.json()) as
+          | { ok: true; radicado: string; fecha: string; avisos?: string[] }
+          | { ok: false; errores: string[] };
+
+        if (respuesta.ok && datos.ok) {
+          avisar('');
+          mostrarConfirmacion(datos.radicado, datos.fecha, datos.avisos ?? []);
+          return;
+        }
+
+        if (respuesta.status >= 500) {
+          caerAlCorreo('El servidor no pudo procesar la radicación.');
+          return;
+        }
+
+        // 400, 403, 429: la API contestó y explicó por qué. No hay respaldo que
+        // valga; hay que corregir lo que dice y volver a enviar.
+        avisar('');
+        mostrarErrores(datos.ok ? ['Error desconocido.'] : datos.errores);
+      } catch (fallo) {
+        const mensaje = (fallo as Error).message;
+        // Si lo que falló fue la subida, el mensaje ya nombra el archivo.
+        if (mensaje.startsWith('No pudimos subir')) {
+          avisar('');
+          mostrarErrores([mensaje]);
+        } else {
+          caerAlCorreo('No pudimos conectar con el servidor.');
+        }
+      } finally {
+        botonEnviar.disabled = false;
+        botonEnviar.textContent = textoBoton;
+      }
+    });
+
+    // --- Copiar el radicado -------------------------------------------------
+    confirmacion.querySelector<HTMLButtonElement>('[data-copiar]')?.addEventListener(
+      'click',
+      async (evento) => {
+        const boton = evento.currentTarget as HTMLButtonElement;
+        const radicado = confirmacion.querySelector('[data-radicado]')?.textContent ?? '';
+        try {
+          await navigator.clipboard.writeText(radicado);
+          boton.textContent = 'Copiado';
+        } catch {
+          boton.textContent = 'Cópialo a mano';
+        }
+        setTimeout(() => {
+          boton.textContent = 'Copiar';
+        }, 2000);
+      },
+    );
+  });
+</script>
