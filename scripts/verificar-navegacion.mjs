@@ -95,7 +95,9 @@ async function revisar(navegador, etiqueta, viewport) {
   console.log(`\n=== ${etiqueta} (${viewport.width}px) ===\n`);
   const contexto = await navegador.newContext({ viewport });
   const pagina = await contexto.newPage();
-  const movil = viewport.width < 1100;
+  // Mismo umbral que `--breakpoint-nav` (global.css): por debajo manda la
+  // hamburguesa y por encima la fila de enlaces.
+  const movil = viewport.width < 1180;
 
   // ---- 1, 3 y 4: recorrido por todas las páginas --------------------------
   const sinCta = [];

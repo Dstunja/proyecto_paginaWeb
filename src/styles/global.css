@@ -85,11 +85,27 @@
   --container-site: 1180px;
 
   /* Puntos de quiebre propios: las rejillas cambian a 900px y el menú
-     horizontal aparece a 1100px, que es donde caben los siete enlaces sin
-     apretar el logo ni el botón de pedido. */
+     horizontal aparece a 1180px, que es donde caben los siete enlaces MÁS el
+     nombre de la empresa sin apretar el logo ni el botón de pedido.
+
+     Estuvo en 1100px mientras la barra solo llevaba el isotipo. Al poner el
+     nombre a su lado (Logo.astro, variante `iso`) la fila pasó a necesitar
+     unos 135px más y, medida sobre el sitio compilado, se desbordaba entre
+     1100 y 1151. El valor es el mismo que `--container-site` a propósito: a
+     partir de ese ancho el contenedor deja de crecer, así que la holgura de la
+     barra se queda fija en 37px en TODAS las pantallas grandes en vez de
+     depender del ancho. Por debajo se ve la hamburguesa, que es lo que ya se
+     veía a 1099. Si se vuelve a bajar, revisar la media query y el
+     `matchMedia` de Header.astro, que repiten el valor a mano.
+
+     `marca` es el ancho a partir del cual cabe el nombre junto al isotipo. En
+     un teléfono no cabe de ninguna forma: la píldora "Arma tu pedido" se lleva
+     230px de los 312 útiles de una pantalla de 360px. A 520px sobraban 6px y a
+     560px sobran 46px, así que el umbral es 560 y no `mob`. */
   --breakpoint-mob: 520px;
+  --breakpoint-marca: 560px;
   --breakpoint-tablet: 900px;
-  --breakpoint-nav: 1100px;
+  --breakpoint-nav: 1180px;
 }
 
 /* --- Animacion de carga (LoaderDST.astro) -----------------------------------

@@ -33,7 +33,7 @@ const enPedido = esActual('/pedido/', actual);
   <div class="wrap flex h-[var(--nav-h)] items-center justify-between gap-3 nav:gap-6">
     <Logo variante="iso" href={ruta('/')} />
 
-    {/* Menú. Bajo 1100 px es un panel a pantalla completa que se abre con la
+    {/* Menú. Bajo 1180 px es un panel a pantalla completa que se abre con la
         hamburguesa; a partir de ahí, la fila de enlaces de siempre. */}
     <nav
       id="main-nav"
@@ -42,10 +42,13 @@ const enPedido = esActual('/pedido/', actual);
       data-open="false"
       aria-label="Navegación principal"
     >
+      {/* En escritorio la separación entre enlaces es de 16 px, no de 24, y no
+          sube a 32 en pantallas anchas: esos 48 px son los que dejan sitio al
+          nombre de la empresa junto al logo. En el panel móvil manda `gap-1`,
+          que no se toca. */}
       <div
         class="flex h-full flex-col gap-1 overflow-y-auto px-6 pt-4 pb-10
-               nav:h-auto nav:flex-row nav:items-center nav:gap-6 nav:overflow-visible nav:p-0
-               [@media(min-width:1250px)]:gap-8"
+               nav:h-auto nav:flex-row nav:items-center nav:gap-4 nav:overflow-visible nav:p-0"
       >
         {
           navegacion.map((item) => {
@@ -56,7 +59,7 @@ const enPedido = esActual('/pedido/', actual);
                 aria-current={activo ? 'page' : undefined}
                 class:list={[
                   'relative border-b border-line py-4 font-display text-[15px] font-semibold tracking-[0.06em] uppercase transition-colors duration-200 hover:text-secondary-dark',
-                  'nav:border-0 nav:py-1 nav:text-[13px] nav:tracking-[0.08em]',
+                  'nav:border-0 nav:py-1 nav:text-[13px] nav:tracking-[0.05em]',
                   activo
                     ? "text-ink nav:after:absolute nav:after:inset-x-0 nav:after:-bottom-1 nav:after:h-[2px] nav:after:rounded-full nav:after:bg-accent nav:after:content-['']"
                     : 'text-muted',
@@ -160,9 +163,11 @@ const enPedido = esActual('/pedido/', actual);
       visibility 0s;
   }
 
-  /* A partir de 1100 px vuelve a ser una fila normal dentro de la barra: se
-     anula todo lo de arriba, incluido el `position: fixed`. */
-  @media (min-width: 1100px) {
+  /* A partir de 1180 px vuelve a ser una fila normal dentro de la barra: se
+     anula todo lo de arriba, incluido el `position: fixed`. El valor repite a
+     mano `--breakpoint-nav` (global.css), donde está explicado por qué son
+     1180 y no 1100; si allí cambia, aquí también. */
+  @media (min-width: 1180px) {
     .menu-movil {
       position: static;
       inset: auto;
@@ -249,7 +254,8 @@ const enPedido = esActual('/pedido/', actual);
 
     // Al pasar a escritorio el panel deja de existir como tal: si quedó abierto,
     // el `overflow: hidden` del body se quedaría pegado.
-    const anchoEscritorio = window.matchMedia('(min-width: 1100px)');
+    // Repite a mano `--breakpoint-nav` (global.css): si allí cambia, aquí también.
+    const anchoEscritorio = window.matchMedia('(min-width: 1180px)');
     anchoEscritorio.addEventListener('change', (e) => {
       if (e.matches) cerrar(false);
     });

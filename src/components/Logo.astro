@@ -4,15 +4,17 @@ import { empresa } from '../data/site';
 /**
  * Logo oficial de la marca.
  *
- * - `iso`: solo el isotipo. Es el que va en la barra. El nombre de la empresa
- *   NO se dibuja a su lado a propósito: el logotipo horizontal trae el texto
- *   dentro de la imagen y a 44 px de alto quedaba ilegible. El nombre sigue
- *   estando en el sitio como texto real —el <title> de cada página, los datos
- *   estructurados de BaseLayout.astro y el pie— que es donde de verdad cuenta
- *   para SEO y para un lector de pantalla. Sus alturas van atadas a `--nav-h`
- *   (global.css): 48 px mientras la barra mide 64 px y 56 px cuando sube a
- *   80 px, para que siempre quede aire arriba y abajo. Si cambia una, revisar
- *   la otra.
+ * - `iso`: el isotipo con el nombre de la empresa a su derecha, en dos líneas.
+ *   Es el que va en la barra. El nombre es TEXTO, no el logotipo horizontal:
+ *   ese trae el nombre dentro de la imagen y a 44 px de alto queda ilegible.
+ *   Va en dos líneas porque en una sola mide 260-277 px en Montserrat y la
+ *   barra, medida sobre el sitio compilado, solo tiene 47 px libres en
+ *   escritorio; en dos líneas ocupa 122 px y cabe. Desaparece por debajo de
+ *   `marca` (560 px, global.css), donde no hay sitio para él junto a la
+ *   píldora del pedido; ahí queda solo el isotipo. Las alturas del isotipo van
+ *   atadas a `--nav-h` (global.css): 48 px mientras la barra mide 64 px y
+ *   56 px cuando sube a 80 px, para que siempre quede aire arriba y abajo. Si
+ *   cambia una, revisar la otra.
  * - `claro`: el isotipo dentro de una pastilla blanca (conserva sus colores de
  *   marca) más el nombre en Montserrat blanco y la línea naranja del logo.
  *   Para fondos oscuros, como el pie de página: ahí el logotipo horizontal no
@@ -68,13 +70,27 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
 
   {
     variante === 'iso' && (
-      <img
-        src={ISOTIPO}
-        alt={empresa.razonSocial}
-        width="183"
-        height="180"
-        class="icono-int h-12 w-12 object-contain tablet:h-14 tablet:w-14"
-      />
+      <>
+        <img
+          src={ISOTIPO}
+          alt={empresa.razonSocial}
+          width="183"
+          height="180"
+          class="icono-int h-12 w-12 object-contain tablet:h-14 tablet:w-14"
+        />
+        {/* El tamaño NO crece con el isotipo en `tablet`: a 17 px el bloque
+            pasaría de 122 a 136 px y dejaría la fila del menú sin aire a
+            1160 px. Se queda fijo a todos los anchos. */}
+        <span class="hidden font-display leading-tight whitespace-nowrap marca:block">
+          <span class="block text-[15px] font-bold tracking-[-0.01em] text-primary">
+            Distribuciones
+          </span>
+          <span class="mt-[2px] flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.07em] text-muted uppercase">
+            <span class="h-[2px] w-3.5 shrink-0 bg-accent" aria-hidden="true" />
+            Santiago de Tunja
+          </span>
+        </span>
+      </>
     )
   }
 
