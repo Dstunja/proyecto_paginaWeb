@@ -256,16 +256,19 @@ const jsonLd = {
 
   <body>
     {/*
-      Cortina de carga: tapa el hueco en blanco entre una pagina y la
-      siguiente. Se pinta lo primero para que no haya un fotograma sin ella, y
-      el script del <head> la retira en cuanto el DOM esta listo.
+      Cortina de carga: cubre el hueco entre una pagina y la siguiente con un
+      velo desenfocado y un recuadro en medio, de modo que la pagina se sigue
+      intuyendo por detras. Se pinta lo primero para que no haya un fotograma
+      sin ella, y el script del <head> la retira en cuanto el DOM esta listo.
 
       `aria-hidden`: es decoracion. El contenido de la pagina ya esta en el
       DOM y un lector de pantalla lo recorre sin esperar a nadie, asi que
       anunciar "Cargando..." en cada pagina seria ruido de mas.
     */}
     <div id="dst-cortina" aria-hidden="true">
-      <LoaderDST tamano={150} texto={empresa.nombre} anuncia={false} />
+      <div class="dst-cortina-panel">
+        <LoaderDST tamano={150} texto={empresa.nombre} anuncia={false} />
+      </div>
     </div>
 
     <a
