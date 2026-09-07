@@ -7,18 +7,21 @@
  *
  * QUÉ USAR
  * --------
- * Hoy está activo **OpenStreetMap estándar**: el mapa clásico a color, con
- * calles, edificios, parques en verde, agua en azul y los nombres de
- * municipios y veredas.
+ * Hoy está activo **OpenStreetMap Humanitarian (HOT)**, servido por
+ * OpenStreetMap France: los mismos datos de OpenStreetMap con un estilo más
+ * claro y más verde, sin el sombreado de relieve del mapa estándar y con menos
+ * ruido de etiquetas. Se eligió para que el fondo acompañe a los puntos de la
+ * red en vez de competir con ellos.
  *
- * Si el sitio empieza a recibir mucho tráfico conviene pasar a CARTO Voyager
- * (igual de colorido, pero servido desde una CDN pensada para producción):
- * los servidores de teselas de OpenStreetMap son donados y su política de uso
- * pide no apoyarse en ellos para aplicaciones con mucho público. Para cambiar,
- * basta con exportar `FONDOS.cartoVoyager` en `FONDO`, abajo.
+ * OJO CON CARTO: la entrada `cartoVoyager` de aquí abajo ya NO se puede activar
+ * tal cual. Sus teselas anónimas se siguen sirviendo con HTTP 200 —no falla
+ * nada de forma visible— pero vienen con la marca de agua «API KEY REQUIRED»
+ * impresa sobre la propia imagen. Para usarla hace falta cuenta en CARTO y
+ * añadir la clave a la URL. Se deja escrita porque es la que más se acerca al
+ * aspecto de Google Maps el día que se consiga esa clave, no porque sirva hoy.
  *
- * En ambos casos la atribución es obligatoria por licencia y se muestra en la
- * esquina inferior derecha del mapa; no se debe quitar.
+ * En todos los casos la atribución es obligatoria por licencia y se muestra en
+ * la esquina inferior derecha del mapa; no se debe quitar.
  */
 
 export interface FondoMapa {
@@ -34,7 +37,18 @@ const ATRIBUCION_OSM =
   '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors';
 
 export const FONDOS: Record<string, FondoMapa> = {
-  /** Mapa clásico de OpenStreetMap, a todo color. */
+  /** Estilo Humanitarian (HOT) sobre datos de OpenStreetMap, servido por
+   *  OpenStreetMap France. Claro, verde suave y sin relieve. El del sitio. */
+  osmHot: {
+    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    opciones: {
+      maxZoom: 19,
+      subdomains: 'ab',
+      attribution: `${ATRIBUCION_OSM} &middot; teselas <a href="https://www.hotosm.org/" target="_blank" rel="noopener">HOT</a> / <a href="https://openstreetmap.fr/" target="_blank" rel="noopener">OSM France</a>`,
+    },
+  },
+
+  /** Mapa clásico de OpenStreetMap, a todo color. Más nombres y más relieve. */
   openstreetmap: {
     url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     opciones: {
@@ -43,8 +57,8 @@ export const FONDOS: Record<string, FondoMapa> = {
     },
   },
 
-  /** CARTO Voyager: mismos datos de OpenStreetMap, colores algo más suaves y
-   *  CDN preparada para volúmenes altos. */
+  /** CARTO Voyager. NO USAR SIN CLAVE: las teselas anónimas salen con la marca
+   *  de agua «API KEY REQUIRED». Requiere cuenta en CARTO. */
   cartoVoyager: {
     url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
     opciones: {
@@ -55,5 +69,5 @@ export const FONDOS: Record<string, FondoMapa> = {
   },
 };
 
-/** Fondo activo en todo el sitio. Cambiar aquí para usar el otro proveedor. */
-export const FONDO: FondoMapa = FONDOS.openstreetmap;
+/** Fondo activo en todo el sitio. Cambiar aquí para usar otro proveedor. */
+export const FONDO: FondoMapa = FONDOS.osmHot;

@@ -47,6 +47,11 @@
   --color-accent-text: #a65f00; /* naranja legible como texto pequeño sobre blanco */
   --color-accent-strong: #c77700; /* naranja para titulares grandes (AA en texto grande) */
 
+  /* Marcador de la sede en los dos mapas (inicio y Contáctanos). No es el rojo
+     de Boyacá (#BE123C): si fuera el mismo, el punto pulsante de la sede se
+     confundiría con el punto de Tunja como municipio, que cae a su lado. */
+  --color-sede: #e11d48;
+
   /* --- Texto --- */
   --color-ink: #263238; /* gris oscuro de marca: texto principal */
   --color-ink-dark: #1a2327; /* texto sobre naranja, verde o amarillo */

@@ -139,9 +139,9 @@ export const clientesFueraDeZona = clientesPorMunicipio
 
 /** Color de cada departamento: el mismo en los contadores y en el mapa. */
 const COLORES: Record<Departamento, string> = {
-  Boyacá: '#e5484d',
-  Santander: '#0e9594',
-  Cundinamarca: '#e08a1e',
+  Boyacá: '#BE123C',
+  Santander: '#0E7490',
+  Cundinamarca: '#A16207',
 };
 
 export const colorDepartamento = (departamento: Departamento): string =>

@@ -7,10 +7,9 @@ import { empresa } from '../data/site';
  * Mapa de cobertura: una pieza visual fija, no un mapa para explorar.
  *
  * Se dibuja un punto por cada municipio cubierto —los 87—, nunca uno por
- * cliente. Como el corredor de Tunja concentra municipios muy juntos (hay
- * cabeceras a menos de 3 km una de otra), el tamaño del punto se calcula a
- * partir de la escala real del encuadre para que ahí sigan distinguiéndose;
- * ver `radio()` en el script de abajo.
+ * cliente. Todos los puntos son del mismo tamaño: el mapa responde "¿llegamos
+ * aquí?", que es una pregunta de sí o no, y un punto más gordo invitaba a leer
+ * una jerarquía entre municipios que la sección no explica.
  *
  * El mapa no se arrastra ni hace zoom con la rueda; el encuadre es siempre el
  * mismo. Lo único interactivo es la ficha con el nombre del municipio que sale
@@ -20,8 +19,8 @@ import { empresa } from '../data/site';
  *
  * Los municipios salen de la base de datos real (src/data/clientes-municipio.ts)
  * y las coordenadas de la caché de src/data/coordenadas.json. El número de
- * clientes de cada municipio es información interna: se usa para darle algo de
- * peso visual a los puntos, pero NO se muestra en ningún texto de esta sección.
+ * clientes de cada municipio es información interna y no interviene en nada de
+ * lo que se dibuja: ni en el tamaño de los puntos ni en ningún texto.
  */
 const nombresDepartamentos = departamentos.map((d) => d.nombre);
 const listaDepartamentos =
@@ -194,8 +193,8 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
     height: 0.75rem;
     width: 0.75rem;
     border-radius: 9999px;
-    background: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(13, 44, 132, 0.18);
+    background: var(--color-sede);
+    box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.18);
   }
 
   .punto-sede::after {
@@ -203,7 +202,7 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
     position: absolute;
     inset: -3px;
     border-radius: 9999px;
-    border: 2px solid var(--color-primary);
+    border: 2px solid var(--color-sede);
     animation: pulso-sede 1.8s ease-out infinite;
   }
 
@@ -230,7 +229,7 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
     height: 14px;
     width: 14px;
     border-radius: 9999px;
-    background: var(--color-primary);
+    background: var(--color-sede);
     border: 3px solid #fff;
     box-shadow: 0 2px 6px rgba(3, 8, 25, 0.4);
   }
@@ -240,7 +239,7 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
     position: absolute;
     inset: -6px;
     border-radius: 9999px;
-    border: 2px solid var(--color-primary);
+    border: 2px solid var(--color-sede);
     animation: pulso-sede 1.8s ease-out infinite;
   }
 
@@ -329,6 +328,29 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
     color: var(--color-primary);
   }
 
+  /*
+    Distintivo "SEDE" del globo de Tunja.
+
+    Hace falta porque cerca de Tunja hay DOS marcadores y son cosas distintas:
+    el punto de Tunja como municipio, que es uno de los 87 y se dibuja en la
+    cabecera municipal, y el punto pulsante de la sede, que está en la dirección
+    real de la bodega (Cra 2 Este #58-79). Sin la etiqueta, los dos globos se
+    leen igual.
+  */
+  :global(#mapa-red .leaflet-popup-content .etiqueta-sede) {
+    display: inline-block;
+    margin-right: 6px;
+    border-radius: 4px;
+    background: var(--color-sede);
+    padding: 1px 5px;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #fff;
+    vertical-align: 1px;
+  }
+
   /* Departamento: debajo del municipio, más pequeño y en gris. */
   :global(#mapa-red .leaflet-popup-content .depto),
   :global(#mapa-red .leaflet-tooltip .depto) {
@@ -413,13 +435,12 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
     const puntos = new Map<string, { marcador: L.CircleMarker; municipio: Municipio }>();
 
     /**
-     * Encuadre único sobre toda la red, siempre el mismo. Va antes de dibujar
-     * porque el tamaño de los puntos se calcula a partir de la escala que
-     * resulte de aquí. Los filtros solo prenden y apagan puntos; el mapa nunca
-     * se mueve, así la sección no salta al filtrar.
+     * Encuadre único sobre toda la red, siempre el mismo. Los filtros solo
+     * prenden y apagan puntos; el mapa nunca se mueve, así la sección no salta
+     * al filtrar. Los globos se abren con `autoPan: false` por lo mismo.
      *
      * Sin animación a propósito: animado, el zoom nuevo tarda un momento en
-     * quedar aplicado y la escala se leería con el zoom viejo.
+     * quedar aplicado y se leería con el zoom viejo.
      *
      * Los márgenes son holgados y desiguales a propósito: apartan la red del
      * filete del contenedor para que ni un punto ni la ficha que abre al pasarle
@@ -453,80 +474,61 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
 
     encuadrar();
 
-    const clientesTope = Math.max(...municipios.map((m) => m.clientes));
-
     /**
-     * Tamaño del punto, en píxeles de radio.
+     * Tamaño del punto: el mismo para los 87.
      *
-     * Los 87 puntos se aprietan alrededor de Tunja: hay cabeceras a 2,7 km una
-     * de otra (Cucaita y Sora, Ciénega y Viracachá…). Por eso el radio mínimo
-     * no es un número fijo sino algo más de un kilómetro medido sobre el mapa:
-     * así, encoja o crezca la tarjeta, entre dos vecinos siempre queda aire y
-     * se leen como dos puntos y no como una mancha.
-     *
-     * Sobre ese mínimo, el punto crece con la raíz del número de clientes hasta
-     * 2,8 veces el mínimo, para que Tunja, Chiquinquirá o Barbosa pesen más que
-     * un municipio pequeño. El número en sí es información interna y no se
-     * muestra en ninguna parte: el visitante solo ve el peso relativo.
+     * Antes el radio crecía con el número de clientes del municipio. Se quitó a
+     * propósito por dos razones. La primera es de lectura: el mapa responde
+     * "¿llegamos aquí?", que es una pregunta de sí o no, y un punto más gordo
+     * invitaba a leer una jerarquía que la sección no explica en ninguna parte.
+     * La segunda es que ese tamaño dejaba ver, a ojo, cómo se reparte la
+     * clientela entre municipios, que es información interna.
      */
-    function escalaPunto() {
-      const centro = mapa.getCenter();
-      const vecino = L.latLng(centro.lat, centro.lng + 0.1);
-      const px = mapa.latLngToLayerPoint(vecino).x - mapa.latLngToLayerPoint(centro).x;
-      const km = mapa.distance(centro, vecino) / 1000;
-      const minimo = Math.max(2, (px / km) * 1.05);
-      return { minimo, maximo: minimo * 2.8 };
-    }
-
-    let escala = escalaPunto();
-
-    const radio = (clientes: number) =>
-      escala.minimo + (escala.maximo - escala.minimo) * Math.sqrt(clientes / clientesTope);
+    const RADIO = 7;
+    const RADIO_HOVER = 10;
 
     for (const municipio of municipios) {
       const capa = capas.get(municipio.departamento) ?? L.layerGroup();
       capas.set(municipio.departamento, capa);
 
       const marcador = L.circleMarker([municipio.lat, municipio.lng], {
-        radius: radio(municipio.clientes),
-        // Aro blanco: sobre el mapa a color es lo que separa un punto del fondo
-        // y de su vecino. La sombra la pone el CSS del contenedor.
+        radius: RADIO,
+        // Aro blanco: es lo que separa un punto del fondo y de su vecino en el
+        // racimo de Tunja. La sombra la pone el CSS del contenedor.
         color: '#ffffff',
         weight: 2,
         fillColor: colorDepartamento(municipio.departamento),
-        fillOpacity: 1,
+        fillOpacity: 0.9,
       });
 
-      marcador
-        .bindTooltip(ficha(municipio), { direction: 'top', offset: [0, -10] })
-        .bindPopup(ficha(municipio));
+      /* `autoPan: false` no es un detalle: por omisión Leaflet desplaza el mapa
+         para que quepa el globo que acaba de abrirse, y como aquí el globo se
+         abre al pasar el mouse, el encuadre se movería solo al recorrer la red.
+         El encuadre de esta sección no se mueve nunca (ver `encuadrar()`). */
+      marcador.bindPopup(ficha(municipio), { autoPan: false });
 
-      // Al pasar el mouse el punto se engorda y se pone encima de sus vecinos.
+      // Al pasar el mouse el punto crece, se engorda el aro y se pone encima de
+      // sus vecinos, y se abre su ficha.
       marcador.on('mouseover', () => {
         marcador.setStyle({ weight: 4 });
+        marcador.setRadius(RADIO_HOVER);
         marcador.bringToFront();
+        marcador.openPopup();
       });
-      marcador.on('mouseout', () => marcador.setStyle({ weight: 2 }));
+      marcador.on('mouseout', () => {
+        marcador.setStyle({ weight: 2 });
+        marcador.setRadius(RADIO);
+      });
 
       marcador.addTo(capa);
       puntos.set(normalizar(municipio.nombre), { marcador, municipio });
     }
 
-    // Los puntos pequeños van encima de los grandes: si no, Tunja o
-    // Chiquinquirá tapan a sus vecinos y no hay forma de señalarlos.
-    [...puntos.values()]
-      .sort((a, b) => b.municipio.clientes - a.municipio.clientes)
-      .forEach(({ marcador }) => marcador.bringToFront());
-
     capas.forEach((capa) => capa.addTo(mapa));
 
-    // Al cambiar el ancho de la ventana cambia la escala del encuadre, así que
-    // los radios se vuelven a calcular para no perder la separación en Tunja.
-    mapa.on('resize', () => {
-      encuadrar();
-      escala = escalaPunto();
-      puntos.forEach(({ marcador, municipio }) => marcador.setRadius(radio(municipio.clientes)));
-    });
+    // Al cambiar el ancho de la ventana cambia la escala del encuadre. Los
+    // radios ya no dependen de ella, así que basta con volver a encuadrar.
+    mapa.on('resize', encuadrar);
 
     // Sede principal: punto pulsante, siempre encima del resto.
     L.marker([sede.lat, sede.lng], {
@@ -537,10 +539,13 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
         iconAnchor: [7, 7],
       }),
       title: 'Tunja — sede principal',
-      zIndexOffset: 2000,
+      zIndexOffset: 1000,
     })
       .addTo(mapa)
-      .bindPopup('<strong>Tunja</strong><span class="depto">Boyacá · sede principal</span>');
+      .bindPopup(
+        '<strong>Tunja</strong><span class="depto"><span class="etiqueta-sede">SEDE</span>Boyacá · sede principal</span>',
+        { autoPan: false },
+      );
 
     // ---- Filtros ------------------------------------------------------------
     const botones = document.querySelectorAll<HTMLButtonElement>('[data-filtro]');
@@ -566,7 +571,7 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
      * destacado de arriba (BuscadorMunicipio.astro): allá se hace la búsqueda
      * y aquí solo se responde, sin repetir la lógica de encontrar el municipio.
      */
-    function resaltar({ marcador, municipio }: { marcador: L.CircleMarker; municipio: Municipio }) {
+    function resaltar({ marcador }: { marcador: L.CircleMarker }) {
       // Si estaba filtrado por otro departamento, se vuelven a mostrar todos.
       botones.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filtro === 'todos')));
       capas.forEach((capa) => capa.addTo(mapa));
@@ -575,11 +580,10 @@ const direccionSede = `${empresa.direccion}, ${empresa.ciudad}`;
       marcador.openPopup();
 
       // Realce temporal para que el punto buscado se distinga de los demás.
-      marcador.setStyle({ weight: 4, radius: radio(municipio.clientes) + 4 });
-      window.setTimeout(
-        () => marcador.setStyle({ weight: 2, radius: radio(municipio.clientes) }),
-        2500,
-      );
+      // Va por encima del radio de hover para que se note aunque el mouse esté
+      // sobre otro punto.
+      marcador.setStyle({ weight: 4, radius: RADIO_HOVER + 3 });
+      window.setTimeout(() => marcador.setStyle({ weight: 2, radius: RADIO }), 2500);
     }
 
     /* El buscador destacado de la cabecera avisa por `document` cuál municipio
