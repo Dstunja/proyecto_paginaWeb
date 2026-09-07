@@ -18,6 +18,7 @@
  */
 import { empresa } from '../data/site';
 import Icono from './Icono.astro';
+import LoaderDST from './LoaderDST.astro';
 
 interface Props {
   boton?: string;
@@ -44,6 +45,16 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
 
     <div class="flex flex-wrap items-center gap-4">
       <button type="submit" class="btn btn-primary" data-enviar>{boton}</button>
+      {/*
+        Espera del envio. Solo aparece si la radicacion tarda mas de 150 ms:
+        por debajo de eso el logotipo seria un destello que estorba mas de lo
+        que informa. El boton, mientras tanto, va contando por su cuenta en
+        que paso esta ("Subiendo archivos...", "Radicando...").
+      */}
+      <div data-espera class="hidden" role="status" aria-live="polite">
+        <LoaderDST tamano={28} anuncia={false} />
+        <span class="sr-only">Enviando...</span>
+      </div>
       <a class="btn btn-secondary" href={empresa.whatsapp} target="_blank" rel="noopener">
         Prefiero WhatsApp
       </a>
@@ -130,6 +141,7 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
     const aviso = raiz.querySelector<HTMLElement>('[data-aviso]');
     const confirmacion = raiz.querySelector<HTMLElement>('[data-confirmacion]');
     const botonEnviar = raiz.querySelector<HTMLButtonElement>('[data-enviar]');
+    const cajaEspera = raiz.querySelector<HTMLElement>('[data-espera]');
     if (!form || !cajaTurnstile || !progreso || !cajaErrores || !listaErrores) return;
     if (!aviso || !confirmacion || !botonEnviar) return;
 
@@ -342,6 +354,30 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
       confirmacion!.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
+    // --- Espera del envio ---------------------------------------------------
+
+    let temporizadorEspera: number | undefined;
+
+    /** Enciende el logotipo, pero solo si el envio se hace esperar. */
+    function mostrarEspera() {
+      clearTimeout(temporizadorEspera);
+      temporizadorEspera = window.setTimeout(() => {
+        cajaEspera?.classList.remove('hidden');
+      }, 150);
+    }
+
+    /**
+     * Lo apaga. Se llama desde el `finally` del envio, que corre tanto si la
+     * radicacion sale bien como si falla o se cae la red: asi el logotipo no
+     * se queda dando vueltas para siempre. El `clearTimeout` es lo que evita
+     * que aparezca DESPUES de haber terminado, cuando la respuesta llego
+     * antes de los 150 ms.
+     */
+    function ocultarEspera() {
+      clearTimeout(temporizadorEspera);
+      cajaEspera?.classList.add('hidden');
+    }
+
     form.addEventListener('submit', async (evento) => {
       evento.preventDefault();
       if (!form.reportValidity()) return;
@@ -349,6 +385,7 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
       mostrarErrores([]);
       botonEnviar.disabled = true;
       const textoBoton = botonEnviar.textContent;
+      mostrarEspera();
 
       try {
         if (claveTurnstile && !turnstileListo) {
@@ -414,6 +451,7 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
           caerAlCorreo('No pudimos conectar con el servidor.');
         }
       } finally {
+        ocultarEspera();
         botonEnviar.disabled = false;
         botonEnviar.textContent = textoBoton;
       }

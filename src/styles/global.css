@@ -501,6 +501,43 @@
     animation: dst-loader-sale 0.25s ease-out forwards;
   }
 
+  /* --- Cortina de carga entre paginas (BaseLayout.astro) ----------------
+     La hermana a pantalla completa de `.dst-capa-carga`: tapa el hueco en
+     blanco que queda al pasar de una pagina a la siguiente. Se pinta ya
+     visible con el HTML y el script del <head> la retira tras `window.load`.
+
+     Sin JavaScript no aparece NUNCA. Solo se muestra si ese script pone
+     `js-cortina` en el <html>, igual que `js-revelado` con el revelado al
+     hacer scroll. Si se pintara sin esa condicion, un navegador sin JS se
+     quedaria con el sitio tapado para siempre.
+
+     Reutiliza `data-fuera` y `dst-loader-sale` para que las dos capas de
+     espera del sitio se retiren exactamente igual. */
+  #dst-cortina {
+    display: none;
+  }
+
+  html.js-cortina #dst-cortina {
+    position: fixed;
+    inset: 0;
+    /* Por encima de todo, incluida la barra fija y el salto al contenido. */
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    background: var(--color-canvas);
+  }
+
+  #dst-cortina[data-fuera='true'] {
+    pointer-events: none;
+    animation: dst-loader-sale 0.25s ease-out forwards;
+  }
+
+  /* Ya retirada. El `!important` hace falta porque la regla de arriba, con
+     el `html.js-cortina` delante, gana por especificidad a `[hidden]`. */
+  #dst-cortina[hidden] {
+    display: none !important;
+  }
+
   .kicker {
     @apply mb-3 block text-[12.5px] font-semibold tracking-[0.14em] text-accent-text uppercase;
     font-family: var(--font-display);
@@ -1046,6 +1083,15 @@
 
 ::view-transition-new(root) {
   animation: entrar-pagina 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Mientras la cortina esta puesta no hay nada que fundir: las dos
+   instantaneas son la misma pantalla, y el fundido solo aniadiria un salto
+   del logotipo entre una pagina y otra. El script de BaseLayout.astro pone y
+   quita esta clase al mismo tiempo que la cortina. */
+html.dst-con-cortina::view-transition-old(root),
+html.dst-con-cortina::view-transition-new(root) {
+  animation: none;
 }
 
 @keyframes salir-pagina {
