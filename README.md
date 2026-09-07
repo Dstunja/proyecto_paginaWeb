@@ -43,6 +43,9 @@ src/
   lib/rutas.ts             ruta(): antepone el `base` a los enlaces internos y
                            a los archivos de public/. OBLIGATORIO usarlo.
   lib/mapa-base.ts         Teselas de los mapas (OpenStreetMap / CARTO).
+  lib/adjuntos.ts          Reglas de los archivos de soporte de la PQRS:
+                           formatos, peso y saneado del nombre. Sirve igual en
+                           el navegador y en un servidor (ver docs/PQRS-ADJUNTOS.md).
   lib/imagenes.ts          Imágenes con reemplazo automático: si el archivo aún
                            no existe se muestra un marcador de posición (o el
                            nombre en texto, para los logos de marca).
@@ -61,6 +64,8 @@ src/
                            municipio, filtros por departamento y buscador.
     BotonPideky.astro      Botón de Pideky.
     FormularioMailto.astro Formularios de contacto, empleos y PQRS.
+    CampoAdjuntos.astro    Archivos de soporte de la PQRS. Solo aparece
+                           cuando el tipo es Queja o Reclamo.
     PageHero.astro         Encabezado de las páginas internas.
   pages/                   Una página por archivo: index, nosotros, catalogo,
                            innovacion, empleos, contactanos, pqrs y 404.

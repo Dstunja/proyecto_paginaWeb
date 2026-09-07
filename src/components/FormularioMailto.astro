@@ -45,6 +45,8 @@ const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
 </form>
 
 <script>
+  import { nombreParaMostrar } from '../lib/adjuntos';
+
   const ETIQUETAS: Record<string, string> = {};
 
   document.querySelectorAll<HTMLFormElement>('form[data-mailto]').forEach((form) => {
@@ -59,11 +61,26 @@ const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
 
       const datos = new FormData(form);
       const lineas: string[] = [];
+      const adjuntos: string[] = [];
 
       for (const [nombre, valor] of datos.entries()) {
+        // Un mailto: no puede llevar archivos. Lo mas que se puede hacer es
+        // nombrarlos en el cuerpo para que la persona los arrastre al correo
+        // y para que quien reciba la PQRS sepa que evidencia deberia venir.
+        if (valor instanceof File) {
+          if (valor.size > 0) adjuntos.push(nombreParaMostrar(valor.name));
+          continue;
+        }
         if (typeof valor !== 'string' || valor.trim() === '') continue;
         const etiqueta = ETIQUETAS[nombre] ?? nombre;
         lineas.push(`${etiqueta}: ${valor.trim()}`);
+      }
+
+      if (adjuntos.length > 0) {
+        lineas.push('');
+        lineas.push(`Archivos de soporte anunciados (${adjuntos.length}):`);
+        adjuntos.forEach((nombre) => lineas.push(`  - ${nombre}`));
+        lineas.push('IMPORTANTE: adjunta estos archivos al correo antes de enviarlo.');
       }
 
       const destinatario = form.dataset.destinatario ?? '';
@@ -73,7 +90,9 @@ const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
       const aviso = form.querySelector<HTMLElement>('[data-aviso]');
       if (aviso) {
         aviso.textContent =
-          'Abrimos tu gestor de correo con la solicitud lista para enviar. Si no se abrió, escríbenos por WhatsApp.';
+          adjuntos.length > 0
+            ? `Abrimos tu gestor de correo con la solicitud lista. Antes de enviarla, adjunta ${adjuntos.length === 1 ? 'el archivo' : `los ${adjuntos.length} archivos`} que seleccionaste.`
+            : 'Abrimos tu gestor de correo con la solicitud lista para enviar. Si no se abrió, escríbenos por WhatsApp.';
         aviso.classList.remove('hidden');
       }
 

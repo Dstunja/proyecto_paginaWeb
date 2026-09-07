@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import FormularioMailto from '../components/FormularioMailto.astro';
+import CampoAdjuntos from '../components/CampoAdjuntos.astro';
 import Icono from '../components/Icono.astro';
 import { empresa } from '../data/site';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
@@ -127,6 +128,10 @@ const tipos = [
               placeholder="Cuéntanos qué pasó: fecha, lugar, producto o factura relacionada."></textarea>
           </div>
 
+          <!-- Solo aparece para Queja y Reclamo; el propio componente se
+               engancha al <select> de arriba por su id. -->
+          <CampoAdjuntos controlador="tipo-pqrs" />
+
           <label class="flex items-start gap-3 text-[14.5px] text-muted">
             <input
               type="checkbox"
@@ -144,9 +149,11 @@ const tipos = [
 
         <p class="mt-6 mb-0 border-t border-line pt-5 text-[13px] text-muted">
           Nota técnica: este formulario abre tu gestor de correo con la solicitud lista para enviar.
-          Para dejar constancia automática de la radicación conviene conectar un endpoint real
-          (Cloudflare Function, Formspree o similar); ver el comentario en{' '}
-          <code>src/components/FormularioMailto.astro</code>.
+          Un correo así no puede llevar adjuntos por sí solo, de modo que los archivos de soporte se
+          listan por su nombre y hay que arrastrarlos al mensaje antes de mandarlo. Para dejar
+          constancia automática de la radicación y guardar los soportes hace falta un endpoint real:
+          el contrato, la migración de <code>pqrs_adjuntos</code> y las reglas de seguridad están en{' '}
+          <code>docs/PQRS-ADJUNTOS.md</code>.
         </p>
       </div>
     </div>

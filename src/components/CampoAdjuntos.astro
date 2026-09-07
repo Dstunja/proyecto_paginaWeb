@@ -1,0 +1,264 @@
+---
+/**
+ * Archivos de soporte de una PQRS.
+ *
+ * El campo SOLO existe para los tipos que lo piden (hoy Queja y Reclamo, ver
+ * `TIPOS_CON_SOPORTE` en src/lib/adjuntos.ts). Se controla desde el `<select>`
+ * cuyo id se pasa en `controlador`: al cambiar a un tipo que no lleva soporte
+ * el bloque se oculta, se vacía la selección y el `<input>` se deshabilita, que
+ * es lo que hace que `FormData` lo ignore por completo.
+ *
+ * Se renderiza oculto y con el input deshabilitado a propósito: si el JavaScript
+ * no llega a ejecutarse, el campo no aparece a medias ni viaja vacío.
+ *
+ * Las reglas (formatos, peso, doble extensión, saneado del nombre) no viven
+ * aquí sino en src/lib/adjuntos.ts, para poder reutilizarlas tal cual el día que
+ * exista un endpoint de verdad. Ver docs/PQRS-ADJUNTOS.md.
+ */
+import Icono from './Icono.astro';
+import {
+  ACEPTA,
+  FORMATOS_LEGIBLES,
+  MAX_ARCHIVOS_POR_DEFECTO,
+  MAX_MB_POR_DEFECTO,
+} from '../lib/adjuntos';
+
+interface Props {
+  /** id del `<select>` de tipo de solicitud que decide si el campo se ve. */
+  controlador: string;
+  id?: string;
+  name?: string;
+  maxArchivos?: number;
+  maxMb?: number;
+}
+
+const {
+  controlador,
+  id = 'soporte-pqrs',
+  name = 'soporte-pqrs',
+  maxArchivos = MAX_ARCHIVOS_POR_DEFECTO,
+  // Configurable sin tocar el código: se lee en tiempo de compilación, igual
+  // que PUBLIC_GA_ID. Si no está definida se usa el valor por defecto.
+  maxMb = Number(import.meta.env.PUBLIC_PQRS_ADJUNTO_MAX_MB) || MAX_MB_POR_DEFECTO,
+} = Astro.props;
+
+const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
+---
+
+<div
+  class="hidden"
+  data-adjuntos
+  data-controlador={controlador}
+  data-max-archivos={String(maxArchivos)}
+  data-max-mb={String(maxMb)}
+>
+  <label class="field-label" for={id}>
+    Archivos de soporte{' '}
+    <span class="font-normal text-muted">(opcional)</span>
+  </label>
+
+  <p class="mb-3 text-[14px] text-muted">
+    Si tienes factura, foto del producto o cualquier evidencia de lo ocurrido, adjúntala:
+    nos ayuda a resolver más rápido. Puedes subir hasta {maxArchivos} archivos.
+  </p>
+
+  <input
+    class="field cursor-pointer py-2.5 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0
+           file:bg-primary-soft file:px-3 file:py-1.5 file:font-display file:text-[13.5px]
+           file:font-semibold file:text-primary hover:file:bg-secondary-soft"
+    id={id}
+    name={name}
+    type="file"
+    multiple
+    accept={ACEPTA}
+    disabled
+    aria-describedby={`${id}-ayuda`}
+    data-entrada
+  />
+
+  <p class="mt-2 mb-0 text-[13px] text-muted" id={`${id}-ayuda`} data-ayuda>{ayuda}</p>
+
+  <p
+    class="mt-2 mb-0 hidden text-[13.5px] font-semibold text-accent-text"
+    role="alert"
+    data-error
+  >
+  </p>
+
+  <ul class="mt-3 hidden list-none space-y-2 p-0" data-lista></ul>
+
+  <p class="mt-3 mb-0 hidden text-[13px] text-muted" data-recordatorio>
+    <Icono nombre="paperclip" class="mr-1 inline-block h-4 w-4 align-[-3px]" interactivo={false} />
+    Al enviar se abrirá tu gestor de correo con la solicitud lista. Acuérdate de{' '}
+    <strong class="font-semibold text-ink">adjuntar ahí estos archivos</strong>: el correo no puede
+    llevarlos por sí solo.
+  </p>
+</div>
+
+<script>
+  import {
+    MAX_ARCHIVOS_POR_DEFECTO,
+    MAX_MB_POR_DEFECTO,
+    formatearTamano,
+    nombreParaMostrar,
+    requiereSoporte,
+    validarFile,
+  } from '../lib/adjuntos';
+
+  document.querySelectorAll<HTMLElement>('[data-adjuntos]').forEach((bloque) => {
+    const entrada = bloque.querySelector<HTMLInputElement>('[data-entrada]');
+    const lista = bloque.querySelector<HTMLUListElement>('[data-lista]');
+    const error = bloque.querySelector<HTMLElement>('[data-error]');
+    const recordatorio = bloque.querySelector<HTMLElement>('[data-recordatorio]');
+    const selector = document.getElementById(
+      bloque.dataset.controlador ?? '',
+    ) as HTMLSelectElement | null;
+    if (!entrada || !lista || !error || !recordatorio || !selector) return;
+
+    const maxArchivos = Number(bloque.dataset.maxArchivos) || MAX_ARCHIVOS_POR_DEFECTO;
+    const maxMb = Number(bloque.dataset.maxMb) || MAX_MB_POR_DEFECTO;
+
+    /** Fuente de la verdad: el `<input>` se reconstruye a partir de esta lista. */
+    let elegidos: File[] = [];
+
+    // --- Pintado ------------------------------------------------------------
+
+    function avisar(mensajes: string[]) {
+      if (!error) return;
+      error.textContent = mensajes.join(' ');
+      error.classList.toggle('hidden', mensajes.length === 0);
+      entrada?.setAttribute('aria-invalid', mensajes.length > 0 ? 'true' : 'false');
+    }
+
+    function pintar() {
+      if (!lista || !recordatorio) return;
+      lista.textContent = '';
+
+      elegidos.forEach((archivo) => {
+        const fila = document.createElement('li');
+        fila.className =
+          'flex items-center gap-3 rounded-xl border border-line bg-fondo px-3 py-2';
+
+        const datos = document.createElement('span');
+        datos.className = 'min-w-0 flex-1';
+
+        const nombre = document.createElement('span');
+        nombre.className = 'block truncate text-[14px] font-semibold text-ink';
+        // textContent, nunca innerHTML: el nombre lo escribe quien sube el
+        // archivo y podría traer etiquetas.
+        nombre.textContent = nombreParaMostrar(archivo.name);
+        nombre.title = nombre.textContent;
+
+        const peso = document.createElement('span');
+        peso.className = 'block text-[12.5px] text-muted';
+        peso.textContent = formatearTamano(archivo.size);
+
+        datos.append(nombre, peso);
+
+        const quitar = document.createElement('button');
+        quitar.type = 'button';
+        quitar.className =
+          'shrink-0 rounded-lg border border-line bg-surface px-2.5 py-1 text-[13px] ' +
+          'font-semibold text-muted transition-colors hover:border-secondary hover:text-primary';
+        quitar.textContent = 'Quitar';
+        quitar.setAttribute('aria-label', `Quitar ${nombre.textContent}`);
+        quitar.dataset.quitar = '';
+        quitar.addEventListener('click', () => {
+          elegidos = elegidos.filter((f) => f !== archivo);
+          sincronizarEntrada();
+          pintar();
+          avisar([]);
+          entrada?.focus();
+        });
+
+        fila.append(datos, quitar);
+        lista.append(fila);
+      });
+
+      lista.classList.toggle('hidden', elegidos.length === 0);
+      recordatorio.classList.toggle('hidden', elegidos.length === 0);
+    }
+
+    /**
+     * Vuelca `elegidos` en el `<input>`.
+     *
+     * `DataTransfer` es la única forma de escribir un `FileList`, y es lo que
+     * permite quitar un archivo de la selección sin perder los demás.
+     */
+    function sincronizarEntrada() {
+      if (!entrada) return;
+      const bolsa = new DataTransfer();
+      elegidos.forEach((f) => bolsa.items.add(f));
+      entrada.files = bolsa.files;
+    }
+
+    function limpiar() {
+      elegidos = [];
+      sincronizarEntrada();
+      pintar();
+      avisar([]);
+    }
+
+    // --- Selección ----------------------------------------------------------
+
+    entrada.addEventListener('change', async () => {
+      const nuevos = Array.from(entrada.files ?? []);
+      if (nuevos.length === 0) {
+        // Diálogo cancelado: se deja la selección anterior como estaba.
+        sincronizarEntrada();
+        return;
+      }
+
+      // Mientras se leen las firmas de los archivos el envío queda bloqueado:
+      // `reportValidity()` de FormularioMailto respeta la validez personalizada.
+      entrada.setCustomValidity('Estamos revisando los archivos, espera un momento.');
+
+      const problemas: string[] = [];
+      try {
+        for (const archivo of nuevos) {
+          if (elegidos.length >= maxArchivos) {
+            problemas.push(`Solo puedes adjuntar ${maxArchivos} archivos.`);
+            break;
+          }
+          const repetido = elegidos.some(
+            (f) => f.name === archivo.name && f.size === archivo.size,
+          );
+          if (repetido) {
+            problemas.push(`«${nombreParaMostrar(archivo.name)}»: ya lo habías agregado.`);
+            continue;
+          }
+
+          const veredicto = await validarFile(archivo, { maxMb });
+          if (!veredicto.ok) {
+            problemas.push(veredicto.error);
+            continue;
+          }
+          elegidos.push(archivo);
+        }
+      } finally {
+        entrada.setCustomValidity('');
+      }
+
+      // Los rechazados no llegan a `elegidos`, así que al reconstruir el
+      // FileList desaparecen del input: nunca se envían.
+      sincronizarEntrada();
+      pintar();
+      avisar(problemas);
+    });
+
+    // --- Visibilidad según el tipo de solicitud -----------------------------
+
+    function sincronizarVisibilidad() {
+      if (!entrada) return;
+      const visible = requiereSoporte(selector?.value);
+      bloque.classList.toggle('hidden', !visible);
+      // Deshabilitado = fuera del FormData. Es lo que garantiza que para
+      // Petición, Sugerencia o Felicitación el adjunto ni siquiera se procese.
+      entrada.disabled = !visible;
+      if (!visible) limpiar();
+    }
+
+    selector.addEventListener('change', sincronizarVisibilidad);
+    sincronizarVisibilidad();
+  });
+</script>

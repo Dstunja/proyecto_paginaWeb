@@ -17,6 +17,7 @@
     "iconos": "npm run favicon && npm run og",
     "verificar:analitica": "node scripts/verificar-analitica.mjs",
     "verificar:pedido": "node scripts/verificar-pedido.mjs",
+    "verificar:pqrs": "node scripts/verificar-pqrs.mjs",
     "verificar:cobertura": "node scripts/verificar-cobertura.mjs",
     "verificar:navegacion": "node scripts/verificar-navegacion.mjs"
   },
