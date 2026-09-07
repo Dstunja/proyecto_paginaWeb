@@ -45,6 +45,16 @@ import { chromium } from 'playwright';
 const RAIZ = join(process.cwd(), 'dist', 'client');
 const PUERTO = 4323;
 
+/**
+ * Prefijo con el que compila `npm run build` fuera de Vercel (el espejo de
+ * GitHub Pages). Las paginas piden sus assets como
+ * "/proyecto_paginaWeb/_astro/...", asi que el servidor de aqui tiene que
+ * quitarselo; si no, el CSS y el JS dan 404, la pagina se pinta sin estilos y
+ * TODAS las comprobaciones del DOM fallan sin que el formulario tenga nada
+ * malo. Es lo mismo que hace scripts/verificar-navegacion.mjs.
+ */
+const BASE = '/proyecto_paginaWeb';
+
 const TIPOS = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -63,6 +73,7 @@ function servir() {
   return new Promise((listo) => {
     const servidor = createServer(async (peticion, respuesta) => {
       let ruta = decodeURIComponent(new URL(peticion.url, 'http://x').pathname);
+      if (ruta.startsWith(BASE)) ruta = ruta.slice(BASE.length);
       if (ruta.endsWith('/')) ruta += 'index.html';
       if (ruta === '') ruta = '/index.html';
 
@@ -94,7 +105,7 @@ const comprobar = (descripcion, ok, detalle = '') => {
   console.log(`${ok ? '  OK  ' : ' FALLA'}  ${descripcion}${detalle ? ` — ${detalle}` : ''}`);
 };
 
-const url = (camino) => `http://localhost:${PUERTO}${camino}`;
+const url = (camino) => `http://localhost:${PUERTO}${BASE}${camino}`;
 
 // --- Archivos de prueba -----------------------------------------------------
 

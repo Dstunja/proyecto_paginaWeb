@@ -23,6 +23,7 @@ npm run dev          # servidor local en http://localhost:4321
 npm run build        # genera el sitio estático en dist/
 npm run preview      # ver dist/ como quedará en producción
 npm run check        # revisa tipos y errores de Astro
+npm run check:env    # comprueba las variables de entorno antes de arrancar
 npm run og           # regenera la tarjeta de link (public/og.png)
 npm run favicon      # regenera favicon.ico y apple-touch-icon desde el isotipo
 npm run geocodificar # busca las coordenadas que falten (municipios y sede)
@@ -254,16 +255,78 @@ La geocodificación de municipios y de la sede también es libre (Nominatim) y s
 corre una sola vez con `npm run geocodificar`; el resultado queda cacheado en
 `src/data/coordenadas.json`.
 
+## Variables de entorno
+
+La radicación de PQRS se apoya en tres servicios (Vercel Blob, Resend y
+Cloudflare Turnstile) y cada uno tiene su variable. **Cuando falta una, el
+síntoma es siempre un mensaje opaco del SDK de turno**, no un aviso claro: por
+eso hay un comprobador.
+
+```bash
+npm run check:env
+```
+
+Dice cuáles faltan, cuáles tienen mala pinta y de dónde sale cada una. No
+imprime ningún valor. Sale con código 1 si falta alguna imprescindible, así que
+sirve igual en un hook o en CI.
+
+### Traerlas de Vercel
+
+Es la vía rápida, y la única que garantiza que en local se usa lo mismo que en
+producción:
+
+```bash
+npx vercel link              # una sola vez, enlaza la carpeta con el proyecto
+npx vercel env pull .env.local
+```
+
+`.env.local` está en `.gitignore`. Astro lo carga solo al arrancar.
+
+### De dónde sale cada una
+
+| Variable | Dónde se consigue |
+| --- | --- |
+| `BLOB_READ_WRITE_TOKEN` | **No se copia a mano.** Vercel → proyecto → *Storage* → *Connect Store* → *Blob*. Al conectar el store, Vercel define la variable sola. |
+| `TURNSTILE_SECRET` | Cloudflare → *Turnstile* → tu widget → *Settings* → **Secret Key**. |
+| `PUBLIC_TURNSTILE_SITE_KEY` | El mismo widget → **Site Key**. Lleva `PUBLIC_` porque el navegador la necesita. |
+| `RESEND_API_KEY` | <https://resend.com/api-keys>. El dominio del remitente debe estar verificado en Resend. |
+| `PQRS_DESTINO` | Lo decide la empresa: el correo del área que atiende las PQRS. |
+| `PQRS_IP_SALT`, `CRON_SECRET` | Se generan: `node -e "console.log(crypto.randomUUID())"`. |
+| `UPSTASH_REDIS_REST_URL/TOKEN` | Vercel → *Marketplace* → Upstash (plan gratuito). Opcionales. |
+
+Para desarrollo, Cloudflare publica un par de claves de prueba que **aceptan
+cualquier token**, y por eso no pueden acabar en producción:
+
+```
+PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+```
+
+`npm run check:env` avisa si detecta que están puestas.
+
+### Dos trampas que ya han mordido
+
+- **`BLOB_READ_WRITE_TOKEN` se lee en cada petición, pero hay que redesplegar**
+  después de conectar el store: una función ya desplegada no ve una variable que
+  no existía cuando se creó. Sin ella no se sube ningún adjunto **y tampoco se
+  radica nada**, porque el registro de la solicitud también vive en el Blob.
+- **`PUBLIC_TURNSTILE_SITE_KEY` se lee en tiempo de BUILD** y se compila dentro
+  del JavaScript del navegador. Añadirla en el panel de Vercel no sirve de nada
+  hasta que se vuelve a compilar.
+
+El detalle de cada variable está comentado en `.env.example`, y el flujo
+completo de los adjuntos en `docs/PQRS-ADJUNTOS.md`.
+
 ## Formularios
 
-El sitio es estático y no tiene servidor, así que los formularios de contacto,
-empleos y PQRS **arman un correo** con los datos y lo abren en el gestor de correo
-de quien escribe. Funciona sin depender de ningún servicio externo.
+Los de contacto y empleos **arman un correo** con los datos y lo abren en el
+gestor de quien escribe (`src/components/FormularioMailto.astro`).
 
-Para producción conviene conectar un endpoint real (una Cloudflare Function,
-Formspree, Web3Forms…) y cambiar `action`/`method` del `<form>` en
-`src/components/FormularioMailto.astro`. Para PQRS es especialmente importante:
-la empresa debe poder demostrar la fecha de radicación y la respuesta.
+El de **PQRS sí radica de verdad** contra `src/pages/api/pqrs/`: guarda la
+solicitud y sus soportes, devuelve un número de radicado y manda dos correos.
+Esas funciones **solo existen en Vercel**; en el espejo de GitHub Pages no hay
+backend y el formulario cae al respaldo por correo, avisando de que así no queda
+radicado. Necesita las variables de la sección anterior.
 
 ## Despliegue en Cloudflare
 

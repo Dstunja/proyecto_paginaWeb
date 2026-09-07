@@ -112,7 +112,45 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
 <script>
   import { upload } from '@vercel/blob/client';
   import { extensionDe, nombreParaMostrar, formatearTamano } from '../lib/adjuntos';
+  import { ruta } from '../lib/rutas';
   import { prepararTurnstile, tokenTurnstile } from '../lib/turnstile-cliente';
+
+  /**
+   * La ruta pasa por `ruta()` como todas las del sitio. Escrita a mano
+   * ("/api/pqrs/token") apuntaba a la raíz del dominio, que en el espejo de
+   * GitHub Pages —publicado bajo /proyecto_paginaWeb— es una dirección que no
+   * existe.
+   */
+  const RUTA_TOKEN = ruta('/api/pqrs/token');
+
+  /** Códigos que devuelve /api/pqrs/token. Ver src/lib/pqrs/errores.ts. */
+  type CodigoError =
+    | 'config-incompleta'
+    | 'cuerpo-invalido'
+    | 'sesion-invalida'
+    | 'ruta-ajena'
+    | 'tipo-sin-soporte'
+    | 'archivo-no-permitido'
+    | 'antirrobots'
+    | 'demasiadas-peticiones';
+
+  /**
+   * Fallo al subir un soporte, con el código que dio el servidor.
+   *
+   * El código es lo que permite decidir después: si el servicio no está
+   * configurado no tiene sentido pedirle a la persona que lo intente otra vez,
+   * hay que ofrecerle el respaldo por correo.
+   */
+  class ErrorDeSubida extends Error {
+    constructor(
+      readonly nombreArchivo: string,
+      readonly motivo: string,
+      readonly codigo?: CodigoError,
+    ) {
+      super(`No pudimos subir «${nombreArchivo}»: ${motivo}`);
+      this.name = 'ErrorDeSubida';
+    }
+  }
 
   /** Campo del formulario -> clave del JSON que espera /api/pqrs. */
   const CAMPOS: Record<string, string> = {
@@ -260,6 +298,57 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
       return Array.from(entrada.files ?? []);
     }
 
+    /**
+     * Le vuelve a preguntar al endpoint POR QUÉ falló, para poder decírselo a
+     * la persona en vez de enseñarle el mensaje del SDK.
+     *
+     * Va con el token de Turnstile VACÍO a propósito. Un token del widget es de
+     * un solo uso, así que gastar uno bueno en una consulta de diagnóstico
+     * dejaría sin él al reintento de verdad. Y no hace falta: el endpoint
+     * comprueba configuración, sesión, ruta, tipo de PQRS y extensión ANTES que
+     * Turnstile, así que todos esos motivos se reciben igual. Si lo que
+     * responde es 403, el problema era justamente el antirrobots.
+     *
+     * Devuelve `null` si no consigue una respuesta útil; entonces se muestra el
+     * mensaje que traía el SDK, que es mejor que nada.
+     */
+    async function motivoDelFallo(
+      rutaBlob: string,
+      sessionId: string,
+      tipo: string,
+    ): Promise<{ codigo: CodigoError; mensaje: string } | null> {
+      try {
+        const respuesta = await fetch(RUTA_TOKEN, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            type: 'blob.generate-client-token',
+            payload: {
+              pathname: rutaBlob,
+              clientPayload: JSON.stringify({ sessionId, tipo, turnstileToken: '' }),
+              multipart: false,
+            },
+          }),
+        });
+
+        // Un espejo estático sin funciones devuelve HTML, no JSON.
+        const tipoRespuesta = respuesta.headers.get('content-type') ?? '';
+        if (!tipoRespuesta.includes('application/json')) return null;
+
+        const datos = (await respuesta.json()) as
+          | { ok: false; codigo: CodigoError; mensaje: string }
+          | Record<string, unknown>;
+
+        if (datos && (datos as { ok?: unknown }).ok === false) {
+          const { codigo, mensaje } = datos as { codigo: CodigoError; mensaje: string };
+          if (typeof mensaje === 'string' && mensaje !== '') return { codigo, mensaje };
+        }
+      } catch {
+        // La red se cayó entre medias: nos quedamos con el mensaje del SDK.
+      }
+      return null;
+    }
+
     async function subirArchivos(sessionId: string, tipo: string): Promise<AdjuntoSubido[]> {
       const archivos = archivosElegidos();
       if (archivos.length === 0) return [];
@@ -272,12 +361,12 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
         const barra = filaProgreso(nombre, archivo.size);
         // La ruta la propone el navegador pero el servidor la comprueba contra
         // la sesión: el UUID solo sirve para no chocar entre archivos.
-        const ruta = `pqrs/pendientes/${sessionId}/${crypto.randomUUID()}${extensionDe(archivo.name)}`;
+        const rutaBlob = `pqrs/pendientes/${sessionId}/${crypto.randomUUID()}${extensionDe(archivo.name)}`;
 
         try {
-          const resultado = await upload(ruta, archivo, {
+          const resultado = await upload(rutaBlob, archivo, {
             access: acceso,
-            handleUploadUrl: '/api/pqrs/token',
+            handleUploadUrl: RUTA_TOKEN,
             contentType: archivo.type || undefined,
             clientPayload: JSON.stringify({
               sessionId,
@@ -295,7 +384,17 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
           });
         } catch (fallo) {
           barra.fallar();
-          throw new Error(`No pudimos subir «${nombre}»: ${(fallo as Error).message}`);
+          const mensajeSdk = (fallo as Error).message ?? '';
+
+          // El SDK solo mira si la respuesta fue 2xx: cuando no lo es, tira
+          // "Failed to retrieve the client token" y se traga el motivo que
+          // había dentro. Se lo volvemos a preguntar al servidor.
+          if (/client token/i.test(mensajeSdk)) {
+            const motivo = await motivoDelFallo(rutaBlob, sessionId, tipo);
+            if (motivo) throw new ErrorDeSubida(nombre, motivo.mensaje, motivo.codigo);
+          }
+
+          throw new ErrorDeSubida(nombre, mensajeSdk);
         }
       }
 
@@ -442,14 +541,20 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
         avisar('');
         mostrarErrores(datos.ok ? ['Error desconocido.'] : datos.errores);
       } catch (fallo) {
-        const mensaje = (fallo as Error).message;
-        // Si lo que falló fue la subida, el mensaje ya nombra el archivo.
-        if (mensaje.startsWith('No pudimos subir')) {
+        if (fallo instanceof ErrorDeSubida) {
+          // Si el servicio de adjuntos no está configurado, insistir no sirve
+          // de nada: lo único que puede hacer la persona es escribirnos.
+          if (fallo.codigo === 'config-incompleta') {
+            caerAlCorreo(fallo.motivo);
+            return;
+          }
+          // El resto sí los puede corregir quien radica (cambiar el archivo,
+          // cambiar el tipo, recargar para renovar el antirrobots).
           avisar('');
-          mostrarErrores([mensaje]);
-        } else {
-          caerAlCorreo('No pudimos conectar con el servidor.');
+          mostrarErrores([fallo.message]);
+          return;
         }
+        caerAlCorreo('No pudimos conectar con el servidor.');
       } finally {
         ocultarEspera();
         botonEnviar.disabled = false;
