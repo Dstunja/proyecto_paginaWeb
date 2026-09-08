@@ -3,10 +3,30 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import FormularioPqrs from '../components/FormularioPqrs.astro';
 import CampoAdjuntos from '../components/CampoAdjuntos.astro';
-import Icono from '../components/Icono.astro';
+import SelectorOpciones from '../components/SelectorOpciones.astro';
 import { empresa } from '../data/site';
+import { CATEGORIAS, destinatarioDe } from '../lib/pqrs/categorias';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
+/**
+ * La radicación se elige en dos pasos, y cada uno se aplica al instante: no hay
+ * botón de "continuar" ni recarga.
+ *
+ *   1. CATEGORÍA (administrativa o comercial). Decide el canal entero: a qué
+ *      correo va, si hay adjuntos y si hay número de radicado.
+ *   2. TIPO (Petición, Queja, Reclamo, Sugerencia, Felicitación). Decide el
+ *      trámite y, dentro de la comercial, si admite soportes.
+ *
+ * Los dos son ejes independientes a propósito: existe la queja administrativa y
+ * la queja comercial. El detalle está en src/lib/pqrs/categorias.ts.
+ *
+ * DÓNDE VIVE EL VALOR ELEGIDO. En los dos `<input type="hidden">` que están
+ * DENTRO del formulario, más abajo. Las tarjetas se pintan aquí arriba pero
+ * escriben allí, así que el valor viaja en el `FormData` igual que cuando esto
+ * era un `<select>`. Los `id` y los `name` son los mismos de antes
+ * (`tipo-pqrs`), y por eso ni el mapa `CAMPOS` de FormularioPqrs ni el
+ * `controlador` de CampoAdjuntos se enteraron del cambio.
+ */
 const tipos = [
   {
     icono: 'file-text',
@@ -18,6 +38,41 @@ const tipos = [
   { icono: 'lightbulb', nombre: 'Sugerencia', texto: 'Tienes una idea para que hagamos mejor las cosas.' },
   { icono: 'thumbs-up', nombre: 'Felicitación', texto: 'Algo salió muy bien y quieres contárnoslo.' },
 ];
+
+/**
+ * Correo de la categoría administrativa, resuelto EN TIEMPO DE BUILD.
+ *
+ * Tiene que ser así porque el `mailto:` de esa categoría se arma en el
+ * navegador: el valor necesita estar dentro del JavaScript compilado. Por eso
+ * la variable lleva prefijo PUBLIC_. No es un secreto —es una dirección de
+ * contacto que el sitio ya publica en el pie—, pero sí hay que redesplegar
+ * después de cambiarla en Vercel.
+ */
+const destinoAdministrativa = destinatarioDe('administrativa', import.meta.env, empresa.email);
+
+const opcionesCategoria = CATEGORIAS.map((categoria) => ({
+  valor: categoria.clave,
+  nombre: categoria.nombre,
+  icono: categoria.icono,
+  texto: categoria.texto,
+}));
+
+const opcionesTipo = tipos.map((tipo) => ({
+  valor: tipo.nombre,
+  nombre: tipo.nombre,
+  icono: tipo.icono,
+  texto: tipo.texto,
+}));
+
+/**
+ * La nota y el nombre de cada categoría, para que el script los pinte al
+ * elegir. Viajan en un `data-` del propio bloque en vez de por `define:vars`:
+ * así el script se compila como módulo normal (con TypeScript, y sin quedar en
+ * línea) y el texto sigue saliendo de src/lib/pqrs/categorias.ts.
+ */
+const notas = Object.fromEntries(
+  CATEGORIAS.map((c) => [c.clave, { nombre: c.nombre, nota: c.nota }]),
+);
 ---
 
 <BaseLayout
@@ -30,29 +85,54 @@ const tipos = [
     texto="Queremos escucharte. Cuéntanos qué pasó y lo revisamos con el área responsable."
   />
 
-  <!-- TIPOS -->
+  <!-- PASO 1: CATEGORÍA -->
   <section class="section">
     <div class="wrap">
       <div class="mb-14 max-w-[56ch]">
-        <span class="kicker">Antes de empezar</span>
-        <h2 class="text-[28px] tablet:text-[38px]">¿Qué vas a radicar?</h2>
+        <span class="kicker">Paso 1 de 2</span>
+        <h2 class="text-[28px] tablet:text-[38px]">¿A quién va dirigida?</h2>
         <p class="mt-3 text-base text-muted">
-          Elegir bien el tipo de solicitud nos ayuda a darle el trámite correcto.
+          Cada una sigue un camino distinto: la administrativa llega a nuestros contactos, y la
+          comercial queda radicada con un número de seguimiento.
         </p>
       </div>
 
-      <div class="flex flex-wrap justify-center gap-6">
-        {
-          tipos.map((tipo) => (
-            <div class="group glass-card w-full p-8 mob:w-[calc((100%-1.5rem)/2)] tablet:w-[calc((100%-3rem)/3)]">
-              <span class="icono-chip mb-5 h-12 w-12">
-                <Icono nombre={tipo.icono} class="h-6 w-6" interactivo={false} />
-              </span>
-              <h3 class="mb-2 text-lg">{tipo.nombre}</h3>
-              <p class="m-0 text-[14.5px] text-muted">{tipo.texto}</p>
-            </div>
-          ))
-        }
+      <SelectorOpciones
+        espejo="categoria-pqrs"
+        grupo="categoria-opcion"
+        leyenda="Categoría de la solicitud"
+        opciones={opcionesCategoria}
+        columnas={2}
+        revela="[data-paso-tipo]"
+        desplazaA="[data-paso-tipo]"
+      />
+
+      <!-- PASO 2: TIPO. Aparece al elegir categoría; nunca antes. -->
+      <div class="mt-20 hidden" data-paso-tipo id="paso-tipo">
+        <div class="mb-14 max-w-[56ch]">
+          <span class="kicker">Paso 2 de 2</span>
+          <h2 class="text-[28px] tablet:text-[38px]">¿Qué vas a radicar?</h2>
+          <p class="mt-3 text-base text-muted">
+            Elegir bien el tipo de solicitud nos ayuda a darle el trámite correcto.
+          </p>
+        </div>
+
+        <!--
+          `desplazaA` apunta a la TARJETA del formulario, no a la sección
+          entera: con la sección, el móvil aterrizaba en el encabezado y los
+          párrafos legales, y el primer campo —que acaba de recibir el foco—
+          quedaba fuera de pantalla, con el cursor parpadeando donde no se ve.
+        -->
+        <SelectorOpciones
+          espejo="tipo-pqrs"
+          grupo="tipo-opcion"
+          leyenda="Tipo de solicitud"
+          opciones={opcionesTipo}
+          revela="[data-paso-formulario]"
+          oculta="[data-sin-elegir]"
+          enfoca="#nombre-pqrs"
+          desplazaA="[data-paso-formulario]"
+        />
       </div>
     </div>
   </section>
@@ -65,8 +145,7 @@ const tipos = [
         <h2 class="text-[28px] tablet:text-[38px]">Formulario de PQRS</h2>
         <p class="mt-3 text-muted">
           Diligencia los campos marcados con * y describe lo ocurrido con el mayor detalle posible:
-          fecha, municipio, punto de venta y número de factura si aplica. Al enviar te damos un
-          número de radicado.
+          fecha, municipio, punto de venta y número de factura si aplica.
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
           Al enviar autorizas el tratamiento de tus datos personales para gestionar y responder tu
@@ -82,14 +161,53 @@ const tipos = [
         </p>
       </div>
 
-      <div class="glass-card p-8">
-        <FormularioPqrs boton="Enviar PQRS">
-          <div>
-            <label class="field-label" for="tipo-pqrs">Tipo de solicitud *</label>
-            <select class="field" id="tipo-pqrs" name="tipo-pqrs" required>
-              {tipos.map((t) => <option value={t.nombre}>{t.nombre}</option>)}
-            </select>
-          </div>
+      <!--
+        Marcador de posición. Se queda a la vista mientras no haya tipo elegido,
+        y también si el JavaScript no llega a ejecutarse: sin él, alguien sin JS
+        vería un hueco y ninguna explicación. La columna de la izquierda, con la
+        dirección y el correo, nunca se oculta justamente por eso.
+      -->
+      <div
+        class="glass-card border-dashed p-8 text-center text-muted"
+        data-sin-elegir
+      >
+        <p class="m-0 text-[15px]">
+          Elige arriba la categoría y el tipo de solicitud. El formulario aparece aquí mismo, sin
+          recargar la página.
+        </p>
+        <p class="mt-4 mb-0 text-[14px]">
+          Si prefieres, escríbenos a{' '}
+          <a class="font-semibold text-secondary-dark underline" href={`mailto:${empresa.email}`}>
+            {empresa.email}</a
+          >{' '}o por{' '}
+          <a class="font-semibold text-secondary-dark underline" href={empresa.whatsapp} target="_blank" rel="noopener">
+            WhatsApp</a
+          >.
+        </p>
+      </div>
+
+      <div class="glass-card hidden p-8" data-paso-formulario>
+        <FormularioPqrs boton="Enviar PQRS" destinoAdministrativa={destinoAdministrativa}>
+          <!--
+            El valor de los dos selectores de arriba. Son campos ocultos y no
+            `<select>`, pero conservan id y name, así que `FormData` los recoge
+            igual y CampoAdjuntos sigue colgándose de `tipo-pqrs` por su id.
+          -->
+          <input type="hidden" id="categoria-pqrs" name="categoria-pqrs" value="" />
+          <input type="hidden" id="tipo-pqrs" name="tipo-pqrs" value="" />
+
+          <!-- Recordatorio de lo elegido, con enlace para volver a cambiarlo. -->
+          <p
+            class="m-0 rounded-xl border border-line bg-surface px-4 py-3 text-[14px] text-muted"
+            data-resumen
+            data-notas={JSON.stringify(notas)}
+          >
+            <span class="font-display font-semibold text-ink" data-resumen-titulo></span>
+            <span class="mt-1 block" data-resumen-nota></span>
+            <a class="mt-2 inline-block font-semibold text-secondary-dark underline" href="#paso-tipo">
+              Cambiar
+            </a>
+          </p>
 
           <div>
             <label class="field-label" for="nombre-pqrs">Nombre completo *</label>
@@ -129,9 +247,9 @@ const tipos = [
               placeholder="Cuéntanos qué pasó: fecha, lugar, producto o factura relacionada."></textarea>
           </div>
 
-          <!-- Solo aparece para Queja y Reclamo; el propio componente se
-               engancha al <select> de arriba por su id. -->
-          <CampoAdjuntos controlador="tipo-pqrs" />
+          <!-- Solo en la categoría comercial, y solo para Queja y Reclamo. El
+               componente se engancha a los dos campos ocultos por su id. -->
+          <CampoAdjuntos controlador="tipo-pqrs" categoria="categoria-pqrs" />
 
           <label class="flex items-start gap-3 text-[14.5px] text-muted">
             <input
@@ -149,13 +267,48 @@ const tipos = [
         </FormularioPqrs>
 
         <p class="mt-6 mb-0 border-t border-line pt-5 text-[13px] text-muted">
-          Al enviar, tu solicitud queda radicada con un número y una fecha, y los archivos de soporte
-          se guardan en un almacenamiento privado. Recibirás el radicado por correo. Si en ese
-          momento el servicio no estuviera disponible, el formulario abre tu gestor de correo como
-          respaldo y te avisa de que así la solicitud NO queda radicada.{' '}
+          En la categoría <strong>comercial</strong> tu solicitud queda radicada con un número y una
+          fecha, y los archivos de soporte se guardan en un almacenamiento privado; recibirás el
+          radicado por correo. Si en ese momento el servicio no estuviera disponible, el formulario
+          abre tu gestor de correo como respaldo y te avisa de que así la solicitud NO queda
+          radicada. La categoría <strong>administrativa</strong> se envía siempre desde tu gestor de
+          correo y no genera radicado.{' '}
           Detalles técnicos en <code>docs/PQRS-ADJUNTOS.md</code>.
         </p>
       </div>
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  /**
+   * Recordatorio de lo elegido, encima del formulario.
+   *
+   * Se repinta con cada cambio de categoría o de tipo. Existe porque las
+   * tarjetas quedan arriba y en el móvil dejan de verse en cuanto se baja al
+   * formulario: sin este resumen no habría forma de saber qué se está enviando
+   * ni de volver a cambiarlo sin desplazarse a ciegas.
+   */
+  const resumen = document.querySelector<HTMLElement>('[data-resumen]');
+  const categoria = document.getElementById('categoria-pqrs') as HTMLInputElement | null;
+  const tipo = document.getElementById('tipo-pqrs') as HTMLInputElement | null;
+  const titulo = document.querySelector<HTMLElement>('[data-resumen-titulo]');
+  const nota = document.querySelector<HTMLElement>('[data-resumen-nota]');
+
+  if (resumen && categoria && tipo && titulo && nota) {
+    const notas = JSON.parse(resumen.dataset.notas ?? '{}') as Record<
+      string,
+      { nombre: string; nota: string }
+    >;
+
+    const pintar = () => {
+      const elegida = notas[categoria.value];
+      titulo.textContent = [elegida?.nombre, tipo.value].filter(Boolean).join(' · ');
+      nota.textContent = elegida?.nota ?? '';
+    };
+
+    categoria.addEventListener('change', pintar);
+    tipo.addEventListener('change', pintar);
+    pintar();
+  }
+</script>

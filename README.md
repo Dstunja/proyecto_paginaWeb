@@ -51,6 +51,9 @@ src/
   lib/pqrs/                Servidor de la radicacion: configuracion, radicado,
                            Turnstile, limite de tasa, Vercel Blob, correos con
                            Resend y la orquestacion (radicar.ts, con pruebas).
+  lib/pqrs/categorias.ts   Las dos categorias de PQRS (administrativa y
+                           comercial): a que correo va cada una, si admite
+                           adjuntos y si genera radicado. No lee el entorno.
   pages/api/pqrs/          Funciones de Vercel: token de subida, radicacion y
                            cron de limpieza. Ver docs/PQRS-ADJUNTOS.md.
   lib/imagenes.ts          Imágenes con reemplazo automático: si el archivo aún
@@ -72,11 +75,15 @@ src/
     BotonPideky.astro      Botón de Pideky.
     FormularioMailto.astro Formularios de contacto y empleos (abren el gestor
                            de correo). La PQRS ya no lo usa.
-    CampoAdjuntos.astro    Archivos de soporte de la PQRS. Solo aparece
-                           cuando el tipo es Queja o Reclamo.
-    FormularioPqrs.astro   Formulario de PQRS que radica de verdad: sube los
-                           soportes a Vercel Blob, llama a /api/pqrs y muestra
-                           el numero de radicado.
+    SelectorOpciones.astro Grupo de tarjetas seleccionables (radios nativos).
+                           Lo usan los dos pasos de la PQRS: categoria y tipo.
+    CampoAdjuntos.astro    Archivos de soporte de la PQRS. Solo aparece en la
+                           categoria comercial y con tipo Queja o Reclamo.
+    FormularioPqrs.astro   Formulario de PQRS. En la categoria comercial radica
+                           de verdad (sube los soportes a Vercel Blob, llama a
+                           /api/pqrs y muestra el radicado); en la
+                           administrativa abre el gestor de correo, sin
+                           adjuntos ni radicado.
     PageHero.astro         Encabezado de las páginas internas.
   pages/                   Una página por archivo: index, nosotros, catalogo,
                            innovacion, empleos, contactanos, pqrs y 404.
@@ -257,8 +264,10 @@ corre una sola vez con `npm run geocodificar`; el resultado queda cacheado en
 
 ## Variables de entorno
 
-La radicación de PQRS se apoya en tres servicios (Vercel Blob, Resend y
-Cloudflare Turnstile) y cada uno tiene su variable. **Cuando falta una, el
+La radicación de PQRS **comercial** se apoya en tres servicios (Vercel Blob,
+Resend y Cloudflare Turnstile) y cada uno tiene su variable. La categoría
+**administrativa** no necesita ninguno: sale por el gestor de correo, y su
+destino es `PUBLIC_PQRS_ADMIN_DESTINO` (si falta, el correo de la empresa). **Cuando falta una, el
 síntoma es siempre un mensaje opaco del SDK de turno**, no un aviso claro: por
 eso hay un comprobador.
 
@@ -322,11 +331,21 @@ completo de los adjuntos en `docs/PQRS-ADJUNTOS.md`.
 Los de contacto y empleos **arman un correo** con los datos y lo abren en el
 gestor de quien escribe (`src/components/FormularioMailto.astro`).
 
-El de **PQRS sí radica de verdad** contra `src/pages/api/pqrs/`: guarda la
-solicitud y sus soportes, devuelve un número de radicado y manda dos correos.
-Esas funciones **solo existen en Vercel**; en el espejo de GitHub Pages no hay
-backend y el formulario cae al respaldo por correo, avisando de que así no queda
-radicado. Necesita las variables de la sección anterior.
+El de **PQRS se elige en dos pasos**, categoría y tipo, y cada clic se aplica al
+instante: sin botón de «continuar» y sin recargar. La categoría decide el canal.
+
+- **Administrativa**: abre el gestor de correo con la solicitud escrita, hacia
+  `PUBLIC_PQRS_ADMIN_DESTINO`. Sin adjuntos, sin antirrobots y sin radicado, así
+  que funciona igual en Vercel y en el espejo de GitHub Pages.
+- **Comercial**: **radica de verdad** contra `src/pages/api/pqrs/`. Guarda la
+  solicitud y sus soportes, devuelve un número de radicado y manda dos correos.
+  Esas funciones **solo existen en Vercel**; en el espejo de GitHub Pages no hay
+  backend y el formulario cae al respaldo por correo, avisando de que así no
+  queda radicado. Necesita las variables de la sección anterior.
+
+Los dos caminos acaban en un `mailto:` cuando toca, pero **no son lo mismo**: el
+administrativo es el previsto y sale bien; el de la comercial solo aparece
+cuando la radicación ha fallado. Detalle completo en `docs/PQRS-ADJUNTOS.md`.
 
 ## Despliegue en Cloudflare
 

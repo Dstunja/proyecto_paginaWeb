@@ -1,0 +1,210 @@
+---
+/**
+ * Grupo de tarjetas seleccionables, una sola a la vez.
+ *
+ * POR QUÉ RADIOS NATIVOS Y NO `role="radiogroup"` A MANO. Un `<input
+ * type="radio">` dentro de un `<label>` ya trae de fábrica todo lo que habría
+ * que reimplementar: moverse con las flechas, saltar el grupo entero con el
+ * tabulador, Inicio/Fin, el anuncio "opción 2 de 5" del lector de pantalla y el
+ * grupo con su `<legend>`. Un radiogroup ARIA hecho a mano es más código y peor
+ * comportamiento.
+ *
+ * El radio no se esconde con `sr-only` sino que se estira transparente sobre la
+ * tarjeta (`absolute inset-0 opacity-0`). Es deliberado: así el control tiene
+ * tamaño real, el navegador siempre puede enfocarlo, y el clic en cualquier
+ * parte de la tarjeta lo activa sin JavaScript. Un control de tamaño cero o con
+ * `display:none` no es enfocable y rompe la validación del navegador.
+ *
+ * DÓNDE ESTÁ EL VALOR. Este componente NO renderiza el campo que se envía:
+ * escribe en un `<input type="hidden">` ajeno, el que diga `espejo`. Eso es lo
+ * que permite pintar las tarjetas ARRIBA, fuera del formulario, y que el valor
+ * viaje igualmente dentro de él. El espejo conserva el mismo `id` y `name` que
+ * tenía el `<select>` al que sustituye, así que `FormData`, el mapa `CAMPOS` de
+ * FormularioPqrs y el `controlador` de CampoAdjuntos siguen funcionando sin
+ * enterarse del cambio.
+ *
+ * Al elegir se emite un `change` sobre el espejo (un campo oculto no lo emite
+ * solo cuando se le asigna el valor por programa), que es de lo que ya cuelga
+ * CampoAdjuntos.
+ */
+import Icono from './Icono.astro';
+
+export interface Opcion {
+  /** Lo que acaba en el campo enviado. No se traduce ni se normaliza. */
+  valor: string;
+  nombre: string;
+  icono?: string;
+  texto?: string;
+}
+
+interface Props {
+  /** id del `<input type="hidden">` donde se escribe el valor elegido. */
+  espejo: string;
+  /** `name` de los radios. Solo agrupa; estos no se envían. */
+  grupo: string;
+  leyenda: string;
+  opciones: Opcion[];
+  /** Selector CSS de lo que deja de estar oculto al elegir por primera vez. */
+  revela?: string;
+  /** Selector CSS de lo que se oculta al elegir. El reverso de `revela`. */
+  oculta?: string;
+  /** Selector CSS del campo que recibe el foco al elegir. */
+  enfoca?: string;
+  /** Selector CSS del bloque al que se baja, solo en móvil, al elegir. */
+  desplazaA?: string;
+  /** Ancho de las tarjetas. 2 para bloques cortos, 3 para listas largas. */
+  columnas?: 2 | 3;
+}
+
+const {
+  espejo,
+  grupo,
+  leyenda,
+  opciones,
+  revela = '',
+  oculta = '',
+  enfoca = '',
+  desplazaA = '',
+  columnas = 3,
+} = Astro.props;
+
+const anchos =
+  columnas === 2
+    ? 'w-full mob:w-[calc((100%-1.5rem)/2)]'
+    : 'w-full mob:w-[calc((100%-1.5rem)/2)] tablet:w-[calc((100%-3rem)/3)]';
+---
+
+<fieldset
+  class="m-0 border-0 p-0"
+  data-selector
+  data-espejo={espejo}
+  data-revela={revela}
+  data-oculta={oculta}
+  data-enfoca={enfoca}
+  data-desplaza-a={desplazaA}
+>
+  <legend class="sr-only">{leyenda}</legend>
+
+  <div class="flex flex-wrap justify-center gap-6">
+    {
+      opciones.map((opcion) => (
+        <label class={`tarjeta-opcion glass-card group relative p-8 ${anchos}`}>
+          <input
+            class="absolute inset-0 m-0 h-full w-full cursor-pointer opacity-0"
+            type="radio"
+            name={grupo}
+            value={opcion.valor}
+            data-opcion
+          />
+          {opcion.icono && (
+            <span class="icono-chip mb-5 flex h-12 w-12">
+              <Icono nombre={opcion.icono} class="h-6 w-6" interactivo={false} />
+            </span>
+          )}
+          <span class="mb-2 block font-display text-lg font-bold text-ink">{opcion.nombre}</span>
+          {opcion.texto && (
+            <span class="block text-[14.5px] text-muted">{opcion.texto}</span>
+          )}
+          {/* Marca de "elegida". Solo se ve cuando el radio está marcado, y no
+              es lo ÚNICO que lo distingue: el borde y el fondo también cambian,
+              porque el color por sí solo no es una señal accesible. */}
+          <span
+            class="marca-elegida absolute top-4 right-4 hidden h-6 w-6 items-center justify-center
+                   rounded-full bg-primary text-white"
+            aria-hidden="true"
+          >
+            <Icono nombre="circle-check" class="h-4 w-4" interactivo={false} />
+          </span>
+        </label>
+      ))
+    }
+  </div>
+</fieldset>
+
+<style>
+  /* El cursor de la tarjeta entera, no solo el del radio invisible. */
+  .tarjeta-opcion {
+    cursor: pointer;
+  }
+
+  /* Foco de teclado. Va en la TARJETA y no en el radio, que es transparente:
+     sin esto, moverse con las flechas no se vería por ninguna parte. */
+  .tarjeta-opcion:has(input:focus-visible) {
+    outline: 3px solid var(--color-secondary);
+    outline-offset: 3px;
+  }
+
+  /* Elegida: borde, fondo y marca. Tres señales, no solo el color. */
+  .tarjeta-opcion:has(input:checked) {
+    border-color: var(--color-secondary);
+    background-color: var(--color-secondary-soft);
+  }
+
+  .tarjeta-opcion:has(input:checked) .marca-elegida {
+    display: flex;
+  }
+</style>
+
+<script>
+  /**
+   * Ancho a partir del cual el formulario deja de estar debajo y pasa a estar
+   * al lado. Es el `--breakpoint-tablet` de global.css: por encima de él, bajar
+   * a un bloque que ya se ve sería un salto molesto y no se desplaza.
+   */
+  const TABLET = 900;
+
+  const suave = () =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
+  document.querySelectorAll<HTMLElement>('[data-selector]').forEach((raiz) => {
+    const espejo = document.getElementById(raiz.dataset.espejo ?? '') as HTMLInputElement | null;
+    if (!espejo) return;
+
+    const radios = raiz.querySelectorAll<HTMLInputElement>('[data-opcion]');
+    const revela = raiz.dataset.revela ?? '';
+    const oculta = raiz.dataset.oculta ?? '';
+    const enfoca = raiz.dataset.enfoca ?? '';
+    const desplazaA = raiz.dataset.desplazaA ?? '';
+
+    /** Baja hasta el bloque, pero solo cuando está debajo (móvil y tableta). */
+    function desplazar() {
+      if (!desplazaA || window.innerWidth >= TABLET) return;
+      document.querySelector(desplazaA)?.scrollIntoView({ behavior: suave(), block: 'start' });
+    }
+
+    /**
+     * `preventScroll` es lo que hace que enfocar y desplazarse no se peleen:
+     * sin él, `focus()` salta de golpe al campo y el desplazamiento suave que
+     * viene detrás arranca desde donde no toca.
+     */
+    function enfocarPrimerCampo() {
+      if (!enfoca) return;
+      document.querySelector<HTMLElement>(enfoca)?.focus({ preventScroll: true });
+    }
+
+    radios.forEach((radio) => {
+      radio.addEventListener('change', () => {
+        if (!radio.checked) return;
+
+        espejo!.value = radio.value;
+        // Un campo oculto no emite `change` al asignarle el valor por
+        // programa. CampoAdjuntos escucha ese evento, así que se emite a mano.
+        espejo!.dispatchEvent(new Event('change', { bubbles: true }));
+
+        if (revela) {
+          document.querySelectorAll<HTMLElement>(revela).forEach((bloque) => {
+            bloque.classList.remove('hidden');
+          });
+        }
+        if (oculta) {
+          document.querySelectorAll<HTMLElement>(oculta).forEach((bloque) => {
+            bloque.classList.add('hidden');
+          });
+        }
+
+        enfocarPrimerCampo();
+        desplazar();
+      });
+    });
+  });
+</script>

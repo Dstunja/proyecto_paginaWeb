@@ -114,9 +114,25 @@ const VARIABLES = [
   {
     nombre: 'PQRS_DESTINO',
     nivel: 'radicacion',
-    para: 'Correo del área que recibe cada PQRS.',
+    para: 'Correo del área que recibe cada PQRS COMERCIAL, la que se radica.',
     donde: 'Lo decide la empresa. Un correo que alguien lea de verdad.',
     forma: (v) => (v.includes('@') ? null : 'no parece un correo'),
+  },
+  {
+    nombre: 'PUBLIC_PQRS_ADMIN_DESTINO',
+    nivel: 'recomendada',
+    para:
+      'Correo de las PQRS ADMINISTRATIVAS, que salen por el gestor de correo de quien ' +
+      'escribe. Sin ella se usa el de la empresa (src/data/site.ts) y el formulario ' +
+      'funciona igual; definirla solo sirve para dirigirlas a otro buzón.',
+    donde:
+      'Lo decide la empresa. Admite varias direcciones separadas por coma.\n' +
+      '      OJO: se lee EN TIEMPO DE BUILD, porque el mailto: se arma en el navegador.\n' +
+      '      Si se añade en Vercel, hay que redesplegar.',
+    forma: (v) =>
+      v.split(',').every((c) => c.includes('@'))
+        ? null
+        : 'alguna de las direcciones no parece un correo',
   },
   {
     nombre: 'PQRS_IP_SALT',

@@ -2,13 +2,42 @@
 
 ## Qué hace hoy
 
-El formulario de PQRS **radica de verdad**: guarda la solicitud, guarda los
-archivos de soporte, devuelve un número de radicado y manda dos correos. Ya no
-depende del gestor de correo de quien lo diligencia.
+El formulario se elige en **dos pasos**, y cada clic se aplica al instante: no
+hay botón de «continuar» ni recarga.
+
+1. **Categoría** — a quién va dirigida. Decide el canal entero.
+2. **Tipo** — Petición, Queja, Reclamo, Sugerencia o Felicitación.
+
+Son ejes independientes a propósito: existe la queja administrativa y la queja
+comercial. Las dos categorías están descritas en `src/lib/pqrs/categorias.ts`.
+
+| | Administrativa | Comercial |
+| --- | --- | --- |
+| Cómo sale | `mailto:` desde el navegador | `POST /api/pqrs` |
+| Destino | `PUBLIC_PQRS_ADMIN_DESTINO` | `PQRS_DESTINO` |
+| Archivos de soporte | **No** | Sí, en Queja y Reclamo |
+| Antirrobots (Turnstile) | No | Sí |
+| Número de radicado | **No** | Sí |
+| Asunto del correo | `PQRS Administrativa · {tipo}` | `[{radicado}] PQRS Comercial · {tipo}` |
+| Funciona en GitHub Pages | Sí | No (no hay funciones) |
+
+La administrativa no llega a tocar la red: sale por el gestor de correo de quien
+escribe y por eso no puede llevar adjuntos ni dejar constancia con número. Es el
+camino previsto de esa categoría, **no** un respaldo, y el formulario lo dice sin
+alarmar. No hay que confundirla con el respaldo por correo de la comercial, que
+solo aparece cuando la radicación ha fallado y sí avisa de que la solicitud no
+quedó radicada. En el DOM se distinguen con `data-enviado="correo"` (envío
+administrativo) y `data-respaldo="correo"` (respaldo tras un fallo).
+
+La categoría **comercial** es la que **radica de verdad**: guarda la solicitud,
+guarda los archivos de soporte, devuelve un número de radicado y manda dos
+correos. Ya no depende del gestor de correo de quien lo diligencia.
 
 | Parte | Estado |
 | --- | --- |
-| Campo de soporte solo para Queja y Reclamo | Hecho |
+| Categoría previa (administrativa / comercial) | Hecho |
+| Elección por tarjetas, sin `<select>` ni botón de continuar | Hecho |
+| Campo de soporte solo en Comercial + Queja o Reclamo | Hecho |
 | Hasta 3 archivos, 5 MB cada uno | Hecho |
 | Validación por contenido real (bytes mágicos), en cliente **y** servidor | Hecho |
 | Subida de los archivos a Vercel Blob privado | Hecho |
@@ -318,7 +347,8 @@ En **Settings → Environment Variables**, para Production y Preview:
 | `RESEND_API_KEY` | sí | API key de Resend |
 | `TURNSTILE_SECRET` | sí | Clave privada de Turnstile |
 | `PUBLIC_TURNSTILE_SITE_KEY` | sí | Clave pública de Turnstile (va al navegador) |
-| `PQRS_DESTINO` | sí | Correo del área que atiende las PQRS |
+| `PQRS_DESTINO` | sí | Correo del área que atiende las PQRS **comerciales** |
+| `PUBLIC_PQRS_ADMIN_DESTINO` | recomendada | Correo de las PQRS **administrativas**. Sin ella se usa `empresa.email` de `src/data/site.ts` |
 | `CRON_SECRET` | sí | Cadena larga y aleatoria; protege el cron de limpieza |
 | `PQRS_IP_SALT` | recomendada | Sal del hash de la IP |
 | `PQRS_REMITENTE` | opcional | Remitente; por defecto `pqrs@dstunja.com` |
@@ -331,7 +361,11 @@ En **Settings → Environment Variables**, para Production y Preview:
 | `UPSTASH_REDIS_REST_TOKEN` | opcional | Ídem |
 
 Las que empiezan por `PUBLIC_` se leen **en tiempo de compilación** y acaban en
-el JavaScript del navegador: ahí no puede ir ningún secreto.
+el JavaScript del navegador: ahí no puede ir ningún secreto. `PUBLIC_PQRS_ADMIN_DESTINO`
+lo lleva por eso mismo: el `mailto:` se arma en el navegador, así que el valor
+tiene que estar dentro del bundle. No es un secreto —es una dirección de
+contacto que el sitio ya publica en el pie— pero **hay que redesplegar** después
+de cambiarla. Admite varias direcciones separadas por coma.
 
 `PQRS_ADJUNTO_MAX_MB` y `PUBLIC_PQRS_ADJUNTO_MAX_MB` deberían tener el mismo
 valor. La primera es la que manda (la aplica el servidor); la segunda es la que
@@ -411,12 +445,30 @@ doble extensión, exceso de peso mintiendo sobre el tamaño, más de tres archiv
 blob de otra sesión, Turnstile inválido o sin configurar, adjuntos con tipo
 Petición (se ignoran y se borran), autorización ausente y límite de tasa.
 
-`npm run verificar:pqrs` (Playwright, 62 comprobaciones en móvil y escritorio)
-cubre lo que se ve: el campo condicional, la validación de cliente, y la
-radicación con `POST /api/pqrs`, `POST /api/pqrs/token` y el script de Turnstile
-interceptados. Comprueba también que un error 400 se muestra sin caer al correo
-y que una API caída sí activa el respaldo con el aviso de que así **no** queda
-radicada.
+`npm run verificar:pqrs` (Playwright, 106 comprobaciones en móvil y escritorio)
+cubre lo que se ve:
+
+- **La elección por clic**: que cada una de las dos categorías y cada uno de los
+  cinco tipos se marca al pulsar su tarjeta, que el valor llega al campo que se
+  envía, que el formulario aparece sin recargar y que el foco queda en el primer
+  campo.
+- **El campo condicional y la validación de cliente**, incluida la regla que
+  cruza los dos ejes: con «Administrativa + Queja» el campo de adjuntos
+  desaparece y descarta lo que hubiera seleccionado.
+- **La categoría administrativa**: que no llama a ninguna función, que anuncia el
+  destino configurado, que dice que no hay radicado y que se marca como envío
+  deliberado y no como respaldo de un fallo.
+- **La radicación comercial** con `POST /api/pqrs`, `POST /api/pqrs/token` y el
+  script de Turnstile interceptados, incluido el **camino completo con adjunto**:
+  se simulan los dos pasos de `@vercel/blob` (pedir el permiso y subir el archivo
+  a `https://vercel.com/api/blob`) y se comprueba que la queja llega hasta su
+  radicado con el soporte anunciado.
+- Que un error 400 se muestra sin caer al correo y que una API caída sí activa el
+  respaldo con el aviso de que así **no** queda radicada.
+
+Las comprobaciones de Turnstile se adaptan al sitio compilado: si el build no
+llevaba `PUBLIC_TURNSTILE_SITE_KEY`, se exige que el token viaje **vacío**, que
+es lo que hace que el error salga del servidor con un mensaje entendible.
 
 Lo que ninguna de las dos cubre es la subida real a Vercel Blob: el protocolo de
 `upload()` no se simula. Esa parte hay que probarla en un despliegue de vista

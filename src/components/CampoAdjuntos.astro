@@ -2,11 +2,21 @@
 /**
  * Archivos de soporte de una PQRS.
  *
- * El campo SOLO existe para los tipos que lo piden (hoy Queja y Reclamo, ver
- * `TIPOS_CON_SOPORTE` en src/lib/adjuntos.ts). Se controla desde el `<select>`
- * cuyo id se pasa en `controlador`: al cambiar a un tipo que no lleva soporte
- * el bloque se oculta, se vacía la selección y el `<input>` se deshabilita, que
- * es lo que hace que `FormData` lo ignore por completo.
+ * El campo SOLO existe cuando lo piden LAS DOS COSAS a la vez: la categoría
+ * (solo la comercial admite soportes) y el tipo (hoy Queja y Reclamo, ver
+ * `TIPOS_CON_SOPORTE` en src/lib/adjuntos.ts). La regla combinada es
+ * `admiteSoporte` en src/lib/pqrs/categorias.ts, y por eso una queja
+ * ADMINISTRATIVA no lleva adjuntos aunque "Queja" sí esté en la lista de tipos
+ * con soporte: esa categoría sale por `mailto:`, y un `mailto:` no puede
+ * adjuntar archivos.
+ *
+ * Se controla desde los campos cuyos id se pasan en `controlador` y
+ * `categoria`. Da igual que sean un `<select>` o un `<input type="hidden">`
+ * alimentado por las tarjetas de src/components/SelectorOpciones.astro: lo
+ * único que se les pide es tener `value` y emitir `change`. Al cambiar a una
+ * combinación que no lleva soporte el bloque se oculta, se vacía la selección y
+ * el `<input>` se deshabilita, que es lo que hace que `FormData` lo ignore por
+ * completo.
  *
  * Se renderiza oculto y con el input deshabilitado a propósito: si el JavaScript
  * no llega a ejecutarse, el campo no aparece a medias ni viaja vacío.
@@ -23,8 +33,10 @@ import {
 } from '../lib/adjuntos';
 
 interface Props {
-  /** id del `<select>` de tipo de solicitud que decide si el campo se ve. */
+  /** id del campo con el TIPO de solicitud (Petición, Queja…). */
   controlador: string;
+  /** id del campo con la CATEGORÍA (administrativa, comercial). */
+  categoria?: string;
   id?: string;
   name?: string;
   maxArchivos?: number;
@@ -33,6 +45,7 @@ interface Props {
 
 const {
   controlador,
+  categoria = '',
   id = 'soporte-pqrs',
   name = 'soporte-pqrs',
   maxArchivos = MAX_ARCHIVOS_POR_DEFECTO,
@@ -48,6 +61,7 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
   class="hidden"
   data-adjuntos
   data-controlador={controlador}
+  data-categoria={categoria}
   data-max-archivos={String(maxArchivos)}
   data-max-mb={String(maxMb)}
 >
@@ -94,17 +108,26 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
     MAX_MB_POR_DEFECTO,
     formatearTamano,
     nombreParaMostrar,
-    requiereSoporte,
     validarFile,
   } from '../lib/adjuntos';
+  import { admiteSoporte } from '../lib/pqrs/categorias';
 
   document.querySelectorAll<HTMLElement>('[data-adjuntos]').forEach((bloque) => {
     const entrada = bloque.querySelector<HTMLInputElement>('[data-entrada]');
     const lista = bloque.querySelector<HTMLUListElement>('[data-lista]');
     const error = bloque.querySelector<HTMLElement>('[data-error]');
-    const selector = document.getElementById(
-      bloque.dataset.controlador ?? '',
-    ) as HTMLSelectElement | null;
+    /**
+     * Un `<select>` y un `<input type="hidden">` sirven igual: de los dos solo
+     * se lee `.value` y se escucha `change`. `HTMLInputElement` cubre ambos
+     * para lo que hace falta aquí.
+     */
+    const campo = (id: string) =>
+      document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+
+    const selector = campo(bloque.dataset.controlador ?? '');
+    // La categoría es opcional: sin ella el campo se comporta como antes y
+    // decide solo por el tipo.
+    const selectorCategoria = campo(bloque.dataset.categoria ?? '');
     if (!entrada || !lista || !error || !selector) return;
 
     const maxArchivos = Number(bloque.dataset.maxArchivos) || MAX_ARCHIVOS_POR_DEFECTO;
@@ -241,7 +264,10 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
 
     function sincronizarVisibilidad() {
       if (!entrada) return;
-      const visible = requiereSoporte(selector?.value);
+      // Sin campo de categoría se asume la comercial, que es la que radica: así
+      // el componente sigue sirviendo tal cual en un formulario de un solo eje.
+      const clave = selectorCategoria ? selectorCategoria.value : 'comercial';
+      const visible = admiteSoporte(clave, selector?.value);
       bloque.classList.toggle('hidden', !visible);
       // Deshabilitado = fuera del FormData. Es lo que garantiza que para
       // Petición, Sugerencia o Felicitación el adjunto ni siquiera se procese.
@@ -250,6 +276,7 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
     }
 
     selector.addEventListener('change', sincronizarVisibilidad);
+    selectorCategoria?.addEventListener('change', sincronizarVisibilidad);
     sincronizarVisibilidad();
   });
 </script>

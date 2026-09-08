@@ -2,18 +2,27 @@
  * Verificación del formulario de PQRS con un navegador de verdad y archivos de
  * verdad, sobre el sitio YA COMPILADO en dist/.
  *
- * Se comprueban dos cosas distintas:
+ * Se comprueban cuatro cosas distintas:
  *
- * A) EL CAMPO DE SOPORTE, que no toca la red:
- *   1. Solo existe para Queja y Reclamo. Con Petición, Sugerencia o
- *      Felicitación está oculto y el input deshabilitado.
+ * A) LA ELECCIÓN EN DOS PASOS (categoría y tipo), que es lo que decide todo lo
+ *    demás. Las dos son tarjetas, no un `<select>`, así que se eligen POR CLIC:
+ *   0. Cada uno de los cinco tipos se puede elegir con un clic, queda marcado,
+ *      y el formulario aparece sin recargar y con el foco en el primer campo.
+ *
+ * B) EL CAMPO DE SOPORTE, que no toca la red:
+ *   1. En la categoría comercial solo existe para Queja y Reclamo. Con
+ *      Petición, Sugerencia o Felicitación está oculto y el input deshabilitado.
  *   2. Al cambiar a un tipo sin soporte se limpia lo seleccionado.
  *   3. Un archivo válido de cada formato se acepta y se lista con su tamaño.
  *   4. Se rechazan el formato no permitido, la doble extensión, el contenido
  *      que no corresponde a la extensión y el exceso de peso.
  *   5. No se pueden adjuntar más de 3 archivos.
  *
- * B) LA RADICACIÓN, interceptando las llamadas con `page.route()`:
+ * C) LA CATEGORÍA ADMINISTRATIVA, que no toca la red tampoco: sale por
+ *    `mailto:` sin adjuntos, sin radicado y sin llamar a ninguna función.
+ *
+ * D) LA RADICACIÓN de la categoría comercial, interceptando las llamadas con
+ *    `page.route()`:
  *   6. Sin adjuntos: se llama a POST /api/pqrs y sale la pantalla con el
  *      radicado, la fecha y el botón de copiar.
  *   7. Con adjuntos: se llama a POST /api/pqrs/token con el sessionId, el tipo
@@ -25,6 +34,13 @@
  * El script de Cloudflare Turnstile también se intercepta: se sirve un doble
  * que devuelve un token de mentira. Así la prueba no depende de la red ni de
  * tener claves reales.
+ *
+ * LA SUBIDA AL BLOB TAMBIÉN SE PUEDE SIMULAR ENTERA (`plan.token: 'ok'`), y no
+ * solo rechazar. Hacen falta dos dobles, porque `@vercel/blob` da dos pasos:
+ * primero le pide el permiso a nuestro endpoint y después sube el archivo a
+ * `https://vercel.com/api/blob`. Con los dos puestos se puede comprobar lo que
+ * de otro modo quedaba sin probar: que una queja comercial CON adjunto llega
+ * hasta el final y devuelve su radicado.
  *
  * Uso:
  *   npm run build
@@ -226,9 +242,40 @@ const TURNSTILE_FALSO = `
   })();
 `;
 
-/** Instala los dobles y devuelve el registro de lo que se pidió. */
+/**
+ * Doble del almacén de Vercel Blob.
+ *
+ * `@vercel/blob` sube el archivo a `https://vercel.com/api/blob/{ruta}` con el
+ * permiso que firmó nuestro endpoint, y espera de vuelta este JSON. Solo se
+ * usan `url` y `pathname`, pero se devuelven todos los campos que declara el
+ * SDK para no depender de cuáles lee hoy.
+ */
+async function responderBlob(ruta, camino) {
+  await ruta.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      url: `https://tienda-de-prueba.private.blob.vercel-storage.com/${camino}`,
+      downloadUrl: `https://tienda-de-prueba.private.blob.vercel-storage.com/${camino}?download=1`,
+      pathname: camino,
+      contentType: 'image/png',
+      contentDisposition: `inline; filename="${camino.split('/').pop()}"`,
+      etag: '"prueba"',
+    }),
+  });
+}
+
+/**
+ * Instala los dobles y devuelve el registro de lo que se pidió.
+ *
+ * `plan.token`:
+ *   'error' (por defecto) el permiso se deniega. Sirve para comprobar QUÉ pide
+ *           el navegador y que un fallo de subida no radica ni abre el correo.
+ *   'ok'    el permiso se concede y la subida se completa. Sirve para
+ *           comprobar el camino entero hasta el radicado, con adjunto incluido.
+ */
 async function instalarDobles(pagina, plan) {
-  const registro = { token: [], radicar: [] };
+  const registro = { token: [], radicar: [], blob: [] };
 
   await pagina.route('https://challenges.cloudflare.com/**', (ruta) =>
     ruta.fulfill({ status: 200, contentType: 'text/javascript', body: TURNSTILE_FALSO }),
@@ -236,14 +283,42 @@ async function instalarDobles(pagina, plan) {
 
   await pagina.route('**/api/pqrs/token', async (ruta) => {
     registro.token.push(JSON.parse(ruta.request().postData() ?? '{}'));
-    // Se responde con un error para no tener que remedar todo el protocolo de
-    // subida de Vercel Blob: lo que se está comprobando aquí es que el
-    // navegador PIDE el token con los datos correctos.
+
+    if (plan.token === 'ok') {
+      // El SDK saca el identificador del store del token partiéndolo por "_" y
+      // quedándose con el cuarto trozo, así que este de mentira le vale.
+      await ruta.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          type: 'blob.generate-client-token',
+          clientToken: 'vercel_blob_client_tiendadeprueba_tokendementira',
+        }),
+      });
+      return;
+    }
+
+    // Por defecto se deniega, que es lo que permite comprobar que el navegador
+    // PIDE el permiso con los datos correctos sin depender de la subida.
     await ruta.fulfill({
-      status: 400,
+      status: 403,
       contentType: 'application/json',
-      body: JSON.stringify({ ok: false, errores: ['Subida rechazada por la prueba.'] }),
+      body: JSON.stringify({
+        ok: false,
+        codigo: 'antirrobots',
+        mensaje: 'Subida rechazada por la prueba.',
+      }),
     });
+  });
+
+  await pagina.route('https://vercel.com/api/blob/**', async (ruta) => {
+    // La ruta del archivo NO viaja en la URL de subida: va dentro del permiso
+    // firmado, que aquí es de mentira. Se recupera del `pathname` que el
+    // navegador pidió al sacar ese permiso, que es justo lo que el servidor de
+    // verdad habría metido dentro del token.
+    const camino = registro.token.at(-1)?.payload?.pathname ?? '';
+    registro.blob.push(camino);
+    await responderBlob(ruta, camino);
   });
 
   await pagina.route('**/api/pqrs', async (ruta) => {
@@ -278,8 +353,47 @@ async function instalarDobles(pagina, plan) {
   return registro;
 }
 
-async function rellenarFormulario(pagina, tipo = 'Queja') {
-  await pagina.selectOption('#tipo-pqrs', tipo);
+// --- Elección por clic ------------------------------------------------------
+
+/**
+ * Tarjeta de un grupo de opciones.
+ *
+ * Se localiza por el `value` del radio que lleva dentro, no por su texto: el
+ * texto de la tarjeta es de marketing y cambia, mientras que el `value` es lo
+ * que viaja en el formulario y no puede cambiar sin romper `TIPOS_CON_SOPORTE`.
+ */
+const tarjeta = (pagina, grupo, valor) =>
+  pagina.locator(`label:has(input[name="${grupo}-opcion"][value="${valor}"])`);
+
+/**
+ * ¿El sitio compilado lleva clave de Turnstile?
+ *
+ * `PUBLIC_TURNSTILE_SITE_KEY` se lee EN TIEMPO DE BUILD, así que un `npm run
+ * build` sin `.env` produce un sitio sin antirrobots. Eso no es un fallo del
+ * formulario y no debe contarse como tal, pero tampoco se puede dar por bueno
+ * cualquier valor: se comprueba el comportamiento que corresponde a cada caso.
+ */
+const hayTurnstile = async (pagina) =>
+  ((await pagina.locator('[data-pqrs]').getAttribute('data-turnstile-key')) ?? '') !== '';
+
+/**
+ * Con clave, el token tiene que ser el del widget (aquí, el del doble). Sin
+ * clave tiene que ir VACÍO, que es lo que hace que el error salga del servidor
+ * con un mensaje entendible en vez de reventar en el navegador.
+ */
+const esperadoTurnstile = (valor, conClave) =>
+  conClave ? String(valor ?? '').startsWith('token-de-prueba-') : String(valor ?? '') === '';
+
+/** Elige categoría y tipo con dos clics, como lo haría una persona. */
+async function elegir(pagina, categoria, tipo) {
+  await tarjeta(pagina, 'categoria', categoria).click();
+  await pagina.waitForTimeout(250);
+  await tarjeta(pagina, 'tipo', tipo).click();
+  await pagina.waitForTimeout(350);
+}
+
+async function rellenarFormulario(pagina, tipo = 'Queja', categoria = 'comercial') {
+  await elegir(pagina, categoria, tipo);
   await pagina.fill('#nombre-pqrs', 'Cristian Amaya');
   await pagina.fill('#telefono-pqrs', '3106232429');
   await pagina.fill('#correo-pqrs', 'practicaspasantiasdst@gmail.com');
@@ -305,14 +419,67 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   const entrada = pagina.locator('[data-adjuntos] [data-entrada]');
   const lista = pagina.locator('[data-adjuntos] [data-lista]');
   const error = pagina.locator('[data-adjuntos] [data-error]');
-  const tipo = pagina.locator('#tipo-pqrs');
+  const formulario = pagina.locator('[data-paso-formulario]');
+
+  const elegirTipo = async (nombre) => {
+    await tarjeta(pagina, 'tipo', nombre).click();
+    await pagina.waitForTimeout(200);
+  };
 
   const adjuntar = async (...rutas) => {
     await entrada.setInputFiles(rutas);
     await pagina.waitForTimeout(400);
   };
 
+  // ---- 0. La elección por clic --------------------------------------------
+  comprobar(
+    `${etiqueta}: al entrar no se ve ni el paso 2 ni el formulario`,
+    !(await pagina.locator('[data-paso-tipo]').isVisible()) && !(await formulario.isVisible()),
+  );
+
+  await tarjeta(pagina, 'categoria', 'comercial').click();
+  await pagina.waitForTimeout(250);
+  comprobar(
+    `${etiqueta}: un clic en "Comercial" la marca y descubre el paso 2`,
+    (await pagina.locator('input[name="categoria-opcion"][value="comercial"]').isChecked()) &&
+      (await pagina.locator('[data-paso-tipo]').isVisible()),
+  );
+  comprobar(
+    `${etiqueta}: el formulario sigue oculto mientras no haya tipo`,
+    !(await formulario.isVisible()),
+  );
+
+  // Los cinco, uno por uno: es lo que pidió el encargo.
+  for (const nombre of ['Petición', 'Queja', 'Reclamo', 'Sugerencia', 'Felicitación']) {
+    await elegirTipo(nombre);
+    comprobar(
+      `${etiqueta}: un clic en "${nombre}" lo marca y deja el valor en el campo enviado`,
+      (await pagina.locator(`input[name="tipo-opcion"][value="${nombre}"]`).isChecked()) &&
+        (await pagina.locator('#tipo-pqrs').inputValue()) === nombre,
+    );
+  }
+
+  comprobar(
+    `${etiqueta}: al elegir tipo aparece el formulario, sin recargar`,
+    await formulario.isVisible(),
+  );
+  comprobar(
+    `${etiqueta}: el marcador "elige arriba" desaparece al elegir`,
+    !(await pagina.locator('[data-sin-elegir]').isVisible()),
+  );
+  comprobar(
+    `${etiqueta}: el foco queda en el primer campo del formulario`,
+    (await pagina.evaluate(() => document.activeElement?.id)) === 'nombre-pqrs',
+  );
+  const resumen = (await pagina.locator('[data-resumen-titulo]').textContent()) ?? '';
+  comprobar(
+    `${etiqueta}: el resumen recuerda la categoría y el tipo elegidos`,
+    resumen.includes('Comercial') && resumen.includes('Felicitación'),
+    resumen.trim(),
+  );
+
   // ---- 1. Solo para Queja y Reclamo ---------------------------------------
+  await elegirTipo('Petición');
   comprobar(
     `${etiqueta}: con "Petición" el campo de soporte no se ve`,
     !(await bloque.isVisible()),
@@ -320,8 +487,7 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   comprobar(`${etiqueta}: con "Petición" el input está deshabilitado`, await entrada.isDisabled());
 
   for (const sinSoporte of ['Sugerencia', 'Felicitación']) {
-    await tipo.selectOption(sinSoporte);
-    await pagina.waitForTimeout(150);
+    await elegirTipo(sinSoporte);
     comprobar(
       `${etiqueta}: con "${sinSoporte}" el campo sigue oculto y deshabilitado`,
       !(await bloque.isVisible()) && (await entrada.isDisabled()),
@@ -329,8 +495,7 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   }
 
   for (const conSoporte of ['Queja', 'Reclamo']) {
-    await tipo.selectOption(conSoporte);
-    await pagina.waitForTimeout(150);
+    await elegirTipo(conSoporte);
     comprobar(
       `${etiqueta}: con "${conSoporte}" el campo aparece y queda habilitado`,
       (await bloque.isVisible()) && !(await entrada.isDisabled()),
@@ -426,8 +591,7 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   );
 
   // ---- 2. Cambio de tipo ---------------------------------------------------
-  await tipo.selectOption('Petición');
-  await pagina.waitForTimeout(200);
+  await elegirTipo('Petición');
   comprobar(
     `${etiqueta}: al pasar a "Petición" el campo se oculta y se vacía`,
     !(await bloque.isVisible()) &&
@@ -435,11 +599,42 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
       (await entrada.evaluate((e) => e.files.length)) === 0,
   );
 
-  await tipo.selectOption('Queja');
-  await pagina.waitForTimeout(200);
+  await elegirTipo('Queja');
   comprobar(
     `${etiqueta}: al volver a "Queja" la lista aparece vacía`,
     (await bloque.isVisible()) && (await lista.locator('li').count()) === 0,
+  );
+
+  // ---- C) La categoría administrativa no lleva adjuntos --------------------
+  // Es la comprobación que separa los dos ejes: "Queja" sigue estando en
+  // TIPOS_CON_SOPORTE, pero la categoría manda y esta no admite archivos.
+  await adjuntar(archivos.pngValido);
+  comprobar(
+    `${etiqueta}: con "Comercial + Queja" el adjunto se aceptó (punto de partida)`,
+    (await lista.locator('li').count()) === 1,
+  );
+
+  await tarjeta(pagina, 'categoria', 'administrativa').click();
+  await pagina.waitForTimeout(250);
+  comprobar(
+    `${etiqueta}: al pasar a "Administrativa" el campo de adjuntos desaparece aunque el tipo siga siendo "Queja"`,
+    !(await bloque.isVisible()) &&
+      (await entrada.isDisabled()) &&
+      (await pagina.locator('#tipo-pqrs').inputValue()) === 'Queja',
+  );
+  comprobar(
+    `${etiqueta}: y el archivo que ya estaba puesto se descarta`,
+    (await entrada.evaluate((e) => e.files.length)) === 0 &&
+      (await lista.locator('li').count()) === 0,
+  );
+
+  await tarjeta(pagina, 'categoria', 'comercial').click();
+  await pagina.waitForTimeout(250);
+  comprobar(
+    `${etiqueta}: al volver a "Comercial" el campo reaparece, vacío`,
+    (await bloque.isVisible()) &&
+      !(await entrada.isDisabled()) &&
+      (await lista.locator('li').count()) === 0,
   );
 
   await contexto.close();
@@ -450,6 +645,55 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
 async function revisarRadicacion(navegador, archivos) {
   console.log('\n=== B) Radicación contra la API (interceptada) ===\n');
   const contexto = await navegador.newContext({ viewport: { width: 1280, height: 900 } });
+
+  // ---- C) La categoría administrativa sale por correo ----------------------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Queja', 'administrativa');
+
+    comprobar(
+      'Administrativa: no hay campo de adjuntos ni siquiera con "Queja"',
+      !(await pagina.locator('[data-adjuntos]').isVisible()) &&
+        (await pagina.locator('[data-adjuntos] [data-entrada]').isDisabled()),
+    );
+
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(700);
+
+    comprobar(
+      'Administrativa: no se llama a ninguna función (ni radicar ni pedir token)',
+      registro.radicar.length === 0 && registro.token.length === 0,
+    );
+    comprobar(
+      'Administrativa: queda marcada como envío por correo, no como respaldo de un fallo',
+      (await pagina.locator('[data-pqrs][data-enviado="correo"]').count()) === 1 &&
+        (await pagina.locator('[data-pqrs][data-respaldo]').count()) === 0,
+    );
+
+    // El destino no se escribe aquí: se compara con el que la página declara,
+    // que sale de PUBLIC_PQRS_ADMIN_DESTINO o del correo de src/data/site.ts.
+    const declarado = await pagina.locator('[data-pqrs]').getAttribute('data-destino-admin');
+    const mostrado = (await pagina.locator('[data-destino-mostrado]').textContent()) ?? '';
+    comprobar(
+      'Administrativa: se anuncia el destino configurado, y es un correo válido',
+      mostrado.trim() === (declarado ?? '').trim() && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mostrado.trim()),
+      mostrado.trim(),
+    );
+    comprobar(
+      'Administrativa: se dice que NO hay radicado y no se enseña ninguno',
+      !(await pagina.locator('[data-confirmacion]').isVisible()) &&
+        /no genera número de radicado/i.test(
+          (await pagina.locator('[data-confirmacion-correo]').textContent()) ?? '',
+        ),
+    );
+    await pagina.close();
+  }
 
   // ---- 6. Camino feliz sin adjuntos ---------------------------------------
   {
@@ -473,10 +717,15 @@ async function revisarRadicacion(navegador, archivos) {
         registro.radicar[0]?.autorizacion === true,
       JSON.stringify(registro.radicar[0] ?? {}).slice(0, 100),
     );
+    const conTurnstile = await hayTurnstile(pagina);
     comprobar(
-      'Sin adjuntos: el cuerpo lleva sessionId con forma de UUID y token de Turnstile',
-      /^[0-9a-f-]{36}$/.test(registro.radicar[0]?.sessionId ?? '') &&
-        String(registro.radicar[0]?.turnstileToken ?? '').startsWith('token-de-prueba-'),
+      'Sin adjuntos: el cuerpo lleva sessionId con forma de UUID',
+      /^[0-9a-f-]{36}$/.test(registro.radicar[0]?.sessionId ?? ''),
+    );
+    comprobar(
+      `Sin adjuntos: el token de Turnstile es ${conTurnstile ? 'el del widget' : 'vacío (build sin clave)'}`,
+      esperadoTurnstile(registro.radicar[0]?.turnstileToken, conTurnstile),
+      String(registro.radicar[0]?.turnstileToken ?? '(ausente)'),
     );
     comprobar('Sin adjuntos: aparece la pantalla de confirmación', await confirmacion.isVisible());
     comprobar(
@@ -522,10 +771,10 @@ async function revisarRadicacion(navegador, archivos) {
     const carga = JSON.parse(registro.token[0]?.payload?.clientPayload ?? '{}');
     const rutaPedida = registro.token[0]?.payload?.pathname ?? '';
     comprobar(
-      'Con adjuntos: el clientPayload lleva sessionId, tipo y token de Turnstile',
+      'Con adjuntos: el clientPayload lleva sessionId, tipo y el token de Turnstile que toque',
       /^[0-9a-f-]{36}$/.test(carga.sessionId ?? '') &&
         carga.tipo === 'Queja' &&
-        String(carga.turnstileToken ?? '').startsWith('token-de-prueba-'),
+        esperadoTurnstile(carga.turnstileToken, await hayTurnstile(pagina)),
       JSON.stringify(carga).slice(0, 120),
     );
     comprobar(
@@ -542,6 +791,60 @@ async function revisarRadicacion(navegador, archivos) {
     comprobar(
       'Con adjuntos: una subida fallida no abre el gestor de correo',
       !(await pagina.locator('[data-pqrs][data-respaldo]').count()),
+    );
+    await pagina.close();
+  }
+
+  // ---- 7-bis. Con adjuntos, hasta el final: subida OK y radicado -----------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'ok', token: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Queja', 'comercial');
+    await pagina.setInputFiles('#soporte-pqrs', [archivos.pngValido]);
+    await pagina.waitForTimeout(500);
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(2000);
+
+    comprobar(
+      'Comercial con adjunto: el archivo se subió al almacén',
+      registro.blob.length === 1 && registro.blob[0].startsWith('pqrs/pendientes/'),
+      registro.blob[0] ?? '(ninguna subida)',
+    );
+
+    const cuerpo = registro.radicar[0] ?? {};
+    comprobar(
+      'Comercial con adjunto: se radica anunciando el soporte ya subido',
+      Array.isArray(cuerpo.adjuntos) &&
+        cuerpo.adjuntos.length === 1 &&
+        String(cuerpo.adjuntos[0]?.pathname ?? '').startsWith(`pqrs/pendientes/${cuerpo.sessionId}/`) &&
+        cuerpo.adjuntos[0]?.nombreOriginal === 'foto-del-producto.png',
+      JSON.stringify(cuerpo.adjuntos ?? []).slice(0, 140),
+    );
+    comprobar(
+      'Comercial con adjunto: el tipo y la categoría viajan en la radicación',
+      cuerpo.tipo === 'Queja' && cuerpo['categoria'] === undefined,
+      `tipo=${cuerpo.tipo}`,
+    );
+    comprobar(
+      'Comercial con adjunto: sale la pantalla con el radicado',
+      (await pagina.locator('[data-confirmacion]').isVisible()) &&
+        (await pagina.locator('[data-radicado]').textContent()) === 'PQRS-20260907-A7K2M9',
+    );
+    const progreso = (await pagina.locator('[data-progreso]').textContent()) ?? '';
+    comprobar(
+      'Comercial con adjunto: la barra de progreso llegó a "Subido"',
+      /Subido/.test(progreso),
+      progreso.replace(/\s+/g, ' ').trim().slice(0, 80) || '(vacía)',
+    );
+    comprobar(
+      'Comercial con adjunto: no se abrió el gestor de correo',
+      !(await pagina.locator('[data-pqrs][data-respaldo]').count()) &&
+        !(await pagina.locator('[data-pqrs][data-enviado]').count()),
     );
     await pagina.close();
   }
