@@ -360,18 +360,14 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
      -------------------------------------------------------------------
      El cuadrado sale del formato real de la mayoría de los archivos: las 531
      fotos oficiales descargadas de la tienda de Nutresa son de 1000x1000, con
-     el producto centrado sobre fondo blanco. Para ellas, caja 1:1 y
-     `object-fit: cover` significa que el navegador no recorta nada -foto y
-     marco tienen la misma proporción- y el empaque se ve entero y centrado.
+     el producto centrado sobre fondo blanco, así que llenan el marco exacto.
 
-     OJO, ESO YA NO VALE PARA TODAS. Las 87 fotos recortadas del deck
-     (`crop_*.jpg`) llegan con proporciones de todo tipo, de 0,26 a 4,00, y a
-     35 de ellas `cover` les come más de un tercio: la peor, un empaque de
-     1200x300, se ve al 25 %. Cambiar a `object-fit: contain` lo arreglaría
-     sin efecto alguno sobre las cuadradas -en una caja 1:1, `contain` y
-     `cover` dan el mismo resultado para una imagen 1:1- y con estas fotos de
-     fondo blanco sobre tarjeta blanca la franja sobrante ni se notaría. Está
-     reportado y pendiente de decisión; mientras tanto se deja `cover`.
+     Las 87 recortadas del deck (`crop_*.jpg`) no: llegan con proporciones de
+     0,26 a 4,00. Por eso la foto se encaja con `object-fit: contain` y no con
+     `cover` -el porqué está junto a `.tarjeta-foto__img`-. La caja sigue
+     midiendo 1:1 en todas las tarjetas; lo que cambia es que una foto que no
+     es cuadrada deja aire arriba y abajo, o a los lados, en vez de que se le
+     recorte medio empaque.
 
      La proporción es ÚNICA: no cambia con el ancho de la pantalla. Todas las
      tarjetas de una fila miden lo mismo y la grilla no da saltos.
@@ -398,16 +394,29 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
      el fondo de estas fotos es blanco y la tarjeta también, los bordes se
      siguen leyendo limpios sin necesidad de fundirlos.
 
-     `object-position: center` deja el producto centrado. Con la caja en 1:1 y
-     un archivo cuadrado no hay recorte que colocar, pero se declara igual
-     para las pocas referencias cuya foto no es cuadrada -las de innovación
-     que viven sueltas en public/img/-: ahí el recorte se reparte por igual a
-     los dos lados en vez de comerse un extremo. */
+     `object-fit: contain` Y NO `cover`
+     ----------------------------------
+     Con `cover` la foto llena el marco y se recorta lo que sobra. Eso era
+     inofensivo mientras todas las fotos eran cuadradas -recortar cero de una
+     imagen 1:1 dentro de una caja 1:1-, pero dejó de serlo al entrar las 87
+     recortadas del deck, que van de 0,26 a 4,00 de proporción: a 35 de ellas
+     `cover` les comía más de un tercio, y la peor -Galleta Festival Limón F8,
+     un recorte de 1200x300- se veía al 25 %, un fragmento borroso en el que
+     no se reconocía el producto.
+
+     `contain` encaja la foto entera dentro del marco. A las 531 cuadradas NO
+     les cambia nada -en una caja 1:1, `contain` y `cover` dan exactamente el
+     mismo resultado para una imagen 1:1-, así que el arreglo solo toca a las
+     que estaban rotas. Las que no llenan el cuadrado dejan ver el fondo de
+     `.tarjeta-foto`, que es justamente para lo que está ahí.
+
+     `object-position: center` reparte ese aire sobrante por igual a los dos
+     lados en vez de pegar la foto a un extremo. */
   .tarjeta-foto__img {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
   }
 

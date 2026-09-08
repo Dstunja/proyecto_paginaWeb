@@ -110,12 +110,12 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * LA FOTO, EN UN MARCO CUADRADO Y SIN NADA ENCIMA
    * -----------------------------------------------
    * La imagen ocupa el ancho completo de la tarjeta en una caja de 1:1 y la
-   * llena con `object-fit: cover`, así que no quedan franjas vacías. El
-   * cuadrado sale del formato real de la mayoría de los archivos: las 531
-   * fotos oficiales son de 1000x1000, de modo que marco y foto tienen la
-   * misma proporción y no hay recorte que hacer. Las 87 recortadas del deck
-   * (`crop_*.jpg`) no son cuadradas y a 35 de ellas `cover` sí les recorta;
-   * ver la nota sobre `object-fit` en el CSS de CatalogoPedido.astro.
+   * encaja dentro con `object-fit: contain`, sin recortarla nunca. El cuadrado
+   * sale del formato real de la mayoría de los archivos: las 531 fotos
+   * oficiales son de 1000x1000 y llenan el marco exacto. Las 87 recortadas
+   * del deck (`crop_*.jpg`) no son cuadradas y dejan aire a los lados o
+   * arriba y abajo; ver la nota sobre `object-fit` en el CSS de
+   * CatalogoPedido.astro.
    *
    * La caja mide lo mismo en todas las tarjetas y en todas las anchuras de
    * pantalla, y no lleva ningún velo, degradado ni máscara encima. Aquí hubo
