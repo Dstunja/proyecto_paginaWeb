@@ -20,7 +20,12 @@
  */
 
 import { detalleReferencia, type ProductoPedido } from './carrito';
-import { SIN_PSP } from './precios';
+import {
+  ETIQUETA_PRECIO_LISTA,
+  IMAGEN_REFERENCIA,
+  SIN_PSP,
+  presentacionDeLista,
+} from './precios';
 import { CANTIDAD_MAXIMA, TAMANO_TANDA } from '../data/pedido';
 
 /**
@@ -126,10 +131,24 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * mismo nombre está en el <h3> de abajo y no hay que leerlo dos veces.
    */
   const foto = p.imagen;
+
+  /*
+   * EL AVISO BAJO LA FOTO
+   * ---------------------
+   * Solo en las referencias que llevan PRECIO DE LISTA, y solo si hay foto
+   * que anotar. Esa cifra corresponde a la unidad de venta -la caja-, pero la
+   * foto es la del empaque individual, así que sin el aviso la tarjeta se lee
+   * como "esta bolsita cuesta eso". Las referencias con PSP no lo llevan: ahí
+   * la cifra y la foto sí hablan de lo mismo.
+   */
+  const notaFoto = p.lista
+    ? `<p class="tarjeta-foto__nota">${escapar(IMAGEN_REFERENCIA)}</p>`
+    : '';
+
   const caja = foto
     ? `<div class="tarjeta-foto">
              <img src="${escapar(foto)}" alt=""${carga} class="tarjeta-foto__img foto-zoom" />
-           </div>`
+           </div>${notaFoto}`
     : `<div class="tarjeta-foto tarjeta-foto--sin-foto">
              <span class="tarjeta-foto__rotulo" aria-hidden="true">${escapar(p.nombre)}</span>
            </div>`;
@@ -146,7 +165,19 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * confirma precios y disponibilidad sigue estando en el panel del pedido
    * y en el mensaje de WhatsApp (AVISO_PRECIOS).
    *
-   * Las referencias sin PSP cargado -hoy 599 de 711- no dejan el hueco ni
+   * SEGUNDO ESCALÓN: EL PRECIO DE LISTA
+   * -----------------------------------
+   * De las 599 referencias sin PSP, 474 sí tienen precio de lista en el
+   * maestro de SAP. Esas muestran esa cifra, rotulada "Precio de lista" y
+   * nunca "sugerido": no es lo que paga el consumidor sino lo que cuesta la
+   * unidad de venta en la lista del proveedor.
+   *
+   * La cifra va TAL CUAL, sin dividir. Debajo, cuando el maestro declara las
+   * unidades del empaque, va la presentación a la que corresponde ("caja x
+   * 12"), que es lo que le da sentido al número. Cuando no la declara va el
+   * precio solo: inventarle un empaque sería peor que no decir nada.
+   *
+   * Las 125 que no tienen ninguno de los dos precios no dejan el hueco ni
    * pintan un $0: dicen lo que diga `SIN_PSP` (src/lib/precios.ts), que es la
    * misma frase que usa el panel del pedido, y además mantiene todas las
    * tarjetas de la fila a la misma altura.
@@ -154,7 +185,13 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
   const precio =
     typeof p.psp === 'number'
       ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}<span class="precio-tarjeta__nota">sugerido</span></p>`
-      : `<p class="precio-tarjeta precio-tarjeta--consultar">${escapar(SIN_PSP)}</p>`;
+      : p.lista
+        ? `<p class="precio-tarjeta">${escapar(pesos(p.lista.valor))}<span class="precio-tarjeta__nota">${escapar(ETIQUETA_PRECIO_LISTA)}</span></p>${
+            p.lista.unidades
+              ? `<p class="precio-tarjeta__presentacion">${escapar(presentacionDeLista(p.lista.unidades))}</p>`
+              : ''
+          }`
+        : `<p class="precio-tarjeta precio-tarjeta--consultar">${escapar(SIN_PSP)}</p>`;
 
   return `
         <article class="glass-card flex flex-col overflow-hidden ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${escapar(p.id)}">

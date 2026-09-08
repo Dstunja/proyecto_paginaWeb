@@ -14,6 +14,9 @@
  */
 
 import { PRECIOS_SUGERIDOS } from '../data/precios';
+import { PRECIOS_LISTA, type PrecioLista } from '../data/preciosLista';
+
+export type { PrecioLista };
 
 /** Una referencia mínima: lo que hace falta para resolverle el precio. */
 export interface ConCodigo {
@@ -60,6 +63,62 @@ export function precioSugerido(producto: ConCodigo): number | null {
  * `precioSugerido`, que devuelve `null`.
  */
 export const SIN_PSP = 'Precio a consultar';
+
+/**
+ * Precio de lista de una referencia que NO tiene PSP, o `null`.
+ *
+ * POR QUÉ EXISTE ESTE SEGUNDO PRECIO
+ * ----------------------------------
+ * De las 711 referencias del catálogo solo 112 traen PSP en el deck de
+ * Nutresa. Las 599 restantes decían todas "Precio a consultar", que no le
+ * sirve de nada a quien está armando un pedido y quiere hacerse una idea del
+ * monto. El maestro de precios de SAP (`infolista.xls`) sí trae una cifra para
+ * 474 de ellas: su precio de lista.
+ *
+ * EL PSP MANDA SIEMPRE
+ * --------------------
+ * Cuando la referencia tiene PSP esta función devuelve `null` aunque el
+ * maestro traiga precio de lista. No son la misma cifra ni miden lo mismo, y
+ * el PSP es el que de verdad ve el consumidor en el mostrador.
+ *
+ * NO SE CALCULA NADA
+ * ------------------
+ * El precio de lista está expresado por unidad de venta, y el factor de
+ * conversión UMB→UMV no viene en el export. Así que la cifra se publica TAL
+ * CUAL, sin dividirla entre las unidades del empaque: dividir daría un número
+ * inventado con apariencia de precio unitario. Lo que sí se dice, cuando el
+ * nombre de SAP lo declara, es por cuántas unidades se vende
+ * (`PrecioLista.unidades`), y de eso se encarga `presentacionDeLista`.
+ */
+export function precioLista(producto: ConCodigo): PrecioLista | null {
+  if (precioSugerido(producto) !== null) return null;
+  const codigo = producto.codigo?.trim();
+  if (!codigo || producto.codigoParcial) return null;
+  return PRECIOS_LISTA[codigo] ?? null;
+}
+
+/**
+ * El rótulo del precio de lista. Va en una constante por lo mismo que
+ * `SIN_PSP`: lo pintan la tarjeta del catálogo y la línea del panel, y tienen
+ * que decir exactamente lo mismo.
+ *
+ * NUNCA se rotula como PSP ni como "sugerido": es el precio de la lista del
+ * proveedor, no lo que la tienda le cobra al consumidor, y confundirlos sería
+ * el peor error posible en este renglón.
+ */
+export const ETIQUETA_PRECIO_LISTA = 'Precio de lista';
+
+/** `Presentación: caja x 12`, la unidad de venta a la que corresponde la cifra. */
+export const presentacionDeLista = (unidades: number) => `Presentación: caja x ${unidades}`;
+
+/**
+ * Aviso que acompaña a la foto de las referencias con precio de lista.
+ *
+ * La foto es la del empaque individual, mientras que el precio corresponde a
+ * la unidad de venta completa. Decirlo junto a la imagen evita que se lea como
+ * "esta cajita cuesta eso".
+ */
+export const IMAGEN_REFERENCIA = 'Imagen de referencia del producto';
 
 /** `$ 12.900`. Sin decimales: los precios de tienda van en pesos redondos. */
 export function formatearPesos(valor: number): string {

@@ -20,7 +20,12 @@ import {
   WHATSAPP_NUMERO,
 } from '../data/pedido';
 import { empresa } from '../data/site';
-import { formatearPesos, resumirPrecios, type ResumenPrecios } from './precios';
+import {
+  formatearPesos,
+  resumirPrecios,
+  type PrecioLista,
+  type ResumenPrecios,
+} from './precios';
 
 /**
  * Producto tal como lo necesita el navegador.
@@ -61,6 +66,17 @@ export interface ProductoPedido {
    * referencia no entra en el subtotal orientativo.
    */
   psp?: number;
+  /**
+   * Precio de lista del maestro de SAP, en las referencias que NO tienen PSP.
+   * Nunca viaja junto a `psp`: donde hay PSP manda el PSP (ver `precioLista`
+   * en src/lib/precios.ts).
+   *
+   * Es un precio POR UNIDAD DE VENTA, no por unidad de consumo, así que no
+   * entra en el subtotal orientativo ni se multiplica por la cantidad: la
+   * tarjeta y el panel lo pintan tal cual, rotulado "Precio de lista" y con la
+   * presentación al lado cuando se conoce.
+   */
+  lista?: PrecioLista;
 }
 
 /** Datos de contacto que acompañan al pedido. */

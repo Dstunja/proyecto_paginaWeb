@@ -34,9 +34,12 @@
  * también `codigoParcial`, pero solo en las 27 referencias que lo tienen en
  * `true`: son las que no pueden enseñar el código porque el deck de origen
  * solo traía sus últimos dígitos (ver `detalleReferencia` en src/lib/carrito.ts).
- * `precio` viaja solo cuando la referencia lo tiene: hoy son 112 de las 711.
- * Las demás sí muestran renglón de precio, pero con el texto "Precio a
- * consultar", que se arma en la tarjeta y no hace falta mandar.
+ * `psp` viaja solo cuando la referencia lo tiene: hoy son 112 de las 711. De
+ * las 599 restantes, 474 mandan en su lugar `lista`, el precio de lista del
+ * maestro de SAP. Los dos campos nunca viajan juntos: donde hay PSP manda el
+ * PSP. Las 125 que no tienen ninguno sí muestran renglón de precio, pero con
+ * el texto "Precio a consultar", que se arma en la tarjeta y no hace falta
+ * mandar.
  *
  * Sin JavaScript quedan el listado de marcas y las primeras tarjetas, pero no
  * el buscador, los filtros ni el carrito: esos controles se ocultan (no sirve
@@ -46,7 +49,7 @@
 import { getImage } from 'astro:assets';
 import { productos, MARCAS, CATEGORIAS, SUBCATEGORIAS } from '../../data/productos';
 import { imagenSiExiste, logoMarcaImagen } from '../../lib/imagenes';
-import { codigosSinProducto, precioSugerido } from '../../lib/precios';
+import { codigosSinProducto, precioLista, precioSugerido } from '../../lib/precios';
 import { ruta } from '../../lib/rutas';
 import { TAMANO_TANDA } from '../../data/pedido';
 import {
@@ -120,6 +123,10 @@ const catalogo = productos.map((p) => {
   // (ver `precioSugerido` en src/lib/precios.ts). Solo viaja al navegador el de
   // las referencias que lo tienen; las demás llegan sin el campo.
   const psp = precioSugerido(p);
+  // Segundo escalón, solo donde NO hay PSP: el precio de lista del maestro de
+  // SAP (src/data/preciosLista.ts). `precioLista` ya devuelve null cuando hay
+  // PSP, así que los dos campos nunca viajan juntos.
+  const lista = precioLista(p);
   return {
     id: p.id,
     marca: p.marca,
@@ -135,11 +142,15 @@ const catalogo = productos.map((p) => {
     ...(p.codigoParcial ? { codigoParcial: true } : {}),
     ...(imagen ? { imagen } : {}),
     ...(psp !== null ? { psp } : {}),
+    ...(lista !== null ? { lista } : {}),
   };
 });
 
 /** Cuántas referencias tienen precio sugerido: se dice bajo el buscador. */
 const conPrecio = catalogo.filter((p) => 'psp' in p).length;
+
+/** Y cuántas caen en el segundo escalón, el precio de lista. */
+const conLista = catalogo.filter((p) => 'lista' in p).length;
 
 /* Aviso de mantenimiento, solo en consola durante `npm run build`: un código de
    src/data/precios.ts que no corresponda a ninguna referencia no rompe nada,
@@ -454,6 +465,37 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     font-weight: 500;
     color: var(--color-muted);
   }
+
+  /* --- La presentación del precio de lista --------------------------------
+     Renglón propio bajo la cifra, no un `<span>` a su lado: "Precio de lista"
+     ya ocupa el hueco de la derecha y encadenar ahí un "Presentación: caja x
+     12" dejaría una línea que se parte en cualquier tarjeta angosta.
+
+     Va en gris y con el cuerpo de texto porque es la aclaración de la cifra,
+     no otra cifra. */
+  .precio-tarjeta__presentacion {
+    margin: 0.125rem 0 0;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  /* --- "Imagen de referencia del producto" --------------------------------
+     Pegado bajo el marco de la foto y con la misma sangría que el texto de la
+     tarjeta (esa `1rem` es el `px-4` del bloque de abajo, que este párrafo no
+     hereda por colgar fuera de él).
+
+     Es el aviso más pequeño de la tarjeta a propósito: tiene que estar, pero
+     no debe competir ni con el nombre ni con el precio. */
+  .tarjeta-foto__nota {
+    margin: 0.5rem 1rem 0;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-style: italic;
+    line-height: 1.3;
+    color: var(--color-muted);
+  }
 </style>
 
 <script type="application/json" id="datos-catalogo" set:html={aJson(catalogo)} is:inline></script>
@@ -695,11 +737,14 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   </p>
 
   {/* Cuántas referencias traen precio. Se dice una sola vez, aquí, en vez de
-      repetir un "consultar" en las tarjetas que no lo tienen. */}
+      repetir un "consultar" en las tarjetas que no lo tienen. Los dos precios
+      se cuentan por separado porque no son la misma cosa: el sugerido es por
+      unidad de consumo y el de lista por unidad de venta. */}
   {
     conPrecio > 0 && (
       <p class="m-0 text-[13.5px] text-muted">
-        {conPrecio} de {catalogo.length} con precio sugerido de referencia.
+        {conPrecio} de {catalogo.length} con precio sugerido de referencia
+        {conLista > 0 && <> y {conLista} con precio de lista</>}.
       </p>
     )
   }
