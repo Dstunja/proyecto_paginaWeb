@@ -1,9 +1,9 @@
 /**
  * Equipo directivo que se muestra en /nosotros/.
  *
- * EDITAR AQUÍ: reemplazar con fotos y datos reales del equipo directivo.
- * Los nombres, cargos y frases de abajo son de ejemplo y las fotos son
- * marcadores de posición de placehold.co.
+ * Los nombres y cargos de abajo son los reales. Quedan dos cosas pendientes:
+ * las fotos (ver abajo) y el nombre de quien ocupa el cargo de Líder
+ * Logístico, que todavía no está definido.
  *
  * FOTOS
  * -----
@@ -12,39 +12,52 @@
  * un marcador con las iniciales de la persona, así que la sección nunca se ve
  * rota (ver `imagenOMarcador` en src/lib/imagenes.ts). Lo ideal son fotos
  * cuadradas (mismo alto y ancho), porque se recortan en círculo.
+ *
+ * FRASES
+ * ------
+ * Las cuatro están vacías a propósito y quedan PENDIENTES de que cada persona
+ * aporte la suya. Antes había frases de ejemplo, pero al poner los nombres
+ * reales pasaban a leerse como citas textuales de gente que nunca las dijo.
+ * La tarjeta no dibuja nada cuando la frase está vacía, así que se pueden ir
+ * llenando de una en una sin que la sección se descuadre.
  */
 
 export interface Persona {
+  /** Vacío = el cargo está sin cubrir; la tarjeta muestra «Próximamente». */
   nombre: string;
   cargo: string;
   /** Ruta dentro de public/. Vacío = marcador de posición. */
   foto: string;
-  /** Opcional: frase corta de la persona (una o dos líneas). */
+  /** Frase corta de la persona (una o dos líneas). Vacío = no se muestra. */
   frase?: string;
 }
 
 export const equipo: Persona[] = [
   {
-    nombre: 'Nombre Apellido',
+    nombre: 'Nelson Arias',
     cargo: 'Gerente General',
     foto: '/img/equipo/gerente-general.jpg',
-    frase: 'Cada entrega cumplida es una tienda que sigue abierta.',
+    frase: '',
   },
   {
-    nombre: 'Nombre Apellido',
+    nombre: 'Camilo Acero',
     cargo: 'Coordinador Comercial',
     foto: '/img/equipo/coordinador-comercial.jpg',
-    frase: 'Conocer el negocio del cliente es la mitad de la venta.',
+    frase: '',
   },
   {
-    nombre: 'Nombre Apellido',
-    cargo: 'Coordinador Logístico',
-    foto: '/img/equipo/coordinador-logistico.jpg',
-    frase: 'La ruta se planea para que ningún municipio se quede esperando.',
+    nombre: 'Erica Abril',
+    cargo: 'Coordinadora de Recursos Humanos',
+    foto: '/img/equipo/recursos-humanos.jpg',
+    frase: '',
   },
   {
-    nombre: 'Nombre Apellido',
-    cargo: 'Coordinadora de Talento Humano',
-    foto: '/img/equipo/talento-humano.jpg',
+    // PENDIENTE: falta definir quién ocupa este cargo. Mientras `nombre` esté
+    // vacío la tarjeta muestra «Próximamente» y el avatar lleva las iniciales
+    // del cargo. Al saberlo, basta con escribir el nombre aquí.
+    nombre: '',
+    cargo: 'Líder Logístico',
+    foto: '/img/equipo/lider-logistico.jpg',
+    frase: '',
   },
 ];

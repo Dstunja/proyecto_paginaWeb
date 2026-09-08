@@ -14,13 +14,15 @@ import calidad from '../assets/valores/calidad.jpg';
 import crecimientoCompartido from '../assets/valores/crecimiento-compartido.jpg';
 
 /* Fotos del equipo: mientras el archivo no esté en public/img/equipo/ se usa
-   un marcador de posición con las iniciales de la persona. */
+   un marcador de posición con las iniciales de la persona. Cuando el cargo
+   todavía no tiene nombre, las iniciales salen del cargo ('Líder Logístico'
+   -> 'LL') para que el círculo no quede vacío entre los que sí lo tienen. */
 const equipoConFoto = equipo.map((persona) => ({
   ...persona,
-  ...imagenOMarcador(persona.foto, iniciales(persona.nombre), 400, 400),
+  ...imagenOMarcador(persona.foto, iniciales(persona.nombre || persona.cargo), 400, 400),
 }));
 
-/** 'Nombre Apellido' -> 'NA', para el marcador de posición de la foto. */
+/** 'Nelson Arias' -> 'NA', para el marcador de posición de la foto. */
 function iniciales(nombre: string): string {
   return nombre
     .split(/\s+/)
@@ -76,7 +78,7 @@ const valores = [
   <PageHero
     kicker="Quiénes somos"
     titulo="21 años conectando marcas con el comercio de la región"
-    texto="Somos una empresa boyacense dedicada a la distribución de alimentos, aliada comercial de Grupo Nutresa en Boyacá, Santander y Cundinamarca."
+    texto="Somos una distribuidora y aliada comercial del portafolio de Grupo Nutresa, enfocada en conectar grandes marcas con nuestros clientes y contribuir al crecimiento del mercado en nuestra región."
   />
 
   <!-- HISTORIA + CIFRAS -->
@@ -152,21 +154,25 @@ const valores = [
         </p>
       </div>
 
-      {/* EDITAR AQUÍ: reemplazar con fotos y datos reales del equipo directivo
-          (los nombres, cargos y frases viven en src/data/equipo.ts). */}
+      {/* EDITAR AQUÍ: las fotos van en public/img/equipo/; los nombres, cargos
+          y frases viven en src/data/equipo.ts. Una tarjeta sin nombre (cargo
+          aún sin cubrir) muestra «Próximamente», y una sin frase no la
+          dibuja. */}
       <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4" data-revelar-grupo>
         {
           equipoConFoto.map((persona) => (
             <div class="group glass-card flex flex-col items-center p-8 text-center">
               <img
                 src={persona.src}
-                alt={persona.esMarcador ? '' : `${persona.nombre}, ${persona.cargo}`}
+                alt={persona.esMarcador ? '' : [persona.nombre, persona.cargo].filter(Boolean).join(', ')}
                 loading="lazy"
                 width="400"
                 height="400"
                 class="h-28 w-28 rounded-full border-4 border-surface object-cover shadow-[0_10px_28px_rgba(13,44,132,.14)] transition-transform duration-300 group-hover:scale-105"
               />
-              <h3 class="mt-6 mb-1 text-[17px]">{persona.nombre}</h3>
+              <h3 class:list={['mt-6 mb-1 text-[17px]', !persona.nombre && 'text-muted']}>
+                {persona.nombre || 'Próximamente'}
+              </h3>
               <p class="m-0 font-display text-[13px] font-semibold tracking-[0.08em] text-accent-text uppercase">
                 {persona.cargo}
               </p>
