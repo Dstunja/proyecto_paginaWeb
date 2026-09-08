@@ -35,12 +35,12 @@
  * lo estaban ya tienen su código completo (ver `codigoCompletado` en
  * src/data/productos.ts). El campo se mantiene porque el maestro se regenera
  * desde el deck y la próxima extracción puede volver a recortar códigos.
- * `psp` viaja solo cuando la referencia lo tiene: hoy son 112 de las 620. De
- * las 508 restantes, 498 mandan en su lugar `lista`, el precio de lista del
- * maestro de SAP. Los dos campos nunca viajan juntos: donde hay PSP manda el
- * PSP. Las 10 que no tienen ninguno sí muestran renglón de precio, pero con
- * el texto "Precio a consultar", que se arma en la tarjeta y no hace falta
- * mandar.
+ * `psp` viaja solo cuando la referencia lo tiene: hoy son 122 de las 621 -112
+ * del deck y 10 confirmadas por el asesor-. De las 499 restantes, 498 mandan
+ * en su lugar `lista`, el precio de lista del maestro de SAP. Los dos campos
+ * nunca viajan juntos: donde hay PSP manda el PSP. La única que no tiene
+ * ninguno de los dos sí muestra renglón de precio, pero con el texto "Precio a
+ * consultar", que se arma en la tarjeta y no hace falta mandar.
  *
  * Sin JavaScript quedan el listado de marcas y las primeras tarjetas, pero no
  * el buscador, los filtros ni el carrito: esos controles se ocultan (no sirve
@@ -81,7 +81,7 @@ import { empresa } from '../../data/site';
  * Van por src/assets/ y no por public/ a proposito: los originales son de
  * 1000-1200 px y pesan entre 20 y 300 KB cada uno. Al pasar por `getImage` el
  * navegador recibe un WebP mucho mas liviano y el original nunca se publica.
- * Por public/ habria que servir los 466 archivos tal cual.
+ * Por public/ habria que servir los 699 archivos tal cual.
  *
  * EL ANCHO: 640 px. La foto ya no es una miniatura de 80 px sino la cabecera
  * de la tarjeta, a sangre y en 4:3. La tarjeta mas ancha que existe es la de
@@ -139,7 +139,7 @@ const catalogo = productos.map((p) => {
     /* Solo viaja cuando es `true`, y hoy no lo es en ninguna: la tarjeta y el
        panel muestran el código SAP y con este campo sabrían cuáles NO pueden
        enseñarlo por venir recortado del deck. Se deja puesto para la próxima
-       extracción; mandarlo siempre costaría el campo en las 620 para nada. */
+       extracción; mandarlo siempre costaría el campo en las 621 para nada. */
     ...(p.codigoParcial ? { codigoParcial: true } : {}),
     ...(imagen ? { imagen } : {}),
     ...(psp !== null ? { psp } : {}),
@@ -358,16 +358,20 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
      LA CAJA: 1:1, LA MISMA EN TODAS LAS TARJETAS Y EN TODAS LAS ANCHURAS
      -------------------------------------------------------------------
-     El cuadrado no es una preferencia estética: es el formato real del
-     archivo. Las fotos oficiales que se descargaron de la tienda de Nutresa
-     y viven en src/assets/productos/ son de 1000x1000, con el producto
-     centrado sobre fondo blanco. Con la caja en 1:1 y `object-fit: cover` el
-     navegador no tiene nada que recortar -la foto y el marco tienen la misma
-     proporción-, así que el empaque se ve entero y centrado, que es
-     justamente lo que se pide. Cualquier otra proporción, 4:3 incluido,
-     obligaría a cortar: en 4:3 se perdería un 25 % del alto, y sin
-     desvanecido ese corte se vería como un filo recto sobre la letra menuda
-     del empaque.
+     El cuadrado sale del formato real de la mayoría de los archivos: las 531
+     fotos oficiales descargadas de la tienda de Nutresa son de 1000x1000, con
+     el producto centrado sobre fondo blanco. Para ellas, caja 1:1 y
+     `object-fit: cover` significa que el navegador no recorta nada -foto y
+     marco tienen la misma proporción- y el empaque se ve entero y centrado.
+
+     OJO, ESO YA NO VALE PARA TODAS. Las 87 fotos recortadas del deck
+     (`crop_*.jpg`) llegan con proporciones de todo tipo, de 0,26 a 4,00, y a
+     35 de ellas `cover` les come más de un tercio: la peor, un empaque de
+     1200x300, se ve al 25 %. Cambiar a `object-fit: contain` lo arreglaría
+     sin efecto alguno sobre las cuadradas -en una caja 1:1, `contain` y
+     `cover` dan el mismo resultado para una imagen 1:1- y con estas fotos de
+     fondo blanco sobre tarjeta blanca la franja sobrante ni se notaría. Está
+     reportado y pendiente de decisión; mientras tanto se deja `cover`.
 
      La proporción es ÚNICA: no cambia con el ancho de la pantalla. Todas las
      tarjetas de una fila miden lo mismo y la grilla no da saltos.
@@ -409,7 +413,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
   /* SIN FOTO: COLOR SÓLIDO DE MARCA CON EL NOMBRE
      ---------------------------------------------
-     Las referencias que todavía no tienen foto (89 de 620) no dejan el marco
+     Las referencias que todavía no tienen foto (3 de 621) no dejan el marco
      vacío ni caen en el logotipo de la marca repetido tarjeta tras tarjeta:
      llevan el azul oscuro de la paleta, plano, con el nombre del producto
      centrado en la tipografía de titulares. La caja mide exactamente lo mismo

@@ -30,10 +30,17 @@ export interface ConCodigo {
  * Precio sugerido de una referencia, o `null` si no está confirmado.
  *
  * Hay dos fuentes y este es el orden:
- *   1. src/data/precios.ts, la corrección manual por código SAP. Manda sobre
- *      todo lo demás: es donde se anota un precio que el asesor ya corrigió.
- *   2. El campo `precio` del maestro (src/data/productos.ts), que viene del
- *      deck "MASIVO 1.0" y cubre las referencias cuya página declara un PSP.
+ *   1. PSP CONFIRMADO POR ASESOR: src/data/precios.ts, por código SAP. Manda
+ *      sobre todo lo demás porque es el único precio que alguien ha
+ *      verificado a mano contra lo que de verdad se cobra. Hoy son 10
+ *      fichas, salidas de 8 códigos.
+ *   2. PSP DEL DECK: el campo `precio` del maestro (src/data/productos.ts),
+ *      que viene del deck "MASIVO 1.0" y cubre las 112 referencias cuya
+ *      página declara un PSP explícito.
+ *
+ * Las dos son PSP y la tarjeta las rotula igual, "sugerido": al tendero le da
+ * lo mismo de dónde salió la cifra. La distinción es de mantenimiento, y por
+ * eso vive en la estructura -archivos distintos- y no en la interfaz.
  *
  * Devuelve `null` —y no 0 ni undefined— para que en la interfaz sea imposible
  * confundir "no sabemos" con "sale gratis". Las referencias con código parcial
@@ -69,11 +76,12 @@ export const SIN_PSP = 'Precio a consultar';
  *
  * POR QUÉ EXISTE ESTE SEGUNDO PRECIO
  * ----------------------------------
- * De las 620 referencias del catálogo solo 112 traen PSP en el deck de
- * Nutresa. Las 508 restantes decían todas "Precio a consultar", que no le
- * sirve de nada a quien está armando un pedido y quiere hacerse una idea del
- * monto. El maestro de precios de SAP (`infolista.xls`) sí trae una cifra para
- * 498 de ellas: su precio de lista. Solo 10 se quedan sin ninguna de las dos.
+ * De las 621 referencias del catálogo, 122 traen PSP -112 del deck de Nutresa
+ * y 10 confirmadas por el asesor-. Las 499 restantes decían todas "Precio a
+ * consultar", que no le sirve de nada a quien está armando un pedido y quiere
+ * hacerse una idea del monto. El maestro de precios de SAP (`infolista.xls`)
+ * sí trae una cifra para 498 de ellas: su precio de lista. Solo UNA se queda
+ * sin ninguna de las tres.
  *
  * EL PSP MANDA SIEMPRE
  * --------------------

@@ -46,11 +46,44 @@
  * No hay que tocar ningún componente: en cuanto haya entradas aquí, la tarjeta
  * del catálogo, el panel del pedido y el subtotal orientativo aparecen solos.
  *
- * Mientras esta lista esté vacía el sitio se comporta exactamente como antes,
- * solo que sin repetir el aviso de precios en cada tarjeta: queda una sola nota
- * al pie del panel.
+ * ---------------------------------------------------------------------------
+ * LOS TRES ORÍGENES DE PRECIO DEL CATÁLOGO, Y CUÁL ES ESTE
+ * ---------------------------------------------------------------------------
+ * Una tarjeta puede mostrar cifra por tres caminos distintos. No se mezclan y
+ * el orden de preferencia es de arriba abajo:
+ *
+ *   1. PSP CONFIRMADO POR ASESOR — es ESTE archivo. Precio de venta real que
+ *      el asesor comercial dio y confirmó, referencia por referencia. Manda
+ *      sobre todo lo demás porque es el único que alguien ha verificado a
+ *      mano contra lo que de verdad se cobra.
+ *   2. PSP DEL DECK — el campo `precio` de src/data/productos.ts, extraído de
+ *      las páginas del deck "MASIVO 1.0" que declaran un PSP explícito.
+ *   3. PRECIO DE LISTA — src/data/preciosLista.ts, del maestro de precios de
+ *      SAP. Es el último recurso, va rotulado "Precio de lista" y NUNCA como
+ *      sugerido: no es lo que la tienda le cobra al consumidor.
+ *
+ * Quien resuelve ese orden es `precioSugerido` y `precioLista` en
+ * src/lib/precios.ts; aquí solo se cargan las cifras.
+ *
+ * Las 10 fichas de abajo salen de 8 códigos: dos códigos los comparten dos
+ * referencias cada uno (los spaghetti Monticello y los atunes Zenú), y el
+ * asesor confirmó que en ambos casos las dos presentaciones valen lo mismo,
+ * así que ya no hace falta distinguir cuál es cuál para ponerles precio.
  */
-export const PRECIOS_SUGERIDOS: Record<string, number> = {};
+export const PRECIOS_SUGERIDOS: Record<string, number> = {
+  // Confirmados por el asesor comercial en septiembre de 2026. Antes de esto
+  // eran las últimas 10 referencias del catálogo sin ninguna cifra que mostrar:
+  // su precio de lista existía en SAP pero no se podía publicar (combos CMU,
+  // códigos repetidos en dos fichas, listas con fecha centinela).
+  '1046580': 8620, //  Chocolate Tesalia Clavos y Canela sin azúcar, 100 g
+  '1049712': 17300, // Corona Crema Chantilly Instantánea, paquete x 3
+  '1053148': 8540, //  Chocolate Corona Delicatto 54% menos azúcar, 142 g
+  '1055640': 7200, //  Galleta Saltín Noel Integral x 9
+  '1059172': 14320, // Chocolate Corona Stevia, barra
+  '1075439': 22000, // Galleta Saltín Noel Tradicional x 12
+  '1080263': 6725, //  Monticello Spaghetti, 500 g — las DOS fichas (Integral y n°5)
+  '1082110': 5200, //  Zenú Trozos de Atún, 140 g — las DOS fichas (aceite de girasol y agua)
+};
 
 /**
  * Fecha en que se actualizaron los precios de arriba, tal como se quiere leer
@@ -59,4 +92,4 @@ export const PRECIOS_SUGERIDOS: Record<string, number> = {};
  * EDITAR AQUÍ junto con la lista: un precio de referencia sin fecha envejece
  * sin que nadie se dé cuenta.
  */
-export const PRECIOS_ACTUALIZADOS = 'agosto de 2026';
+export const PRECIOS_ACTUALIZADOS = 'septiembre de 2026';

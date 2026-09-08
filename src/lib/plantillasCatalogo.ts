@@ -111,9 +111,11 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * -----------------------------------------------
    * La imagen ocupa el ancho completo de la tarjeta en una caja de 1:1 y la
    * llena con `object-fit: cover`, así que no quedan franjas vacías. El
-   * cuadrado sale del formato real del archivo: las 466 fotos oficiales son
-   * de 1000x1000, de modo que marco y foto tienen la misma proporción y no
-   * hay recorte que hacer -el empaque se ve entero y centrado-.
+   * cuadrado sale del formato real de la mayoría de los archivos: las 531
+   * fotos oficiales son de 1000x1000, de modo que marco y foto tienen la
+   * misma proporción y no hay recorte que hacer. Las 87 recortadas del deck
+   * (`crop_*.jpg`) no son cuadradas y a 35 de ellas `cover` sí les recorta;
+   * ver la nota sobre `object-fit` en el CSS de CatalogoPedido.astro.
    *
    * La caja mide lo mismo en todas las tarjetas y en todas las anchuras de
    * pantalla, y no lleva ningún velo, degradado ni máscara encima. Aquí hubo
@@ -122,7 +124,7 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    *
    * SIN FOTO: NI LOGOTIPO NI INICIALES
    * ----------------------------------
-   * Las 89 referencias que todavía no tienen foto ya no caen en el logotipo
+   * Las 3 referencias que todavía no tienen foto ya no caen en el logotipo
    * de la marca -que se repetía idéntico en toda la sección y no distinguía
    * una referencia de otra-. En su lugar va el azul oscuro de la paleta, en
    * plano, con el NOMBRE del producto compuesto en grande: la caja mide
@@ -167,7 +169,7 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    *
    * SEGUNDO ESCALÓN: EL PRECIO DE LISTA
    * -----------------------------------
-   * De las 508 referencias sin PSP, 498 sí tienen precio de lista en el
+   * De las 499 referencias sin PSP, 498 sí tienen precio de lista en el
    * maestro de SAP. Esas muestran esa cifra, rotulada "Precio de lista" y
    * nunca "sugerido": no es lo que paga el consumidor sino lo que cuesta la
    * unidad de venta en la lista del proveedor.
@@ -177,7 +179,7 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * 12"), que es lo que le da sentido al número. Cuando no la declara va el
    * precio solo: inventarle un empaque sería peor que no decir nada.
    *
-   * Las 10 que no tienen ninguno de los dos precios no dejan el hueco ni
+   * La única que no tiene ninguno de los dos precios no deja el hueco ni
    * pintan un $0: dicen lo que diga `SIN_PSP` (src/lib/precios.ts), que es la
    * misma frase que usa el panel del pedido, y además mantiene todas las
    * tarjetas de la fila a la misma altura.
