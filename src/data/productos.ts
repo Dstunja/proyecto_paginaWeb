@@ -461,6 +461,16 @@ export const productos: Producto[] = [
   { id: "gol-gol-mini-plegadiza-x-24-14-g", marca: "Gol", categoria: "Galletas", subcategoria: "Dulces", nombre: "Gol Mini (plegadiza x 24)", presentacion: "14 g", codigo: "1068250", codigoParcial: false, embalaje: "Plegadiza x 24", paginaPdf: 364, imagen: "1068250.jpg" },
   { id: "haka-haka-aceite-esencial-eucalipto-aire-puro-10-ml", marca: "Haka", categoria: "Bienestar y cuidado personal", subcategoria: "Aromaterapia y esencias florales", nombre: "Haka Aceite Esencial Eucalipto (Aire Puro)", presentacion: "10 ml", codigo: "1065842", codigoParcial: false, embalaje: "", paginaPdf: 152, imagen: "1065842.png" },
   { id: "haka-haka-agua-de-linos-aire-puro-eucalipto-menta-y-lavanda-200-ml", marca: "Haka", categoria: "Bienestar y cuidado personal", subcategoria: "Aromaterapia y esencias florales", nombre: "Haka Agua de Linos Aire Puro (eucalipto, menta y lavanda)", presentacion: "200 ml", codigo: "2020874", codigoParcial: false, embalaje: "", paginaPdf: 153, imagen: "2020874.jpg" },
+  // HAKA AGUA DE LINOS: las dos fotos van CRUZADAS respecto a la tienda.
+  // tiendanutresaencasa.com publica el SAP 2020875 como "Felicidad" y el
+  // 2020873 como "Descanso", justo al revés que este catálogo. Se descargaron
+  // por código SAP y quedaban con el frasco del aroma contrario: la tarjeta de
+  // Descanso enseñaba el frasco verde rotulado FELICIDAD y viceversa.
+  // Los archivos se intercambiaron a mano para que cada tarjeta muestre el
+  // empaque cuyo rótulo coincide con su nombre -2020873.jpg es el frasco verde
+  // de Felicidad y 2020875.jpg el morado de Descanso-. Los nombres del deck se
+  // dejaron intactos; cuál de las dos fuentes tiene mal el código lo confirma
+  // el asesor comercial. NO volver a bajar estas dos fotos sin revisarlas.
   { id: "haka-haka-agua-de-linos-descanso-lavanda-te-verde-y-bergamota-200-ml", marca: "Haka", categoria: "Bienestar y cuidado personal", subcategoria: "Aromaterapia y esencias florales", nombre: "Haka Agua de Linos Descanso (lavanda, té verde y bergamota)", presentacion: "200 ml", codigo: "2020875", codigoParcial: false, embalaje: "", paginaPdf: 153, imagen: "2020875.jpg" },
   { id: "haka-haka-agua-de-linos-felicidad-bergamota-te-verde-y-lavanda-200-ml", marca: "Haka", categoria: "Bienestar y cuidado personal", subcategoria: "Aromaterapia y esencias florales", nombre: "Haka Agua de Linos Felicidad (bergamota, té verde y lavanda)", presentacion: "200 ml", codigo: "2020873", codigoParcial: false, embalaje: "", paginaPdf: 153, imagen: "2020873.jpg" },
   { id: "haka-cocoa-melena-de-leon-haka-120-g", marca: "Haka", categoria: "Bienestar y cuidado personal", subcategoria: "Suplementos y vitaminas", nombre: "Cocoa Melena de León Haka", presentacion: "120 g", codigo: "1082933", codigoParcial: false, precio: 39990, embalaje: "Corrugado x 9", paginaPdf: 110, imagen: "1082933.png" },
