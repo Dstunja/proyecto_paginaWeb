@@ -253,8 +253,9 @@
 @utility glass {
   background-color: var(--color-glass);
   border: 1px solid var(--color-glass-border);
+  /* Solo la propiedad estandar, y es a proposito: ver la nota de
+     .barra-fija, mas abajo. Con las dos escritas el desenfoque no llega. */
   backdrop-filter: blur(var(--blur-glass)) saturate(160%);
-  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(160%);
 }
 
 @layer components {
@@ -336,11 +337,17 @@
     border-bottom: 1px solid var(--color-line);
   }
 
+  /* Solo se declara la propiedad estandar, y es a proposito. Lightning CSS
+     -el compilador de CSS que trae Tailwind 4- pone el prefijo -webkit- el
+     mismo cuando hace falta; en cambio, si se le escriben las dos, se queda
+     SOLO con la prefijada y tira la estandar por considerarla pisada. Chrome
+     no entiende -webkit-backdrop-filter, asi que el desenfoque se perdia
+     entero: la barra quedaba translucida al 80 % y con el contenido nitido
+     por debajo, que es justo lo que el desenfoque venia a evitar. */
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .barra-fija {
       background-color: rgba(255, 255, 255, 0.8);
       backdrop-filter: blur(var(--blur-glass)) saturate(160%);
-      -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(160%);
     }
   }
 
