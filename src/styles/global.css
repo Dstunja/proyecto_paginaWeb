@@ -167,22 +167,6 @@
   }
 }
 
-/* Entrada de la cortina: un fundido corto. El velo del fondo solo se funde;
-   el recuadro ademas sube 8 px, que es lo que le da el gesto de "aparece".
-   Con "reducir movimiento" el recuadro usa tambien este, sin desplazamiento. */
-@keyframes dst-cortina-aparece {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes dst-cortina-panel-entra {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-
 @keyframes mvFade {
   from {
     opacity: 0;
@@ -549,108 +533,6 @@
   .dst-capa-carga[data-fuera='true'] {
     pointer-events: none;
     animation: dst-loader-sale 0.25s ease-out forwards;
-  }
-
-  /* --- Cortina de carga entre paginas (BaseLayout.astro) ----------------
-     La hermana a pantalla completa de `.dst-capa-carga`: tapa el hueco en
-     blanco que queda al pasar de una pagina a la siguiente. Se pinta ya
-     visible con el HTML y el script del <head> la retira en cuanto el DOM
-     esta listo.
-
-     No es una tapa opaca: es un velo desenfocado con un recuadro en medio,
-     asi que la pagina se intuye por detras y el cambio no se siente como un
-     corte. El sitio no tiene modo oscuro -no hay un solo
-     `prefers-color-scheme` en el proyecto y la pagina es blanca siempre-, asi
-     que la cortina tampoco lo tiene: un recuadro oscuro se desvaneceria sobre
-     una pagina blanca y daria un salto de brillo en cada navegacion.
-
-     Sin JavaScript no aparece NUNCA. Solo se muestra si ese script pone
-     `js-cortina` en el <html>, igual que `js-revelado` con el revelado al
-     hacer scroll. Si se pintara sin esa condicion, un navegador sin JS se
-     quedaria con el sitio tapado para siempre.
-
-     Reutiliza `data-fuera` y `dst-loader-sale` para que las dos capas de
-     espera del sitio se retiren exactamente igual. */
-  #dst-cortina {
-    display: none;
-  }
-
-  html.js-cortina #dst-cortina {
-    position: fixed;
-    inset: 0;
-    /* Por encima de todo, incluida la barra fija y el salto al contenido. */
-    z-index: 9999;
-    display: grid;
-    place-items: center;
-    /* Velo, no tapa: la pagina se sigue viendo detras, desvanecida. Sin
-       soporte de desenfoque el velo va mas opaco a proposito; si no, el texto
-       de la pagina se leeria nitido a traves y competiria con el logotipo. */
-    background: rgba(255, 255, 255, 0.82);
-    animation: dst-cortina-aparece 0.15s ease-out;
-  }
-
-  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    html.js-cortina #dst-cortina {
-      background: color-mix(in srgb, var(--color-canvas) 60%, transparent);
-      /* Solo la propiedad estandar, y es a proposito. Lightning CSS -el
-         compilador de CSS que trae Tailwind 4- pone el prefijo -webkit- el
-         mismo cuando hace falta; en cambio, si se le escriben las dos, se
-         queda SOLO con la prefijada y tira la estandar por considerarla
-         pisada. Chrome no entiende -webkit-backdrop-filter, asi que el
-         desenfoque se perderia entero. */
-      backdrop-filter: blur(6px);
-    }
-  }
-
-  /* El recuadro: media pantalla de ancho, alto el que pida su contenido con
-     un suelo de 45vh. Fondo solido -no translucido- para que el logotipo se
-     lea sobre algo firme y no sobre la pagina borrosa. */
-  .dst-cortina-panel {
-    display: grid;
-    place-items: center;
-    width: 85vw;
-    min-height: 45vh;
-    height: auto;
-    padding: 2.5rem 1.5rem;
-    border: 1px solid var(--color-line);
-    border-radius: 24px;
-    background: var(--color-canvas);
-    box-shadow: 0 28px 60px rgba(13, 44, 132, 0.18);
-    animation: dst-cortina-panel-entra 0.15s ease-out;
-  }
-
-  /* `--breakpoint-tablet`: de ahi para arriba, media pantalla. */
-  @media (min-width: 900px) {
-    .dst-cortina-panel {
-      width: 50vw;
-    }
-  }
-
-  /* La salida. Lleva `html.js-cortina` delante a proposito: sin eso, la regla
-     de arriba gana por especificidad y su animacion de entrada pisaria esta,
-     con lo que la cortina no se desvaneceria nunca.
-
-     0,15 s, no los 0,25 s de `.dst-capa-carga`: esta tapa el paso de una
-     pagina a otra y ahi cada milisegundo se nota. Tiene que ir a la par con
-     `FUNDIDO` en el script de BaseLayout.astro, que es quien la esconde al
-     terminar; si uno de los dos cambia sin el otro, se ve un corte seco. */
-  html.js-cortina #dst-cortina[data-fuera='true'] {
-    pointer-events: none;
-    animation: dst-loader-sale 0.15s ease-out forwards;
-  }
-
-  /* Ya retirada. El `!important` hace falta porque la regla de arriba, con
-     el `html.js-cortina` delante, gana por especificidad a `[hidden]`. */
-  #dst-cortina[hidden] {
-    display: none !important;
-  }
-
-  /* Menos movimiento: solo el fundido, sin la subida de 8 px. (La regla
-     global de mas abajo deja ademas la duracion en un parpadeo.) */
-  @media (prefers-reduced-motion: reduce) {
-    .dst-cortina-panel {
-      animation-name: dst-cortina-aparece;
-    }
   }
 
   .kicker {
@@ -1198,15 +1080,6 @@
 
 ::view-transition-new(root) {
   animation: entrar-pagina 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-/* Mientras la cortina esta puesta no hay nada que fundir: las dos
-   instantaneas son la misma pantalla, y el fundido solo aniadiria un salto
-   del logotipo entre una pagina y otra. El script de BaseLayout.astro pone y
-   quita esta clase al mismo tiempo que la cortina. */
-html.dst-con-cortina::view-transition-old(root),
-html.dst-con-cortina::view-transition-new(root) {
-  animation: none;
 }
 
 @keyframes salir-pagina {
