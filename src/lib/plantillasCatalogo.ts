@@ -167,7 +167,7 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    *
    * SEGUNDO ESCALÓN: EL PRECIO DE LISTA
    * -----------------------------------
-   * De las 599 referencias sin PSP, 474 sí tienen precio de lista en el
+   * De las 596 referencias sin PSP, 474 sí tienen precio de lista en el
    * maestro de SAP. Esas muestran esa cifra, rotulada "Precio de lista" y
    * nunca "sugerido": no es lo que paga el consumidor sino lo que cuesta la
    * unidad de venta en la lista del proveedor.
@@ -177,7 +177,7 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * 12"), que es lo que le da sentido al número. Cuando no la declara va el
    * precio solo: inventarle un empaque sería peor que no decir nada.
    *
-   * Las 125 que no tienen ninguno de los dos precios no dejan el hueco ni
+   * Las 122 que no tienen ninguno de los dos precios no dejan el hueco ni
    * pintan un $0: dicen lo que diga `SIN_PSP` (src/lib/precios.ts), que es la
    * misma frase que usa el panel del pedido, y además mantiene todas las
    * tarjetas de la fila a la misma altura.

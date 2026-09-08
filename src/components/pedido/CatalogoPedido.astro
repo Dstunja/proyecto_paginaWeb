@@ -31,13 +31,13 @@
  * son notas internas y se quedan en el servidor. El `codigo` SAP viaja por dos
  * razones: va en el mensaje que recibe el asesor y ahora además se MUESTRA, en
  * el renglón de detalle de la tarjeta ("400 g · Cód. 1046509"). Por eso viaja
- * también `codigoParcial`, pero solo en las 27 referencias que lo tienen en
+ * también `codigoParcial`, pero solo en las 26 referencias que lo tienen en
  * `true`: son las que no pueden enseñar el código porque el deck de origen
  * solo traía sus últimos dígitos (ver `detalleReferencia` en src/lib/carrito.ts).
- * `psp` viaja solo cuando la referencia lo tiene: hoy son 112 de las 711. De
- * las 599 restantes, 474 mandan en su lugar `lista`, el precio de lista del
+ * `psp` viaja solo cuando la referencia lo tiene: hoy son 112 de las 708. De
+ * las 596 restantes, 474 mandan en su lugar `lista`, el precio de lista del
  * maestro de SAP. Los dos campos nunca viajan juntos: donde hay PSP manda el
- * PSP. Las 125 que no tienen ninguno sí muestran renglón de precio, pero con
+ * PSP. Las 122 que no tienen ninguno sí muestran renglón de precio, pero con
  * el texto "Precio a consultar", que se arma en la tarjeta y no hace falta
  * mandar.
  *
@@ -135,10 +135,10 @@ const catalogo = productos.map((p) => {
     nombre: p.nombre,
     presentacion: p.presentacion,
     codigo: p.codigo,
-    /* Solo viaja cuando es `true`, que son 27 de las 711: la tarjeta y el
+    /* Solo viaja cuando es `true`, que son 26 de las 708: la tarjeta y el
        panel muestran el código SAP y con este campo saben cuáles NO pueden
        enseñarlo porque el deck solo traía los últimos dígitos. Mandarlo
-       siempre costaría el campo en las 711 para informar de 27. */
+       siempre costaría el campo en las 708 para informar de 26. */
     ...(p.codigoParcial ? { codigoParcial: true } : {}),
     ...(imagen ? { imagen } : {}),
     ...(psp !== null ? { psp } : {}),
