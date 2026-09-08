@@ -35,11 +35,23 @@ import { empresa } from '../data/site';
  *   56 px cuando sube a 80 px, para que siempre quede aire arriba y abajo. Si
  *   cambia una, revisar la otra.
  * - `claro`: el isotipo dentro de una pastilla blanca (conserva sus colores de
- *   marca) más el nombre en Montserrat blanco y la línea naranja del logo.
- *   Para fondos oscuros, como el pie de página: ahí el logotipo horizontal no
- *   serviría, porque su texto es azul oscuro #0D2C84. El nombre de aquí es
- *   texto de verdad, no parte de una imagen, así que se lee bien y es el que
- *   mantiene la razón social visible en todas las páginas.
+ *   marca) más el nombre y la línea naranja del logo. Para fondos oscuros, como
+ *   el pie de página: ahí el logotipo horizontal no serviría, porque su texto es
+ *   azul oscuro #0D2C84. El nombre de aquí es texto de verdad, no parte de una
+ *   imagen, así que se lee bien y es el que mantiene la razón social visible en
+ *   todas las páginas.
+ *
+ *   Lleva la MISMA tipografía y los mismos ajustes que `iso`: Questrial en peso
+ *   normal, 17 px la primera línea y 10,5 px la segunda, con el mismo espaciado
+ *   y en título de caso. Las dos variantes repiten el nombre de la empresa, así
+ *   que cuando solo la barra seguía al logotipo el pie se quedaba descolgado con
+ *   su Montserrat Bold en versalitas. No hereda el color: aquí lo pone
+ *   `.sobre-oscuro` del pie, que reescribe `--color-ink` a blanco y
+ *   `--color-muted` a un blanco al 72 %.
+ *
+ *   Lo que NO se iguala es la raya naranja, más larga aquí (20 px frente a
+ *   14 px) porque acompaña a un bloque con más aire alrededor; es una medida de
+ *   composición, no de tipografía.
  * - `completo`: logotipo horizontal original, con el nombre dentro de la
  *   imagen. Hoy no lo usa nadie: se conserva por ser el archivo oficial de
  *   marca, para piezas donde haya espacio de sobra y el texto se lea.
@@ -97,9 +109,9 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
           height="180"
           class="icono-int h-12 w-12 object-contain tablet:h-14 tablet:w-14"
         />
-        {/* El tamaño NO crece con el isotipo en `tablet`: a 17 px el bloque
-            pasaría de 122 a 136 px y dejaría la fila del menú sin aire a
-            1160 px. Se queda fijo a todos los anchos. */}
+        {/* El isotipo crece en `tablet` (48 → 56 px) pero el NOMBRE no: se queda
+            en 17/10,5 px a todos los anchos. Subirlo empujaría el bloque contra
+            la fila del menú, que a 1180 px es donde menos aire tiene. */}
         <span class="hidden font-marca leading-tight whitespace-nowrap marca:block">
           <span class="block text-[17px] font-normal tracking-[0.005em] text-primary">
             Distribuciones
@@ -125,9 +137,9 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
             class="h-full w-full object-contain"
           />
         </span>
-        <span class="font-display leading-tight text-ink">
-          <span class="block text-[18px] font-bold tracking-[-0.01em]">Distribuciones</span>
-          <span class="mt-1 flex items-center gap-2 text-[10.5px] font-semibold tracking-[0.08em] text-muted uppercase">
+        <span class="font-marca leading-tight text-ink">
+          <span class="block text-[17px] font-normal tracking-[0.005em]">Distribuciones</span>
+          <span class="mt-[3px] flex items-center gap-2 text-[10.5px] font-normal tracking-[0.01em] text-muted">
             <span class="h-[2px] w-5 bg-accent" aria-hidden="true" />
             Santiago De Tunja S.A.S
           </span>
