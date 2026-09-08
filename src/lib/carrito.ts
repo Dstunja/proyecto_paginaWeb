@@ -73,8 +73,8 @@ export interface ProductoPedido {
    *
    * Es un precio POR UNIDAD DE VENTA, no por unidad de consumo, así que no
    * entra en el subtotal orientativo ni se multiplica por la cantidad: la
-   * tarjeta y el panel lo pintan tal cual, rotulado "Precio de lista" y con la
-   * presentación al lado cuando se conoce.
+   * tarjeta y el panel lo pintan tal cual, con el rótulo común
+   * `ETIQUETA_PRECIO` y con la presentación al lado cuando se conoce.
    */
   lista?: PrecioLista;
 }

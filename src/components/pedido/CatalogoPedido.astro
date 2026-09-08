@@ -763,14 +763,17 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   </p>
 
   {/* Cuántas referencias traen precio. Se dice una sola vez, aquí, en vez de
-      repetir un "consultar" en las tarjetas que no lo tienen. Los dos precios
-      se cuentan por separado porque no son la misma cosa: el sugerido es por
-      unidad de consumo y el de lista por unidad de venta. */}
+      repetir un "consultar" en las tarjetas que no lo tienen.
+
+      Va UNA sola cifra, no una por origen: desde que la tarjeta rotula los
+      tres precios igual (`ETIQUETA_PRECIO`), desglosarlos aquí obligaría a
+      explicar una distinción que la página ya no hace. El desglose por origen
+      sigue estando en los datos y en `conPrecio` / `conLista`, por si hay que
+      volver a decirlo. */}
   {
-    conPrecio > 0 && (
+    conPrecio + conLista > 0 && (
       <p class="m-0 text-[13.5px] text-muted">
-        {conPrecio} de {catalogo.length} con precio sugerido de referencia
-        {conLista > 0 && <> y {conLista} con precio de lista</>}.
+        {conPrecio + conLista} de {catalogo.length} con precio de referencia.
       </p>
     )
   }

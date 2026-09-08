@@ -59,8 +59,11 @@
  *   2. PSP DEL DECK — el campo `precio` de src/data/productos.ts, extraído de
  *      las páginas del deck "MASIVO 1.0" que declaran un PSP explícito.
  *   3. PRECIO DE LISTA — src/data/preciosLista.ts, del maestro de precios de
- *      SAP. Es el último recurso, va rotulado "Precio de lista" y NUNCA como
- *      sugerido: no es lo que la tienda le cobra al consumidor.
+ *      SAP. Es el último recurso.
+ *
+ * En pantalla los TRES se rotulan igual, "Precio de referencia"
+ * (`ETIQUETA_PRECIO` en src/lib/precios.ts): la distinción de origen es de
+ * mantenimiento y vive aquí, en la separación por archivos, no en la interfaz.
  *
  * Quien resuelve ese orden es `precioSugerido` y `precioLista` en
  * src/lib/precios.ts; aquí solo se cargan las cifras.

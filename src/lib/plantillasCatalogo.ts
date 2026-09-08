@@ -20,12 +20,7 @@
  */
 
 import { detalleReferencia, type ProductoPedido } from './carrito';
-import {
-  ETIQUETA_PRECIO_LISTA,
-  IMAGEN_REFERENCIA,
-  SIN_PSP,
-  presentacionDeLista,
-} from './precios';
+import { ETIQUETA_PRECIO, IMAGEN_REFERENCIA, SIN_PSP, presentacionDeLista } from './precios';
 import { CANTIDAD_MAXIMA, TAMANO_TANDA } from '../data/pedido';
 
 /**
@@ -156,39 +151,39 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
            </div>`;
 
   /*
-   * EL PRECIO: siempre hay renglón
-   * ------------------------------
-   * Es el PSP (precio sugerido al público): la corrección manual de
-   * src/data/precios.ts si la hay, y si no el del deck.
+   * EL PRECIO: siempre hay renglón, y siempre el MISMO rótulo
+   * ---------------------------------------------------------
+   * La cifra sale de uno de tres orígenes -PSP confirmado por el asesor, PSP
+   * del deck, o precio de lista de SAP-, pero los tres se pintan igual: con
+   * `ETIQUETA_PRECIO` (src/lib/precios.ts), hoy "Precio de referencia".
    *
-   * Va rotulado como SUGERIDO a propósito. Es lo que la tienda le cobra al
-   * consumidor, no lo que la tienda le paga al asesor, y sin el rótulo la
-   * cifra se leería como el precio del pedido. El aviso de que el asesor
-   * confirma precios y disponibilidad sigue estando en el panel del pedido
-   * y en el mensaje de WhatsApp (AVISO_PRECIOS).
+   * Antes eran dos rótulos, "sugerido" y "Precio de lista". Se unificaron
+   * porque la distinción no le servía a quien usa la página: los tres son
+   * orientativos y los tres los confirma el asesor antes de despachar (ese
+   * aviso vive en el panel del pedido y en el mensaje de WhatsApp,
+   * `AVISO_PRECIOS`). El origen NO se perdió: sigue separado en los datos, en
+   * tres archivos distintos, y volver a distinguirlo en pantalla es cambiar
+   * este rótulo por dos otra vez.
    *
-   * SEGUNDO ESCALÓN: EL PRECIO DE LISTA
-   * -----------------------------------
-   * De las 499 referencias sin PSP, 498 sí tienen precio de lista en el
-   * maestro de SAP. Esas muestran esa cifra, rotulada "Precio de lista" y
-   * nunca "sugerido": no es lo que paga el consumidor sino lo que cuesta la
-   * unidad de venta en la lista del proveedor.
+   * LA PRESENTACIÓN, SOLO EN LAS DE PRECIO DE LISTA
+   * -----------------------------------------------
+   * Esa sí se mantiene aparte, porque no es un rótulo de origen sino un dato
+   * del producto: el precio de lista corresponde a la unidad de venta, y
+   * cuando el maestro declara cuántas unidades trae ("caja x 12") decirlo es
+   * lo que le da sentido a la cifra. Cuando no la declara va el precio solo:
+   * inventarle un empaque sería peor que no decir nada.
    *
-   * La cifra va TAL CUAL, sin dividir. Debajo, cuando el maestro declara las
-   * unidades del empaque, va la presentación a la que corresponde ("caja x
-   * 12"), que es lo que le da sentido al número. Cuando no la declara va el
-   * precio solo: inventarle un empaque sería peor que no decir nada.
-   *
-   * La única que no tiene ninguno de los dos precios no deja el hueco ni
-   * pintan un $0: dicen lo que diga `SIN_PSP` (src/lib/precios.ts), que es la
-   * misma frase que usa el panel del pedido, y además mantiene todas las
-   * tarjetas de la fila a la misma altura.
+   * La única referencia que no tiene ninguno de los tres precios no deja el
+   * hueco ni pinta un $0: dice lo que diga `SIN_PSP` (src/lib/precios.ts), que
+   * es la misma frase que usa el panel del pedido, y así todas las tarjetas de
+   * una fila siguen midiendo lo mismo.
    */
+  const rotulo = `<span class="precio-tarjeta__nota">${escapar(ETIQUETA_PRECIO)}</span>`;
   const precio =
     typeof p.psp === 'number'
-      ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}<span class="precio-tarjeta__nota">sugerido</span></p>`
+      ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}${rotulo}</p>`
       : p.lista
-        ? `<p class="precio-tarjeta">${escapar(pesos(p.lista.valor))}<span class="precio-tarjeta__nota">${escapar(ETIQUETA_PRECIO_LISTA)}</span></p>${
+        ? `<p class="precio-tarjeta">${escapar(pesos(p.lista.valor))}${rotulo}</p>${
             p.lista.unidades
               ? `<p class="precio-tarjeta__presentacion">${escapar(presentacionDeLista(p.lista.unidades))}</p>`
               : ''

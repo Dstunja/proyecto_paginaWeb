@@ -38,9 +38,11 @@ export interface ConCodigo {
  *      que viene del deck "MASIVO 1.0" y cubre las 112 referencias cuya
  *      página declara un PSP explícito.
  *
- * Las dos son PSP y la tarjeta las rotula igual, "sugerido": al tendero le da
- * lo mismo de dónde salió la cifra. La distinción es de mantenimiento, y por
- * eso vive en la estructura -archivos distintos- y no en la interfaz.
+ * Las dos son PSP, y desde que se unificaron los rótulos la tarjeta pinta
+ * igual estas dos y el precio de lista: todas con `ETIQUETA_PRECIO`. Al
+ * tendero le da lo mismo de dónde salió la cifra. La distinción es de
+ * mantenimiento, y por eso vive en la estructura -archivos distintos- y no en
+ * la interfaz.
  *
  * Devuelve `null` —y no 0 ni undefined— para que en la interfaz sea imposible
  * confundir "no sabemos" con "sale gratis". Las referencias con código parcial
@@ -106,15 +108,32 @@ export function precioLista(producto: ConCodigo): PrecioLista | null {
 }
 
 /**
- * El rótulo del precio de lista. Va en una constante por lo mismo que
- * `SIN_PSP`: lo pintan la tarjeta del catálogo y la línea del panel, y tienen
- * que decir exactamente lo mismo.
+ * EL ÚNICO RÓTULO DE PRECIO DE LA INTERFAZ.
  *
- * NUNCA se rotula como PSP ni como "sugerido": es el precio de la lista del
- * proveedor, no lo que la tienda le cobra al consumidor, y confundirlos sería
- * el peor error posible en este renglón.
+ * Toda cifra que se pinta en el sitio lleva este rótulo, venga de donde venga:
+ * del PSP confirmado por el asesor, del PSP del deck o del precio de lista de
+ * SAP. Antes eran dos ("sugerido" y "Precio de lista") y se unificaron.
+ *
+ * POR QUÉ UNO SOLO
+ * ----------------
+ * La distinción decía algo cierto pero inútil para quien usa la página: los
+ * tres son orientativos y los tres los confirma el asesor antes de despachar
+ * (ver `AVISO_PRECIOS`). Dos rótulos obligaban al tendero a interpretar de
+ * dónde salió cada número para saber cuánto fiarse, cuando la respuesta es la
+ * misma en los tres casos.
+ *
+ * LO QUE NO CAMBIÓ
+ * ----------------
+ * El origen sigue separado en los datos, en tres archivos distintos:
+ * src/data/precios.ts (asesor), el campo `precio` de src/data/productos.ts
+ * (deck) y src/data/preciosLista.ts (SAP). Volver a distinguirlos en pantalla
+ * es solo cuestión de pintar rótulos distintos otra vez; el dato está.
+ *
+ * Va en una constante por lo mismo que `SIN_PSP`: lo pintan la tarjeta del
+ * catálogo y la línea del panel del pedido, y tienen que decir exactamente lo
+ * mismo.
  */
-export const ETIQUETA_PRECIO_LISTA = 'Precio de lista';
+export const ETIQUETA_PRECIO = 'Precio de referencia';
 
 /** `Presentación: caja x 12`, la unidad de venta a la que corresponde la cifra. */
 export const presentacionDeLista = (unidades: number) => `Presentación: caja x ${unidades}`;
