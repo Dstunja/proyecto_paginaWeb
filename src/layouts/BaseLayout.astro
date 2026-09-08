@@ -6,11 +6,16 @@ import '@fontsource-variable/montserrat'; // títulos (Bold / SemiBold)
 import '@fontsource/poppins/400.css'; // cuerpo
 import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/600.css';
-// Questrial solo para el nombre de la marca en la barra (ver Logo.astro).
-// `latin-400` y no `400`: el subconjunto latino son 20 KB, mientras que el
-// paquete completo arrastra ademas latin-ext y vietnamita, que suman 39 KB mas
-// y no tienen ni un caracter que el nombre de la empresa vaya a usar.
-import '@fontsource/questrial/latin-400.css';
+// Las dos letras del nombre de la marca, y solo para eso (ver Logo.astro):
+// Jost 300 en "Distribuciones" y Source Sans 3 400 en "Santiago De Tunja
+// S.A.S", que es como esta compuesto el logotipo.
+// `latin-300` / `latin-400` y no `300` / `400`: el subconjunto latino son
+// 9,9 KB y 15,7 KB, mientras que el paquete completo de cada una arrastra
+// ademas latin-ext, cirilico y griego, que no tienen ni un caracter que el
+// nombre de la empresa vaya a usar. Un solo peso por familia, tambien a
+// proposito: el nombre no se pone nunca en negrita ni en cursiva.
+import '@fontsource/jost/latin-300.css';
+import '@fontsource/source-sans-3/latin-400.css';
 import '../styles/global.css';
 
 import Header from '../components/Header.astro';

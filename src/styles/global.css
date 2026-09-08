@@ -25,14 +25,32 @@
   --font-display: "Montserrat Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-body: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
 
-  /* Solo para el nombre de la empresa junto al isotipo en la barra.
-     Questrial es lo mas parecido que hay en Google Fonts a la letra del
-     logotipo (public/logo-distribuciones.png): geometrica, monolineal, de
-     panzas circulares y con la `a` de dos pisos. NO se usa en ningun otro
-     sitio: el resto del sitio sigue en Montserrat y Poppins.
-     El respaldo va detras en el mismo orden que los otros dos tokens, para
-     que si la fuente no llega el nombre no salte a una serif del sistema. */
-  --font-marca: "Questrial", "Segoe UI", system-ui, -apple-system, sans-serif;
+  /* --- Las DOS letras del nombre de la marca (barra y pie, ver Logo.astro) ---
+     El logotipo (public/logo-distribuciones.png) no usa una sola tipografia,
+     usa dos, y por eso aqui hay dos tokens. Como el archivo esta rasterizado y
+     no declara ninguna fuente, las dos se eligieron MIDIENDO el PNG pixel a
+     pixel en vez de a ojo:
+
+       Linea 1, "Distribuciones": geometrica y de trazo muy fino. El grosor del
+       asta es el 10,6 % de la altura de mayuscula, que es un peso Light, y la
+       proporcion ancho/altura de la palabra es 7,95. Jost 300 da 8,31 (un
+       4,5 % mas ancha); Questrial, que estaba antes, daba 9,61 y Poppins 200
+       9,63, las dos un 21 % mas anchas de la cuenta. Por eso Jost, y por eso
+       va sin retoque de `letter-spacing`: su espaciado natural ya es el que
+       mas se acerca al del logotipo.
+
+       Linea 2, "Santiago De Tunja S.A.S": humanista y de trazo normal. Ahi el
+       asta mide el 13,3 % de la mayuscula, un peso Regular, y la letra es de
+       las de tipo Segoe UI / Myriad. Source Sans 3 400 encaja con esa forma y
+       queda a un 7 % del ancho del logotipo.
+
+     NO se usan en ningun otro sitio: el resto del sitio sigue en Montserrat y
+     Poppins. El respaldo de cada una es una fuente de sistema de la MISMA
+     familia formal —Century Gothic es geometrica, Segoe UI es humanista— para
+     que si el archivo no llega el nombre siga pareciendose al logotipo en vez
+     de saltar a una serif. */
+  --font-marca-1: "Jost", "Century Gothic", system-ui, -apple-system, sans-serif;
+  --font-marca-2: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
 
   /* --- Fondos: el blanco es el color primario --- */
   --color-canvas: #ffffff; /* fondo del sitio */
