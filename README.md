@@ -233,14 +233,44 @@ Los botones naranja llevan texto oscuro (`ink`) porque el blanco sobre `#F5A623`
 no alcanza el contraste mínimo AA. Por lo mismo, el naranja de los textos es
 `accent-text` y no el naranja puro.
 
-**Tipografía**, self-hosted con Fontsource (nada de Google Fonts por CDN):
+**Tipografía**, self-hosted con Fontsource (nada de Google Fonts por CDN). Son
+cuatro fuentes, y se reparten en dos grupos: dos para el sitio y dos, solo dos,
+para el nombre de la marca.
 
-- **Montserrat** — Bold en `h1`, SemiBold en `h2`/`h3`/`h4`, botones y menú.
-- **Poppins** — Regular para todo el texto de cuerpo.
+Las del sitio, con token propio en `global.css`:
+
+- **Montserrat** (`--font-display`, utilidad `font-display`) — Bold en `h1`,
+  SemiBold en `h2`/`h3`/`h4`, botones, menú y cifras destacadas.
+- **Poppins** (`--font-body`) — Regular para todo el texto de cuerpo. Es la
+  fuente por defecto del `body`, así que no hace falta pedirla.
 
 Poppins no existe como fuente variable, así que se cargan los pesos 400, 500 y
 600 desde `@fontsource/poppins`; Montserrat sí es variable
 (`@fontsource-variable/montserrat`).
+
+Las de la marca sirven **únicamente** para el nombre de la empresa junto al
+isotipo, en la barra y en el pie (`src/components/Logo.astro`, variantes `iso` y
+`claro`). Son dos porque el logotipo también está compuesto en dos:
+
+- **Jost 300** (`--font-marca-1`, utilidad `font-marca-1`) — la primera línea,
+  «Distribuciones». Geométrica y de trazo muy fino, a 22 px.
+- **Source Sans 3 400** (`--font-marca-2`, utilidad `font-marca-2`) — la
+  segunda línea, «Santiago De Tunja S.A.S». Humanista y de trazo normal, a
+  10,5 px, con la raya naranja a la izquierda.
+
+No se usan en ningún otro sitio del proyecto: cualquier otro texto va en
+Montserrat o Poppins. Se eligieron midiendo `public/logo-distribuciones.png`
+píxel a píxel, porque el archivo está rasterizado y no declara ninguna fuente;
+el razonamiento completo, con las proporciones que se compararon, está en el
+comentario de `--font-marca-1` en `src/styles/global.css` y en la cabecera de
+`Logo.astro`. Antes de ellas el nombre iba en Questrial, que se desinstaló al
+no quedarle ningún uso.
+
+De las cuatro, las dos de marca se cargan con **un solo peso y solo el
+subconjunto latino** (`@fontsource/jost/latin-300.css` y
+`@fontsource/source-sans-3/latin-400.css`, 9,9 KB y 15,7 KB): el nombre de la
+empresa no se pone nunca en negrita ni en cursiva y no tiene un carácter fuera
+del latín. Los cuatro imports viven juntos en `src/layouts/BaseLayout.astro`.
 
 **Logo**: `public/logo-distribuciones.png` (horizontal) en el encabezado y
 `public/LOGO-removebg-preview.png` (isotipo) en el pie, en pantallas muy
