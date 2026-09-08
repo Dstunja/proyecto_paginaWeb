@@ -69,8 +69,8 @@ export const SIN_PSP = 'Precio a consultar';
  *
  * POR QUÉ EXISTE ESTE SEGUNDO PRECIO
  * ----------------------------------
- * De las 708 referencias del catálogo solo 112 traen PSP en el deck de
- * Nutresa. Las 596 restantes decían todas "Precio a consultar", que no le
+ * De las 620 referencias del catálogo solo 112 traen PSP en el deck de
+ * Nutresa. Las 508 restantes decían todas "Precio a consultar", que no le
  * sirve de nada a quien está armando un pedido y quiere hacerse una idea del
  * monto. El maestro de precios de SAP (`infolista.xls`) sí trae una cifra para
  * 474 de ellas: su precio de lista.

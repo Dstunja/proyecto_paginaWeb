@@ -34,10 +34,10 @@
  * también `codigoParcial`, pero solo en las 26 referencias que lo tienen en
  * `true`: son las que no pueden enseñar el código porque el deck de origen
  * solo traía sus últimos dígitos (ver `detalleReferencia` en src/lib/carrito.ts).
- * `psp` viaja solo cuando la referencia lo tiene: hoy son 112 de las 708. De
- * las 596 restantes, 474 mandan en su lugar `lista`, el precio de lista del
+ * `psp` viaja solo cuando la referencia lo tiene: hoy son 112 de las 620. De
+ * las 508 restantes, 474 mandan en su lugar `lista`, el precio de lista del
  * maestro de SAP. Los dos campos nunca viajan juntos: donde hay PSP manda el
- * PSP. Las 122 que no tienen ninguno sí muestran renglón de precio, pero con
+ * PSP. Las 34 que no tienen ninguno sí muestran renglón de precio, pero con
  * el texto "Precio a consultar", que se arma en la tarjeta y no hace falta
  * mandar.
  *
@@ -135,10 +135,10 @@ const catalogo = productos.map((p) => {
     nombre: p.nombre,
     presentacion: p.presentacion,
     codigo: p.codigo,
-    /* Solo viaja cuando es `true`, que son 26 de las 708: la tarjeta y el
+    /* Solo viaja cuando es `true`, que son 26 de las 620: la tarjeta y el
        panel muestran el código SAP y con este campo saben cuáles NO pueden
        enseñarlo porque el deck solo traía los últimos dígitos. Mandarlo
-       siempre costaría el campo en las 708 para informar de 26. */
+       siempre costaría el campo en las 620 para informar de 26. */
     ...(p.codigoParcial ? { codigoParcial: true } : {}),
     ...(imagen ? { imagen } : {}),
     ...(psp !== null ? { psp } : {}),
@@ -396,7 +396,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
   /* SIN FOTO: COLOR SÓLIDO DE MARCA CON EL NOMBRE
      ---------------------------------------------
-     Las referencias que todavía no tienen foto (245 de 711) no dejan el marco
+     Las referencias que todavía no tienen foto (89 de 620) no dejan el marco
      vacío ni caen en el logotipo de la marca repetido tarjeta tras tarjeta:
      llevan el azul oscuro de la paleta, plano, con el nombre del producto
      centrado en la tipografía de titulares. La caja mide exactamente lo mismo
