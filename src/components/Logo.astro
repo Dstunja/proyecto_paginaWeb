@@ -49,9 +49,10 @@ import { empresa } from '../data/site';
  *   `.sobre-oscuro` del pie, que reescribe `--color-ink` a blanco y
  *   `--color-muted` a un blanco al 72 %.
  *
- *   Lo que NO se iguala es la raya naranja, más larga aquí (20 px frente a
- *   14 px) porque acompaña a un bloque con más aire alrededor; es una medida de
- *   composición, no de tipografía.
+ *   La raya naranja también mide lo mismo que en la barra, 14 px. Estuvo un
+ *   tiempo en 20 px, heredados de cuando el nombre iba en versalitas y ocupaba
+ *   bastante más: con el nombre ya en título de caso, la raya larga sobresalía
+ *   del conjunto en vez de acompañarlo.
  * - `completo`: logotipo horizontal original, con el nombre dentro de la
  *   imagen. Hoy no lo usa nadie: se conserva por ser el archivo oficial de
  *   marca, para piezas donde haya espacio de sobra y el texto se lea.
@@ -140,7 +141,7 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
         <span class="font-marca leading-tight text-ink">
           <span class="block text-[17px] font-normal tracking-[0.005em]">Distribuciones</span>
           <span class="mt-[3px] flex items-center gap-2 text-[10.5px] font-normal tracking-[0.01em] text-muted">
-            <span class="h-[2px] w-5 bg-accent" aria-hidden="true" />
+            <span class="h-[2px] w-3.5 bg-accent" aria-hidden="true" />
             Santiago De Tunja S.A.S
           </span>
         </span>
