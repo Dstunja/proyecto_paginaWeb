@@ -46,7 +46,7 @@
 import { getImage } from 'astro:assets';
 import { productos, MARCAS, CATEGORIAS, SUBCATEGORIAS } from '../../data/productos';
 import { imagenSiExiste, logoMarcaImagen } from '../../lib/imagenes';
-import { codigosSinProducto, precioSugerido } from '../../lib/precios';
+import { codigosSinProducto, precioEsOficial, precioSugerido } from '../../lib/precios';
 import { ruta } from '../../lib/rutas';
 import { TAMANO_TANDA } from '../../data/pedido';
 import {
@@ -135,6 +135,12 @@ const catalogo = productos.map((p) => {
     ...(p.codigoParcial ? { codigoParcial: true } : {}),
     ...(imagen ? { imagen } : {}),
     ...(psp !== null ? { psp } : {}),
+    /* Solo viaja cuando el precio es una aproximación, que es el caso que la
+       tarjeta tiene que advertir. Hoy lo son todas las que tienen cifra: las
+       112 salen del deck "MASIVO 1.0" y `PRECIOS_OFICIALES` todavía está
+       vacío. A medida que se cargue la lista oficial del proveedor, el campo
+       va desapareciendo solo de las referencias confirmadas. */
+    ...(psp !== null && !precioEsOficial(p) ? { pspEstimado: true } : {}),
   };
 });
 
@@ -453,6 +459,26 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     font-size: 13px;
     font-weight: 500;
     color: var(--color-muted);
+  }
+
+  /* EL AVISO DE APROXIMACIÓN, al pie de los datos de la tarjeta.
+
+     Va deliberadamente discreto -11 px, gris, sin negrita ni icono-: tiene que
+     poder leerse si alguien lo busca, pero no puede pelearle la atención a la
+     cifra que está justo encima ni al botón de agregar. Es una salvedad, no
+     una advertencia.
+
+     `text-wrap: pretty` evita que la última línea quede con una sola palabra
+     colgando, que en un texto de dos frases dentro de una tarjeta angosta se
+     nota mucho. */
+  .aviso-tarjeta {
+    margin: 0.25rem 0 0;
+    font-family: var(--font-body);
+    font-size: 11px;
+    line-height: 1.35;
+    font-weight: 400;
+    color: var(--color-muted);
+    text-wrap: pretty;
   }
 </style>
 

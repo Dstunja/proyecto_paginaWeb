@@ -13,6 +13,8 @@
     "og": "node scripts/build-og.mjs",
     "favicon": "node scripts/build-favicon.mjs",
     "geocodificar": "node scripts/geocodificar.mjs",
+    "fotos:descargar": "node scripts/descargar-fotos.mjs",
+    "fotos:conectar": "node scripts/conectar-fotos.mjs",
     "iconos": "npm run favicon && npm run og",
     "check:env": "node scripts/check-env.mjs",
     "verificar:analitica": "node scripts/verificar-analitica.mjs",

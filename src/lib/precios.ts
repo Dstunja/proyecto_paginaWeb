@@ -13,7 +13,7 @@
  * `localStorage`.
  */
 
-import { PRECIOS_SUGERIDOS } from '../data/precios';
+import { PRECIOS_OFICIALES, PRECIOS_SUGERIDOS } from '../data/precios';
 
 /** Una referencia mínima: lo que hace falta para resolverle el precio. */
 export interface ConCodigo {
@@ -45,6 +45,25 @@ export function precioSugerido(producto: ConCodigo): number | null {
   }
   const delDeck = producto.precio;
   return typeof delDeck === 'number' && Number.isFinite(delDeck) && delDeck > 0 ? delDeck : null;
+}
+
+/**
+ * ¿El precio de esta referencia sale de la lista oficial del proveedor?
+ *
+ * Es lo contrario de "estimado". Devuelve `false` para todo lo que no esté en
+ * `PRECIOS_OFICIALES`: el precio del deck, el promedio de la categoría y la
+ * referencia sin precio. Esa es la respuesta prudente -de un precio que no
+ * está en la lista oficial no se puede afirmar que lo sea-, y es la que hace
+ * que el aviso de la tarjeta aparezca por defecto y se apague solo cuando hay
+ * con qué respaldarlo.
+ *
+ * Las referencias con código parcial o vacío nunca son oficiales: su código no
+ * identifica un producto único, así que no se puede cruzar contra la lista.
+ */
+export function precioEsOficial(producto: ConCodigo): boolean {
+  const codigo = producto.codigo?.trim();
+  if (!codigo || producto.codigoParcial) return false;
+  return PRECIOS_OFICIALES.has(codigo);
 }
 
 /**

@@ -61,6 +61,16 @@ export interface ProductoPedido {
    * referencia no entra en el subtotal orientativo.
    */
   psp?: number;
+  /**
+   * `true` cuando el `psp` de arriba es una aproximación y no una cifra
+   * tomada de la lista oficial del proveedor (ver `precioEsOficial` en
+   * src/lib/precios.ts). Enciende el aviso al pie de la tarjeta.
+   *
+   * Viaja solo cuando es `true`, como `codigoParcial`: el campo pesa lo mismo
+   * en cada una de las 711 referencias del JSON que se manda al navegador, y
+   * el caso que hay que señalar es el estimado, no el confirmado.
+   */
+  pspEstimado?: boolean;
 }
 
 /** Datos de contacto que acompañan al pedido. */

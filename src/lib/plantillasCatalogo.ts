@@ -156,6 +156,30 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
       ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}<span class="precio-tarjeta__nota">sugerido</span></p>`
       : `<p class="precio-tarjeta precio-tarjeta--consultar">${escapar(SIN_PSP)}</p>`;
 
+  /*
+   * EL AVISO DE APROXIMACIÓN
+   * ------------------------
+   * Solo sale donde hay algo que advertir, y dice únicamente lo que aplica a
+   * ESA tarjeta: si la foto es de respaldo, si la cifra es estimada, o las dos
+   * cosas. Un aviso idéntico en las 711 referencias se volvería decorado y
+   * dejaría de leerse, que es justo lo contrario de lo que se busca.
+   *
+   * Por eso no lo llevan ni la tarjeta con foto oficial y precio de lista
+   * -no hay nada aproximado en ella- ni la que dice "Precio a consultar", que
+   * ya está diciendo que no tiene precio y no gana nada con que se lo repitan.
+   *
+   * Las condiciones generales (que el asesor confirma valor y disponibilidad)
+   * siguen en el panel del pedido y en el mensaje de WhatsApp: aquí va solo la
+   * advertencia que depende de la referencia.
+   */
+  const avisos = [];
+  if (!foto) avisos.push('Imagen de referencia.');
+  if (typeof p.psp === 'number' && p.pspEstimado)
+    avisos.push('Precio de referencia, sujeto a cambios.');
+  const aviso = avisos.length
+    ? `<p class="aviso-tarjeta">${escapar(avisos.join(' '))}</p>`
+    : '';
+
   return `
         <article class="glass-card flex flex-col overflow-hidden ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${escapar(p.id)}">
           ${caja}
@@ -166,6 +190,7 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
               <h3 class="m-0 text-[15px] leading-snug">${escapar(p.nombre)}</h3>
               <p class="m-0 text-[13px] text-muted">${escapar(detalleReferencia(p))}</p>
               ${precio}
+              ${aviso}
             </div>
 
             <div class="mt-auto flex flex-wrap items-center gap-2" data-controles>

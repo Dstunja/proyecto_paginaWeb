@@ -53,6 +53,33 @@
 export const PRECIOS_SUGERIDOS: Record<string, number> = {};
 
 /**
+ * Códigos SAP cuyo precio viene de la LISTA OFICIAL del proveedor, no de una
+ * estimación.
+ *
+ * QUÉ DISTINGUE A ESTA LISTA DE LA DE ARRIBA
+ * ------------------------------------------
+ * `PRECIOS_SUGERIDOS` dice CUÁNTO cuesta; esta dice DE DÓNDE salió esa cifra.
+ * Son dos preguntas distintas y la tarjeta necesita las dos: un precio tomado
+ * de la lista oficial se puede mostrar tal cual, y uno deducido -del deck, o
+ * del promedio de su categoría- tiene que ir con el aviso de que es
+ * aproximado. Sin esta lista las dos cifras se verían idénticas en pantalla,
+ * que es exactamente la confusión que el aviso trata de evitar.
+ *
+ * El sitio lo consulta a través de `precioEsOficial` (src/lib/precios.ts), y
+ * de ahí sale el `pspEstimado` que enciende el aviso de la tarjeta.
+ *
+ * EDITAR AQUÍ: se llena junto con `PRECIOS_SUGERIDOS` al cargar la lista de
+ * precios del proveedor, con los códigos que aparecieron en ella con un valor
+ * mayor que cero. Un código que en la lista venga en 0 NO va aquí: ese cero no
+ * es un precio, es un dato que falta, y la referencia debe quedar estimada.
+ *
+ * Mientras esté vacía, todas las referencias con precio se muestran como
+ * estimadas, que es lo correcto: hoy las cifras del sitio salen del deck
+ * "MASIVO 1.0" y ninguna está confirmada contra la lista oficial.
+ */
+export const PRECIOS_OFICIALES: ReadonlySet<string> = new Set([]);
+
+/**
  * Fecha en que se actualizaron los precios de arriba, tal como se quiere leer
  * en la nota al pie del panel ('septiembre de 2026'). Vacío = no se menciona.
  *
