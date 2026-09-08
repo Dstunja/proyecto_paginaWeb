@@ -131,19 +131,34 @@ export function destinatarioDe(
 }
 
 /**
- * Asunto del correo. Nombra la categoría SIEMPRE y en primer lugar, que es lo
- * que permite separar los dos flujos en la bandeja de entrada aunque acaben en
- * el mismo buzón.
+ * Asunto del correo.
  *
- * @example asuntoDe('administrativa', 'Petición')  -> 'PQRS Administrativa · Petición'
- * @example asuntoDe('comercial', 'Queja', 'PQRS-…') -> '[PQRS-…] PQRS Comercial · Queja'
+ * Nombra la categoría SIEMPRE y en primer lugar, que es lo que permite separar
+ * los dos flujos en la bandeja de entrada aunque acaben en el mismo buzón, y
+ * cierra con el municipio, que es lo que decide qué ruta y qué asesor atienden
+ * la solicitud. Se puede clasificar sin abrir el correo.
+ *
+ * Los argumentos van en un objeto y no sueltos a propósito: con cuatro trozos,
+ * tres de ellos cadenas, el orden posicional se equivoca solo.
+ *
+ * @example asuntoDe({ categoria: 'administrativa', tipo: 'Petición', municipio: 'Tunja' })
+ *          -> 'PQRS Administrativa · Petición · Tunja'
+ * @example asuntoDe({ categoria: 'comercial', tipo: 'Queja', municipio: 'Samacá', radicado: 'PQRS-…' })
+ *          -> '[PQRS-…] PQRS Comercial · Queja · Samacá'
  */
-export function asuntoDe(
-  clave: string | null | undefined,
-  tipo: string,
-  radicado?: string,
-): string {
-  const nombre = categoriaDe(clave)?.nombre ?? 'Comercial';
-  const cuerpo = `PQRS ${nombre}${tipo ? ` · ${tipo}` : ''}`;
+export function asuntoDe({
+  categoria,
+  tipo,
+  municipio = '',
+  radicado = '',
+}: {
+  categoria: string | null | undefined;
+  tipo: string;
+  municipio?: string;
+  radicado?: string;
+}): string {
+  const nombre = categoriaDe(categoria)?.nombre ?? 'Comercial';
+  const partes = [`PQRS ${nombre}`, tipo, municipio].filter((p) => p && p.trim() !== '');
+  const cuerpo = partes.join(' · ');
   return radicado ? `[${radicado}] ${cuerpo}` : cuerpo;
 }

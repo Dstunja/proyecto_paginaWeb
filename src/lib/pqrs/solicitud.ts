@@ -7,7 +7,24 @@
  * hace fácil de probar y deja los endpoints como pura fontanería.
  */
 import { normalizar, requiereSoporte } from '../adjuntos';
+import { municipios } from '../../data/municipios';
+import { buscarMunicipio, indexarMunicipios } from '../municipios-busqueda';
 import { esSessionIdValido } from './config';
+
+/**
+ * Los 87 municipios donde distribuye la empresa, indexados sin tildes ni
+ * mayúsculas.
+ *
+ * POR QUÉ SE VALIDA AQUÍ Y NO SOLO EN EL NAVEGADOR. El combobox de
+ * CampoMunicipio.astro ya impide escribir cualquier cosa, pero esa comprobación
+ * se salta con las DevTools abiertas o mandando el JSON a mano. Si se cuela un
+ * municipio inventado, la PQRS queda radicada contra un sitio al que no va
+ * ninguna ruta y nadie se entera hasta que alguien reclama.
+ *
+ * El índice se construye una vez al cargar el módulo: la lista es estática y en
+ * una función de Vercel el módulo se reutiliza entre peticiones.
+ */
+const INDICE_MUNICIPIOS = indexarMunicipios(municipios);
 
 /** Los cinco tipos que ofrece el formulario, normalizados. */
 export const TIPOS_VALIDOS = [
@@ -136,9 +153,23 @@ export function validarSolicitud(cuerpo: unknown): ResultadoSolicitud {
   if (!FORMA_CORREO.test(correo)) errores.push('El correo no tiene un formato válido.');
   else if (correo.length > LIMITES.correo) errores.push('El correo es demasiado largo.');
 
-  const municipio = limpiar(texto(datos.municipio));
-  if (municipio.length < 2) errores.push('El municipio es obligatorio.');
-  else if (municipio.length > LIMITES.municipio) errores.push('El municipio es demasiado largo.');
+  /*
+   * El municipio se guarda con su nombre OFICIAL, no con lo que llegó: quien
+   * mande "tunja" o "TUNJA " acaba en el registro como "Tunja". Así el
+   * solicitud.json, el correo y cualquier recuento posterior hablan del mismo
+   * municipio escrito de una sola manera.
+   */
+  const municipioCrudo = limpiar(texto(datos.municipio));
+  const municipioEncontrado =
+    municipioCrudo.length > 0 ? buscarMunicipio(INDICE_MUNICIPIOS, municipioCrudo) : null;
+  const municipio = municipioEncontrado?.nombre ?? municipioCrudo;
+
+  if (municipioCrudo.length === 0) errores.push('El municipio es obligatorio.');
+  else if (municipioCrudo.length > LIMITES.municipio) {
+    errores.push('El municipio es demasiado largo.');
+  } else if (!municipioEncontrado) {
+    errores.push('Selecciona un municipio de la lista.');
+  }
 
   const descripcion = limpiar(texto(datos.descripcion));
   if (descripcion.length < 10) {

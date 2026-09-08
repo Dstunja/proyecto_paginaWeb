@@ -15,6 +15,7 @@
  * dejarlo en el registro del servidor y avisarlo en pantalla.
  */
 import { Resend } from 'resend';
+import { asuntoDe } from './categorias';
 import { correoDestino, correoRemitente, type Entorno } from './config';
 import type { RegistroPqrs } from './solicitud';
 
@@ -184,7 +185,18 @@ export async function enviarCorreos(
       from: remitente,
       to: destino,
       replyTo: registro.correo,
-      subject: `[${registro.radicado}] ${registro.tipo} de ${registro.nombre}`,
+      /*
+       * El asunto dice categoría, tipo y municipio, que es lo que hace falta
+       * para encaminar la PQRS sin abrirla. Todo lo que llega por aquí es
+       * COMERCIAL por definición: la administrativa sale por el gestor de
+       * correo de quien escribe y no pasa por ninguna función.
+       */
+      subject: asuntoDe({
+        categoria: 'comercial',
+        tipo: registro.tipo,
+        municipio: registro.municipio,
+        radicado: registro.radicado,
+      }),
       html: cuerpoDestinoHtml(registro, adjuntos, caducidadEnlaces),
       text: cuerpoDestinoTexto(registro, adjuntos),
     });

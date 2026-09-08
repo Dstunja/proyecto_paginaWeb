@@ -392,12 +392,27 @@ async function elegir(pagina, categoria, tipo) {
   await pagina.waitForTimeout(350);
 }
 
+/**
+ * Elige un municipio como lo haria una persona: escribe unas letras y pulsa la
+ * opcion de la lista. No usa `fill`, que dejaria el valor puesto sin pasar por
+ * el combobox y no probaria nada de lo que hay que probar.
+ */
+async function elegirMunicipio(pagina, escrito, aElegir = escrito) {
+  const campo = pagina.locator('#municipio-pqrs');
+  await campo.click();
+  await campo.fill('');
+  await campo.type(escrito, { delay: 10 });
+  await pagina.waitForTimeout(200);
+  await pagina.locator(`[data-opciones] li:has-text("${aElegir}")`).first().click();
+  await pagina.waitForTimeout(200);
+}
+
 async function rellenarFormulario(pagina, tipo = 'Queja', categoria = 'comercial') {
   await elegir(pagina, categoria, tipo);
   await pagina.fill('#nombre-pqrs', 'Cristian Amaya');
   await pagina.fill('#telefono-pqrs', '3106232429');
   await pagina.fill('#correo-pqrs', 'practicaspasantiasdst@gmail.com');
-  await pagina.fill('#municipio-pqrs', 'Tunja');
+  await elegirMunicipio(pagina, 'Tunja');
   await pagina.fill('#descripcion-pqrs', 'Prueba automática del formulario de PQRS.');
   await pagina.check('#autorizacion-pqrs');
 }
@@ -705,6 +720,30 @@ async function revisarRadicacion(navegador, archivos) {
     if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
 
     await rellenarFormulario(pagina, 'Petición');
+
+    // El enlace de WhatsApp se arma con lo escrito, antes de enviar nada.
+    const whatsapp = decodeURIComponent(
+      (await pagina.locator('[data-whatsapp]').getAttribute('href')) ?? '',
+    );
+    comprobar(
+      'El botón de WhatsApp lleva categoría, tipo, municipio y nombre',
+      whatsapp.includes('Categoría: Comercial') &&
+        whatsapp.includes('Tipo: Petición') &&
+        whatsapp.includes('Municipio: Tunja') &&
+        whatsapp.includes('Nombre: Cristian Amaya'),
+      (whatsapp.split('?text=')[1] ?? whatsapp).replace(/\s+/g, ' ').slice(0, 110),
+    );
+    // Solo el TEXTO del mensaje: el número de la empresa vive en la URL
+    // (wa.me/573106232429) y contiene los mismos dígitos que un teléfono.
+    const mensajeWhatsapp = whatsapp.split('?text=')[1] ?? '';
+    comprobar(
+      'El mensaje de WhatsApp NO arrastra documento, teléfono ni correo',
+      !mensajeWhatsapp.includes('1234567890') &&
+        !mensajeWhatsapp.includes('3106232429') &&
+        !mensajeWhatsapp.includes('practicaspasantiasdst@gmail.com'),
+      mensajeWhatsapp.replace(/\s+/g, ' ').slice(0, 110),
+    );
+
     await pagina.click('[data-enviar]');
     await pagina.waitForTimeout(900);
 
@@ -718,6 +757,11 @@ async function revisarRadicacion(navegador, archivos) {
       JSON.stringify(registro.radicar[0] ?? {}).slice(0, 100),
     );
     const conTurnstile = await hayTurnstile(pagina);
+    comprobar(
+      'Sin adjuntos: el municipio viaja en el cuerpo, con su nombre oficial',
+      registro.radicar[0]?.municipio === 'Tunja',
+      String(registro.radicar[0]?.municipio ?? '(no llegó)'),
+    );
     comprobar(
       'Sin adjuntos: el cuerpo lleva sessionId con forma de UUID',
       /^[0-9a-f-]{36}$/.test(registro.radicar[0]?.sessionId ?? ''),
@@ -912,6 +956,268 @@ async function revisarRadicacion(navegador, archivos) {
   await contexto.close();
 }
 
+// --- E) El campo de municipio -----------------------------------------------
+
+async function revisarMunicipio(navegador, etiqueta, viewport) {
+  console.log(`\n=== E) Municipio · ${etiqueta} (${viewport.width}px) ===\n`);
+  const contexto = await navegador.newContext({ viewport });
+  const pagina = await contexto.newPage();
+  await instalarDobles(pagina, { radicar: 'ok' });
+
+  await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+  await pagina.waitForTimeout(400);
+  const rechazar = pagina.locator('[data-rechazar-cookies]');
+  if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+  const campo = pagina.locator('#municipio-pqrs');
+  const opciones = pagina.locator('[data-opciones]');
+  const error = pagina.locator('[data-municipio] [data-error]');
+
+  // ---- Aparece con el formulario, en todas las combinaciones --------------
+  comprobar(
+    `${etiqueta}: sin elegir nada, el municipio no se ve`,
+    !(await campo.isVisible()),
+  );
+
+  const combinaciones = [
+    ['administrativa', 'Petición'],
+    ['administrativa', 'Queja'],
+    ['comercial', 'Sugerencia'],
+    ['comercial', 'Reclamo'],
+  ];
+  for (const [categoria, tipo] of combinaciones) {
+    await elegir(pagina, categoria, tipo);
+    comprobar(
+      `${etiqueta}: con "${categoria} + ${tipo}" el municipio aparece y es obligatorio`,
+      (await campo.isVisible()) && (await campo.evaluate((e) => e.required)),
+    );
+  }
+
+  // ---- Al enfocarlo se ven los 87, sin escribir nada ----------------------
+  await campo.click();
+  await pagina.waitForTimeout(250);
+  const total = await opciones.locator('li').count();
+  comprobar(
+    `${etiqueta}: al enfocarlo se despliegan los 87 municipios`,
+    total === 87,
+    `${total} opciones`,
+  );
+  comprobar(
+    `${etiqueta}: el combobox se anuncia como desplegado`,
+    (await campo.getAttribute('aria-expanded')) === 'true' &&
+      (await campo.getAttribute('role')) === 'combobox',
+  );
+
+  // ---- Filtrado ignorando tildes y mayúsculas -----------------------------
+  const filtrar = async (texto) => {
+    await campo.fill('');
+    await campo.type(texto, { delay: 10 });
+    await pagina.waitForTimeout(250);
+    return (await opciones.innerText()).replace(/\s+/g, ' ').trim();
+  };
+
+  const sinTilde = await filtrar('chiquinquira');
+  comprobar(
+    `${etiqueta}: "chiquinquira" sin tilde encuentra "Chiquinquirá"`,
+    sinTilde.includes('Chiquinquirá'),
+    sinTilde.slice(0, 60),
+  );
+
+  const mayusculas = await filtrar('VILLA DE LEYVA');
+  comprobar(
+    `${etiqueta}: "VILLA DE LEYVA" en mayúsculas encuentra "Villa de Leyva"`,
+    mayusculas.includes('Villa de Leyva'),
+    mayusculas.slice(0, 60),
+  );
+
+  const conTilde = await filtrar('sáchica');
+  comprobar(
+    `${etiqueta}: escribir CON tilde también encuentra "Sáchica"`,
+    conTilde.includes('Sáchica'),
+    conTilde.slice(0, 60),
+  );
+
+  const empiezan = await filtrar('sa');
+  comprobar(
+    `${etiqueta}: los que EMPIEZAN por lo escrito salen antes que los que solo lo contienen`,
+    empiezan.indexOf('Samacá') < empiezan.indexOf('Villa de Leyva') ||
+      !empiezan.includes('Villa de Leyva'),
+    empiezan.slice(0, 80),
+  );
+
+  // ---- Teclado ------------------------------------------------------------
+  await campo.fill('');
+  await campo.type('tun', { delay: 10 });
+  await pagina.waitForTimeout(250);
+  await campo.press('ArrowDown');
+  await pagina.waitForTimeout(120);
+  const activo = await campo.getAttribute('aria-activedescendant');
+  comprobar(
+    `${etiqueta}: la flecha abajo resalta una opción y lo anuncia con aria-activedescendant`,
+    Boolean(activo) &&
+      (await pagina.locator(`#${activo}`).getAttribute('aria-selected')) === 'true',
+    activo ?? '(ninguno)',
+  );
+
+  await campo.press('Enter');
+  await pagina.waitForTimeout(200);
+  comprobar(
+    `${etiqueta}: Enter elige la opción resaltada y cierra la lista`,
+    (await campo.inputValue()) === 'Tunja' &&
+      !(await opciones.isVisible()) &&
+      (await campo.getAttribute('aria-expanded')) === 'false',
+    await campo.inputValue(),
+  );
+
+  await campo.click();
+  await pagina.waitForTimeout(200);
+  await campo.press('Escape');
+  await pagina.waitForTimeout(150);
+  comprobar(`${etiqueta}: Escape cierra la lista`, !(await opciones.isVisible()));
+
+  // ---- Solo valores de la lista -------------------------------------------
+  await campo.fill('');
+  await campo.type('Medellín', { delay: 10 });
+  await pagina.waitForTimeout(250);
+  comprobar(
+    `${etiqueta}: un municipio fuera de cobertura avisa "Selecciona un municipio de la lista"`,
+    /Selecciona un municipio de la lista/i.test((await error.textContent()) ?? '') &&
+      (await campo.getAttribute('aria-invalid')) === 'true',
+    ((await error.textContent()) ?? '').trim(),
+  );
+  comprobar(
+    `${etiqueta}: y el navegador lo da por inválido, así que no deja enviar`,
+    !(await campo.evaluate((e) => e.checkValidity())),
+  );
+
+  // ---- Se resuelve al nombre oficial --------------------------------------
+  await campo.fill('');
+  await campo.type('  villa de leyva ', { delay: 5 });
+  await pagina.locator('#nombre-pqrs').click();
+  await pagina.waitForTimeout(350);
+  comprobar(
+    `${etiqueta}: lo escrito a la ligera se corrige al nombre oficial al salir del campo`,
+    (await campo.inputValue()) === 'Villa de Leyva' &&
+      (await campo.evaluate((e) => e.checkValidity())),
+    await campo.inputValue(),
+  );
+
+  // ---- Sobrevive al cambio de categoría y de tipo -------------------------
+  await elegir(pagina, 'administrativa', 'Felicitación');
+  comprobar(
+    `${etiqueta}: el municipio elegido sobrevive a cambiar de categoría y de tipo`,
+    (await campo.inputValue()) === 'Villa de Leyva',
+    await campo.inputValue(),
+  );
+
+  await pagina.reload({ waitUntil: 'domcontentloaded' });
+  await pagina.waitForTimeout(400);
+  await elegir(pagina, 'comercial', 'Queja');
+  comprobar(
+    `${etiqueta}: y también a recargar la página (sessionStorage)`,
+    (await pagina.locator('#municipio-pqrs').inputValue()) === 'Villa de Leyva',
+    await pagina.locator('#municipio-pqrs').inputValue(),
+  );
+
+  await contexto.close();
+}
+
+// --- F) La ubicación, que nunca puede bloquear ------------------------------
+
+async function revisarUbicacion(navegador) {
+  console.log('\n=== F) Geolocalización ===\n');
+
+  // ---- Con permiso: preselecciona el más cercano --------------------------
+  {
+    // Coordenadas de la plaza de Samacá. El municipio más cercano tiene que
+    // ser Samacá y no Tunja, que está a unos 20 km.
+    const contexto = await navegador.newContext({
+      viewport: { width: 1280, height: 900 },
+      permissions: ['geolocation'],
+      geolocation: { latitude: 5.4918, longitude: -73.4853 },
+    });
+    const pagina = await contexto.newPage();
+    await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    // Se limpia lo que hubiera guardado otra prueba: aquí se comprueba
+    // justamente el caso en que el campo llega vacío.
+    await pagina.evaluate(() => sessionStorage.clear());
+    await pagina.reload({ waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+
+    const campo = pagina.locator('#municipio-pqrs');
+    await elegir(pagina, 'comercial', 'Queja');
+    await pagina.waitForTimeout(1200);
+
+    comprobar(
+      'Ubicación concedida: preselecciona el municipio más cercano',
+      (await campo.inputValue()) === 'Samacá',
+      await campo.inputValue(),
+    );
+    comprobar(
+      'Ubicación concedida: el campo queda válido, sin aviso de error',
+      (await campo.evaluate((e) => e.checkValidity())) &&
+        !(await pagina.locator('[data-municipio] [data-error]').isVisible()),
+    );
+    await pagina.close();
+    await contexto.close();
+  }
+
+  // ---- Sin permiso: silencio y a mano -------------------------------------
+  {
+    const contexto = await navegador.newContext({ viewport: { width: 1280, height: 900 } });
+    // Sin `grantPermissions`, Chromium deniega y `getCurrentPosition` falla.
+    const pagina = await contexto.newPage();
+    await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+    await pagina.evaluate(() => sessionStorage.clear());
+    await pagina.reload({ waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+
+    const campo = pagina.locator('#municipio-pqrs');
+    await elegir(pagina, 'comercial', 'Queja');
+    await pagina.waitForTimeout(1200);
+
+    comprobar(
+      'Ubicación denegada: el campo se queda vacío, sin ningún error',
+      (await campo.inputValue()) === '' &&
+        !(await pagina.locator('[data-municipio] [data-error]').isVisible()),
+      await campo.inputValue(),
+    );
+    comprobar(
+      'Ubicación denegada: el formulario sigue usable y no se quedó esperando',
+      (await pagina.locator('[data-paso-formulario]').isVisible()) &&
+        !(await pagina.locator('[data-enviar]').isDisabled()),
+    );
+
+    // Y a mano se puede radicar igual.
+    const registro = await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.fill('#nombre-pqrs', 'Cristian Amaya');
+    await pagina.fill('#telefono-pqrs', '3106232429');
+    await pagina.fill('#correo-pqrs', 'practicaspasantiasdst@gmail.com');
+    await elegirMunicipio(pagina, 'Toca');
+    await pagina.fill('#descripcion-pqrs', 'Prueba automática del formulario de PQRS.');
+    await pagina.check('#autorizacion-pqrs');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+
+    comprobar(
+      'Ubicación denegada: se puede elegir a mano y radicar con el municipio dentro',
+      registro.radicar[0]?.municipio === 'Toca',
+      String(registro.radicar[0]?.municipio ?? '(no llegó)'),
+    );
+    await pagina.close();
+    await contexto.close();
+  }
+}
+
 // --- Ejecución --------------------------------------------------------------
 
 const archivos = await prepararArchivos();
@@ -921,6 +1227,9 @@ const navegador = await chromium.launch();
 try {
   await revisarCampo(navegador, archivos, 'Móvil', { width: 375, height: 720 });
   await revisarCampo(navegador, archivos, 'Escritorio', { width: 1280, height: 800 });
+  await revisarMunicipio(navegador, 'Móvil', { width: 375, height: 720 });
+  await revisarMunicipio(navegador, 'Escritorio', { width: 1280, height: 800 });
+  await revisarUbicacion(navegador);
   await revisarRadicacion(navegador, archivos);
 } finally {
   await navegador.close();

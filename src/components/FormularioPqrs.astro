@@ -76,7 +76,19 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
         <LoaderDST tamano={28} anuncia={false} />
         <span class="sr-only">Enviando...</span>
       </div>
-      <a class="btn btn-secondary" href={empresa.whatsapp} target="_blank" rel="noopener">
+      {/*
+        El `href` se reescribe con lo que se lleve escrito (ver `pintarWhatsapp`).
+        El valor que sale del servidor es el número pelado, sin texto: es lo que
+        queda si el JavaScript no llega a ejecutarse, y sigue sirviendo.
+      */}
+      <a
+        class="btn btn-secondary"
+        href={empresa.whatsapp}
+        target="_blank"
+        rel="noopener"
+        data-whatsapp
+        data-base={empresa.whatsapp}
+      >
         Prefiero WhatsApp
       </a>
     </div>
@@ -474,7 +486,10 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
 
     // --- Envíos por correo ----------------------------------------------------
 
-    /** Valor de uno de los campos ocultos que alimentan las tarjetas de arriba. */
+    /**
+     * Valor de un campo del formulario por su id. Sirve igual para los ocultos
+     * que alimentan las tarjetas de arriba y para el municipio, que es visible.
+     */
     function valorDe(id: string): string {
       return (form!.querySelector<HTMLInputElement>(`#${id}`)?.value ?? '').trim();
     }
@@ -503,6 +518,58 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
 
       return lineas;
     }
+
+    /**
+     * Mantiene al día el enlace de "Prefiero WhatsApp" con lo que se lleve
+     * escrito, para que el asesor no tenga que volver a preguntarlo todo.
+     *
+     * QUÉ VIAJA Y QUÉ NO. Categoría, tipo, municipio, nombre y el relato, que es
+     * lo que sirve para atender. NO van el documento de identidad, el teléfono
+     * ni el correo: WhatsApp ya trae el teléfono de quien escribe, y meter un
+     * número de cédula en el texto de un enlace es esparcirla sin necesidad.
+     *
+     * La descripción se recorta: `wa.me` no documenta ningún tope, así que se
+     * elige uno conservador antes que arriesgarse a que la app corte el mensaje
+     * por la mitad o no abra.
+     */
+    function pintarWhatsapp() {
+      const enlace = raiz.querySelector<HTMLAnchorElement>('[data-whatsapp]');
+      if (!enlace) return;
+
+      const base = enlace.dataset.base ?? '';
+      const categoria = categoriaDe(valorDe('categoria-pqrs'))?.nombre ?? '';
+      const descripcion = valorDe('descripcion-pqrs');
+
+      const lineas = [
+        ['Categoría', categoria],
+        ['Tipo', valorDe('tipo-pqrs')],
+        ['Municipio', valorDe('municipio-pqrs')],
+        ['Nombre', valorDe('nombre-pqrs')],
+      ]
+        .filter(([, valor]) => valor !== '')
+        .map(([etiqueta, valor]) => `${etiqueta}: ${valor}`);
+
+      if (descripcion !== '') {
+        const recortada =
+          descripcion.length > 900 ? `${descripcion.slice(0, 900)}…` : descripcion;
+        lineas.push('', recortada);
+      }
+
+      // Sin nada escrito todavía, un saludo normal es mejor que un mensaje
+      // vacío o que una plantilla con los huecos a la vista.
+      const texto =
+        lineas.length > 0
+          ? ['Hola, quiero hablar sobre una PQRS.', '', ...lineas].join('\n')
+          : 'Hola, quiero radicar una PQRS.';
+
+      enlace.href = `${base}?text=${encodeURIComponent(texto)}`;
+    }
+
+    // Se repinta con cualquier cambio del formulario: los campos de texto
+    // emiten `input` y los ocultos de las tarjetas emiten `change`.
+    form.addEventListener('input', pintarWhatsapp);
+    form.addEventListener('change', pintarWhatsapp);
+    pintarWhatsapp();
 
     /**
      * Abre el gestor de correo. Se llama SIEMPRE al final, después de haber
@@ -540,7 +607,11 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
       avisar('');
       raiz.dataset.enviado = 'correo';
       mostrarConfirmacionCorreo(destinoAdmin);
-      abrirCorreo(destinoAdmin, asuntoDe(clave, tipo), lineasDelFormulario());
+      abrirCorreo(
+        destinoAdmin,
+        asuntoDe({ categoria: clave, tipo, municipio: valorDe('municipio-pqrs') }),
+        lineasDelFormulario(),
+      );
     }
 
     /**
@@ -568,7 +639,15 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
       // observable al abrir un mailto:.
       raiz.dataset.respaldo = 'correo';
 
-      abrirCorreo(destinatario, asuntoDe(valorDe('categoria-pqrs'), valorDe('tipo-pqrs')), lineas);
+      abrirCorreo(
+        destinatario,
+        asuntoDe({
+          categoria: valorDe('categoria-pqrs'),
+          tipo: valorDe('tipo-pqrs'),
+          municipio: valorDe('municipio-pqrs'),
+        }),
+        lineas,
+      );
     }
 
     function mostrarConfirmacion(radicado: string, fecha: string, avisos: string[]) {

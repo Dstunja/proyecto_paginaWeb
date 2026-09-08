@@ -474,6 +474,53 @@ describe('campos del formulario', () => {
     expect(respuesta.cuerpo.errores.join(' ')).toMatch(/autorización/i);
   });
 
+  it('rechaza un municipio que no está en la lista de cobertura', async () => {
+    const respuesta = await radicar(
+      peticion(solicitudBase({ municipio: 'Medellín' })),
+      ENTORNO,
+    );
+    expect(respuesta.estado).toBe(400);
+    if (respuesta.cuerpo.ok) throw new Error('no debería haber radicado');
+    expect(respuesta.cuerpo.errores.join(' ')).toMatch(/municipio de la lista/i);
+  });
+
+  it('rechaza un municipio inventado aunque se parezca a uno real', async () => {
+    const respuesta = await radicar(peticion(solicitudBase({ municipio: 'Tunjita' })), ENTORNO);
+    expect(respuesta.estado).toBe(400);
+    if (respuesta.cuerpo.ok) throw new Error('no debería haber radicado');
+    expect(respuesta.cuerpo.errores.join(' ')).toMatch(/municipio de la lista/i);
+  });
+
+  /*
+   * El combobox del navegador ya manda el nombre oficial, pero quien llame a la
+   * API a mano puede escribirlo de cualquier manera. Se acepta y se GUARDA
+   * normalizado: si no, el mismo municipio acabaría en el registro con tres
+   * grafías distintas y ningún recuento cuadraría.
+   */
+  it('acepta el municipio sin tildes o en minúsculas y lo guarda con su nombre oficial', async () => {
+    const respuesta = await radicar(
+      peticion(solicitudBase({ municipio: 'chiquinquira', adjuntos: [] })),
+      ENTORNO,
+    );
+    expect(respuesta.estado).toBe(201);
+    if (!respuesta.cuerpo.ok) throw new Error('debería haber radicado');
+    expect(registroDe(respuesta.cuerpo.radicado).municipio).toBe('Chiquinquirá');
+  });
+
+  it('nombra categoría, tipo y municipio en el asunto del correo al área', async () => {
+    const respuesta = await radicar(
+      peticion(solicitudBase({ municipio: 'Samacá', adjuntos: [] })),
+      ENTORNO,
+    );
+    expect(respuesta.estado).toBe(201);
+    if (!respuesta.cuerpo.ok) throw new Error('debería haber radicado');
+
+    const alArea = correosEnviados.find((c) => c.to === ENTORNO.PQRS_DESTINO);
+    expect(alArea?.subject).toBe(
+      `[${respuesta.cuerpo.radicado}] PQRS Comercial · Queja · Samacá`,
+    );
+  });
+
   it('junta todos los errores en una sola respuesta', async () => {
     const respuesta = await radicar(
       peticion(solicitudBase({ nombre: '', correo: 'no-es-correo', municipio: '' })),

@@ -1,0 +1,495 @@
+---
+/**
+ * Municipio de la PQRS: combobox con búsqueda, cerrado a los 87 municipios
+ * donde distribuye la empresa.
+ *
+ * POR QUÉ UN COMPONENTE NUEVO Y NO `SelectorOpciones.astro`. Aquel pinta
+ * tarjetas y no busca: 87 tarjetas no son un grupo de opciones, son un listín.
+ * Tampoco sirve `BuscadorMunicipio.astro`, que parece lo mismo pero no lo es:
+ * aquel es un `<form role="search">` propio, con su evento de analítica y su
+ * panel de respuesta con enlace a WhatsApp, pensado para contestar «¿llegamos a
+ * tu municipio?». Lo que sí se comparte con él es la LIBRERÍA
+ * (src/lib/municipios-busqueda.ts): la normalización sin tildes y el orden de
+ * las sugerencias son los mismos en los dos sitios, que es lo que evita que uno
+ * encuentre "Villa de Leyva" y el otro no.
+ *
+ * UN SOLO CAMPO, NO DOS. El `<input>` que se ve es también el que se envía:
+ * mismo `id` y mismo `name` que el campo de texto libre al que sustituye, así
+ * que el mapa `CAMPOS` de FormularioPqrs, el `FormData`, el recorrido de
+ * `label[for]` del cuerpo del correo y la validación de `solicitud.ts` siguen
+ * funcionando sin enterarse. Se descartó la pareja «input visible + hidden»
+ * porque son dos valores que se pueden desincronizar, y aquí no hace falta: lo
+ * que se teclea se resuelve al nombre oficial en cuanto coincide.
+ *
+ * CÓMO SE CIERRA A LA LISTA. Con `setCustomValidity`, no con un mensaje pintado
+ * a mano: así quien bloquea el envío es `reportValidity()` del propio
+ * formulario, igual que ya hace CampoAdjuntos mientras lee las firmas de los
+ * archivos. El texto también se pinta debajo, porque la burbuja del navegador
+ * desaparece sola y un lector de pantalla necesita el `role="alert"`.
+ *
+ * LA UBICACIÓN NUNCA BLOQUEA. La geolocalización se pide cuando el formulario
+ * aparece —después de que la persona haya elegido categoría y tipo, no al
+ * entrar en la página— y su resultado solo se usa si para entonces el campo
+ * sigue vacío. Si la niegan, falla o tarda, no pasa nada y no se dice nada: es
+ * una comodidad, no un requisito.
+ */
+import { municipios } from '../data/municipios';
+import { ordenarPorNombre } from '../lib/municipios-busqueda';
+import Icono from './Icono.astro';
+
+interface Props {
+  id?: string;
+  name?: string;
+  /** Segundos que se espera a la ubicación antes de desistir en silencio. */
+  segundosUbicacion?: number;
+}
+
+const { id = 'municipio-pqrs', name = 'municipio-pqrs', segundosUbicacion = 8 } = Astro.props;
+
+/**
+ * Lo que viaja al navegador: solo lo que hace falta para buscar y para medir
+ * distancias. El municipio completo trae además el conteo de clientes, que aquí
+ * no pinta nada y son 87 números de más en el JavaScript de la página.
+ */
+const ligeros = ordenarPorNombre(municipios).map((m) => ({
+  n: m.nombre,
+  d: m.departamento,
+  lat: m.lat,
+  lng: m.lng,
+}));
+
+/**
+ * El JSON va en su propia etiqueta y no en un `data-`, que lo escaparía entero
+ * a entidades HTML. `<` se escapa a mano por si algún día un nombre lo trae:
+ * dentro de un `<script>` cerraría la etiqueta antes de tiempo.
+ */
+const datos = JSON.stringify(ligeros).replace(/</g, '\\u003c');
+---
+
+<div data-municipio data-segundos-ubicacion={String(segundosUbicacion)}>
+  {/* `is:inline` porque esto son DATOS, no código: no hay nada que empaquetar
+      ni que compilar, solo un JSON que el script de abajo lee del DOM. */}
+  <script is:inline type="application/json" data-lista-municipios set:html={datos} />
+
+  <label class="field-label" for={id}>Municipio *</label>
+
+  <div class="relative">
+    <input
+      class="field pr-11"
+      id={id}
+      name={name}
+      type="text"
+      required
+      role="combobox"
+      aria-expanded="false"
+      aria-autocomplete="list"
+      aria-controls={`${id}-opciones`}
+      aria-describedby={`${id}-ayuda`}
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck="false"
+      placeholder="Escribe o elige tu municipio"
+      data-entrada
+    />
+
+    {/* Decorativo: la acción real es escribir o usar las flechas. */}
+    <span
+      class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted"
+      aria-hidden="true"
+    >
+      <Icono nombre="search" class="h-4 w-4" interactivo={false} />
+    </span>
+
+    <ul
+      class="absolute top-full right-0 left-0 z-30 mt-1 hidden max-h-64 list-none overflow-y-auto
+             rounded-xl border border-line bg-surface p-1 shadow-lg"
+      id={`${id}-opciones`}
+      role="listbox"
+      aria-label="Municipios donde distribuimos"
+      data-opciones
+    >
+    </ul>
+  </div>
+
+  <p class="mt-2 mb-0 text-[13px] text-muted" id={`${id}-ayuda`} data-ayuda>
+    Distribuimos en {municipios.length} municipios de Boyacá, Santander y Cundinamarca.
+  </p>
+
+  <p class="mt-2 mb-0 hidden text-[13.5px] font-semibold text-accent-text" role="alert" data-error>
+  </p>
+</div>
+
+<style>
+  /* La opción resaltada por teclado y la que está bajo el ratón se ven igual:
+     dos maneras de señalar lo mismo no ayudan a nadie. */
+  [data-opciones] li[aria-selected='true'],
+  [data-opciones] li:hover {
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+</style>
+
+<script>
+  import {
+    buscarMunicipio,
+    indexarMunicipios,
+    sugerirMunicipios,
+  } from '../lib/municipios-busqueda';
+
+  /** Lo que se guarda entre recargas. Es una comodidad, no un dato sensible. */
+  const CLAVE_SESION = 'dst:pqrs:municipio';
+
+  const MENSAJE_FUERA_DE_LISTA = 'Selecciona un municipio de la lista';
+
+  interface MunicipioLigero {
+    n: string;
+    d: string;
+    lat: number;
+    lng: number;
+  }
+
+  /** Municipio con el nombre en el campo que espera la librería de búsqueda. */
+  interface Opcion {
+    nombre: string;
+    departamento: string;
+    lat: number;
+    lng: number;
+  }
+
+  /**
+   * Distancia aproximada entre dos puntos, en kilómetros (haversine).
+   *
+   * No hace falta más precisión: solo sirve para ordenar 87 cabeceras
+   * municipales y quedarse con la más cercana.
+   */
+  function distanciaKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+    const R = 6371;
+    const rad = (g: number) => (g * Math.PI) / 180;
+    const dLat = rad(bLat - aLat);
+    const dLng = rad(bLng - aLng);
+    const h =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-municipio]').forEach((raiz) => {
+    const entrada = raiz.querySelector<HTMLInputElement>('[data-entrada]');
+    const opciones = raiz.querySelector<HTMLUListElement>('[data-opciones]');
+    const error = raiz.querySelector<HTMLElement>('[data-error]');
+    const crudo = raiz.querySelector<HTMLScriptElement>('[data-lista-municipios]');
+    if (!entrada || !opciones || !error || !crudo) return;
+
+    let lista: Opcion[] = [];
+    try {
+      lista = (JSON.parse(crudo.textContent ?? '[]') as MunicipioLigero[]).map((m) => ({
+        nombre: m.n,
+        departamento: m.d,
+        lat: m.lat,
+        lng: m.lng,
+      }));
+    } catch {
+      // Sin lista no hay combobox que valga, pero el campo sigue siendo un
+      // input de texto normal: es preferible a dejarlo inservible.
+      return;
+    }
+
+    const indice = indexarMunicipios(lista);
+    const idOpcion = (i: number) => `${entrada.id}-op-${i}`;
+
+    let visibles: Opcion[] = [];
+    let resaltado = -1;
+    let abierto = false;
+
+    // --- Validez ------------------------------------------------------------
+
+    /**
+     * El campo solo vale si lo escrito es EXACTAMENTE uno de los municipios,
+     * comparando sin tildes ni mayúsculas. Vacío no se marca aquí: de eso ya se
+     * encarga el `required`, con el mensaje del navegador.
+     */
+    function revisar() {
+      const texto = entrada!.value.trim();
+      const encontrado = texto === '' ? null : buscarMunicipio(indice, texto);
+      const mal = texto !== '' && !encontrado;
+
+      entrada!.setCustomValidity(mal ? MENSAJE_FUERA_DE_LISTA : '');
+      entrada!.setAttribute('aria-invalid', mal ? 'true' : 'false');
+      error!.textContent = mal ? `${MENSAJE_FUERA_DE_LISTA}.` : '';
+      error!.classList.toggle('hidden', !mal);
+
+      return encontrado;
+    }
+
+    // --- Lista desplegable --------------------------------------------------
+
+    function cerrar() {
+      abierto = false;
+      resaltado = -1;
+      opciones!.classList.add('hidden');
+      opciones!.textContent = '';
+      entrada!.setAttribute('aria-expanded', 'false');
+      entrada!.removeAttribute('aria-activedescendant');
+    }
+
+    function resaltar(indiceNuevo: number) {
+      const filas = Array.from(opciones!.querySelectorAll('li'));
+      if (filas.length === 0) return;
+
+      // Da la vuelta en los dos extremos: bajar desde el último lleva al
+      // primero, que es lo que hace cualquier lista de sugerencias.
+      resaltado = (indiceNuevo + filas.length) % filas.length;
+
+      filas.forEach((fila, i) => fila.setAttribute('aria-selected', String(i === resaltado)));
+      entrada!.setAttribute('aria-activedescendant', idOpcion(resaltado));
+      filas[resaltado]?.scrollIntoView({ block: 'nearest' });
+    }
+
+    function abrir(texto: string) {
+      // `minimo: 0` es lo que hace que enfocar el campo vacío muestre los 87.
+      visibles = sugerirMunicipios(lista, texto, lista.length, 0);
+
+      if (visibles.length === 0) {
+        cerrar();
+        return;
+      }
+
+      opciones!.textContent = '';
+      visibles.forEach((m, i) => {
+        const fila = document.createElement('li');
+        fila.id = idOpcion(i);
+        fila.setAttribute('role', 'option');
+        fila.setAttribute('aria-selected', 'false');
+        fila.className =
+          'flex cursor-pointer items-baseline gap-2 rounded-lg px-3 py-2 text-[14.5px] ' +
+          'text-ink transition-colors duration-150';
+
+        const nombre = document.createElement('span');
+        nombre.className = 'font-semibold';
+        // textContent, no innerHTML: los nombres son datos, no plantillas.
+        nombre.textContent = m.nombre;
+
+        const departamento = document.createElement('span');
+        departamento.className = 'text-[13px] text-muted';
+        departamento.textContent = m.departamento;
+
+        fila.append(nombre, departamento);
+
+        // `mousedown` y no `click`: al pulsar, el campo pierde el foco antes de
+        // que llegue el `click`, y el `blur` ya habría cerrado la lista.
+        fila.addEventListener('mousedown', (evento) => {
+          evento.preventDefault();
+          elegir(m);
+        });
+
+        opciones!.append(fila);
+      });
+
+      abierto = true;
+      opciones!.classList.remove('hidden');
+      entrada!.setAttribute('aria-expanded', 'true');
+      resaltado = -1;
+      entrada!.removeAttribute('aria-activedescendant');
+      colocar();
+    }
+
+    /**
+     * Pone la lista donde quepa: debajo si hay sitio, encima si no.
+     *
+     * Hace falta porque el municipio es el último campo de su fila y en un
+     * móvil de 375 px suele quedar cerca del borde inferior: desplegando
+     * siempre hacia abajo, las sugerencias caían fuera de la pantalla y había
+     * que adivinar que estaban ahí. También se recorta la altura al hueco
+     * disponible, que con el teclado abierto es bastante menos de los 256 px
+     * del máximo.
+     */
+    function colocar() {
+      const caja = entrada!.getBoundingClientRect();
+      const holgura = 8;
+      const debajo = window.innerHeight - caja.bottom - holgura;
+      const encima = caja.top - holgura;
+      const arriba = debajo < 160 && encima > debajo;
+
+      opciones!.style.top = arriba ? 'auto' : '100%';
+      opciones!.style.bottom = arriba ? '100%' : 'auto';
+      opciones!.style.marginTop = arriba ? '0' : '0.25rem';
+      opciones!.style.marginBottom = arriba ? '0.25rem' : '0';
+      opciones!.style.maxHeight = `${Math.max(120, Math.min(256, arriba ? encima : debajo))}px`;
+    }
+
+    // --- Elección -----------------------------------------------------------
+
+    function elegir(m: Opcion) {
+      // Se escribe el nombre OFICIAL, no lo que se tecleó: quien puso "tunja"
+      // acaba enviando "Tunja", que es lo que valida el servidor.
+      entrada!.value = m.nombre;
+      cerrar();
+      revisar();
+      recordar(m.nombre);
+      entrada!.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function recordar(nombre: string) {
+      try {
+        sessionStorage.setItem(CLAVE_SESION, nombre);
+      } catch {
+        // Modo privado o almacenamiento bloqueado: recordar es un extra.
+      }
+    }
+
+    // --- Teclado ------------------------------------------------------------
+
+    entrada.addEventListener('input', () => {
+      abrir(entrada.value);
+      revisar();
+    });
+
+    entrada.addEventListener('focus', () => {
+      if (!abierto) abrir(entrada.value);
+    });
+
+    entrada.addEventListener('blur', () => {
+      // Un pequeño respiro para que el `mousedown` de una opción llegue antes
+      // de que la lista desaparezca.
+      window.setTimeout(() => {
+        if (!abierto) return;
+        cerrar();
+        // Lo escrito se resuelve al nombre oficial si coincide: así "TUNJA " o
+        // "villa de leyva" quedan bien escritos sin que nadie los corrija.
+        const encontrado = revisar();
+        if (encontrado) {
+          entrada.value = encontrado.nombre;
+          recordar(encontrado.nombre);
+        }
+      }, 120);
+    });
+
+    // Girar el teléfono o abrir el teclado cambia el hueco disponible.
+    window.addEventListener('resize', () => {
+      if (abierto) colocar();
+    });
+
+    entrada.addEventListener('keydown', (evento) => {
+      if (evento.key === 'ArrowDown' || evento.key === 'ArrowUp') {
+        evento.preventDefault();
+        if (!abierto) {
+          abrir(entrada.value);
+          resaltar(evento.key === 'ArrowDown' ? 0 : visibles.length - 1);
+          return;
+        }
+        resaltar(resaltado + (evento.key === 'ArrowDown' ? 1 : -1));
+        return;
+      }
+
+      if (evento.key === 'Home' && abierto) {
+        evento.preventDefault();
+        resaltar(0);
+        return;
+      }
+
+      if (evento.key === 'End' && abierto) {
+        evento.preventDefault();
+        resaltar(visibles.length - 1);
+        return;
+      }
+
+      if (evento.key === 'Enter') {
+        if (abierto && resaltado >= 0 && visibles[resaltado]) {
+          // Solo se traga el Enter cuando hay algo resaltado que elegir; si no,
+          // el formulario se envía como en cualquier otro campo.
+          evento.preventDefault();
+          elegir(visibles[resaltado]);
+        }
+        return;
+      }
+
+      if (evento.key === 'Escape' && abierto) {
+        evento.preventDefault();
+        cerrar();
+      }
+    });
+
+    // --- Lo que se recordó de antes -----------------------------------------
+
+    /**
+     * El municipio sobrevive a cambiar de categoría o de tipo (que no vuelven a
+     * pintar el formulario, así que bastaría con no tocarlo) y también a una
+     * recarga o a volver desde otra página, que es para lo que hace falta
+     * `sessionStorage`.
+     */
+    let yaElegido = false;
+    try {
+      const guardado = sessionStorage.getItem(CLAVE_SESION);
+      const encontrado = guardado ? buscarMunicipio(indice, guardado) : null;
+      if (encontrado) {
+        entrada.value = encontrado.nombre;
+        yaElegido = true;
+        revisar();
+      }
+    } catch {
+      // Sin almacenamiento se empieza en blanco, que es un inconveniente
+      // pequeño y no un error que haya que contar.
+    }
+
+    // --- Ubicación, sin bloquear nada ---------------------------------------
+
+    /**
+     * Preselecciona el municipio más cercano. Solo si el campo sigue vacío
+     * cuando llega la respuesta: si para entonces la persona ya eligió, mandan
+     * sus dedos y no el GPS.
+     */
+    function preseleccionarPorUbicacion() {
+      if (yaElegido || entrada!.value.trim() !== '' || !('geolocation' in navigator)) return;
+
+      const segundos = Number(raiz.dataset.segundosUbicacion) || 8;
+
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          if (entrada!.value.trim() !== '') return;
+
+          let cercano: Opcion | null = null;
+          let minima = Infinity;
+          for (const m of lista) {
+            const d = distanciaKm(coords.latitude, coords.longitude, m.lat, m.lng);
+            if (d < minima) {
+              minima = d;
+              cercano = m;
+            }
+          }
+          if (!cercano) return;
+
+          entrada!.value = cercano.nombre;
+          revisar();
+          recordar(cercano.nombre);
+          entrada!.dispatchEvent(new Event('change', { bubbles: true }));
+        },
+        () => {
+          // Permiso denegado, sin señal o agotado el tiempo. En silencio: el
+          // campo se queda vacío y la persona lo elige a mano, que es el camino
+          // normal de todos modos.
+        },
+        { enableHighAccuracy: false, timeout: segundos * 1000, maximumAge: 10 * 60 * 1000 },
+      );
+    }
+
+    /**
+     * Se pide cuando el formulario APARECE, no al cargar la página: para
+     * entonces la persona ya eligió categoría y tipo, así que el aviso del
+     * navegador llega después de un acto suyo y se entiende para qué es.
+     * Preguntar nada más entrar, cuando todavía no ha dicho que vaya a radicar
+     * nada, se lee como intrusivo.
+     */
+    const tipo = document.getElementById('tipo-pqrs');
+    if (tipo) {
+      tipo.addEventListener(
+        'change',
+        () => {
+          preseleccionarPorUbicacion();
+        },
+        { once: true },
+      );
+    } else {
+      preseleccionarPorUbicacion();
+    }
+  });
+</script>

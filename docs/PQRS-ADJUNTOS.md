@@ -18,7 +18,7 @@ comercial. Las dos categorías están descritas en `src/lib/pqrs/categorias.ts`.
 | Archivos de soporte | **No** | Sí, en Queja y Reclamo |
 | Antirrobots (Turnstile) | No | Sí |
 | Número de radicado | **No** | Sí |
-| Asunto del correo | `PQRS Administrativa · {tipo}` | `[{radicado}] PQRS Comercial · {tipo}` |
+| Asunto del correo | `PQRS Administrativa · {tipo} · {municipio}` | `[{radicado}] PQRS Comercial · {tipo} · {municipio}` |
 | Funciona en GitHub Pages | Sí | No (no hay funciones) |
 
 La administrativa no llega a tocar la red: sale por el gestor de correo de quien
@@ -37,6 +37,7 @@ correos. Ya no depende del gestor de correo de quien lo diligencia.
 | --- | --- |
 | Categoría previa (administrativa / comercial) | Hecho |
 | Elección por tarjetas, sin `<select>` ni botón de continuar | Hecho |
+| Municipio cerrado a los 87 de cobertura, validado también en el servidor | Hecho |
 | Campo de soporte solo en Comercial + Queja o Reclamo | Hecho |
 | Hasta 3 archivos, 5 MB cada uno | Hecho |
 | Validación por contenido real (bytes mágicos), en cliente **y** servidor | Hecho |
@@ -183,6 +184,49 @@ El **radicado** es `PQRS-YYYYMMDD-XXXXXX`. La fecha va en hora de Colombia, no
 en UTC: Vercel ejecuta en UTC y una PQRS radicada a las 19:30 de Tunja llevaría
 la fecha del día siguiente. El sufijo usa un alfabeto sin `0`/`O` ni `1`/`I`,
 porque el radicado se dicta por teléfono.
+
+## El municipio no es texto libre
+
+El campo es un combobox cerrado a los **87 municipios donde distribuye la
+empresa**, no un `<input type="text">`. La lista sale de `src/data/municipios.ts`,
+que ya cruza el conteo real de clientes con las coordenadas geocodificadas: no
+hay una segunda lista que mantener, y si mañana se amplía la cobertura el campo
+se entera solo.
+
+Se valida **dos veces**, y no por desconfianza sino porque son dos cosas
+distintas:
+
+- En el navegador (`src/components/CampoMunicipio.astro`) con
+  `setCustomValidity`, para que quien se equivoque lo sepa antes de enviar y sea
+  el propio `reportValidity()` del formulario el que frene.
+- En el servidor (`src/lib/pqrs/solicitud.ts`), porque la comprobación de
+  cliente se salta con las DevTools abiertas. Un municipio que no esté en la
+  lista devuelve **400** con «Selecciona un municipio de la lista.».
+
+El servidor además **guarda el nombre oficial**, no lo que llegó: quien mande
+`chiquinquira` acaba en `solicitud.json` como `Chiquinquirá`. Sin eso, el mismo
+municipio aparecería con tres grafías y ningún recuento cuadraría.
+
+La comparación ignora tildes y mayúsculas en los dos lados, con la misma función
+(`normalizarMunicipio` de `src/lib/municipios-busqueda.ts`) que usan el mapa de
+la red y el buscador de cobertura. Una sola implementación es lo que evita que
+un buscador encuentre «Villa de Leyva» y el otro no.
+
+### La ubicación es una comodidad, nunca un requisito
+
+Al aparecer el formulario —después de elegir categoría y tipo, no al entrar en
+la página— se pide la ubicación del navegador y se preselecciona el municipio
+más cercano por distancia haversine a la cabecera municipal. Se pide en ese
+momento, y no antes, para que el aviso del navegador llegue después de un acto
+de la persona y se entienda para qué es.
+
+Si la niegan, falla o tarda más de 8 segundos, **no pasa nada y no se dice
+nada**: el campo se queda vacío y se elige a mano. El formulario no espera a la
+ubicación en ningún momento. Y si para cuando llega la respuesta la persona ya
+eligió, manda su elección y no el GPS.
+
+El municipio elegido se guarda en `sessionStorage`, así que sobrevive a cambiar
+de categoría o de tipo y también a recargar la página.
 
 ## Las reglas viven en un solo sitio
 
@@ -438,14 +482,17 @@ formulario cae al respaldo por correo.
 
 ## Pruebas
 
-`npm test` (Vitest, 28 comprobaciones) cubre `src/lib/pqrs/radicar.ts` con
+`npm test` (Vitest, 53 comprobaciones) cubre `src/lib/pqrs/radicar.ts` con
 Vercel Blob y Resend simulados y bytes de archivo de verdad: los cinco formatos
 válidos, MIME falso, PNG que se hace pasar por PDF, ZIP renombrado a `.docx`,
 doble extensión, exceso de peso mintiendo sobre el tamaño, más de tres archivos,
 blob de otra sesión, Turnstile inválido o sin configurar, adjuntos con tipo
-Petición (se ignoran y se borran), autorización ausente y límite de tasa.
+Petición (se ignoran y se borran), autorización ausente, límite de tasa,
+municipio fuera de la lista de cobertura (400), municipio escrito sin tildes o
+en minúsculas (se acepta y se guarda con su nombre oficial) y el asunto del
+correo al área con categoría, tipo y municipio.
 
-`npm run verificar:pqrs` (Playwright, 106 comprobaciones en móvil y escritorio)
+`npm run verificar:pqrs` (Playwright, 152 comprobaciones en móvil y escritorio)
 cubre lo que se ve:
 
 - **La elección por clic**: que cada una de las dos categorías y cada uno de los
@@ -463,6 +510,19 @@ cubre lo que se ve:
   se simulan los dos pasos de `@vercel/blob` (pedir el permiso y subir el archivo
   a `https://vercel.com/api/blob`) y se comprueba que la queja llega hasta su
   radicado con el soporte anunciado.
+- **El municipio**: que aparece con el formulario en las cuatro combinaciones de
+  categoría y tipo, que al enfocarlo se despliegan los 87, que filtra ignorando
+  tildes y mayúsculas en los dos sentidos, que se maneja con flechas, Enter y
+  Escape anunciando la opción con `aria-activedescendant`, que un municipio
+  fuera de cobertura deja el campo inválido y no deja enviar, que lo escrito a
+  la ligera se corrige al nombre oficial, y que la elección sobrevive a cambiar
+  de categoría, de tipo y a recargar.
+- **La geolocalización por los dos caminos**, usando el permiso y las
+  coordenadas simuladas de Playwright: concedida sobre Samacá preselecciona
+  Samacá; denegada deja el campo vacío, sin ningún error, con el formulario
+  usable y sin haber esperado a nada.
+- **El botón de WhatsApp**: que lleva categoría, tipo, municipio y nombre, y que
+  **no** arrastra el documento, el teléfono ni el correo.
 - Que un error 400 se muestra sin caer al correo y que una API caída sí activa el
   respaldo con el aviso de que así **no** queda radicada.
 

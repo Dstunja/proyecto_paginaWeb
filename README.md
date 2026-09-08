@@ -77,6 +77,9 @@ src/
                            de correo). La PQRS ya no lo usa.
     SelectorOpciones.astro Grupo de tarjetas seleccionables (radios nativos).
                            Lo usan los dos pasos de la PQRS: categoria y tipo.
+    CampoMunicipio.astro   Municipio de la PQRS: combobox cerrado a los 87
+                           municipios de cobertura, con busqueda sin tildes y
+                           preseleccion opcional por ubicacion.
     CampoAdjuntos.astro    Archivos de soporte de la PQRS. Solo aparece en la
                            categoria comercial y con tipo Queja o Reclamo.
     FormularioPqrs.astro   Formulario de PQRS. En la categoria comercial radica
@@ -108,7 +111,7 @@ legacy-html/               El prototipo HTML original, como referencia.
 | Quiero cambiar… | Archivo |
 | --- | --- |
 | Teléfono, correo, dirección, redes | `src/data/site.ts` |
-| Lista real de los 87 municipios | `src/data/site.ts` → `MUNICIPIOS` |
+| Lista real de los 87 municipios | `src/data/clientes-municipio.ts` (nombres y clientes) + `src/data/coordenadas.json` (lat/lng). `src/data/municipios.ts` los cruza y es lo que importan el mapa, la cobertura y el campo de municipio de la PQRS |
 | Enlace real de Pideky | `src/data/site.ts` → `PIDEKY_URL` |
 | Textos de Misión y Visión | `src/components/MisionVision.astro` |
 | Colores y tipografía | `src/styles/global.css` (bloque `@theme`) |
@@ -337,6 +340,12 @@ instante: sin botón de «continuar» y sin recargar. La categoría decide el ca
 - **Administrativa**: abre el gestor de correo con la solicitud escrita, hacia
   `PUBLIC_PQRS_ADMIN_DESTINO`. Sin adjuntos, sin antirrobots y sin radicado, así
   que funciona igual en Vercel y en el espejo de GitHub Pages.
+El **municipio** es un combobox cerrado a los 87 municipios de cobertura, que
+salen de `src/data/municipios.ts`. Busca ignorando tildes y mayúsculas, se
+maneja con el teclado, y si la persona concede la ubicación preselecciona el más
+cercano (si la niega, no pasa nada). Se valida también en el servidor: un
+municipio que no esté en la lista devuelve 400.
+
 - **Comercial**: **radica de verdad** contra `src/pages/api/pqrs/`. Guarda la
   solicitud y sus soportes, devuelve un número de radicado y manda dos correos.
   Esas funciones **solo existen en Vercel**; en el espejo de GitHub Pages no hay

@@ -4,6 +4,7 @@ import PageHero from '../components/PageHero.astro';
 import FormularioPqrs from '../components/FormularioPqrs.astro';
 import CampoAdjuntos from '../components/CampoAdjuntos.astro';
 import SelectorOpciones from '../components/SelectorOpciones.astro';
+import CampoMunicipio from '../components/CampoMunicipio.astro';
 import { empresa } from '../data/site';
 import { CATEGORIAS, destinatarioDe } from '../lib/pqrs/categorias';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
@@ -230,10 +231,12 @@ const notas = Object.fromEntries(
               <label class="field-label" for="correo-pqrs">Correo *</label>
               <input class="field" id="correo-pqrs" name="correo-pqrs" type="email" required />
             </div>
-            <div>
-              <label class="field-label" for="municipio-pqrs">Municipio *</label>
-              <input class="field" id="municipio-pqrs" name="municipio-pqrs" type="text" required />
-            </div>
+            {/*
+              Combobox cerrado a los 87 municipios donde distribuye la empresa,
+              en lugar del texto libre que había antes. Conserva id y name, así
+              que nada de lo que lo lee por ese nombre se entera del cambio.
+            */}
+            <CampoMunicipio />
           </div>
 
           <div>

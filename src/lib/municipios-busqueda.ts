@@ -58,16 +58,27 @@ export function buscarMunicipio<T extends ConNombre>(
  *
  * Primero los que EMPIEZAN por lo escrito y después los que solo lo contienen:
  * quien teclea "sa" espera ver Samacá y Saboyá antes que Ventaquemada. Dentro
- * de cada grupo se conserva el orden de la lista, que viene ordenada por número
- * de clientes, así que los municipios más grandes salen primero.
+ * de cada grupo se conserva el orden de la lista que se pasa, así que ordenarla
+ * antes decide cómo salen: los buscadores de cobertura la pasan ordenada por
+ * número de clientes (los municipios grandes primero) y el campo del formulario
+ * de PQRS la pasa alfabética.
+ *
+ * `minimo` es cuántas letras hace falta escribir para que haya respuesta. Los
+ * buscadores usan 2, que es lo que evita desplegar medio departamento con una
+ * sola letra. El combobox de PQRS usa 0: al enfocarlo, sin escribir nada,
+ * tiene que verse la lista entera para poder elegir sin teclear.
  */
 export function sugerirMunicipios<T extends ConNombre>(
   lista: T[],
   texto: string,
   maximo = 6,
+  minimo = 2,
 ): T[] {
   const q = normalizarMunicipio(texto);
-  if (q.length < 2) return [];
+  if (q.length < minimo) return [];
+
+  // Sin nada escrito no hay nada que filtrar: la lista entera, hasta el tope.
+  if (q === '') return lista.slice(0, maximo);
 
   const empiezan: T[] = [];
   const contienen: T[] = [];
@@ -80,6 +91,19 @@ export function sugerirMunicipios<T extends ConNombre>(
   }
 
   return [...empiezan, ...contienen].slice(0, maximo);
+}
+
+/**
+ * Ordena por nombre ignorando tildes.
+ *
+ * Sin normalizar, `localeCompare` en español deja "Úmbita" después de
+ * "Ventaquemada" en algunos entornos, y una lista de 87 municipios en la que la
+ * U está al final es una lista en la que no se encuentra nada.
+ */
+export function ordenarPorNombre<T extends ConNombre>(lista: T[]): T[] {
+  return [...lista].sort((a, b) =>
+    normalizarMunicipio(a.nombre).localeCompare(normalizarMunicipio(b.nombre), 'es'),
+  );
 }
 
 /**
