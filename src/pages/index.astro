@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
-import { altoSeguroLogo, logoMarcaImagen } from '../lib/imagenes';
+import { altoSeguroLogo, logoLlevaFondoPropio, logoMarcaImagen } from '../lib/imagenes';
 import MapaRed from '../components/MapaRed.astro';
 import BuscadorMunicipio from '../components/BuscadorMunicipio.astro';
 import EspecialesMes from '../components/EspecialesMes.astro';
@@ -58,7 +58,16 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
 
   // Solo se pasa el alto: <Image> deriva el ancho de la relación de aspecto
   // real del archivo, así el atributo width y la imagen generada coinciden.
-  return [{ nombre, imagen, alto: altoSeguroLogo(imagen, ALTO_FRANJA, ANCHO_MAXIMO_FRANJA) }];
+  return [
+    {
+      nombre,
+      imagen,
+      alto: altoSeguroLogo(imagen, ALTO_FRANJA, ANCHO_MAXIMO_FRANJA),
+      // Santander es una placa marrón con el texto en blanco: no se funde con
+      // el fondo como los demás. Ver logoLlevaFondoPropio en lib/imagenes.ts.
+      placa: logoLlevaFondoPropio(nombre),
+    },
+  ];
 });
 ---
 
@@ -225,7 +234,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
                     quality={90}
                     loading="eager"
                     decoding="async"
-                    class="logo-marca logo-marca-franja"
+                    class:list={['logo-marca', 'logo-marca-franja', marca.placa && 'logo-marca--placa']}
                   />
                 </li>
               ))}
@@ -502,6 +511,19 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
     /* Sin `max-content` la pista se quedaría en el ancho de la pantalla y el
        -50% mediría lo que no es. */
     width: max-content;
+    /* Repetir aquí el fondo de la sección NO es decorativo: es lo que hace
+       funcionar el `mix-blend-mode: multiply` de los logotipos.
+
+       El `will-change` de abajo (y la máscara de .marquee-marcas) crean un
+       contexto de apilamiento, y un blend solo se mezcla con lo que hay
+       DENTRO de su grupo. Sin este fondo el grupo arranca transparente, los
+       logotipos no tienen contra qué multiplicar y sus recuadros blancos
+       vuelven a verse. Está comprobado: quitando esta línea la franja queda
+       exactamente igual que antes de todo el arreglo.
+
+       Es el mismo color de la sección que la envuelve, así que el difuminado
+       de los bordes sigue disolviéndose sin que se note ninguna costura. */
+    background: var(--color-fondo);
     /* 40 s por vuelta: a este ancho salen unos 80 px por segundo, un paso de
        paseo. Con menos, la franja distrae; con más, parece parada. */
     animation: desfilar-marcas 40s linear infinite;
@@ -581,15 +603,16 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
     opacity: 0.85;
     transition:
       opacity 0.2s ease,
-      transform 0.2s ease,
-      filter 0.2s ease;
+      transform 0.2s ease;
   }
 
   .logo-marca-franja:hover {
     opacity: 1;
     transform: scale(1.05);
-    /* contrast/saturate hay que repetirlos: `filter` no se acumula entre
-       reglas, la última declaración sustituye entera a la de .logo-marca. */
-    filter: contrast(1.06) saturate(1.04) drop-shadow(0 2px 6px rgba(13, 44, 132, 0.18));
+    /* Al pasar el cursor solo sube la opacidad y crece un punto. Antes había
+       aquí un `drop-shadow`, y hubo que quitarlo: casi todos estos archivos
+       son rectángulos opacos, así que la sombra no seguía la silueta del
+       logotipo sino el borde del archivo, y dibujaba justo el recuadro que
+       este arreglo viene a esconder. */
   }
 </style>

@@ -278,11 +278,50 @@
 
      El tamano NO se pone aqui: cada logotipo lo calcula su pagina con
      altoSeguroLogo (src/lib/imagenes.ts) y lo aplica <Image>, para que
-     ninguno se muestre por encima de su resolucion real. */
+     ninguno se muestre por encima de su resolucion real.
+
+     EL FONDO BLANCO. La mayoria de estos archivos no son logotipos recortados
+     sino recortes sobre fondo blanco, asi que sobre una seccion de color se
+     veian como un recuadro pegado encima. `mix-blend-mode: multiply` lo
+     resuelve sin tocar ni un archivo: multiplicar por el fondo deja el blanco
+     puro exactamente en el color del fondo, y el dibujo, que es mas oscuro,
+     casi igual. Se prefiere al recorte uno por uno porque sigue funcionando
+     si manana cambia el color de la seccion.
+
+     OJO al contexto de apilamiento: el blend solo ve el fondo que este DENTRO
+     de su mismo grupo. Cualquier ancestro con transform, filter, mask,
+     will-change u opacity crea uno nuevo y lo aisla. Por eso la franja del
+     inicio le pone fondo propio a .marquee-marcas__pista (ver index.astro):
+     sin eso el multiply no tiene contra que mezclarse y no hace nada. */
   .logo-marca {
     max-width: 100%;
     object-fit: contain;
     filter: contrast(1.06) saturate(1.04);
+    mix-blend-mode: multiply;
+  }
+
+  /* Multiply es para fondo claro: sobre uno oscuro el logotipo se hundiria
+     hasta desaparecer. Dentro de un bloque oscuro se apaga el blend y se
+     confia en el archivo tal cual. Hoy ningun logotipo de marca cae en un
+     .sobre-oscuro; la regla esta para que el dia que pase no rompa. */
+  .sobre-oscuro .logo-marca {
+    mix-blend-mode: normal;
+  }
+
+  /* --- Logotipo que trae su propio fondo de color -------------------------
+     Excepcion para los archivos que NO son un dibujo sobre blanco sino una
+     placa de color entera. Hoy solo Chocolate Santander: su texto es blanco
+     sobre marron, asi que ni el multiply ni un recorte a transparencia
+     sirven; quitarle el marron lo dejaria invisible sobre una seccion clara.
+
+     En vez de disimularlo, se asume: sin blend y con las esquinas redondeadas,
+     para que se lea como una placa de marca puesta a proposito y no como un
+     recorte mal hecho. Cuando aparezca un logotipo con fondo limpio, se borra
+     la marca de MARCAS_CON_FONDO_PROPIO (src/lib/imagenes.ts) y esta clase
+     deja de aplicarse sola. */
+  .logo-marca--placa {
+    mix-blend-mode: normal;
+    border-radius: 6px;
   }
 
   /* --- La direccion de la sede, cuando es enlace --------------------------
