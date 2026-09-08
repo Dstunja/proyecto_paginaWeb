@@ -7,9 +7,28 @@ import { empresa } from '../data/site';
  * - `iso`: el isotipo con el nombre de la empresa a su derecha, en dos líneas.
  *   Es el que va en la barra. El nombre es TEXTO, no el logotipo horizontal:
  *   ese trae el nombre dentro de la imagen y a 44 px de alto queda ilegible.
- *   Va en dos líneas porque en una sola mide 260-277 px en Montserrat y la
- *   barra, medida sobre el sitio compilado, solo tiene 47 px libres en
- *   escritorio; en dos líneas ocupa 122 px y cabe. Desaparece por debajo de
+ *
+ *   VA EN QUESTRIAL (`--font-marca`), NO EN MONTSERRAT, y es el único sitio del
+ *   sitio que la usa. El logotipo oficial está rasterizado en un PNG, así que no
+ *   declara ninguna fuente; comparando su letra ampliada contra once candidatas
+ *   de Google Fonts, Questrial es la que coincide: geométrica, monolineal, de
+ *   panzas circulares, puntos redondos y `a` de dos pisos. Con Montserrat Bold
+ *   el nombre y el logotipo parecían de dos marcas distintas.
+ *
+ *   Por eso mismo el peso es NORMAL y no negrita —el logotipo es de trazo
+ *   ligero— y la segunda línea va en título de caso, «Santiago De Tunja», que
+ *   es como la escribe el logotipo; antes iba en versalitas espaciadas.
+ *
+ *   LAS MEDIDAS, tomadas sobre el sitio compilado a 1440 px: el bloque pasa de
+ *   142×33 px (Montserrat Bold 15/10 en versalitas) a 109×37 px. Sube 17 px el
+ *   cuerpo de la primera línea y aun así ENCOGE 33 px de ancho, porque Questrial
+ *   es más estrecha que Montserrat en negrita y porque las versalitas espaciadas
+ *   de la segunda línea eran lo que más ocupaba. Los 4 px que gana de alto caben
+ *   de sobra dentro de los 48 px del isotipo, así que la barra no cambia de
+ *   altura (81 px en escritorio, 65 px en móvil, comprobado).
+ *
+ *   Va en dos líneas porque en una sola no cabe: la barra, medida sobre el sitio
+ *   compilado, solo tiene 47 px libres en escritorio. Desaparece por debajo de
  *   `marca` (560 px, global.css), donde no hay sitio para él junto a la
  *   píldora del pedido; ahí queda solo el isotipo. Las alturas del isotipo van
  *   atadas a `--nav-h` (global.css): 48 px mientras la barra mide 64 px y
@@ -81,13 +100,13 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
         {/* El tamaño NO crece con el isotipo en `tablet`: a 17 px el bloque
             pasaría de 122 a 136 px y dejaría la fila del menú sin aire a
             1160 px. Se queda fijo a todos los anchos. */}
-        <span class="hidden font-display leading-tight whitespace-nowrap marca:block">
-          <span class="block text-[15px] font-bold tracking-[-0.01em] text-primary">
+        <span class="hidden font-marca leading-tight whitespace-nowrap marca:block">
+          <span class="block text-[17px] font-normal tracking-[0.005em] text-primary">
             Distribuciones
           </span>
-          <span class="mt-[2px] flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.07em] text-muted uppercase">
+          <span class="mt-[3px] flex items-center gap-1.5 text-[10.5px] font-normal tracking-[0.01em] text-muted">
             <span class="h-[2px] w-3.5 shrink-0 bg-accent" aria-hidden="true" />
-            Santiago de Tunja
+            Santiago De Tunja
           </span>
         </span>
       </>

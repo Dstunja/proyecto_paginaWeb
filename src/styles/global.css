@@ -25,6 +25,15 @@
   --font-display: "Montserrat Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-body: "Poppins", "Segoe UI", system-ui, -apple-system, sans-serif;
 
+  /* Solo para el nombre de la empresa junto al isotipo en la barra.
+     Questrial es lo mas parecido que hay en Google Fonts a la letra del
+     logotipo (public/logo-distribuciones.png): geometrica, monolineal, de
+     panzas circulares y con la `a` de dos pisos. NO se usa en ningun otro
+     sitio: el resto del sitio sigue en Montserrat y Poppins.
+     El respaldo va detras en el mismo orden que los otros dos tokens, para
+     que si la fuente no llega el nombre no salte a una serif del sistema. */
+  --font-marca: "Questrial", "Segoe UI", system-ui, -apple-system, sans-serif;
+
   /* --- Fondos: el blanco es el color primario --- */
   --color-canvas: #ffffff; /* fondo del sitio */
   --color-surface: #ffffff; /* tarjetas y paneles */
