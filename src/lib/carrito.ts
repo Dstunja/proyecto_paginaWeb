@@ -50,7 +50,7 @@ export interface ProductoPedido {
   codigo: string;
   /**
    * `true` cuando el deck de origen solo mostraba los últimos dígitos del
-   * código SAP. Viaja -solo en las 26 referencias que lo tienen- porque la
+   * código SAP. Hoy no lo es en ninguna, pero viaja cuando lo es porque la
    * tarjeta y el panel MUESTRAN el código, y un código a medias es peor que
    * ninguno: quien lo copie para pedirlo por otro canal no encontrará la
    * referencia. Ver `detalleReferencia`.
@@ -139,9 +139,12 @@ export function obtenerProducto(id: string): ProductoPedido | undefined {
  * Solo se muestra el código SAP cuando está COMPLETO. Se cae en dos casos, y
  * en los dos se deja únicamente la presentación:
  *
- *  - `codigoParcial`: el deck de Nutresa solo traía los últimos dígitos
- *    (26 referencias, casi todas Corona). Publicar "Cód. 74118" invita a
- *    pedir con un código que no existe.
+ *  - `codigoParcial`: el deck de Nutresa solo traía los últimos dígitos.
+ *    Publicar "Cód. 74118" invita a pedir con un código que no existe. Hoy no
+ *    queda ninguna así: las 26 que había -casi todas Corona- se completaron
+ *    por coincidencia única contra el maestro de SAP (ver `codigoCompletado`
+ *    en src/data/productos.ts). La comprobación se queda para la próxima
+ *    extracción del deck.
  *  - código vacío: hoy no queda ninguna. Las dos que había -Zenú Carne de
  *    Diablo y Zenú Jamoneta 160 g- se dieron de baja al depurar el catálogo,
  *    porque sin código no había forma de buscarles precio en ninguna fuente.

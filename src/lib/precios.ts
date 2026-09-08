@@ -73,7 +73,7 @@ export const SIN_PSP = 'Precio a consultar';
  * Nutresa. Las 508 restantes decían todas "Precio a consultar", que no le
  * sirve de nada a quien está armando un pedido y quiere hacerse una idea del
  * monto. El maestro de precios de SAP (`infolista.xls`) sí trae una cifra para
- * 474 de ellas: su precio de lista.
+ * 498 de ellas: su precio de lista. Solo 10 se quedan sin ninguna de las dos.
  *
  * EL PSP MANDA SIEMPRE
  * --------------------

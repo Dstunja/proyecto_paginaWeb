@@ -31,13 +31,14 @@
  * son notas internas y se quedan en el servidor. El `codigo` SAP viaja por dos
  * razones: va en el mensaje que recibe el asesor y ahora además se MUESTRA, en
  * el renglón de detalle de la tarjeta ("400 g · Cód. 1046509"). Por eso viaja
- * también `codigoParcial`, pero solo en las 26 referencias que lo tienen en
- * `true`: son las que no pueden enseñar el código porque el deck de origen
- * solo traía sus últimos dígitos (ver `detalleReferencia` en src/lib/carrito.ts).
+ * también `codigoParcial`, aunque hoy no queda ninguna en `true`: las 26 que
+ * lo estaban ya tienen su código completo (ver `codigoCompletado` en
+ * src/data/productos.ts). El campo se mantiene porque el maestro se regenera
+ * desde el deck y la próxima extracción puede volver a recortar códigos.
  * `psp` viaja solo cuando la referencia lo tiene: hoy son 112 de las 620. De
- * las 508 restantes, 474 mandan en su lugar `lista`, el precio de lista del
+ * las 508 restantes, 498 mandan en su lugar `lista`, el precio de lista del
  * maestro de SAP. Los dos campos nunca viajan juntos: donde hay PSP manda el
- * PSP. Las 34 que no tienen ninguno sí muestran renglón de precio, pero con
+ * PSP. Las 10 que no tienen ninguno sí muestran renglón de precio, pero con
  * el texto "Precio a consultar", que se arma en la tarjeta y no hace falta
  * mandar.
  *
@@ -135,10 +136,10 @@ const catalogo = productos.map((p) => {
     nombre: p.nombre,
     presentacion: p.presentacion,
     codigo: p.codigo,
-    /* Solo viaja cuando es `true`, que son 26 de las 620: la tarjeta y el
-       panel muestran el código SAP y con este campo saben cuáles NO pueden
-       enseñarlo porque el deck solo traía los últimos dígitos. Mandarlo
-       siempre costaría el campo en las 620 para informar de 26. */
+    /* Solo viaja cuando es `true`, y hoy no lo es en ninguna: la tarjeta y el
+       panel muestran el código SAP y con este campo sabrían cuáles NO pueden
+       enseñarlo por venir recortado del deck. Se deja puesto para la próxima
+       extracción; mandarlo siempre costaría el campo en las 620 para nada. */
     ...(p.codigoParcial ? { codigoParcial: true } : {}),
     ...(imagen ? { imagen } : {}),
     ...(psp !== null ? { psp } : {}),
@@ -159,6 +160,18 @@ const sobrantes = codigosSinProducto(productos);
 if (sobrantes.length > 0) {
   console.warn(
     `[precios] ${sobrantes.length} código(s) de src/data/precios.ts no existen en el catálogo: ${sobrantes.join(', ')}`,
+  );
+}
+
+/* Recordatorio en cada build de las referencias cuyo código SAP se dedujo por
+   coincidencia única y que nadie de Nutresa ha confirmado todavía (campo
+   `codigoCompletado` en src/data/productos.ts). Se avisa por consola y no en la
+   página: es una tarea pendiente del equipo, no algo que le importe al tendero.
+   Cuando el asesor las valide, se quita el campo y este aviso se apaga solo. */
+const completados = productos.filter((p) => p.codigoCompletado);
+if (completados.length > 0) {
+  console.info(
+    `[codigos] ${completados.length} referencia(s) con el código SAP completado por coincidencia única, pendientes de confirmación del asesor: ${completados.map((p) => p.codigo).join(', ')}`,
   );
 }
 
