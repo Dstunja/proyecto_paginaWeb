@@ -46,7 +46,7 @@
 import { getImage } from 'astro:assets';
 import { productos, MARCAS, CATEGORIAS, SUBCATEGORIAS } from '../../data/productos';
 import { imagenSiExiste, logoMarcaImagen } from '../../lib/imagenes';
-import { codigosSinProducto, precioEsOficial, precioSugerido } from '../../lib/precios';
+import { codigosSinProducto, estimarPorCategoria, precioConfirmado } from '../../lib/precios';
 import { ruta } from '../../lib/rutas';
 import { TAMANO_TANDA } from '../../data/pedido';
 import {
@@ -113,13 +113,21 @@ function fotoDe(imagen: string | undefined): string | null {
   return fotos[imagen] ?? null;
 }
 
+/* Los promedios por categoría y marca se calculan UNA vez, no por referencia:
+   estimar dentro del `map` recorrería el catálogo entero 711 veces. */
+const estimados = estimarPorCategoria(productos);
+
 const catalogo = productos.map((p) => {
   const imagen = fotoDe(p.imagen);
-  // El precio se resuelve aquí, en el build: manda la corrección manual de
-  // src/data/precios.ts y, si no hay, el PSP que el maestro trajo del deck
-  // (ver `precioSugerido` en src/lib/precios.ts). Solo viaja al navegador el de
-  // las referencias que lo tienen; las demás llegan sin el campo.
-  const psp = precioSugerido(p);
+  /* El precio se resuelve aquí, en el build, y en este orden:
+       1. el confirmado -corrección manual del asesor, o la lista del
+          proveedor cruzada por código SAP-;
+       2. si no hay, el promedio de su categoría y marca, que va marcado como
+          estimado y así lo dice la tarjeta.
+     Solo viaja al navegador el de las referencias que tienen alguno; las
+     demás llegan sin el campo y muestran `SIN_PSP`. */
+  const confirmado = precioConfirmado(p);
+  const psp = confirmado ?? estimados.get(p.id) ?? null;
   return {
     id: p.id,
     marca: p.marca,
@@ -135,17 +143,19 @@ const catalogo = productos.map((p) => {
     ...(p.codigoParcial ? { codigoParcial: true } : {}),
     ...(imagen ? { imagen } : {}),
     ...(psp !== null ? { psp } : {}),
-    /* Solo viaja cuando el precio es una aproximación, que es el caso que la
-       tarjeta tiene que advertir. Hoy lo son todas las que tienen cifra: las
-       112 salen del deck "MASIVO 1.0" y `PRECIOS_OFICIALES` todavía está
-       vacío. A medida que se cargue la lista oficial del proveedor, el campo
-       va desapareciendo solo de las referencias confirmadas. */
-    ...(psp !== null && !precioEsOficial(p) ? { pspEstimado: true } : {}),
+    /* Solo viaja cuando la cifra es un promedio y no un precio confirmado,
+       que es el caso que la tarjeta tiene que advertir. Mandarlo siempre
+       costaría el campo en las 711 para informar de las que lo necesitan. */
+    ...(psp !== null && confirmado === null ? { pspEstimado: true } : {}),
   };
 });
 
-/** Cuántas referencias tienen precio sugerido: se dice bajo el buscador. */
+/* Cuántas referencias traen precio de la lista del proveedor y cuántas un
+   promedio. Se dice bajo el buscador, una sola vez, para que el alcance de las
+   cifras se lea de entrada y no haya que deducirlo tarjeta por tarjeta. */
 const conPrecio = catalogo.filter((p) => 'psp' in p).length;
+const estimadas = catalogo.filter((p) => 'pspEstimado' in p).length;
+const deLista = conPrecio - estimadas;
 
 /* Aviso de mantenimiento, solo en consola durante `npm run build`: un código de
    src/data/precios.ts que no corresponda a ninguna referencia no rompe nada,
@@ -725,7 +735,8 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   {
     conPrecio > 0 && (
       <p class="m-0 text-[13.5px] text-muted">
-        {conPrecio} de {catalogo.length} con precio sugerido de referencia.
+        Precios con IVA. {deLista} de {catalogo.length} salen de la lista del proveedor
+        {estimadas > 0 && <> y {estimadas} son un estimado por categoría</>}.
       </p>
     )
   }

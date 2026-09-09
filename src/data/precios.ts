@@ -52,32 +52,24 @@
  */
 export const PRECIOS_SUGERIDOS: Record<string, number> = {};
 
-/**
- * Códigos SAP cuyo precio viene de la LISTA OFICIAL del proveedor, no de una
- * estimación.
+/*
+ * De dónde salen hoy los precios del sitio
+ * ----------------------------------------
+ * La cifra confirmada vive en src/data/precios-lista.ts, que genera
+ * `scripts/cargar-precios.mjs` a partir del infolista del proveedor. Es el
+ * precio CON IVA al que la tienda compra, y es el que se publica: quien usa
+ * el armador de pedidos es el tendero, así que el valor que le sirve es el
+ * que él va a pagar, no el PSP que él le cobra al consumidor.
  *
- * QUÉ DISTINGUE A ESTA LISTA DE LA DE ARRIBA
- * ------------------------------------------
- * `PRECIOS_SUGERIDOS` dice CUÁNTO cuesta; esta dice DE DÓNDE salió esa cifra.
- * Son dos preguntas distintas y la tarjeta necesita las dos: un precio tomado
- * de la lista oficial se puede mostrar tal cual, y uno deducido -del deck, o
- * del promedio de su categoría- tiene que ir con el aviso de que es
- * aproximado. Sin esta lista las dos cifras se verían idénticas en pantalla,
- * que es exactamente la confusión que el aviso trata de evitar.
+ * `PRECIOS_SUGERIDOS`, arriba, sigue siendo la corrección manual y manda
+ * sobre la lista: es donde se anota un precio que el asesor ya corrigió y que
+ * la próxima carga del infolista no debe pisar.
  *
- * El sitio lo consulta a través de `precioEsOficial` (src/lib/precios.ts), y
- * de ahí sale el `pspEstimado` que enciende el aviso de la tarjeta.
- *
- * EDITAR AQUÍ: se llena junto con `PRECIOS_SUGERIDOS` al cargar la lista de
- * precios del proveedor, con los códigos que aparecieron en ella con un valor
- * mayor que cero. Un código que en la lista venga en 0 NO va aquí: ese cero no
- * es un precio, es un dato que falta, y la referencia debe quedar estimada.
- *
- * Mientras esté vacía, todas las referencias con precio se muestran como
- * estimadas, que es lo correcto: hoy las cifras del sitio salen del deck
- * "MASIVO 1.0" y ninguna está confirmada contra la lista oficial.
+ * Las referencias que no están en la lista reciben el promedio de su
+ * categoría y marca, marcado como estimado; eso lo calcula
+ * `estimarPorCategoria` en src/lib/precios.ts, que necesita el catálogo
+ * entero y por eso no vive aquí.
  */
-export const PRECIOS_OFICIALES: ReadonlySet<string> = new Set([]);
 
 /**
  * Fecha en que se actualizaron los precios de arriba, tal como se quiere leer
@@ -86,4 +78,4 @@ export const PRECIOS_OFICIALES: ReadonlySet<string> = new Set([]);
  * EDITAR AQUÍ junto con la lista: un precio de referencia sin fecha envejece
  * sin que nadie se dé cuenta.
  */
-export const PRECIOS_ACTUALIZADOS = 'agosto de 2026';
+export const PRECIOS_ACTUALIZADOS = 'septiembre de 2026';

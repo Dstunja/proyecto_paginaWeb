@@ -13,7 +13,8 @@
  * `localStorage`.
  */
 
-import { PRECIOS_OFICIALES, PRECIOS_SUGERIDOS } from '../data/precios';
+import { PRECIOS_SUGERIDOS } from '../data/precios';
+import { LISTA_PROVEEDOR } from '../data/precios-lista';
 
 /** Una referencia mínima: lo que hace falta para resolverle el precio. */
 export interface ConCodigo {
@@ -24,46 +25,97 @@ export interface ConCodigo {
 }
 
 /**
- * Precio sugerido de una referencia, o `null` si no está confirmado.
+ * Precio CONFIRMADO de una referencia, o `null` si no lo hay.
  *
  * Hay dos fuentes y este es el orden:
  *   1. src/data/precios.ts, la corrección manual por código SAP. Manda sobre
- *      todo lo demás: es donde se anota un precio que el asesor ya corrigió.
- *   2. El campo `precio` del maestro (src/data/productos.ts), que viene del
- *      deck "MASIVO 1.0" y cubre las referencias cuya página declara un PSP.
+ *      todo lo demás: es donde se anota un precio que el asesor ya corrigió y
+ *      que la siguiente carga del infolista no debe pisar.
+ *   2. src/data/precios-lista.ts, la lista del proveedor: el precio con IVA al
+ *      que la tienda compra, que es el que el sitio publica.
+ *
+ * El campo `precio` del maestro (el PSP del deck "MASIVO 1.0") YA NO se usa
+ * como precio a mostrar. Es un precio al consumidor -lo que el tendero cobra-
+ * y la lista es un precio al distribuidor -lo que el tendero paga-: mezclarlos
+ * pondría en la misma grilla dos cifras que significan cosas distintas y que
+ * se diferencian en torno a un 20 %. Se conserva en los datos para poder
+ * comparar, pero la tarjeta muestra una sola clase de precio.
  *
  * Devuelve `null` —y no 0 ni undefined— para que en la interfaz sea imposible
  * confundir "no sabemos" con "sale gratis". Las referencias con código parcial
- * o vacío no pueden llevar corrección manual (su código no identifica un
- * producto único), pero sí conservan el PSP del deck si lo tienen.
+ * o vacío nunca cruzan: su código no identifica un producto único.
  */
-export function precioSugerido(producto: ConCodigo): number | null {
+export function precioConfirmado(producto: ConCodigo): number | null {
   const codigo = producto.codigo?.trim();
-  if (codigo && !producto.codigoParcial) {
-    const manual = PRECIOS_SUGERIDOS[codigo];
-    if (typeof manual === 'number' && Number.isFinite(manual) && manual > 0) return manual;
-  }
-  const delDeck = producto.precio;
-  return typeof delDeck === 'number' && Number.isFinite(delDeck) && delDeck > 0 ? delDeck : null;
+  if (!codigo || producto.codigoParcial) return null;
+
+  const manual = PRECIOS_SUGERIDOS[codigo];
+  if (typeof manual === 'number' && Number.isFinite(manual) && manual > 0) return manual;
+
+  const deLista = LISTA_PROVEEDOR[codigo];
+  return typeof deLista === 'number' && Number.isFinite(deLista) && deLista > 0 ? deLista : null;
+}
+
+/** Lo mínimo que hace falta para estimar por parecido: su grupo y su código. */
+export interface ConCategoria extends ConCodigo {
+  id: string;
+  marca: string;
+  categoria: string;
 }
 
 /**
- * ¿El precio de esta referencia sale de la lista oficial del proveedor?
+ * Precio aproximado de las referencias que la lista del proveedor no cubre.
  *
- * Es lo contrario de "estimado". Devuelve `false` para todo lo que no esté en
- * `PRECIOS_OFICIALES`: el precio del deck, el promedio de la categoría y la
- * referencia sin precio. Esa es la respuesta prudente -de un precio que no
- * está en la lista oficial no se puede afirmar que lo sea-, y es la que hace
- * que el aviso de la tarjeta aparezca por defecto y se apague solo cuando hay
- * con qué respaldarlo.
+ * CÓMO SE DEDUCE
+ * --------------
+ * El promedio de los precios confirmados de su MISMA MARCA dentro de su MISMA
+ * CATEGORÍA. Si esa combinación no tiene ninguno confirmado -pasa con marcas
+ * pequeñas-, se abre a toda la categoría. Si la categoría entera está sin
+ * precios, la referencia se queda sin cifra y la tarjeta dice `SIN_PSP`.
  *
- * Las referencias con código parcial o vacío nunca son oficiales: su código no
- * identifica un producto único, así que no se puede cruzar contra la lista.
+ * Se va de lo específico a lo general a propósito: el promedio de "Zenú" en
+ * "Enlatados y conservas" se parece mucho más a una lata de Zenú que el
+ * promedio de toda la categoría, donde entran marcas de otro rango de precio.
+ *
+ * QUÉ TAN BUENO ES ESTE NÚMERO
+ * ----------------------------
+ * Es un orden de magnitud, no un precio. Dentro de una misma marca y
+ * categoría conviven presentaciones muy distintas -un sobre y una caja de 24-,
+ * así que el promedio puede quedar lejos de una referencia concreta. Por eso
+ * TODA cifra que salga de aquí viaja marcada como estimada y la tarjeta lo
+ * dice: sirve para que el tendero se haga una idea del monto del pedido, no
+ * para cuadrar una factura.
+ *
+ * Devuelve un Map por `id` y no por código SAP porque también cubre las
+ * referencias de código parcial o vacío, que no tienen código con el que
+ * indexarse.
  */
-export function precioEsOficial(producto: ConCodigo): boolean {
-  const codigo = producto.codigo?.trim();
-  if (!codigo || producto.codigoParcial) return false;
-  return PRECIOS_OFICIALES.has(codigo);
+export function estimarPorCategoria(productos: readonly ConCategoria[]): Map<string, number> {
+  const porMarca = new Map<string, number[]>();
+  const porCategoria = new Map<string, number[]>();
+
+  for (const p of productos) {
+    const precio = precioConfirmado(p);
+    if (precio === null) continue;
+    const clave = `${p.categoria} / ${p.marca}`;
+    (porMarca.get(clave) ?? porMarca.set(clave, []).get(clave)!).push(precio);
+    (porCategoria.get(p.categoria) ?? porCategoria.set(p.categoria, []).get(p.categoria)!).push(
+      precio,
+    );
+  }
+
+  const promedio = (v: number[] | undefined) =>
+    v && v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
+
+  const estimados = new Map<string, number>();
+  for (const p of productos) {
+    if (precioConfirmado(p) !== null) continue;
+    const valor =
+      promedio(porMarca.get(`${p.categoria} / ${p.marca}`)) ??
+      promedio(porCategoria.get(p.categoria));
+    if (valor !== null && valor > 0) estimados.set(p.id, valor);
+  }
+  return estimados;
 }
 
 /**
@@ -75,8 +127,10 @@ export function precioEsOficial(producto: ConCodigo): boolean {
  * caso -que es exactamente lo que pasaba antes, con "Precio a consultar" en la
  * tarjeta y "Precio con tu asesor" en el panel-.
  *
- * Es texto de interfaz, no un dato: el criterio de cuándo aplica lo pone
- * `precioSugerido`, que devuelve `null`.
+ * Es texto de interfaz, no un dato: el criterio de cuándo aplica lo ponen
+ * `precioConfirmado` y `estimarPorCategoria`, cuando ninguno de los dos da
+ * cifra. Hoy no le toca a ninguna referencia, pero el caso sigue cubierto:
+ * una lista futura puede dejar sin precio a una categoría entera.
  */
 export const SIN_PSP = 'Precio a consultar';
 

@@ -137,23 +137,25 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
   /*
    * EL PRECIO: siempre hay renglón
    * ------------------------------
-   * Es el PSP (precio sugerido al público): la corrección manual de
-   * src/data/precios.ts si la hay, y si no el del deck.
+   * Es el precio CON IVA al que la tienda compra, tomado de la lista del
+   * proveedor y cruzado por código SAP (src/data/precios-lista.ts). Para las
+   * 133 referencias que la lista no cubre es el promedio de su categoría y
+   * marca, y entonces la tarjeta lo advierte con el aviso de abajo.
    *
-   * Va rotulado como SUGERIDO a propósito. Es lo que la tienda le cobra al
-   * consumidor, no lo que la tienda le paga al asesor, y sin el rótulo la
-   * cifra se leería como el precio del pedido. El aviso de que el asesor
-   * confirma precios y disponibilidad sigue estando en el panel del pedido
-   * y en el mensaje de WhatsApp (AVISO_PRECIOS).
+   * EL RÓTULO DICE "CON IVA" Y NO "SUGERIDO". Antes decía sugerido porque la
+   * cifra era el PSP del deck, que es lo que la tienda le COBRA al consumidor.
+   * La lista del proveedor es lo contrario: lo que la tienda PAGA. Son dos
+   * precios distintos -se separan en torno a un 20 %- y quien usa el armador
+   * de pedidos es el tendero, así que se publica el suyo. Dejar el rótulo
+   * viejo sobre la cifra nueva diría exactamente lo contrario de lo que es.
    *
-   * Las referencias sin PSP cargado -hoy 599 de 711- no dejan el hueco ni
-   * pintan un $0: dicen lo que diga `SIN_PSP` (src/lib/precios.ts), que es la
-   * misma frase que usa el panel del pedido, y además mantiene todas las
-   * tarjetas de la fila a la misma altura.
+   * El renglón existe siempre y mantiene a la misma altura todas las tarjetas
+   * de la fila. Si alguna vez una referencia se queda sin cifra -hoy no pasa
+   * ninguna- dice `SIN_PSP` en vez de pintar un $0.
    */
   const precio =
     typeof p.psp === 'number'
-      ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}<span class="precio-tarjeta__nota">sugerido</span></p>`
+      ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}<span class="precio-tarjeta__nota">con IVA</span></p>`
       : `<p class="precio-tarjeta precio-tarjeta--consultar">${escapar(SIN_PSP)}</p>`;
 
   /*
