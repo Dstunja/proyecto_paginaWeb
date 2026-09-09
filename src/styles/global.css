@@ -1012,25 +1012,66 @@
    quedaría clavado en `transform: none` y anularía los desplazamientos de
    :hover de .glass-card y .tarjeta-int. */
 @media (prefers-reduced-motion: no-preference) {
+  /* `:not(script)` y compañía: un componente puede dejar su <script> dentro de
+     la misma rejilla que sus tarjetas, y esconderlo no sirve de nada. El
+     script hace el mismo filtro para no observarlos. */
   .js-revelado [data-revelar]:not([data-revelado]),
-  .js-revelado [data-revelar-grupo] > *:not([data-revelado]) {
+  .js-revelado
+    [data-revelar-grupo]
+    > *:not([data-revelado]):not(script):not(style):not(template):not(link) {
     opacity: 0;
+    /* Se pide la capa ANTES de animar, que es cuando le sirve al navegador.
+       El script la retira al terminar (`animationend`), poniendo
+       `will-change: auto` en línea. */
+    will-change: opacity, transform;
   }
 
   .js-revelado [data-revelar][data-revelado],
   .js-revelado [data-revelar-grupo] > [data-revelado] {
-    /* 500 ms y una curva que frena al final: se nota, pero no compite con el
+    /* 400 ms y una curva que frena al final: se nota, pero no compite con el
        conteo de las cifras del hero (900 ms), que es la animación protagonista
-       de la portada. */
-    animation: revelar 500ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+       de la portada. La variante la decide `data-variante-revelado`, que
+       escribe src/lib/revelado.ts al revelar. */
+    animation: revelar-subir 400ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
     animation-delay: var(--retraso-revelado, 0ms);
+  }
+
+  .js-revelado [data-revelado][data-variante-revelado='fundido'] {
+    animation-name: revelar-fundido;
+  }
+
+  .js-revelado [data-revelado][data-variante-revelado='escala'] {
+    animation-name: revelar-escala;
   }
 }
 
-@keyframes revelar {
+/* Las tres se declaran con `backwards` y no con `forwards` a propósito: ver la
+   nota de arriba sobre los :hover de .glass-card y .tarjeta-int. */
+@keyframes revelar-subir {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Sin transformación: el contenido no se mueve ni un píxel, solo aparece. */
+@keyframes revelar-fundido {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes revelar-escala {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
