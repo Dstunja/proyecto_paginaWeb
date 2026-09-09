@@ -20,8 +20,7 @@ docs/catalogo-fuente/
 
 # Listas de precios del proveedor (infolista de Nutresa).
 # Son informacion interna y pesan decenas de MB: al repositorio solo sube el
-# resultado, src/data/precios-lista.ts, con los precios de las referencias
-# que este catalogo si vende. Ver scripts/cargar-precios.mjs.
+# resultado, src/data/preciosLista.ts, con los precios de las referencias
+# que este catalogo si vende. Ver scripts/extraer-precios-lista.mjs.
 src/data/infolista*.xls
 src/data/infolista*.xlsx
-src/data/precios-lista.csv

@@ -20,7 +20,12 @@ import {
   WHATSAPP_NUMERO,
 } from '../data/pedido';
 import { empresa } from '../data/site';
-import { formatearPesos, resumirPrecios, type ResumenPrecios } from './precios';
+import {
+  formatearPesos,
+  resumirPrecios,
+  type PrecioLista,
+  type ResumenPrecios,
+} from './precios';
 
 /**
  * Producto tal como lo necesita el navegador.
@@ -45,7 +50,7 @@ export interface ProductoPedido {
   codigo: string;
   /**
    * `true` cuando el deck de origen solo mostraba los últimos dígitos del
-   * código SAP. Viaja -solo en las 27 referencias que lo tienen- porque la
+   * código SAP. Hoy no lo es en ninguna, pero viaja cuando lo es porque la
    * tarjeta y el panel MUESTRAN el código, y un código a medias es peor que
    * ninguno: quien lo copie para pedirlo por otro canal no encontrará la
    * referencia. Ver `detalleReferencia`.
@@ -62,15 +67,16 @@ export interface ProductoPedido {
    */
   psp?: number;
   /**
-   * `true` cuando el `psp` de arriba es una aproximación y no una cifra
-   * tomada de la lista oficial del proveedor (ver `precioEsOficial` en
-   * src/lib/precios.ts). Enciende el aviso al pie de la tarjeta.
+   * Precio de lista del maestro de SAP, en las referencias que NO tienen PSP.
+   * Nunca viaja junto a `psp`: donde hay PSP manda el PSP (ver `precioLista`
+   * en src/lib/precios.ts).
    *
-   * Viaja solo cuando es `true`, como `codigoParcial`: el campo pesa lo mismo
-   * en cada una de las 711 referencias del JSON que se manda al navegador, y
-   * el caso que hay que señalar es el estimado, no el confirmado.
+   * Es un precio POR UNIDAD DE VENTA, no por unidad de consumo, así que no
+   * entra en el subtotal orientativo ni se multiplica por la cantidad: la
+   * tarjeta y el panel lo pintan tal cual, con el rótulo común
+   * `ETIQUETA_PRECIO` y con la presentación al lado cuando se conoce.
    */
-  pspEstimado?: boolean;
+  lista?: PrecioLista;
 }
 
 /** Datos de contacto que acompañan al pedido. */
@@ -133,10 +139,17 @@ export function obtenerProducto(id: string): ProductoPedido | undefined {
  * Solo se muestra el código SAP cuando está COMPLETO. Se cae en dos casos, y
  * en los dos se deja únicamente la presentación:
  *
- *  - `codigoParcial`: el deck de Nutresa solo traía los últimos dígitos
- *    (27 referencias, casi todas Corona). Publicar "Cód. 74118" invita a
- *    pedir con un código que no existe.
- *  - código vacío (2 referencias, Zenú Carne de Diablo y Zenú Jamoneta).
+ *  - `codigoParcial`: el deck de Nutresa solo traía los últimos dígitos.
+ *    Publicar "Cód. 74118" invita a pedir con un código que no existe. Hoy no
+ *    queda ninguna así: las 26 que había -casi todas Corona- se completaron
+ *    por coincidencia única contra el maestro de SAP (ver `codigoCompletado`
+ *    en src/data/productos.ts). La comprobación se queda para la próxima
+ *    extracción del deck.
+ *  - código vacío: hoy no queda ninguna. Las dos que había -Zenú Carne de
+ *    Diablo y Zenú Jamoneta 160 g- se dieron de baja al depurar el catálogo,
+ *    porque sin código no había forma de buscarles precio en ninguna fuente.
+ *    La comprobación se queda: el maestro se regenera desde el deck y la
+ *    próxima extracción puede volver a dejar una ficha sin código.
  *
  * Es el mismo criterio que usa `precioSugerido` para el precio: ante la duda
  * no se muestra el dato en vez de mostrar uno que no se sostiene.

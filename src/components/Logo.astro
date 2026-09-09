@@ -8,24 +8,38 @@ import { empresa } from '../data/site';
  *   Es el que va en la barra. El nombre es TEXTO, no el logotipo horizontal:
  *   ese trae el nombre dentro de la imagen y a 44 px de alto queda ilegible.
  *
- *   VA EN QUESTRIAL (`--font-marca`), NO EN MONTSERRAT, y es el único sitio del
- *   sitio que la usa. El logotipo oficial está rasterizado en un PNG, así que no
- *   declara ninguna fuente; comparando su letra ampliada contra once candidatas
- *   de Google Fonts, Questrial es la que coincide: geométrica, monolineal, de
- *   panzas circulares, puntos redondos y `a` de dos pisos. Con Montserrat Bold
- *   el nombre y el logotipo parecían de dos marcas distintas.
+ *   VA EN DOS TIPOGRAFÍAS, NO EN MONTSERRAT, porque el logotipo también usa dos
+ *   (`--font-marca-1` y `--font-marca-2`, global.css; es el único sitio del
+ *   sitio que las usa). El logotipo oficial está rasterizado en un PNG y no
+ *   declara ninguna fuente, así que las dos se eligieron midiendo el archivo
+ *   píxel a píxel:
  *
- *   Por eso mismo el peso es NORMAL y no negrita —el logotipo es de trazo
- *   ligero— y la segunda línea va en título de caso, «Santiago De Tunja», que
- *   es como la escribe el logotipo; antes iba en versalitas espaciadas.
+ *     «Distribuciones» va en JOST 300. En el logotipo esa línea es geométrica y
+ *     de trazo finísimo: el asta mide el 10,6 % de la altura de mayúscula, que
+ *     es un peso Light, y la palabra tiene una proporción ancho/altura de 7,95.
+ *     Jost 300 da 8,31; Questrial, que estuvo aquí antes, daba 9,61. Por eso el
+ *     peso es LIGHT y no normal, y por eso NO lleva retoque de `tracking`: el
+ *     espaciado natural de Jost ya es el que más se parece al del logotipo, y
+ *     apretarlo iría en contra de unas letras que son redondas y abiertas.
  *
- *   LAS MEDIDAS, tomadas sobre el sitio compilado a 1440 px: el bloque pasa de
- *   142×33 px (Montserrat Bold 15/10 en versalitas) a 109×37 px. Sube 17 px el
- *   cuerpo de la primera línea y aun así ENCOGE 33 px de ancho, porque Questrial
- *   es más estrecha que Montserrat en negrita y porque las versalitas espaciadas
- *   de la segunda línea eran lo que más ocupaba. Los 4 px que gana de alto caben
- *   de sobra dentro de los 48 px del isotipo, así que la barra no cambia de
- *   altura (81 px en escritorio, 65 px en móvil, comprobado).
+ *     «Santiago De Tunja S.A.S» va en SOURCE SANS 3 400, humanista y de trazo
+ *     normal (el asta mide el 13,3 % de la mayúscula). Va en título de caso,
+ *     con la «De» en mayúscula, porque así lo escribe el logotipo.
+ *
+ *   LOS TAMAÑOS, 22 px y 10,5 px, salen del ritmo del logotipo. Ahí la
+ *   mayúscula de la segunda línea mide el 41 % de la de la primera; con 17/10,5
+ *   px iba por el 58 %, que es lo que hacía que las dos líneas se parecieran
+ *   demasiado entre sí. La segunda NO se puede bajar de 10 px sin volverse
+ *   ilegible, así que lo que sube es la primera: a 22 px la razón queda en el
+ *   45 %, cerca del logotipo y sin pasarse de sitio.
+ *
+ *   LAS MEDIDAS, tomadas sobre el sitio compilado: el bloque pasa de 109×37 px
+ *   a 128×43 px. Crece 19 px de ancho y aun así cabe, porque en escritorio hay
+ *   59 px libres entre el logo y el menú; quedan 40 de margen. Los 43 px de
+ *   alto siguen entrando en los 48 px del isotipo, así que la barra no cambia
+ *   de altura (81 px en escritorio, 65 px en móvil, comprobado). La segunda
+ *   línea, con la raya y su hueco, mide 123,5 px: es la primera la que manda
+ *   en el ancho, así que añadir «S.A.S» no ensanchó el bloque.
  *
  *   Va en dos líneas porque en una sola no cabe: la barra, medida sobre el sitio
  *   compilado, solo tiene 47 px libres en escritorio. Desaparece por debajo de
@@ -41,13 +55,19 @@ import { empresa } from '../data/site';
  *   imagen, así que se lee bien y es el que mantiene la razón social visible en
  *   todas las páginas.
  *
- *   Lleva la MISMA tipografía y los mismos ajustes que `iso`: Questrial en peso
- *   normal, 17 px la primera línea y 10,5 px la segunda, con el mismo espaciado
- *   y en título de caso. Las dos variantes repiten el nombre de la empresa, así
- *   que cuando solo la barra seguía al logotipo el pie se quedaba descolgado con
- *   su Montserrat Bold en versalitas. No hereda el color: aquí lo pone
- *   `.sobre-oscuro` del pie, que reescribe `--color-ink` a blanco y
- *   `--color-muted` a un blanco al 72 %.
+ *   Lleva las MISMAS tipografías y los mismos ajustes que `iso`: Jost 300 a
+ *   22 px la primera línea y Source Sans 3 400 a 10,5 px la segunda, en título
+ *   de caso y con el «S.A.S» del logotipo. Las dos variantes repiten el nombre
+ *   de la empresa, así que tienen que ir siempre igual: cuando solo la barra
+ *   seguía al logotipo, el pie se quedaba descolgado.
+ *
+ *   Lo ÚNICO que cambia entre las dos es el color, y es a propósito. La primera
+ *   línea no lo declara: lo pone `.sobre-oscuro` del pie, que reescribe
+ *   `--color-ink` a blanco. La segunda sí, y aquí va el naranja VIVO de la raya
+ *   (`text-accent`, #F5A623), que sobre el azul oscuro da 7,0:1 de contraste;
+ *   en la barra, sobre blanco, ese mismo naranja se queda en 1,9:1 y por eso
+ *   allí se usa `text-accent-text` (#A65F00). Mismo naranja de marca, dos
+ *   tonos, porque el fondo es distinto.
  *
  *   La raya naranja también mide lo mismo que en la barra, 14 px. Estuvo un
  *   tiempo en 20 px, heredados de cuando el nombre iba en versalitas y ocupaba
@@ -113,13 +133,17 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
         {/* El isotipo crece en `tablet` (48 → 56 px) pero el NOMBRE no: se queda
             en 17/10,5 px a todos los anchos. Subirlo empujaría el bloque contra
             la fila del menú, que a 1180 px es donde menos aire tiene. */}
-        <span class="hidden font-marca leading-tight whitespace-nowrap marca:block">
-          <span class="block text-[17px] font-normal tracking-[0.005em] text-primary">
+        <span class="hidden leading-tight whitespace-nowrap marca:block">
+          <span class="font-marca-1 block text-[22px] font-light text-primary">
             Distribuciones
           </span>
-          <span class="mt-[3px] flex items-center gap-1.5 text-[10.5px] font-normal tracking-[0.01em] text-muted">
+          {/* En la barra el naranja NO es el de la raya: sobre blanco, #F5A623
+              da 1,9:1 de contraste y a 10,5 px no se lee. `text-accent-text`
+              (#A65F00) sigue siendo naranja de marca y llega a 5,3:1. En el
+              pie, sobre azul, sí va el naranja vivo (ver la variante `claro`). */}
+          <span class="font-marca-2 mt-[3px] flex items-center gap-1.5 text-[10.5px] font-normal text-accent-text">
             <span class="h-[2px] w-3.5 shrink-0 bg-accent" aria-hidden="true" />
-            Santiago De Tunja
+            Santiago De Tunja S.A.S
           </span>
         </span>
       </>
@@ -138,9 +162,13 @@ const LOGOTIPO = `${base}${base.endsWith('/') ? '' : '/'}logo-distribuciones.png
             class="h-full w-full object-contain"
           />
         </span>
-        <span class="font-marca leading-tight text-ink">
-          <span class="block text-[17px] font-normal tracking-[0.005em]">Distribuciones</span>
-          <span class="mt-[3px] flex items-center gap-2 text-[10.5px] font-normal tracking-[0.01em] text-muted">
+        <span class="leading-tight text-ink">
+          <span class="font-marca-1 block text-[22px] font-light">Distribuciones</span>
+          {/* Aquí sí va el naranja vivo de la raya (#F5A623): sobre el azul
+              oscuro del pie da 7,0:1, de sobra. No hereda el color del texto,
+              lo pone a mano, porque `.sobre-oscuro` deja `--color-muted` en un
+              blanco al 72 % y la línea perdería el naranja del logotipo. */}
+          <span class="font-marca-2 mt-[3px] flex items-center gap-2 text-[10.5px] font-normal text-accent">
             <span class="h-[2px] w-3.5 bg-accent" aria-hidden="true" />
             Santiago De Tunja S.A.S
           </span>

@@ -14,7 +14,9 @@
  */
 
 import { PRECIOS_SUGERIDOS } from '../data/precios';
-import { LISTA_PROVEEDOR } from '../data/precios-lista';
+import { PRECIOS_LISTA, type PrecioLista } from '../data/preciosLista';
+
+export type { PrecioLista };
 
 /** Una referencia mínima: lo que hace falta para resolverle el precio. */
 export interface ConCodigo {
@@ -25,97 +27,36 @@ export interface ConCodigo {
 }
 
 /**
- * Precio CONFIRMADO de una referencia, o `null` si no lo hay.
+ * Precio sugerido de una referencia, o `null` si no está confirmado.
  *
  * Hay dos fuentes y este es el orden:
- *   1. src/data/precios.ts, la corrección manual por código SAP. Manda sobre
- *      todo lo demás: es donde se anota un precio que el asesor ya corrigió y
- *      que la siguiente carga del infolista no debe pisar.
- *   2. src/data/precios-lista.ts, la lista del proveedor: el precio con IVA al
- *      que la tienda compra, que es el que el sitio publica.
+ *   1. PSP CONFIRMADO POR ASESOR: src/data/precios.ts, por código SAP. Manda
+ *      sobre todo lo demás porque es el único precio que alguien ha
+ *      verificado a mano contra lo que de verdad se cobra. Hoy son 10
+ *      fichas, salidas de 8 códigos.
+ *   2. PSP DEL DECK: el campo `precio` del maestro (src/data/productos.ts),
+ *      que viene del deck "MASIVO 1.0" y cubre las 112 referencias cuya
+ *      página declara un PSP explícito.
  *
- * El campo `precio` del maestro (el PSP del deck "MASIVO 1.0") YA NO se usa
- * como precio a mostrar. Es un precio al consumidor -lo que el tendero cobra-
- * y la lista es un precio al distribuidor -lo que el tendero paga-: mezclarlos
- * pondría en la misma grilla dos cifras que significan cosas distintas y que
- * se diferencian en torno a un 20 %. Se conserva en los datos para poder
- * comparar, pero la tarjeta muestra una sola clase de precio.
+ * Las dos son PSP, y desde que se unificaron los rótulos la tarjeta pinta
+ * igual estas dos y el precio de lista: todas con `ETIQUETA_PRECIO`. Al
+ * tendero le da lo mismo de dónde salió la cifra. La distinción es de
+ * mantenimiento, y por eso vive en la estructura -archivos distintos- y no en
+ * la interfaz.
  *
  * Devuelve `null` —y no 0 ni undefined— para que en la interfaz sea imposible
  * confundir "no sabemos" con "sale gratis". Las referencias con código parcial
- * o vacío nunca cruzan: su código no identifica un producto único.
+ * o vacío no pueden llevar corrección manual (su código no identifica un
+ * producto único), pero sí conservan el PSP del deck si lo tienen.
  */
-export function precioConfirmado(producto: ConCodigo): number | null {
+export function precioSugerido(producto: ConCodigo): number | null {
   const codigo = producto.codigo?.trim();
-  if (!codigo || producto.codigoParcial) return null;
-
-  const manual = PRECIOS_SUGERIDOS[codigo];
-  if (typeof manual === 'number' && Number.isFinite(manual) && manual > 0) return manual;
-
-  const deLista = LISTA_PROVEEDOR[codigo];
-  return typeof deLista === 'number' && Number.isFinite(deLista) && deLista > 0 ? deLista : null;
-}
-
-/** Lo mínimo que hace falta para estimar por parecido: su grupo y su código. */
-export interface ConCategoria extends ConCodigo {
-  id: string;
-  marca: string;
-  categoria: string;
-}
-
-/**
- * Precio aproximado de las referencias que la lista del proveedor no cubre.
- *
- * CÓMO SE DEDUCE
- * --------------
- * El promedio de los precios confirmados de su MISMA MARCA dentro de su MISMA
- * CATEGORÍA. Si esa combinación no tiene ninguno confirmado -pasa con marcas
- * pequeñas-, se abre a toda la categoría. Si la categoría entera está sin
- * precios, la referencia se queda sin cifra y la tarjeta dice `SIN_PSP`.
- *
- * Se va de lo específico a lo general a propósito: el promedio de "Zenú" en
- * "Enlatados y conservas" se parece mucho más a una lata de Zenú que el
- * promedio de toda la categoría, donde entran marcas de otro rango de precio.
- *
- * QUÉ TAN BUENO ES ESTE NÚMERO
- * ----------------------------
- * Es un orden de magnitud, no un precio. Dentro de una misma marca y
- * categoría conviven presentaciones muy distintas -un sobre y una caja de 24-,
- * así que el promedio puede quedar lejos de una referencia concreta. Por eso
- * TODA cifra que salga de aquí viaja marcada como estimada y la tarjeta lo
- * dice: sirve para que el tendero se haga una idea del monto del pedido, no
- * para cuadrar una factura.
- *
- * Devuelve un Map por `id` y no por código SAP porque también cubre las
- * referencias de código parcial o vacío, que no tienen código con el que
- * indexarse.
- */
-export function estimarPorCategoria(productos: readonly ConCategoria[]): Map<string, number> {
-  const porMarca = new Map<string, number[]>();
-  const porCategoria = new Map<string, number[]>();
-
-  for (const p of productos) {
-    const precio = precioConfirmado(p);
-    if (precio === null) continue;
-    const clave = `${p.categoria} / ${p.marca}`;
-    (porMarca.get(clave) ?? porMarca.set(clave, []).get(clave)!).push(precio);
-    (porCategoria.get(p.categoria) ?? porCategoria.set(p.categoria, []).get(p.categoria)!).push(
-      precio,
-    );
+  if (codigo && !producto.codigoParcial) {
+    const manual = PRECIOS_SUGERIDOS[codigo];
+    if (typeof manual === 'number' && Number.isFinite(manual) && manual > 0) return manual;
   }
-
-  const promedio = (v: number[] | undefined) =>
-    v && v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
-
-  const estimados = new Map<string, number>();
-  for (const p of productos) {
-    if (precioConfirmado(p) !== null) continue;
-    const valor =
-      promedio(porMarca.get(`${p.categoria} / ${p.marca}`)) ??
-      promedio(porCategoria.get(p.categoria));
-    if (valor !== null && valor > 0) estimados.set(p.id, valor);
-  }
-  return estimados;
+  const delDeck = producto.precio;
+  return typeof delDeck === 'number' && Number.isFinite(delDeck) && delDeck > 0 ? delDeck : null;
 }
 
 /**
@@ -127,12 +68,84 @@ export function estimarPorCategoria(productos: readonly ConCategoria[]): Map<str
  * caso -que es exactamente lo que pasaba antes, con "Precio a consultar" en la
  * tarjeta y "Precio con tu asesor" en el panel-.
  *
- * Es texto de interfaz, no un dato: el criterio de cuándo aplica lo ponen
- * `precioConfirmado` y `estimarPorCategoria`, cuando ninguno de los dos da
- * cifra. Hoy no le toca a ninguna referencia, pero el caso sigue cubierto:
- * una lista futura puede dejar sin precio a una categoría entera.
+ * Es texto de interfaz, no un dato: el criterio de cuándo aplica lo pone
+ * `precioSugerido`, que devuelve `null`.
  */
 export const SIN_PSP = 'Precio a consultar';
+
+/**
+ * Precio de lista de una referencia que NO tiene PSP, o `null`.
+ *
+ * POR QUÉ EXISTE ESTE SEGUNDO PRECIO
+ * ----------------------------------
+ * De las 621 referencias del catálogo, 122 traen PSP -112 del deck de Nutresa
+ * y 10 confirmadas por el asesor-. Las 499 restantes decían todas "Precio a
+ * consultar", que no le sirve de nada a quien está armando un pedido y quiere
+ * hacerse una idea del monto. El maestro de precios de SAP (`infolista.xls`)
+ * sí trae una cifra para 498 de ellas: su precio de lista. Solo UNA se queda
+ * sin ninguna de las tres.
+ *
+ * EL PSP MANDA SIEMPRE
+ * --------------------
+ * Cuando la referencia tiene PSP esta función devuelve `null` aunque el
+ * maestro traiga precio de lista. No son la misma cifra ni miden lo mismo, y
+ * el PSP es el que de verdad ve el consumidor en el mostrador.
+ *
+ * NO SE CALCULA NADA
+ * ------------------
+ * El precio de lista está expresado por unidad de venta, y el factor de
+ * conversión UMB→UMV no viene en el export. Así que la cifra se publica TAL
+ * CUAL, sin dividirla entre las unidades del empaque: dividir daría un número
+ * inventado con apariencia de precio unitario. Lo que sí se dice, cuando el
+ * nombre de SAP lo declara, es por cuántas unidades se vende
+ * (`PrecioLista.unidades`), y de eso se encarga `presentacionDeLista`.
+ */
+export function precioLista(producto: ConCodigo): PrecioLista | null {
+  if (precioSugerido(producto) !== null) return null;
+  const codigo = producto.codigo?.trim();
+  if (!codigo || producto.codigoParcial) return null;
+  return PRECIOS_LISTA[codigo] ?? null;
+}
+
+/**
+ * EL ÚNICO RÓTULO DE PRECIO DE LA INTERFAZ.
+ *
+ * Toda cifra que se pinta en el sitio lleva este rótulo, venga de donde venga:
+ * del PSP confirmado por el asesor, del PSP del deck o del precio de lista de
+ * SAP. Antes eran dos ("sugerido" y "Precio de lista") y se unificaron.
+ *
+ * POR QUÉ UNO SOLO
+ * ----------------
+ * La distinción decía algo cierto pero inútil para quien usa la página: los
+ * tres son orientativos y los tres los confirma el asesor antes de despachar
+ * (ver `AVISO_PRECIOS`). Dos rótulos obligaban al tendero a interpretar de
+ * dónde salió cada número para saber cuánto fiarse, cuando la respuesta es la
+ * misma en los tres casos.
+ *
+ * LO QUE NO CAMBIÓ
+ * ----------------
+ * El origen sigue separado en los datos, en tres archivos distintos:
+ * src/data/precios.ts (asesor), el campo `precio` de src/data/productos.ts
+ * (deck) y src/data/preciosLista.ts (SAP). Volver a distinguirlos en pantalla
+ * es solo cuestión de pintar rótulos distintos otra vez; el dato está.
+ *
+ * Va en una constante por lo mismo que `SIN_PSP`: lo pintan la tarjeta del
+ * catálogo y la línea del panel del pedido, y tienen que decir exactamente lo
+ * mismo.
+ */
+export const ETIQUETA_PRECIO = 'Precio de referencia';
+
+/** `Presentación: caja x 12`, la unidad de venta a la que corresponde la cifra. */
+export const presentacionDeLista = (unidades: number) => `Presentación: caja x ${unidades}`;
+
+/**
+ * Aviso que acompaña a la foto de las referencias con precio de lista.
+ *
+ * La foto es la del empaque individual, mientras que el precio corresponde a
+ * la unidad de venta completa. Decirlo junto a la imagen evita que se lea como
+ * "esta cajita cuesta eso".
+ */
+export const IMAGEN_REFERENCIA = 'Imagen de referencia del producto';
 
 /** `$ 12.900`. Sin decimales: los precios de tienda van en pesos redondos. */
 export function formatearPesos(valor: number): string {

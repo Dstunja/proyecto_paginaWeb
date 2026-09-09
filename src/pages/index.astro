@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
-import { altoSeguroLogo, logoMarcaImagen } from '../lib/imagenes';
+import { altoSeguroLogo, logoLlevaFondoPropio, logoMarcaImagen } from '../lib/imagenes';
 import MapaRed from '../components/MapaRed.astro';
 import BuscadorMunicipio from '../components/BuscadorMunicipio.astro';
 import EspecialesMes from '../components/EspecialesMes.astro';
@@ -58,7 +58,16 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
 
   // Solo se pasa el alto: <Image> deriva el ancho de la relación de aspecto
   // real del archivo, así el atributo width y la imagen generada coinciden.
-  return [{ nombre, imagen, alto: altoSeguroLogo(imagen, ALTO_FRANJA, ANCHO_MAXIMO_FRANJA) }];
+  return [
+    {
+      nombre,
+      imagen,
+      alto: altoSeguroLogo(imagen, ALTO_FRANJA, ANCHO_MAXIMO_FRANJA),
+      // Santander es una placa marrón con el texto en blanco: no se funde con
+      // el fondo como los demás. Ver logoLlevaFondoPropio en lib/imagenes.ts.
+      placa: logoLlevaFondoPropio(nombre),
+    },
+  ];
 });
 ---
 
@@ -225,7 +234,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
                     quality={90}
                     loading="eager"
                     decoding="async"
-                    class="logo-marca logo-marca-franja"
+                    class:list={['logo-marca', 'logo-marca-franja', marca.placa && 'logo-marca--placa']}
                   />
                 </li>
               ))}
@@ -239,7 +248,10 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
   <!-- COBERTURA -->
   <section id="cobertura" class="section border-y border-line bg-fondo" data-seccion="cobertura">
     <div class="wrap">
-      <div class="mb-10 flex flex-col gap-8 tablet:flex-row tablet:items-end tablet:justify-between">
+      <div
+        class="mb-10 flex flex-col gap-8 tablet:flex-row tablet:items-end tablet:justify-between"
+        data-revelar="fundido"
+      >
         <div class="max-w-[52ch]">
           <span class="kicker">Nuestra red</span>
           <h2 class="text-[28px] tablet:text-[38px]">Cobertura nacional</h2>
@@ -286,7 +298,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
   <!-- PARA TU NEGOCIO -->
   <section class="section pb-0" data-seccion="para_tu_negocio">
     <div class="wrap">
-      <div class="mb-14 max-w-[56ch]">
+      <div class="mb-14 max-w-[56ch]" data-revelar>
         <span class="kicker">Para tu negocio</span>
         <h2 class="text-[28px] tablet:text-[38px]">Impulsa tu negocio con nuestro respaldo</h2>
         <p class="mt-4 text-lg text-muted">
@@ -325,7 +337,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
     data-seccion="haz_tu_pedido"
   >
     <div class="wrap">
-      <div class="mx-auto mb-14 max-w-[46ch] text-center">
+      <div class="mx-auto mb-14 max-w-[46ch] text-center" data-revelar>
         <span class="kicker">Haz tu pedido</span>
         <h2 class="text-[28px] tablet:text-[38px]">Pide fácil y rápido</h2>
         <p class="mt-4 text-lg text-muted">Elige el canal que prefieras.</p>
@@ -336,6 +348,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
           'grid grid-cols-1 gap-6',
           hayPideky ? 'tablet:grid-cols-2' : 'mx-auto max-w-[520px]',
         ]}
+        data-revelar-grupo="escala"
       >
         <div class="group glass-card flex flex-col items-center p-10 text-center">
           <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-whatsapp/15 text-whatsapp transition-all duration-300 group-hover:scale-105 group-hover:bg-whatsapp group-hover:text-white group-focus-within:scale-105">
@@ -384,7 +397,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
 
   <!-- CTA: EMPLEOS + PQRS -->
   <section class="section" data-seccion="empleos_pqrs">
-    <div class="wrap grid grid-cols-1 gap-6 tablet:grid-cols-2">
+    <div class="wrap grid grid-cols-1 gap-6 tablet:grid-cols-2" data-revelar-grupo>
       <div class="glass-card p-8">
         <h3 class="mb-3 text-[19px]">Únete a nuestro equipo</h3>
         <p class="mb-5 text-[14.5px] text-muted">
@@ -502,6 +515,19 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
     /* Sin `max-content` la pista se quedaría en el ancho de la pantalla y el
        -50% mediría lo que no es. */
     width: max-content;
+    /* Repetir aquí el fondo de la sección NO es decorativo: es lo que hace
+       funcionar el `mix-blend-mode: multiply` de los logotipos.
+
+       El `will-change` de abajo (y la máscara de .marquee-marcas) crean un
+       contexto de apilamiento, y un blend solo se mezcla con lo que hay
+       DENTRO de su grupo. Sin este fondo el grupo arranca transparente, los
+       logotipos no tienen contra qué multiplicar y sus recuadros blancos
+       vuelven a verse. Está comprobado: quitando esta línea la franja queda
+       exactamente igual que antes de todo el arreglo.
+
+       Es el mismo color de la sección que la envuelve, así que el difuminado
+       de los bordes sigue disolviéndose sin que se note ninguna costura. */
+    background: var(--color-fondo);
     /* 40 s por vuelta: a este ancho salen unos 80 px por segundo, un paso de
        paseo. Con menos, la franja distrae; con más, parece parada. */
     animation: desfilar-marcas 40s linear infinite;
@@ -581,15 +607,16 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
     opacity: 0.85;
     transition:
       opacity 0.2s ease,
-      transform 0.2s ease,
-      filter 0.2s ease;
+      transform 0.2s ease;
   }
 
   .logo-marca-franja:hover {
     opacity: 1;
     transform: scale(1.05);
-    /* contrast/saturate hay que repetirlos: `filter` no se acumula entre
-       reglas, la última declaración sustituye entera a la de .logo-marca. */
-    filter: contrast(1.06) saturate(1.04) drop-shadow(0 2px 6px rgba(13, 44, 132, 0.18));
+    /* Al pasar el cursor solo sube la opacidad y crece un punto. Antes había
+       aquí un `drop-shadow`, y hubo que quitarlo: casi todos estos archivos
+       son rectángulos opacos, así que la sombra no seguía la silueta del
+       logotipo sino el borde del archivo, y dibujaba justo el recuadro que
+       este arreglo viene a esconder. */
   }
 </style>

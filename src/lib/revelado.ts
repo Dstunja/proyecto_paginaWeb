@@ -14,6 +14,20 @@
  *     <article>…</article>                  respecto a los de su misma fila
  *   </div>
  *
+ * TRES VARIANTES, según lo que se esté revelando:
+ *
+ *   data-revelar             fundido + subida de 16 px. Es el valor por
+ *   data-revelar="subir"     defecto: sirve para secciones y tarjetas.
+ *   data-revelar="fundido"   solo fundido, sin desplazamiento. Para bloques de
+ *                            texto largo y para los mapas, donde mover el
+ *                            contenido bajo el cursor molesta más que suma.
+ *   data-revelar="escala"    fundido + un 3 % de acercamiento. Para lo que se
+ *                            quiere destacar: los bloques con foto grande.
+ *
+ * En un grupo la variante se pone en el CONTENEDOR y la heredan todos los
+ * hijos: `<div data-revelar-grupo="escala">`. Así no hay que repetirla en cada
+ * tarjeta de una rejilla que se pinta en bucle.
+ *
  * El estado inicial (invisible) lo pone el CSS en src/styles/global.css, no
  * este archivo, para que no haya parpadeo: si se escondiera desde aquí el
  * contenido se pintaría visible y desaparecería un instante después.
@@ -29,14 +43,18 @@
  */
 
 /** Retraso entre una tarjeta y la siguiente de su misma fila. */
-const RETRASO_ENTRE_TARJETAS = 70;
+const RETRASO_ENTRE_TARJETAS = 80;
 
 /**
  * Tope del escalonado. Una fila de ocho tarjetas en un monitor ancho no debe
  * tardar medio segundo en terminar de entrar: a partir de cierto punto las
- * últimas arrancan juntas.
+ * últimas arrancan juntas. Con 80 ms de paso, el tope entra en la séptima.
  */
-const RETRASO_MAXIMO = 350;
+const RETRASO_MAXIMO = 480;
+
+/** Las tres variantes. Cualquier otro valor cae en la de por defecto. */
+const VARIANTES = new Set(['subir', 'fundido', 'escala']);
+const VARIANTE_POR_DEFECTO = 'subir';
 
 /**
  * Cuánto tiene que haber asomado el elemento para dispararlo.
@@ -67,10 +85,36 @@ function retrasoDe(elemento: HTMLElement): number {
   return Math.min(fila.indexOf(elemento) * RETRASO_ENTRE_TARJETAS, RETRASO_MAXIMO);
 }
 
+/**
+ * Qué variante le toca a un elemento.
+ *
+ * Primero mira su propio `data-revelar`; si viene vacío -que es el caso de
+ * todos los hijos de un grupo, que no llevan el atributo- hereda la del
+ * contenedor. Un valor desconocido cae en la de por defecto en vez de dejar el
+ * elemento sin animación: un typo en el marcado no debe esconder contenido.
+ */
+function varianteDe(elemento: HTMLElement): string {
+  const propia = elemento.getAttribute('data-revelar');
+  const heredada = elemento.parentElement?.getAttribute('data-revelar-grupo');
+  const valor = (propia || heredada || '').trim();
+  return VARIANTES.has(valor) ? valor : VARIANTE_POR_DEFECTO;
+}
+
 if (document.documentElement.classList.contains('js-revelado')) {
-  const objetivos = document.querySelectorAll<HTMLElement>(
-    '[data-revelar], [data-revelar-grupo] > *',
-  );
+  /*
+   * Hijos de un grupo que NO se pintan: un componente puede dejar su `<script>`
+   * dentro de la misma rejilla que sus tarjetas (lo hace MapaCobertura en
+   * /contactanos/), y `[data-revelar-grupo] > *` lo alcanzaría igual. Como un
+   * `<script>` es `display: none`, nunca llega a intersecar: se quedaría
+   * observado para siempre, sin revelar y con el `will-change` puesto. No se
+   * ve, pero es basura acumulada; se filtran por nombre de etiqueta, que es
+   * exacto y no obliga a medir nada.
+   */
+  const NO_SE_PINTAN = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'LINK', 'META']);
+
+  const objetivos = Array.from(
+    document.querySelectorAll<HTMLElement>('[data-revelar], [data-revelar-grupo] > *'),
+  ).filter((elemento) => !NO_SE_PINTAN.has(elemento.tagName));
 
   if (objetivos.length) {
     const observador = new IntersectionObserver((entradas) => {
@@ -81,6 +125,21 @@ if (document.documentElement.classList.contains('js-revelado')) {
         // Se deja de observar antes de animar: el revelado es de una sola vez.
         observador.unobserve(elemento);
         elemento.style.setProperty('--retraso-revelado', `${retrasoDe(elemento)}ms`);
+        elemento.setAttribute('data-variante-revelado', varianteDe(elemento));
+
+        /* `will-change` avisa al navegador de que va a componer opacidad y
+           transformación, y eso le cuesta una capa por elemento. Se retira en
+           cuanto la animación termina -en el propio elemento, con estilo en
+           línea, que gana a la regla del CSS- para no dejar centenares de capas
+           vivas en una página con 620 tarjetas. `once` quita el oyente solo. */
+        elemento.addEventListener(
+          'animationend',
+          () => {
+            elemento.style.willChange = 'auto';
+          },
+          { once: true },
+        );
+
         elemento.setAttribute('data-revelado', '');
       }
     }, OPCIONES);

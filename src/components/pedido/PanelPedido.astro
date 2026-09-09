@@ -42,7 +42,7 @@ const sugerencias = [...new Set(municipios.map((m) => m.nombre))].sort((a, b) =>
  * una de las 709 tarjetas del catálogo.
  */
 const NOTA_PRECIOS =
-  'Precios con IVA, de referencia. El valor final lo confirma tu asesor según tu zona y volumen.';
+  'Precios de referencia. El valor final lo confirma tu asesor según tu zona y volumen.';
 ---
 
 {/* ---- Carrito siempre visible ----
@@ -342,7 +342,12 @@ const NOTA_PRECIOS =
     vaciarPedido,
     type Pedido,
   } from '../../lib/carrito';
-  import { formatearPesos, SIN_PSP } from '../../lib/precios';
+  import {
+    ETIQUETA_PRECIO,
+    formatearPesos,
+    presentacionDeLista,
+    SIN_PSP,
+  } from '../../lib/precios';
   import { CANTIDAD_MAXIMA } from '../../data/pedido';
   import { registrarEvento } from '../../lib/analitica';
 
@@ -455,15 +460,27 @@ const NOTA_PRECIOS =
           /* Precio de la línea: la cifra de la referencia y, si lleva más de
              una unidad, cuánto suma. Sin dato confirmado va `SIN_PSP`, la
              MISMA frase que pinta la tarjeta del catálogo: el panel y la
-             grilla hablan del mismo producto y no pueden decirlo distinto. */
+             grilla hablan del mismo producto y no pueden decirlo distinto.
+
+             EL PRECIO DE LISTA NO SE MULTIPLICA (aunque en pantalla lleve el
+             mismo rótulo que el PSP). El PSP es por unidad, así que
+             "×3" tiene sentido; el de lista es por unidad de venta y no se
+             sabe cuántas unidades entran ahí, de modo que multiplicarlo por la
+             cantidad del pedido daría un total sin significado. Por eso esa
+             rama pinta la cifra sola, con su rótulo y su presentación, y
+             tampoco entra en el subtotal (ver `resumenDelPedido`). */
           const precio =
             typeof p?.psp === 'number'
-              ? `<p class="m-0 mt-0.5 text-[12.5px] text-muted">${esc(formatearPesos(p.psp))} c/u${
+              ? `<p class="m-0 mt-0.5 text-[12.5px] text-muted">${esc(ETIQUETA_PRECIO)} <span class="font-semibold text-ink">${esc(formatearPesos(p.psp))}</span> c/u${
                   item.cantidad > 1
                     ? ` · <span class="font-semibold text-ink">${esc(formatearPesos(p.psp * item.cantidad))}</span>`
                     : ''
                 }</p>`
-              : `<p class="m-0 mt-0.5 text-[12.5px] text-muted">${esc(SIN_PSP)}</p>`;
+              : p?.lista
+                ? `<p class="m-0 mt-0.5 text-[12.5px] text-muted">${esc(ETIQUETA_PRECIO)} <span class="font-semibold text-ink">${esc(formatearPesos(p.lista.valor))}</span>${
+                    p.lista.unidades ? ` · ${esc(presentacionDeLista(p.lista.unidades))}` : ''
+                  }</p>`
+                : `<p class="m-0 mt-0.5 text-[12.5px] text-muted">${esc(SIN_PSP)}</p>`;
 
           return `
             <li class="flex gap-3 border-b border-line py-4" data-item="${esc(item.id)}">

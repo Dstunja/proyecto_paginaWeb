@@ -156,6 +156,32 @@ export function logoMarcaImagen(nombre: string): ImageMetadata | null {
 }
 
 /**
+ * Marcas cuyo archivo es una placa de color entera, no un dibujo sobre blanco.
+ *
+ * Los demás logotipos se funden con la sección gracias a `mix-blend-mode:
+ * multiply` (ver .logo-marca en src/styles/global.css), y los tres que traían
+ * un fondo que no era blanco puro se recortaron a transparencia con
+ * scripts/limpiar-fondo-logos.mjs. Estas son las que no admiten ninguna de las
+ * dos cosas: Chocolate Santander lleva el texto en BLANCO sobre marrón, así que
+ * al quitarle el fondo no queda nada visible sobre una sección clara.
+ *
+ * EDITAR AQUÍ: si algún día llega un logotipo de Santander con fondo limpio,
+ * basta con sacarlo de esta lista; el resto del sitio se acomoda solo.
+ */
+const MARCAS_CON_FONDO_PROPIO: ReadonlySet<string> = new Set(['santander']);
+
+/**
+ * ¿El logotipo de esta marca hay que mostrarlo como placa, sin fundirlo?
+ *
+ * Quien la use añade la clase `logo-marca--placa`, que apaga el blend y
+ * redondea las esquinas para que la placa se lea como una decisión y no como
+ * un recorte olvidado.
+ */
+export function logoLlevaFondoPropio(nombre: string): boolean {
+  return MARCAS_CON_FONDO_PROPIO.has(slug(nombre));
+}
+
+/**
  * Alto al que se puede mostrar un logotipo sin agrandarlo, dentro de una caja.
  *
  * Devuelve el mayor alto que cumple tres condiciones a la vez: cabe en la

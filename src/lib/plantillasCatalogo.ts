@@ -20,7 +20,7 @@
  */
 
 import { detalleReferencia, type ProductoPedido } from './carrito';
-import { SIN_PSP } from './precios';
+import { ETIQUETA_PRECIO, IMAGEN_REFERENCIA, SIN_PSP, presentacionDeLista } from './precios';
 import { CANTIDAD_MAXIMA, TAMANO_TANDA } from '../data/pedido';
 
 /**
@@ -105,10 +105,12 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * LA FOTO, EN UN MARCO CUADRADO Y SIN NADA ENCIMA
    * -----------------------------------------------
    * La imagen ocupa el ancho completo de la tarjeta en una caja de 1:1 y la
-   * llena con `object-fit: cover`, así que no quedan franjas vacías. El
-   * cuadrado sale del formato real del archivo: las 466 fotos oficiales son
-   * de 1000x1000, de modo que marco y foto tienen la misma proporción y no
-   * hay recorte que hacer -el empaque se ve entero y centrado-.
+   * encaja dentro con `object-fit: contain`, sin recortarla nunca. El cuadrado
+   * sale del formato real de la mayoría de los archivos: las 531 fotos
+   * oficiales son de 1000x1000 y llenan el marco exacto. Las 87 recortadas
+   * del deck (`crop_*.jpg`) no son cuadradas y dejan aire a los lados o
+   * arriba y abajo; ver la nota sobre `object-fit` en el CSS de
+   * CatalogoPedido.astro.
    *
    * La caja mide lo mismo en todas las tarjetas y en todas las anchuras de
    * pantalla, y no lleva ningún velo, degradado ni máscara encima. Aquí hubo
@@ -117,7 +119,7 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    *
    * SIN FOTO: NI LOGOTIPO NI INICIALES
    * ----------------------------------
-   * Las 245 referencias que todavía no tienen foto ya no caen en el logotipo
+   * Las 3 referencias que todavía no tienen foto ya no caen en el logotipo
    * de la marca -que se repetía idéntico en toda la sección y no distinguía
    * una referencia de otra-. En su lugar va el azul oscuro de la paleta, en
    * plano, con el NOMBRE del producto compuesto en grande: la caja mide
@@ -126,61 +128,67 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
    * mismo nombre está en el <h3> de abajo y no hay que leerlo dos veces.
    */
   const foto = p.imagen;
+
+  /*
+   * EL AVISO BAJO LA FOTO
+   * ---------------------
+   * Solo en las referencias que llevan PRECIO DE LISTA, y solo si hay foto
+   * que anotar. Esa cifra corresponde a la unidad de venta -la caja-, pero la
+   * foto es la del empaque individual, así que sin el aviso la tarjeta se lee
+   * como "esta bolsita cuesta eso". Las referencias con PSP no lo llevan: ahí
+   * la cifra y la foto sí hablan de lo mismo.
+   */
+  const notaFoto = p.lista
+    ? `<p class="tarjeta-foto__nota">${escapar(IMAGEN_REFERENCIA)}</p>`
+    : '';
+
   const caja = foto
     ? `<div class="tarjeta-foto">
              <img src="${escapar(foto)}" alt=""${carga} class="tarjeta-foto__img foto-zoom" />
-           </div>`
+           </div>${notaFoto}`
     : `<div class="tarjeta-foto tarjeta-foto--sin-foto">
              <span class="tarjeta-foto__rotulo" aria-hidden="true">${escapar(p.nombre)}</span>
            </div>`;
 
   /*
-   * EL PRECIO: siempre hay renglón
-   * ------------------------------
-   * Es el precio CON IVA al que la tienda compra, tomado de la lista del
-   * proveedor y cruzado por código SAP (src/data/precios-lista.ts). Para las
-   * 133 referencias que la lista no cubre es el promedio de su categoría y
-   * marca, y entonces la tarjeta lo advierte con el aviso de abajo.
+   * EL PRECIO: siempre hay renglón, y siempre el MISMO rótulo
+   * ---------------------------------------------------------
+   * La cifra sale de uno de tres orígenes -PSP confirmado por el asesor, PSP
+   * del deck, o precio de lista de SAP-, pero los tres se pintan igual: con
+   * `ETIQUETA_PRECIO` (src/lib/precios.ts), hoy "Precio de referencia".
    *
-   * EL RÓTULO DICE "CON IVA" Y NO "SUGERIDO". Antes decía sugerido porque la
-   * cifra era el PSP del deck, que es lo que la tienda le COBRA al consumidor.
-   * La lista del proveedor es lo contrario: lo que la tienda PAGA. Son dos
-   * precios distintos -se separan en torno a un 20 %- y quien usa el armador
-   * de pedidos es el tendero, así que se publica el suyo. Dejar el rótulo
-   * viejo sobre la cifra nueva diría exactamente lo contrario de lo que es.
+   * Antes eran dos rótulos, "sugerido" y "Precio de lista". Se unificaron
+   * porque la distinción no le servía a quien usa la página: los tres son
+   * orientativos y los tres los confirma el asesor antes de despachar (ese
+   * aviso vive en el panel del pedido y en el mensaje de WhatsApp,
+   * `AVISO_PRECIOS`). El origen NO se perdió: sigue separado en los datos, en
+   * tres archivos distintos, y volver a distinguirlo en pantalla es cambiar
+   * este rótulo por dos otra vez.
    *
-   * El renglón existe siempre y mantiene a la misma altura todas las tarjetas
-   * de la fila. Si alguna vez una referencia se queda sin cifra -hoy no pasa
-   * ninguna- dice `SIN_PSP` en vez de pintar un $0.
+   * LA PRESENTACIÓN, SOLO EN LAS DE PRECIO DE LISTA
+   * -----------------------------------------------
+   * Esa sí se mantiene aparte, porque no es un rótulo de origen sino un dato
+   * del producto: el precio de lista corresponde a la unidad de venta, y
+   * cuando el maestro declara cuántas unidades trae ("caja x 12") decirlo es
+   * lo que le da sentido a la cifra. Cuando no la declara va el precio solo:
+   * inventarle un empaque sería peor que no decir nada.
+   *
+   * La única referencia que no tiene ninguno de los tres precios no deja el
+   * hueco ni pinta un $0: dice lo que diga `SIN_PSP` (src/lib/precios.ts), que
+   * es la misma frase que usa el panel del pedido, y así todas las tarjetas de
+   * una fila siguen midiendo lo mismo.
    */
+  const rotulo = `<span class="precio-tarjeta__nota">${escapar(ETIQUETA_PRECIO)}</span>`;
   const precio =
     typeof p.psp === 'number'
-      ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}<span class="precio-tarjeta__nota">con IVA</span></p>`
-      : `<p class="precio-tarjeta precio-tarjeta--consultar">${escapar(SIN_PSP)}</p>`;
-
-  /*
-   * EL AVISO DE APROXIMACIÓN
-   * ------------------------
-   * Solo sale donde hay algo que advertir, y dice únicamente lo que aplica a
-   * ESA tarjeta: si la foto es de respaldo, si la cifra es estimada, o las dos
-   * cosas. Un aviso idéntico en las 711 referencias se volvería decorado y
-   * dejaría de leerse, que es justo lo contrario de lo que se busca.
-   *
-   * Por eso no lo llevan ni la tarjeta con foto oficial y precio de lista
-   * -no hay nada aproximado en ella- ni la que dice "Precio a consultar", que
-   * ya está diciendo que no tiene precio y no gana nada con que se lo repitan.
-   *
-   * Las condiciones generales (que el asesor confirma valor y disponibilidad)
-   * siguen en el panel del pedido y en el mensaje de WhatsApp: aquí va solo la
-   * advertencia que depende de la referencia.
-   */
-  const avisos = [];
-  if (!foto) avisos.push('Imagen de referencia.');
-  if (typeof p.psp === 'number' && p.pspEstimado)
-    avisos.push('Precio de referencia, sujeto a cambios.');
-  const aviso = avisos.length
-    ? `<p class="aviso-tarjeta">${escapar(avisos.join(' '))}</p>`
-    : '';
+      ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}${rotulo}</p>`
+      : p.lista
+        ? `<p class="precio-tarjeta">${escapar(pesos(p.lista.valor))}${rotulo}</p>${
+            p.lista.unidades
+              ? `<p class="precio-tarjeta__presentacion">${escapar(presentacionDeLista(p.lista.unidades))}</p>`
+              : ''
+          }`
+        : `<p class="precio-tarjeta precio-tarjeta--consultar">${escapar(SIN_PSP)}</p>`;
 
   return `
         <article class="glass-card flex flex-col overflow-hidden ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${escapar(p.id)}">
@@ -192,7 +200,6 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
               <h3 class="m-0 text-[15px] leading-snug">${escapar(p.nombre)}</h3>
               <p class="m-0 text-[13px] text-muted">${escapar(detalleReferencia(p))}</p>
               ${precio}
-              ${aviso}
             </div>
 
             <div class="mt-auto flex flex-wrap items-center gap-2" data-controles>

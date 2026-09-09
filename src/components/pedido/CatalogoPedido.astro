@@ -31,11 +31,15 @@
  * son notas internas y se quedan en el servidor. El `codigo` SAP viaja por dos
  * razones: va en el mensaje que recibe el asesor y ahora además se MUESTRA, en
  * el renglón de detalle de la tarjeta ("400 g · Cód. 1046509"). Por eso viaja
- * también `codigoParcial`, pero solo en las 27 referencias que lo tienen en
- * `true`: son las que no pueden enseñar el código porque el deck de origen
- * solo traía sus últimos dígitos (ver `detalleReferencia` en src/lib/carrito.ts).
- * `precio` viaja solo cuando la referencia lo tiene: hoy son 112 de las 711.
- * Las demás sí muestran renglón de precio, pero con el texto "Precio a
+ * también `codigoParcial`, aunque hoy no queda ninguna en `true`: las 26 que
+ * lo estaban ya tienen su código completo (ver `codigoCompletado` en
+ * src/data/productos.ts). El campo se mantiene porque el maestro se regenera
+ * desde el deck y la próxima extracción puede volver a recortar códigos.
+ * `psp` viaja solo cuando la referencia lo tiene: hoy son 122 de las 621 -112
+ * del deck y 10 confirmadas por el asesor-. De las 499 restantes, 498 mandan
+ * en su lugar `lista`, el precio de lista del maestro de SAP. Los dos campos
+ * nunca viajan juntos: donde hay PSP manda el PSP. La única que no tiene
+ * ninguno de los dos sí muestra renglón de precio, pero con el texto "Precio a
  * consultar", que se arma en la tarjeta y no hace falta mandar.
  *
  * Sin JavaScript quedan el listado de marcas y las primeras tarjetas, pero no
@@ -46,7 +50,7 @@
 import { getImage } from 'astro:assets';
 import { productos, MARCAS, CATEGORIAS, SUBCATEGORIAS } from '../../data/productos';
 import { imagenSiExiste, logoMarcaImagen } from '../../lib/imagenes';
-import { codigosSinProducto, estimarPorCategoria, precioConfirmado } from '../../lib/precios';
+import { codigosSinProducto, precioLista, precioSugerido } from '../../lib/precios';
 import { ruta } from '../../lib/rutas';
 import { TAMANO_TANDA } from '../../data/pedido';
 import {
@@ -77,7 +81,7 @@ import { empresa } from '../../data/site';
  * Van por src/assets/ y no por public/ a proposito: los originales son de
  * 1000-1200 px y pesan entre 20 y 300 KB cada uno. Al pasar por `getImage` el
  * navegador recibe un WebP mucho mas liviano y el original nunca se publica.
- * Por public/ habria que servir los 466 archivos tal cual.
+ * Por public/ habria que servir los 699 archivos tal cual.
  *
  * EL ANCHO: 640 px. La foto ya no es una miniatura de 80 px sino la cabecera
  * de la tarjeta, a sangre y en 4:3. La tarjeta mas ancha que existe es la de
@@ -113,21 +117,17 @@ function fotoDe(imagen: string | undefined): string | null {
   return fotos[imagen] ?? null;
 }
 
-/* Los promedios por categoría y marca se calculan UNA vez, no por referencia:
-   estimar dentro del `map` recorrería el catálogo entero 711 veces. */
-const estimados = estimarPorCategoria(productos);
-
 const catalogo = productos.map((p) => {
   const imagen = fotoDe(p.imagen);
-  /* El precio se resuelve aquí, en el build, y en este orden:
-       1. el confirmado -corrección manual del asesor, o la lista del
-          proveedor cruzada por código SAP-;
-       2. si no hay, el promedio de su categoría y marca, que va marcado como
-          estimado y así lo dice la tarjeta.
-     Solo viaja al navegador el de las referencias que tienen alguno; las
-     demás llegan sin el campo y muestran `SIN_PSP`. */
-  const confirmado = precioConfirmado(p);
-  const psp = confirmado ?? estimados.get(p.id) ?? null;
+  // El precio se resuelve aquí, en el build: manda la corrección manual de
+  // src/data/precios.ts y, si no hay, el PSP que el maestro trajo del deck
+  // (ver `precioSugerido` en src/lib/precios.ts). Solo viaja al navegador el de
+  // las referencias que lo tienen; las demás llegan sin el campo.
+  const psp = precioSugerido(p);
+  // Segundo escalón, solo donde NO hay PSP: el precio de lista del maestro de
+  // SAP (src/data/preciosLista.ts). `precioLista` ya devuelve null cuando hay
+  // PSP, así que los dos campos nunca viajan juntos.
+  const lista = precioLista(p);
   return {
     id: p.id,
     marca: p.marca,
@@ -136,26 +136,22 @@ const catalogo = productos.map((p) => {
     nombre: p.nombre,
     presentacion: p.presentacion,
     codigo: p.codigo,
-    /* Solo viaja cuando es `true`, que son 27 de las 711: la tarjeta y el
-       panel muestran el código SAP y con este campo saben cuáles NO pueden
-       enseñarlo porque el deck solo traía los últimos dígitos. Mandarlo
-       siempre costaría el campo en las 711 para informar de 27. */
+    /* Solo viaja cuando es `true`, y hoy no lo es en ninguna: la tarjeta y el
+       panel muestran el código SAP y con este campo sabrían cuáles NO pueden
+       enseñarlo por venir recortado del deck. Se deja puesto para la próxima
+       extracción; mandarlo siempre costaría el campo en las 621 para nada. */
     ...(p.codigoParcial ? { codigoParcial: true } : {}),
     ...(imagen ? { imagen } : {}),
     ...(psp !== null ? { psp } : {}),
-    /* Solo viaja cuando la cifra es un promedio y no un precio confirmado,
-       que es el caso que la tarjeta tiene que advertir. Mandarlo siempre
-       costaría el campo en las 711 para informar de las que lo necesitan. */
-    ...(psp !== null && confirmado === null ? { pspEstimado: true } : {}),
+    ...(lista !== null ? { lista } : {}),
   };
 });
 
-/* Cuántas referencias traen precio de la lista del proveedor y cuántas un
-   promedio. Se dice bajo el buscador, una sola vez, para que el alcance de las
-   cifras se lea de entrada y no haya que deducirlo tarjeta por tarjeta. */
+/** Cuántas referencias tienen precio sugerido: se dice bajo el buscador. */
 const conPrecio = catalogo.filter((p) => 'psp' in p).length;
-const estimadas = catalogo.filter((p) => 'pspEstimado' in p).length;
-const deLista = conPrecio - estimadas;
+
+/** Y cuántas caen en el segundo escalón, el precio de lista. */
+const conLista = catalogo.filter((p) => 'lista' in p).length;
 
 /* Aviso de mantenimiento, solo en consola durante `npm run build`: un código de
    src/data/precios.ts que no corresponda a ninguna referencia no rompe nada,
@@ -164,6 +160,18 @@ const sobrantes = codigosSinProducto(productos);
 if (sobrantes.length > 0) {
   console.warn(
     `[precios] ${sobrantes.length} código(s) de src/data/precios.ts no existen en el catálogo: ${sobrantes.join(', ')}`,
+  );
+}
+
+/* Recordatorio en cada build de las referencias cuyo código SAP se dedujo por
+   coincidencia única y que nadie de Nutresa ha confirmado todavía (campo
+   `codigoCompletado` en src/data/productos.ts). Se avisa por consola y no en la
+   página: es una tarea pendiente del equipo, no algo que le importe al tendero.
+   Cuando el asesor las valide, se quita el campo y este aviso se apaga solo. */
+const completados = productos.filter((p) => p.codigoCompletado);
+if (completados.length > 0) {
+  console.info(
+    `[codigos] ${completados.length} referencia(s) con el código SAP completado por coincidencia única, pendientes de confirmación del asesor: ${completados.map((p) => p.codigo).join(', ')}`,
   );
 }
 
@@ -350,16 +358,16 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
      LA CAJA: 1:1, LA MISMA EN TODAS LAS TARJETAS Y EN TODAS LAS ANCHURAS
      -------------------------------------------------------------------
-     El cuadrado no es una preferencia estética: es el formato real del
-     archivo. Las fotos oficiales que se descargaron de la tienda de Nutresa
-     y viven en src/assets/productos/ son de 1000x1000, con el producto
-     centrado sobre fondo blanco. Con la caja en 1:1 y `object-fit: cover` el
-     navegador no tiene nada que recortar -la foto y el marco tienen la misma
-     proporción-, así que el empaque se ve entero y centrado, que es
-     justamente lo que se pide. Cualquier otra proporción, 4:3 incluido,
-     obligaría a cortar: en 4:3 se perdería un 25 % del alto, y sin
-     desvanecido ese corte se vería como un filo recto sobre la letra menuda
-     del empaque.
+     El cuadrado sale del formato real de la mayoría de los archivos: las 531
+     fotos oficiales descargadas de la tienda de Nutresa son de 1000x1000, con
+     el producto centrado sobre fondo blanco, así que llenan el marco exacto.
+
+     Las 87 recortadas del deck (`crop_*.jpg`) no: llegan con proporciones de
+     0,26 a 4,00. Por eso la foto se encaja con `object-fit: contain` y no con
+     `cover` -el porqué está junto a `.tarjeta-foto__img`-. La caja sigue
+     midiendo 1:1 en todas las tarjetas; lo que cambia es que una foto que no
+     es cuadrada deja aire arriba y abajo, o a los lados, en vez de que se le
+     recorte medio empaque.
 
      La proporción es ÚNICA: no cambia con el ancho de la pantalla. Todas las
      tarjetas de una fila miden lo mismo y la grilla no da saltos.
@@ -386,22 +394,35 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
      el fondo de estas fotos es blanco y la tarjeta también, los bordes se
      siguen leyendo limpios sin necesidad de fundirlos.
 
-     `object-position: center` deja el producto centrado. Con la caja en 1:1 y
-     un archivo cuadrado no hay recorte que colocar, pero se declara igual
-     para las pocas referencias cuya foto no es cuadrada -las de innovación
-     que viven sueltas en public/img/-: ahí el recorte se reparte por igual a
-     los dos lados en vez de comerse un extremo. */
+     `object-fit: contain` Y NO `cover`
+     ----------------------------------
+     Con `cover` la foto llena el marco y se recorta lo que sobra. Eso era
+     inofensivo mientras todas las fotos eran cuadradas -recortar cero de una
+     imagen 1:1 dentro de una caja 1:1-, pero dejó de serlo al entrar las 87
+     recortadas del deck, que van de 0,26 a 4,00 de proporción: a 35 de ellas
+     `cover` les comía más de un tercio, y la peor -Galleta Festival Limón F8,
+     un recorte de 1200x300- se veía al 25 %, un fragmento borroso en el que
+     no se reconocía el producto.
+
+     `contain` encaja la foto entera dentro del marco. A las 531 cuadradas NO
+     les cambia nada -en una caja 1:1, `contain` y `cover` dan exactamente el
+     mismo resultado para una imagen 1:1-, así que el arreglo solo toca a las
+     que estaban rotas. Las que no llenan el cuadrado dejan ver el fondo de
+     `.tarjeta-foto`, que es justamente para lo que está ahí.
+
+     `object-position: center` reparte ese aire sobrante por igual a los dos
+     lados en vez de pegar la foto a un extremo. */
   .tarjeta-foto__img {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
   }
 
   /* SIN FOTO: COLOR SÓLIDO DE MARCA CON EL NOMBRE
      ---------------------------------------------
-     Las referencias que todavía no tienen foto (245 de 711) no dejan el marco
+     Las referencias que todavía no tienen foto (3 de 621) no dejan el marco
      vacío ni caen en el logotipo de la marca repetido tarjeta tras tarjeta:
      llevan el azul oscuro de la paleta, plano, con el nombre del producto
      centrado en la tipografía de titulares. La caja mide exactamente lo mismo
@@ -471,24 +492,35 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     color: var(--color-muted);
   }
 
-  /* EL AVISO DE APROXIMACIÓN, al pie de los datos de la tarjeta.
+  /* --- La presentación del precio de lista --------------------------------
+     Renglón propio bajo la cifra, no un `<span>` a su lado: "Precio de lista"
+     ya ocupa el hueco de la derecha y encadenar ahí un "Presentación: caja x
+     12" dejaría una línea que se parte en cualquier tarjeta angosta.
 
-     Va deliberadamente discreto -11 px, gris, sin negrita ni icono-: tiene que
-     poder leerse si alguien lo busca, pero no puede pelearle la atención a la
-     cifra que está justo encima ni al botón de agregar. Es una salvedad, no
-     una advertencia.
+     Va en gris y con el cuerpo de texto porque es la aclaración de la cifra,
+     no otra cifra. */
+  .precio-tarjeta__presentacion {
+    margin: 0.125rem 0 0;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
 
-     `text-wrap: pretty` evita que la última línea quede con una sola palabra
-     colgando, que en un texto de dos frases dentro de una tarjeta angosta se
-     nota mucho. */
-  .aviso-tarjeta {
-    margin: 0.25rem 0 0;
+  /* --- "Imagen de referencia del producto" --------------------------------
+     Pegado bajo el marco de la foto y con la misma sangría que el texto de la
+     tarjeta (esa `1rem` es el `px-4` del bloque de abajo, que este párrafo no
+     hereda por colgar fuera de él).
+
+     Es el aviso más pequeño de la tarjeta a propósito: tiene que estar, pero
+     no debe competir ni con el nombre ni con el precio. */
+  .tarjeta-foto__nota {
+    margin: 0.5rem 1rem 0;
     font-family: var(--font-body);
     font-size: 11px;
-    line-height: 1.35;
-    font-weight: 400;
+    font-style: italic;
+    line-height: 1.3;
     color: var(--color-muted);
-    text-wrap: pretty;
   }
 </style>
 
@@ -731,12 +763,17 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   </p>
 
   {/* Cuántas referencias traen precio. Se dice una sola vez, aquí, en vez de
-      repetir un "consultar" en las tarjetas que no lo tienen. */}
+      repetir un "consultar" en las tarjetas que no lo tienen.
+
+      Va UNA sola cifra, no una por origen: desde que la tarjeta rotula los
+      tres precios igual (`ETIQUETA_PRECIO`), desglosarlos aquí obligaría a
+      explicar una distinción que la página ya no hace. El desglose por origen
+      sigue estando en los datos y en `conPrecio` / `conLista`, por si hay que
+      volver a decirlo. */}
   {
-    conPrecio > 0 && (
+    conPrecio + conLista > 0 && (
       <p class="m-0 text-[13.5px] text-muted">
-        Precios con IVA. {deLista} de {catalogo.length} salen de la lista del proveedor
-        {estimadas > 0 && <> y {estimadas} son un estimado por categoría</>}.
+        {conPrecio + conLista} de {catalogo.length} con precio de referencia.
       </p>
     )
   }

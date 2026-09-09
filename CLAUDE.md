@@ -4,7 +4,26 @@ Stack: Astro + Tailwind 4 + TypeScript.
 
 ## Reglas de trabajo
 
-- Después de cada cambio significativo: `git add . && git commit -m "mensaje descriptivo" && git push`.
+- **Commitear siempre con rutas explícitas**, nunca con `git add .` ni
+  `git commit -a`. En este repositorio suele haber **varias sesiones de Claude
+  trabajando a la vez sobre el mismo directorio**, así que `git add .` arrastra
+  al commit el trabajo a medio hacer de otra sesión. Después de cada cambio
+  significativo:
+  `git add <rutas del cambio propio> && git commit -m "mensaje descriptivo" && git push`.
+- **Revisar `git status` y `git diff --stat` antes de commitear.** Nombrar la
+  ruta en el `git add` no basta: git commitea el archivo ENTERO tal como está en
+  disco, no solo las líneas propias. Si un archivo aparece en el `--stat` con
+  muchas más líneas de las que se tocaron, dentro hay trabajo ajeno; hay que
+  sacarlo antes de commitear. Conviene mirar también `git branch -vv`, porque
+  otra sesión puede haber movido la rama por debajo.
+- **Hacer `push` inmediatamente**, en cuanto el commit esté bien. Mientras el
+  commit siga solo en local, un `git reset` de otra sesión puede sacarlo de la
+  rama; una vez publicado, ya no.
+- **Si otra sesión tiene cambios sin commitear en un archivo, ese archivo no se
+  toca**: ni para editarlo, ni para leerlo y reescribirlo entero. Reescribirlo
+  borra del árbol de trabajo lo que la otra sesión no haya guardado todavía, y
+  eso no se puede recuperar. Lo correcto es parar, avisar de qué archivos están
+  compartidos y reanudar sobre la base ya commiteada.
 - **Dos destinos de publicación**, y cada uno necesita un `site`/`base` distinto:
   - **Vercel** (plan Hobby), la publicación principal: <https://paginaweb-beta-coral.vercel.app>.
     Cuelga de la raíz del dominio, así que va **sin `base`**. Despliega solo, con

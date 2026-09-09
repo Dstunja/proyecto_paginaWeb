@@ -6,11 +6,16 @@ import '@fontsource-variable/montserrat'; // títulos (Bold / SemiBold)
 import '@fontsource/poppins/400.css'; // cuerpo
 import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/600.css';
-// Questrial solo para el nombre de la marca en la barra (ver Logo.astro).
-// `latin-400` y no `400`: el subconjunto latino son 20 KB, mientras que el
-// paquete completo arrastra ademas latin-ext y vietnamita, que suman 39 KB mas
-// y no tienen ni un caracter que el nombre de la empresa vaya a usar.
-import '@fontsource/questrial/latin-400.css';
+// Las dos letras del nombre de la marca, y solo para eso (ver Logo.astro):
+// Jost 300 en "Distribuciones" y Source Sans 3 400 en "Santiago De Tunja
+// S.A.S", que es como esta compuesto el logotipo.
+// `latin-300` / `latin-400` y no `300` / `400`: el subconjunto latino son
+// 9,9 KB y 15,7 KB, mientras que el paquete completo de cada una arrastra
+// ademas latin-ext, cirilico y griego, que no tienen ni un caracter que el
+// nombre de la empresa vaya a usar. Un solo peso por familia, tambien a
+// proposito: el nombre no se pone nunca en negrita ni en cursiva.
+import '@fontsource/jost/latin-300.css';
+import '@fontsource/source-sans-3/latin-400.css';
 import '../styles/global.css';
 
 import Header from '../components/Header.astro';
@@ -19,7 +24,6 @@ import WhatsappFlotante from '../components/WhatsappFlotante.astro';
 import Analitica from '../components/Analitica.astro';
 import AnaliticaEnlaces from '../components/AnaliticaEnlaces.astro';
 import AvisoCookies from '../components/AvisoCookies.astro';
-import LoaderDST from '../components/LoaderDST.astro';
 import { empresa, redes } from '../data/site';
 
 interface Props {
@@ -112,170 +116,11 @@ const jsonLd = {
       }
     </script>
 
-    {/*
-      Cortina de carga entre paginas (el <div id="dst-cortina"> de abajo y sus
-      estilos en global.css).
-
-      Va aqui, en el <head> y sin `type="module"`, por lo mismo que el
-      interruptor de arriba: la clase tiene que estar puesta ANTES de que se
-      pinte el <body>, o la cortina apareceria un fotograma tarde, justo el
-      parpadeo que viene a quitar.
-
-      Sin JavaScript la clase no llega, el CSS no aplica y la cortina no se ve
-      nunca: la pagina se usa con normalidad en vez de quedarse tapada.
-    */}
-    <script is:inline>
-      (function () {
-        var raiz = document.documentElement;
-        raiz.classList.add('js-cortina');
-        raiz.classList.add('dst-con-cortina');
-
-        var MINIMO = 250; // lo minimo que se deja ver la animacion
-        var FUNDIDO = 150; // lo que tarda el desvanecido (global.css)
-        var TOPE = 5000; // si el DOM no termina, el sitio no se queda tapado
-        var LLAVE = 'dst-cortina-desde';
-        var quieto = matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var salvavidas;
-        var fuera = false;
-
-        /*
-          Desde cuando lleva puesta la cortina. Va en hora de reloj y no en
-          `performance.now()` porque hay que compararlo ENTRE documentos, y ese
-          reloj se pone a cero en cada pagina.
-
-          Si venimos de pulsar un enlace de la casa, la cortina se puso antes
-          de la navegacion y la pagina anterior dejo la hora apuntada. Contar
-          desde ahi es lo que evita sumar dos esperas seguidas: la de la
-          pagina que se va y otra vez la de la que llega.
-        */
-        var DESDE = Date.now();
-        try {
-          var apuntada = parseInt(sessionStorage.getItem(LLAVE), 10);
-          sessionStorage.removeItem(LLAVE);
-          // Solo si es de hace nada. Una hora vieja -de una navegacion que se
-          // quedo a medias- acortaria la espera en vez de alargarla, pero mas
-          // vale no fiarse de un dato que puede llevar ahi horas.
-          if (apuntada && Date.now() - apuntada < 10000) DESDE = apuntada;
-        } catch (e) {
-          // Almacenamiento capado por el navegador: se cuenta desde esta pagina.
-        }
-
-        function retirar(deGolpe) {
-          if (fuera) return;
-          fuera = true;
-          clearTimeout(salvavidas);
-          raiz.classList.remove('dst-con-cortina');
-          var capa = document.getElementById('dst-cortina');
-          if (!capa) return;
-          if (deGolpe) {
-            capa.hidden = true;
-            return;
-          }
-          capa.setAttribute('data-fuera', 'true');
-          setTimeout(function () {
-            capa.hidden = true;
-          }, FUNDIDO);
-        }
-
-        function mostrar() {
-          var capa = document.getElementById('dst-cortina');
-          if (!capa) return;
-          fuera = false;
-          capa.removeAttribute('data-fuera');
-          capa.hidden = false;
-          raiz.classList.add('dst-con-cortina');
-          // La hora del clic viaja con la navegacion: la pagina que llega
-          // cuenta su minimo desde aqui y no desde que se pinto.
-          try {
-            sessionStorage.setItem(LLAVE, String(Date.now()));
-          } catch (e) {
-            // Sin almacenamiento se cuenta desde la pagina nueva, como antes.
-          }
-          // Si la navegacion no llega a ocurrir (el usuario la cancela, o el
-          // enlace acaba siendo una descarga), la cortina no se queda puesta.
-          clearTimeout(salvavidas);
-          salvavidas = setTimeout(function () {
-            retirar(false);
-          }, TOPE);
-        }
-
-        function alEstarListoElDom() {
-          // Con "reducir movimiento" no se hace esperar a nadie: fuera ya.
-          var falta = quieto ? 0 : Math.max(0, MINIMO - (Date.now() - DESDE));
-          setTimeout(function () {
-            retirar(quieto);
-          }, falta);
-        }
-
-        // `DOMContentLoaded` y no `load`: en cuanto el HTML esta analizado, el
-        // contenido ya esta en pantalla y no hay nada que tapar. Esperar a
-        // `load` era esperar ademas a las imagenes y a las tipografias, que es
-        // lo que hacia que la cortina se sintiera lenta.
-        if (document.readyState === 'loading') {
-          addEventListener('DOMContentLoaded', alEstarListoElDom, { once: true });
-        } else {
-          alEstarListoElDom();
-        }
-
-        salvavidas = setTimeout(function () {
-          retirar(false);
-        }, TOPE);
-
-        // Volver con "atras" desde la cache del navegador: la pagina reaparece
-        // con la cortina tal como la dejamos al salir, asi que se quita ya.
-        addEventListener('pageshow', function (evento) {
-          if (evento.persisted) retirar(true);
-        });
-
-        // Al pulsar un enlace interno, tapar ANTES de que el navegador cambie
-        // de pagina. En fase de burbuja, para no adelantarse a los manejadores
-        // que cancelan el clic (el menu del encabezado, el panel del pedido).
-        document.addEventListener('click', function (evento) {
-          if (evento.defaultPrevented || evento.button !== 0) return;
-          if (evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return;
-
-          var enlace = evento.target.closest && evento.target.closest('a[href]');
-          if (!enlace || enlace.hasAttribute('download')) return;
-          if (enlace.target && enlace.target !== '_self') return;
-
-          var destino;
-          try {
-            destino = new URL(enlace.href, location.href);
-          } catch (e) {
-            return;
-          }
-
-          // Deja fuera mailto:, tel: y WhatsApp: no cambian de pagina.
-          if (destino.origin !== location.origin) return;
-          // Un ancla dentro de la misma pagina tampoco navega a ninguna parte.
-          if (destino.pathname === location.pathname && destino.search === location.search) return;
-
-          mostrar();
-        });
-      })();
-    </script>
-
     {/* Estadisticas de uso. No se inyecta nada sin PUBLIC_GA_ID ni en desarrollo. */}
     <Analitica />
   </head>
 
   <body>
-    {/*
-      Cortina de carga: cubre el hueco entre una pagina y la siguiente con un
-      velo desenfocado y un recuadro en medio, de modo que la pagina se sigue
-      intuyendo por detras. Se pinta lo primero para que no haya un fotograma
-      sin ella, y el script del <head> la retira en cuanto el DOM esta listo.
-
-      `aria-hidden`: es decoracion. El contenido de la pagina ya esta en el
-      DOM y un lector de pantalla lo recorre sin esperar a nadie, asi que
-      anunciar "Cargando..." en cada pagina seria ruido de mas.
-    */}
-    <div id="dst-cortina" aria-hidden="true">
-      <div class="dst-cortina-panel">
-        <LoaderDST tamano={150} texto={empresa.nombre} anuncia={false} />
-      </div>
-    </div>
-
     <a
       href="#main"
       class="absolute -left-[999px] top-3 z-[200] rounded-full bg-secondary px-5 py-2.5 font-display text-sm font-semibold text-white shadow-[0_8px_24px_rgba(30,136,229,.4)] focus:left-3"
