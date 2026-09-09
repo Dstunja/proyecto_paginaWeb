@@ -1028,11 +1028,16 @@
 
   .js-revelado [data-revelar][data-revelado],
   .js-revelado [data-revelar-grupo] > [data-revelado] {
-    /* 400 ms y una curva que frena al final: se nota, pero no compite con el
+    /* 550 ms y una curva que frena al final: se nota, pero sigue por debajo del
        conteo de las cifras del hero (900 ms), que es la animación protagonista
        de la portada. La variante la decide `data-variante-revelado`, que
-       escribe src/lib/revelado.ts al revelar. */
-    animation: revelar-subir 400ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+       escribe src/lib/revelado.ts al revelar.
+
+       Ojo al sumarlo con el escalonado: la última tarjeta de una fila arranca
+       con el tope de 480 ms (src/lib/revelado.ts) y termina a 1,03 s de que la
+       fila asome. Ese tope es lo que evita que una rejilla ancha se alargue
+       sola al subir la duración. */
+    animation: revelar-subir 550ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
     animation-delay: var(--retraso-revelado, 0ms);
   }
 
