@@ -109,7 +109,8 @@ const VARIABLES = [
     nivel: 'radicacion',
     para:
       'Enviar los correos de PQRS: los dos de cada radicación comercial y el recado del ' +
-      'formulario administrativo.',
+      'formulario administrativo. También las postulaciones de /empleos/, con la hoja de ' +
+      'vida adjunta.',
     donde: 'https://resend.com/api-keys',
     forma: (v) => (v.startsWith('re_') ? null : 'las claves de Resend empiezan por "re_"'),
   },

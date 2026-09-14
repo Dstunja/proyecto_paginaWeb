@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
-import FormularioMailto from '../components/FormularioMailto.astro';
+import FormularioEmpleo from '../components/FormularioEmpleo.astro';
 import Icono from '../components/Icono.astro';
 import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
@@ -153,8 +153,9 @@ const proceso = [
         <span class="kicker">Postulación</span>
         <h2 class="text-[28px] tablet:text-[38px]">Déjanos tus datos</h2>
         <p class="mt-3 text-muted">
-          Completa el formulario y adjunta tu hoja de vida en el correo que se abrirá. También
-          puedes escribirnos por WhatsApp si prefieres.
+          Completa el formulario y adjunta tu hoja de vida en PDF, DOC o DOCX. La recibe
+          directamente nuestro equipo de Talento Humano. También puedes escribirnos por WhatsApp
+          si prefieres.
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
           También puedes escribirnos directamente a{' '}
@@ -167,43 +168,19 @@ const proceso = [
           o al {contactoEmpleo.whatsapp.texto}.
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
-          Al enviar tus datos autorizas su tratamiento para fines de selección de personal, conforme
-          a la Ley 1581 de 2012.
+          Tus datos y tu hoja de vida se tratan únicamente para fines de selección de personal,
+          conforme a la Ley 1581 de 2012. En el formulario te pediremos tu autorización.
         </p>
       </div>
 
+      {/*
+        El formulario envía la postulación con la hoja de vida adjunta a
+        POST /api/empleos/postular; la lista de cargos del select y la del
+        servidor son la misma (src/lib/empleos/cargos.ts). Ver
+        docs/EMPLEOS-POSTULACION.md.
+      */}
       <div class="glass-card p-8">
-        <FormularioMailto
-          asunto="Postulación de empleo — dstunja.com"
-          boton="Enviar postulación"
-          destinatario={contactoEmpleo.email}
-        >
-          <div>
-            <label class="field-label" for="nombre-empleo">Nombre completo *</label>
-            <input class="field" id="nombre-empleo" name="nombre-empleo" type="text" required />
-          </div>
-          <div class="grid grid-cols-1 gap-5 mob:grid-cols-2">
-            <div>
-              <label class="field-label" for="correo-empleo">Correo *</label>
-              <input class="field" id="correo-empleo" name="correo-empleo" type="email" required />
-            </div>
-            <div>
-              <label class="field-label" for="telefono-empleo">Teléfono *</label>
-              <input class="field" id="telefono-empleo" name="telefono-empleo" type="tel" required />
-            </div>
-          </div>
-          <div>
-            <label class="field-label" for="cargo-empleo">Cargo al que te postulas *</label>
-            <select class="field" id="cargo-empleo" name="cargo-empleo" required>
-              {vacantes.map((v) => <option value={v.cargo}>{v.cargo}</option>)}
-              <option value="Otro / hoja de vida espontánea">Otro / hoja de vida espontánea</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label" for="mensaje-empleo">Cuéntanos sobre tu experiencia</label>
-            <textarea class="field" id="mensaje-empleo" name="mensaje-empleo" rows="4"></textarea>
-          </div>
-        </FormularioMailto>
+        <FormularioEmpleo />
       </div>
     </div>
   </section>

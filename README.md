@@ -60,6 +60,14 @@ src/
   pages/api/pqrs/          Funciones de Vercel: token de subida, radicacion,
                            recado administrativo y cron de limpieza. Ver
                            docs/PQRS-ADJUNTOS.md.
+  lib/empleos/             Servidor de las postulaciones de /empleos/: cargos
+                           admitidos, reglas de la hoja de vida (PDF, DOC o
+                           DOCX, 4 MB), validacion del multipart, correo con
+                           el adjunto y la orquestacion (postular.ts, con
+                           pruebas). Reutiliza Resend, Turnstile y el limite
+                           por IP de lib/pqrs/.
+  pages/api/empleos/       Funcion de Vercel que recibe la postulacion. Ver
+                           docs/EMPLEOS-POSTULACION.md.
   lib/imagenes.ts          Imágenes con reemplazo automático: si el archivo aún
                            no existe se muestra un marcador de posición (o el
                            nombre en texto, para los logos de marca).
@@ -77,8 +85,12 @@ src/
     MapaRed.astro          Mapa interactivo de cobertura: un punto por
                            municipio, filtros por departamento y buscador.
     BotonPideky.astro      Botón de Pideky.
-    FormularioMailto.astro Formularios de contacto y empleos (abren el gestor
-                           de correo). La PQRS ya no lo usa.
+    FormularioMailto.astro Formulario de contacto (abre el gestor de correo).
+                           Ni la PQRS ni empleos lo usan ya.
+    FormularioEmpleo.astro Postulacion de empleos: manda los datos y la hoja de
+                           vida adjunta a /api/empleos/postular, con campo
+                           trampa, Turnstile y respaldo por mailto: si la
+                           funcion no contesta.
     SelectorOpciones.astro Grupo de tarjetas seleccionables (radios nativos).
                            Lo usan los dos pasos de la PQRS: categoria y tipo.
                            Cada opcion puede revelar y ocultar bloques distintos,
@@ -344,6 +356,7 @@ npx vercel env pull .env.local
 | `PQRS_DESTINO` | Lo decide la empresa: el correo que recibe **todo** lo de la página de PQRS, comercial y administrativo. Hoy `informacioncomercialdst@gmail.com`. |
 | `PQRS_IP_SALT`, `CRON_SECRET` | Se generan: `node -e "console.log(crypto.randomUUID())"`. |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | Vercel → *Marketplace* → Upstash (plan gratuito). Opcionales. |
+| `EMPLEOS_DESTINO`, `EMPLEOS_REMITENTE` | Opcionales. Buzón y remitente de las postulaciones de empleos; sin ellas se usa el correo de `contactoEmpleo` (`src/data/vacantes.ts`) y el remitente de PQRS. Ver `docs/EMPLEOS-POSTULACION.md`. |
 
 Para desarrollo, Cloudflare publica un par de claves de prueba que **aceptan
 cualquier token**, y por eso no pueden acabar en producción:
@@ -370,8 +383,18 @@ completo de los adjuntos en `docs/PQRS-ADJUNTOS.md`.
 
 ## Formularios
 
-Los de contacto y empleos **arman un correo** con los datos y lo abren en el
-gestor de quien escribe (`src/components/FormularioMailto.astro`).
+El de **contacto** arma un correo con los datos y lo abre en el gestor de quien
+escribe (`src/components/FormularioMailto.astro`).
+
+El de **empleos** envía la postulación desde la página, **con la hoja de vida
+adjunta** (PDF, DOC o DOCX, máximo 4 MB), a `POST /api/empleos/postular`
+(`src/components/FormularioEmpleo.astro`). La función valida los campos y los
+bytes del archivo, comprueba el campo trampa, el límite por IP y Turnstile, y
+manda **un** correo por Resend a Talento Humano con el `replyTo` del candidato y
+el teléfono y el correo como enlaces `tel:` y `mailto:`. El archivo no se guarda
+en ningún sitio. Si la función no contesta (GitHub Pages, 5xx o red caída) cae al
+`mailto:` pidiendo adjuntar la hoja de vida a mano. Se prueba con `npm test` y
+`npm run verificar:empleos`. Detalle en `docs/EMPLEOS-POSTULACION.md`.
 
 El de **PQRS empieza preguntando la categoría**, y ese primer clic decide el
 resto de la página: no hay botón de «continuar» y no se recarga nada.

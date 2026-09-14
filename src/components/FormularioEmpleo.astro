@@ -1,0 +1,521 @@
+---
+/**
+ * Formulario de postulación de /empleos/.
+ *
+ * Manda la postulación con la hoja de vida adjunta a `POST /api/empleos/postular`
+ * como multipart, sin abrir el gestor de correo del candidato. La función la
+ * reenvía por Resend a Talento Humano (ver src/lib/empleos/ y
+ * docs/EMPLEOS-POSTULACION.md).
+ *
+ * QUÉ LLEVA. Nombre, correo, teléfono, cargo (las vacantes abiertas más la
+ * opción espontánea, de src/lib/empleos/cargos.ts), un texto opcional sobre la
+ * experiencia, la hoja de vida (PDF, DOC o DOCX, máximo 4 MB) y la casilla de
+ * autorización de tratamiento de datos, obligatoria.
+ *
+ * LA HOJA DE VIDA SE REVISA ANTES DE ENVIAR con `validarFileHojaDeVida`, las
+ * mismas reglas que aplica el servidor: extensión, peso, doble extensión y
+ * bytes mágicos. Un archivo rechazado se saca del input y se explica por qué;
+ * el nombre y el peso del aceptado se enseñan debajo del campo. Esta revisión
+ * es una cortesía: la que vale es la del servidor, sobre los bytes recibidos.
+ *
+ * ANTISPAM. Tres capas, las mismas que la PQRS más una: un campo trampa
+ * (honeypot) fuera de la vista que solo rellenan los robots, el límite por IP
+ * del servidor y Turnstile en modo `interaction-only`, que normalmente no se
+ * ve.
+ *
+ * SI LA FUNCIÓN NO CONTESTA (el espejo de GitHub Pages no tiene backend, o
+ * Vercel devuelve un 5xx) se cae al `mailto:` con los datos en el cuerpo y un
+ * aviso claro de que la hoja de vida hay que adjuntarla a ese correo, porque
+ * un `mailto:` no puede llevar archivos. Un 400, 403 o 429 NO cae al correo:
+ * ahí el servidor sí contestó y lo que toca es enseñar el motivo. El botón de
+ * WhatsApp está siempre, como alternativa.
+ */
+import { contactoEmpleo } from '../data/vacantes';
+import { cargosAdmitidos } from '../lib/empleos/cargos';
+import { CAMPO_HONEYPOT } from '../lib/empleos/config';
+import { ACEPTA_HOJA_DE_VIDA, AYUDA_HOJA_DE_VIDA } from '../lib/empleos/hoja-de-vida';
+import { ruta } from '../lib/rutas';
+import Icono from './Icono.astro';
+import LoaderDST from './LoaderDST.astro';
+
+const SALUDO_WHATSAPP = 'Hola, quiero postularme a una vacante de Distribuciones Santiago de Tunja.';
+const enlaceWhatsapp = `https://wa.me/${contactoEmpleo.whatsapp.numero}?text=${encodeURIComponent(SALUDO_WHATSAPP)}`;
+const enlaceCorreo = `mailto:${contactoEmpleo.email}`;
+
+const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const cargos = cargosAdmitidos();
+---
+
+<form
+  data-form-empleo
+  data-destino={contactoEmpleo.email}
+  data-turnstile-key={claveTurnstile}
+  class="relative grid grid-cols-1 gap-5"
+  enctype="multipart/form-data"
+>
+  <div>
+    <label class="field-label" for="nombre-empleo">Nombre completo *</label>
+    <input
+      class="field"
+      id="nombre-empleo"
+      name="nombre"
+      type="text"
+      required
+      minlength="3"
+      maxlength="150"
+      autocomplete="name"
+    />
+  </div>
+
+  <div class="grid grid-cols-1 gap-5 mob:grid-cols-2">
+    <div>
+      <label class="field-label" for="correo-empleo">Correo *</label>
+      <input
+        class="field"
+        id="correo-empleo"
+        name="correo"
+        type="email"
+        required
+        maxlength="150"
+        autocomplete="email"
+      />
+    </div>
+    <div>
+      <label class="field-label" for="telefono-empleo">Teléfono *</label>
+      <input
+        class="field"
+        id="telefono-empleo"
+        name="telefono"
+        type="tel"
+        required
+        maxlength="30"
+        autocomplete="tel"
+      />
+    </div>
+  </div>
+
+  <div>
+    <label class="field-label" for="cargo-empleo">Cargo al que te postulas *</label>
+    <select class="field" id="cargo-empleo" name="cargo" required>
+      {cargos.map((cargo) => <option value={cargo}>{cargo}</option>)}
+    </select>
+  </div>
+
+  <div>
+    <label class="field-label" for="experiencia-empleo">
+      Cuéntanos sobre tu experiencia{' '}
+      <span class="font-normal text-muted">(opcional)</span>
+    </label>
+    <textarea class="field" id="experiencia-empleo" name="experiencia" rows="4" maxlength="3000"
+    ></textarea>
+  </div>
+
+  <!-- HOJA DE VIDA -->
+  <div data-hoja-de-vida>
+    <label class="field-label" for="hoja-de-vida-empleo">Hoja de vida *</label>
+    <input
+      class="field cursor-pointer py-2.5 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0
+             file:bg-primary-soft file:px-3 file:py-1.5 file:font-display file:text-[13.5px]
+             file:font-semibold file:text-primary hover:file:bg-secondary-soft"
+      id="hoja-de-vida-empleo"
+      name="hoja-de-vida"
+      type="file"
+      accept={ACEPTA_HOJA_DE_VIDA}
+      required
+      aria-describedby="hoja-de-vida-empleo-ayuda"
+      data-entrada-hv
+    />
+    {/* El tope se dice ANTES de elegir, para no descubrirlo con el rechazo. */}
+    <p class="mt-2 mb-0 text-[13px] text-muted" id="hoja-de-vida-empleo-ayuda" data-ayuda-hv>
+      {AYUDA_HOJA_DE_VIDA}
+    </p>
+
+    <p
+      class="mt-3 mb-0 hidden items-center gap-2 rounded-xl border border-line bg-fondo px-3 py-2 text-[14px]"
+      data-archivo-hv
+    >
+      <Icono nombre="paperclip" class="h-4 w-4 shrink-0 text-secondary" interactivo={false} />
+      <span class="min-w-0 truncate font-semibold text-ink" data-archivo-nombre></span>
+      <span class="shrink-0 text-[12.5px] text-muted" data-archivo-peso></span>
+    </p>
+
+    <p
+      class="mt-2 mb-0 hidden text-[13.5px] font-semibold text-accent-text"
+      role="alert"
+      data-error-hv
+    >
+    </p>
+  </div>
+
+  {/*
+    Campo trampa. Fuera de la pantalla y del orden de tabulación, y oculto a los
+    lectores de pantalla: una persona nunca lo ve ni lo rellena. Un robot que
+    llena todos los campos sí, y el servidor descarta el envío sin decir por
+    qué. `autocomplete="off"` evita que el navegador lo rellene por su cuenta.
+  */}
+  <div class="absolute top-0 -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
+    <label for="sitio-web-empleo">Sitio web</label>
+    <input
+      id="sitio-web-empleo"
+      name={CAMPO_HONEYPOT}
+      type="text"
+      tabindex="-1"
+      autocomplete="off"
+      data-honeypot
+    />
+  </div>
+
+  <label class="flex items-start gap-3 text-[14.5px] text-muted">
+    <input
+      type="checkbox"
+      id="autorizacion-empleo"
+      name="autorizacion"
+      value="si"
+      required
+      class="mt-1 h-4 w-4 shrink-0 accent-[var(--color-primary)]"
+    />
+    <span>
+      Autorizo el tratamiento de mis datos personales y de mi hoja de vida para fines de
+      selección de personal, conforme a la Ley 1581 de 2012 y a la{' '}
+      <a class="underline hover:text-primary" href={ruta('/privacidad/')}>
+        política de privacidad
+      </a>. *
+    </span>
+  </label>
+
+  <!-- Turnstile en modo `interaction-only`: normalmente no se ve nada. -->
+  <div data-turnstile-empleo class="empty:hidden"></div>
+
+  <div class="flex flex-wrap items-center gap-4">
+    <button type="submit" class="btn btn-primary" data-enviar-empleo>Enviar postulación</button>
+    <a
+      class="btn btn-secondary"
+      href={enlaceWhatsapp}
+      target="_blank"
+      rel="noopener"
+      data-whatsapp-empleo
+    >
+      Prefiero WhatsApp
+    </a>
+    <div data-espera-empleo class="hidden" role="status" aria-live="polite">
+      <LoaderDST tamano={28} anuncia={false} />
+      <span class="sr-only">Enviando…</span>
+    </div>
+  </div>
+
+  <div
+    data-errores-empleo
+    class="hidden rounded-xl border border-accent-text/30 bg-accent-soft px-4 py-3"
+    role="alert"
+  >
+    <p class="m-0 mb-1 font-display text-[14px] font-semibold text-accent-text">
+      No pudimos enviar tu postulación
+    </p>
+    <ul data-lista-errores-empleo class="m-0 list-disc space-y-1 pl-5 text-[14px] text-ink"></ul>
+  </div>
+
+  <p
+    data-aviso-respaldo
+    class="m-0 hidden rounded-xl border border-line bg-fondo px-4 py-3 text-[14px] text-ink"
+    role="status"
+    aria-live="polite"
+  >
+    No pudimos enviar la postulación desde la página. Abrimos tu gestor de correo con tus
+    datos: <strong>adjunta ahí tu hoja de vida</strong> antes de enviarlo. Si no se abrió,
+    escríbenos por WhatsApp.
+  </p>
+</form>
+
+<!-- Confirmación. Reemplaza al formulario, no se añade debajo. -->
+<div data-confirmacion-empleo class="hidden" role="status" aria-live="polite">
+  <span class="icono-chip mb-5 flex h-12 w-12">
+    <Icono nombre="circle-check" class="h-6 w-6" interactivo={false} />
+  </span>
+  <h3 class="mb-2 text-[22px]">Postulación enviada</h3>
+  <p class="m-0 text-muted">Recibimos tu postulación, te contactaremos al correo indicado.</p>
+  <p class="mt-3 mb-0 text-[14.5px] text-muted">
+    Si quieres agregar algo, escríbenos a{' '}
+    <a class="font-semibold text-secondary-dark underline" href={enlaceCorreo}>
+      {contactoEmpleo.email}
+    </a>{' '}
+    o por{' '}
+    <a
+      class="font-semibold text-secondary-dark underline"
+      href={enlaceWhatsapp}
+      target="_blank"
+      rel="noopener"
+    >
+      WhatsApp
+    </a>.
+  </p>
+</div>
+
+<script>
+  import { formatearTamano, nombreParaMostrar } from '../lib/adjuntos';
+  import { registrarEvento } from '../lib/analitica';
+  import { validarFileHojaDeVida } from '../lib/empleos/hoja-de-vida';
+  import { ruta } from '../lib/rutas';
+  import { prepararTurnstile, tokenTurnstile } from '../lib/turnstile-cliente';
+
+  /**
+   * La ruta pasa por `ruta()` como todas las del sitio. Escrita a mano
+   * apuntaría a la raíz del dominio, que en el espejo de GitHub Pages
+   * —publicado bajo /proyecto_paginaWeb— es una dirección que no existe.
+   */
+  const RUTA_ENVIO = ruta('/api/empleos/postular');
+
+  document.querySelectorAll<HTMLFormElement>('[data-form-empleo]').forEach((form) => {
+    const entrada = form.querySelector<HTMLInputElement>('[data-entrada-hv]');
+    const cajaArchivo = form.querySelector<HTMLElement>('[data-archivo-hv]');
+    const nombreArchivo = form.querySelector<HTMLElement>('[data-archivo-nombre]');
+    const pesoArchivo = form.querySelector<HTMLElement>('[data-archivo-peso]');
+    const errorArchivo = form.querySelector<HTMLElement>('[data-error-hv]');
+    const cajaTurnstile = form.querySelector<HTMLElement>('[data-turnstile-empleo]');
+    const cajaErrores = form.querySelector<HTMLElement>('[data-errores-empleo]');
+    const listaErrores = form.querySelector<HTMLUListElement>('[data-lista-errores-empleo]');
+    const avisoRespaldo = form.querySelector<HTMLElement>('[data-aviso-respaldo]');
+    const boton = form.querySelector<HTMLButtonElement>('[data-enviar-empleo]');
+    const espera = form.querySelector<HTMLElement>('[data-espera-empleo]');
+    const confirmacion = form.parentElement?.querySelector<HTMLElement>(
+      '[data-confirmacion-empleo]',
+    );
+    if (
+      !entrada ||
+      !cajaArchivo ||
+      !nombreArchivo ||
+      !pesoArchivo ||
+      !errorArchivo ||
+      !cajaTurnstile ||
+      !cajaErrores ||
+      !listaErrores ||
+      !avisoRespaldo ||
+      !boton ||
+      !confirmacion
+    ) {
+      return;
+    }
+
+    const claveTurnstile = form.dataset.turnstileKey ?? '';
+    const destino = form.dataset.destino ?? '';
+
+    function valorDe(nombre: string): string {
+      const campo = form.elements.namedItem(nombre) as
+        | HTMLInputElement
+        | HTMLSelectElement
+        | HTMLTextAreaElement
+        | null;
+      return (campo?.value ?? '').trim();
+    }
+
+    // --- Hoja de vida -------------------------------------------------------
+
+    function mostrarArchivo(archivo: File | null) {
+      if (!archivo) {
+        cajaArchivo!.classList.add('hidden');
+        cajaArchivo!.classList.remove('flex');
+        nombreArchivo!.textContent = '';
+        pesoArchivo!.textContent = '';
+        return;
+      }
+      // textContent, nunca innerHTML: el nombre lo escribe quien sube el archivo.
+      nombreArchivo!.textContent = nombreParaMostrar(archivo.name);
+      nombreArchivo!.title = nombreArchivo!.textContent;
+      pesoArchivo!.textContent = formatearTamano(archivo.size);
+      cajaArchivo!.classList.remove('hidden');
+      cajaArchivo!.classList.add('flex');
+    }
+
+    /**
+     * Enseña el motivo del rechazo y lo deja también como validez personalizada
+     * del input: así `reportValidity()` frena el envío con NUESTRO mensaje y no
+     * con el genérico de "selecciona un archivo".
+     */
+    function avisarArchivo(mensaje: string) {
+      errorArchivo!.textContent = mensaje;
+      errorArchivo!.classList.toggle('hidden', mensaje === '');
+      entrada!.setAttribute('aria-invalid', mensaje === '' ? 'false' : 'true');
+      entrada!.setCustomValidity(mensaje);
+    }
+
+    entrada.addEventListener('change', async () => {
+      const archivo = entrada!.files?.[0] ?? null;
+      if (!archivo) {
+        // Diálogo cancelado: el input quedó vacío y se dice.
+        mostrarArchivo(null);
+        avisarArchivo('');
+        return;
+      }
+
+      // Mientras se leen las firmas el envío queda bloqueado.
+      entrada!.setCustomValidity('Estamos revisando el archivo, espera un momento.');
+      let veredicto;
+      try {
+        veredicto = await validarFileHojaDeVida(archivo);
+      } finally {
+        entrada!.setCustomValidity('');
+      }
+
+      if (!veredicto.ok) {
+        // El rechazado se saca del input: nunca se envía.
+        entrada!.value = '';
+        mostrarArchivo(null);
+        avisarArchivo(veredicto.error);
+        return;
+      }
+
+      avisarArchivo('');
+      mostrarArchivo(archivo);
+    });
+
+    // --- Turnstile ------------------------------------------------------------
+
+    /*
+     * Turnstile monta UN SOLO widget por página (ver src/lib/turnstile-cliente.ts).
+     * Aquí es el único formulario, así que el widget es suyo.
+     */
+    let turnstileListo = false;
+    if (claveTurnstile) {
+      prepararTurnstile(cajaTurnstile, claveTurnstile).then(
+        () => {
+          turnstileListo = true;
+        },
+        () => {
+          turnstileListo = false;
+        },
+      );
+    }
+
+    async function token(): Promise<string> {
+      if (!claveTurnstile) return '';
+      return tokenTurnstile();
+    }
+
+    // --- Mensajes -----------------------------------------------------------
+
+    function mostrarErrores(mensajes: string[]) {
+      listaErrores!.textContent = '';
+      for (const mensaje of mensajes) {
+        const item = document.createElement('li');
+        item.textContent = mensaje;
+        listaErrores!.append(item);
+      }
+      cajaErrores!.classList.toggle('hidden', mensajes.length === 0);
+      if (mensajes.length > 0) {
+        cajaErrores!.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    let temporizador: number | undefined;
+    function mostrarEspera() {
+      clearTimeout(temporizador);
+      temporizador = window.setTimeout(() => espera?.classList.remove('hidden'), 150);
+    }
+    function ocultarEspera() {
+      clearTimeout(temporizador);
+      espera?.classList.add('hidden');
+    }
+
+    /**
+     * Respaldo: abre el gestor de correo con lo escrito.
+     *
+     * Solo se usa cuando la función NO contestó (no hay backend, o dio 5xx). Un
+     * `mailto:` no puede llevar archivos, así que el cuerpo y el aviso en
+     * pantalla piden adjuntar la hoja de vida a mano.
+     */
+    function caerAlCorreo() {
+      const archivo = entrada!.files?.[0];
+      const cargo = valorDe('cargo');
+      const nombre = valorDe('nombre');
+      const asunto = cargo && nombre ? `Postulación: ${cargo} – ${nombre}` : 'Postulación de empleo';
+      const lineas = [
+        `Nombre: ${nombre}`,
+        `Correo: ${valorDe('correo')}`,
+        `Teléfono: ${valorDe('telefono')}`,
+        `Cargo: ${cargo}`,
+        '',
+        'Sobre mi experiencia:',
+        valorDe('experiencia') || '(está todo en la hoja de vida)',
+        '',
+        `Hoja de vida: ${archivo ? nombreParaMostrar(archivo.name) : '(pendiente)'} — ADJUNTARLA A ESTE CORREO antes de enviarlo.`,
+        '',
+        'Autorizo el tratamiento de mis datos personales para fines de selección de personal (Ley 1581 de 2012).',
+        '',
+        '---',
+        'Enviado desde dstunja.com',
+      ];
+      form.dataset.respaldo = 'correo';
+      avisoRespaldo!.classList.remove('hidden');
+      window.location.href =
+        `mailto:${destino}?subject=${encodeURIComponent(asunto)}` +
+        `&body=${encodeURIComponent(lineas.join('\n'))}`;
+    }
+
+    function confirmar() {
+      form.dataset.enviado = 'api';
+      form.classList.add('hidden');
+      confirmacion!.classList.remove('hidden');
+      confirmacion!.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Solo el cargo: ningún dato personal sale hacia la analítica.
+      registrarEvento('postulacion_enviada', { cargo: valorDe('cargo') });
+    }
+
+    // --- Envío ----------------------------------------------------------------
+
+    form.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      if (!form.reportValidity()) return;
+
+      mostrarErrores([]);
+      avisoRespaldo!.classList.add('hidden');
+      boton!.disabled = true;
+      const textoBoton = boton!.textContent;
+      boton!.textContent = 'Enviando…';
+      mostrarEspera();
+
+      try {
+        if (claveTurnstile && !turnstileListo) {
+          // Un último intento: puede que el script tardara más que la persona.
+          await prepararTurnstile(cajaTurnstile!, claveTurnstile);
+          turnstileListo = true;
+        }
+
+        // El multipart sale del propio formulario: campos, casilla, campo
+        // trampa y archivo. Solo se añade el token. Sin cabecera content-type:
+        // la pone el navegador, con el boundary.
+        const cuerpo = new FormData(form);
+        cuerpo.set('turnstileToken', await token());
+
+        const respuesta = await fetch(RUTA_ENVIO, { method: 'POST', body: cuerpo });
+
+        // Un espejo estático sin funciones devuelve HTML, no JSON.
+        const tipoRespuesta = respuesta.headers.get('content-type') ?? '';
+        if (!tipoRespuesta.includes('application/json')) {
+          caerAlCorreo();
+          return;
+        }
+
+        const datos = (await respuesta.json()) as { ok: true } | { ok: false; errores: string[] };
+
+        if (respuesta.ok && datos.ok) {
+          confirmar();
+          return;
+        }
+
+        if (respuesta.status >= 500) {
+          caerAlCorreo();
+          return;
+        }
+
+        // 400, 403, 429: el servidor contestó y explicó por qué. No hay respaldo
+        // que valga; hay que corregir lo que dice y volver a enviar.
+        mostrarErrores(datos.ok ? ['Error desconocido.'] : datos.errores);
+      } catch {
+        caerAlCorreo();
+      } finally {
+        ocultarEspera();
+        boton!.disabled = false;
+        boton!.textContent = textoBoton;
+      }
+    });
+  });
+</script>
