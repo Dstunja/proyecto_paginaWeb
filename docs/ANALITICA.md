@@ -208,7 +208,7 @@ búsquedas del sitio), la página envía estos eventos. Todos están en español
 | Evento | Cuándo se dispara | Parámetros |
 |---|---|---|
 | `seccion_vista` | Una sección del inicio se ve en pantalla. Una sola vez por sección y visita. | `seccion`: `hero`, `cifras`, `marcas`, `especiales_mes`, `valor_agregado`, `cobertura`, `para_tu_negocio`, `resenas`, `haz_tu_pedido`, `empleos_pqrs`, `siguenos` |
-| `clic_cta` | Clic en un botón o enlace de contacto o de una sección clave. | `destino`: `whatsapp`, `pedido`, `correo`, `telefono`, `pqrs`, `empleos`, `catalogo`, `contactanos`, `innovacion`, `nosotros`, `instagram`, `facebook`, `x`, `pideky` |
+| `clic_cta` | Clic en un botón o enlace de contacto o de una sección clave. | `destino`: `whatsapp`, `pedido`, `correo`, `telefono`, `pqrs`, `empleos`, `catalogo`, `contactanos`, `innovacion`, `nosotros`, `instagram`, `facebook`, `x`, `pideky`, `ubicacion` (buscar la sede en Google Maps), `resenas` ("Ver todas las reseñas"), `resena_autor` (nombre de quien escribió una reseña), `escribir_resena` ("Cuéntanos tu experiencia en Google") |
 | `catalogo_buscar` | La persona deja de escribir en el buscador del armador de pedidos (mínimo 3 letras). | `termino` |
 | `catalogo_filtrar_marca` | Se elige una píldora de marca. | `marca` (o `todas`) |
 | `catalogo_filtrar_categoria` | Se elige una categoría. | `categoria` (o `todas`) |
