@@ -72,7 +72,14 @@ const canales = [
                 <li class="rounded-xl border border-line bg-fondo p-4">
                   <p class="m-0 font-display text-[15px] font-semibold text-ink">{asesora.nombre}</p>
                   <p class="m-0 text-[14.5px] text-muted">{asesora.telefono}</p>
-                  <div class="mt-3 flex flex-wrap gap-2">
+                  {/* `pr-6` en móvil deja libre la franja del botón flotante
+                      de WhatsApp (fijo a 24 px del borde, 56 px de ancho):
+                      como no se mueve al desplazar, un botón que invada esa
+                      franja queda tapado en algún momento, esté donde esté
+                      la tarjeta. Si no caben los dos en la fila, "Llamar"
+                      baja a la siguiente. En tableta la tarjeta va en la
+                      columna izquierda y la reserva ya no hace falta. */}
+                  <div class="mt-3 flex flex-wrap gap-2 pr-6 tablet:pr-0">
                     <a
                       class="btn btn-whatsapp px-3 py-1.5 text-[13px]"
                       href={enlaceTeleventas(asesora, MENSAJE_PEDIDO)}
@@ -107,12 +114,18 @@ const canales = [
                 <Icono nombre={canal.icono} class="h-6 w-6" interactivo={false} />
               </span>
               <h2 class="mb-2 text-lg">{canal.titulo}</h2>
+              {/* El correo es una sola "palabra" de 33 caracteres y no cabía
+                  en la tarjeta ni en móvil ni en tableta. El <wbr> antes de
+                  la arroba deja partirlo en "informacioncomercialdst" /
+                  "@gmail.com"; `wrap-anywhere` es el último recurso si ni la
+                  primera parte cabe. */}
               <a
-                class="text-[15px] font-semibold text-accent-text underline"
+                class="text-[15px] font-semibold wrap-anywhere text-accent-text underline"
                 href={canal.href}
                 {...canal.externo ? { target: '_blank', rel: 'noopener' } : {}}
+                data-valor-canal
               >
-                {canal.valor}
+                {canal.valor.split('@').map((parte, i) => (i > 0 ? <><wbr />@{parte}</> : parte))}
               </a>
               <p class="mt-3 mb-0 text-[14.5px] text-muted">{canal.nota}</p>
             </div>

@@ -26,8 +26,11 @@
  *      - 200 sorteos con el navegador vacío reparten entre las dos.
  *      - Una asesora guardada manda sobre el HTML impreso; un nombre que no
  *        está en la lista se trata como ninguno.
- *      - Contáctanos (móvil y escritorio) muestra a las dos con WhatsApp y
- *        llamada, el teléfono de oficina sigue ahí, y elegir a una la guarda.
+ *      - Contáctanos (375, 768, 960 y 1280 px) muestra a las dos con WhatsApp
+ *        y llamada, el teléfono de oficina sigue ahí, y elegir a una la guarda.
+ *        Ningún botón de la tarjeta invade la franja del botón flotante (que
+ *        es fijo, así que lo taparía al desplazar) y el teléfono y el correo
+ *        no se salen de su tarjeta.
  *
  * Los enlaces a wa.me se interceptan: las ventanas se abren, pero no salen a
  * internet.
@@ -604,11 +607,9 @@ async function revisarTeleventas(navegador) {
   await contexto.close();
 
   // ---- Contáctanos ---------------------------------------------------------
-  for (const [etiqueta, viewport] of [
-    ['Móvil', { width: 375, height: 720 }],
-    ['Escritorio', { width: 1280, height: 800 }],
-  ]) {
-    const ctx = await nuevoContexto(navegador, viewport);
+  for (const ancho of [375, 768, 960, 1280]) {
+    const etiqueta = `${ancho}px`;
+    const ctx = await nuevoContexto(navegador, { width: ancho, height: 800 });
     const pag = await ctx.newPage();
     await pag.goto(url('/contactanos/'), { waitUntil: 'domcontentloaded' });
     await despacharCookies(pag);
@@ -642,7 +643,47 @@ async function revisarTeleventas(navegador) {
       (await pag.locator(`a[href="${TELEFONO_OFICINA}"]`).count()) > 0,
     );
 
-    if (etiqueta === 'Escritorio') {
+    // El botón flotante es fijo: si un botón de la tarjeta comparte con él la
+    // franja horizontal, al desplazar hay un momento en que queda debajo. Por
+    // eso se mide la holgura horizontal y no una posición de scroll concreta.
+    const holguras = await pag.evaluate(() => {
+      const flotante = document.querySelector('[data-whatsapp-flotante]').getBoundingClientRect();
+      return [...document.querySelectorAll('[data-tarjeta-televentas] a')].map((a) => {
+        const caja = a.getBoundingClientRect();
+        const holgura = Math.round(Math.max(flotante.left - caja.right, caja.left - flotante.right));
+        return { nombre: a.getAttribute('aria-label'), holgura };
+      });
+    });
+    const invasores = holguras.filter((h) => h.holgura < 8);
+    comprobar(
+      `Contáctanos ${etiqueta}: ningún botón de Televentas invade la franja del botón flotante`,
+      holguras.length === 4 && invasores.length === 0,
+      invasores.length
+        ? invasores.map((h) => `${h.nombre} (${h.holgura} px)`).join(', ')
+        : `holgura mínima ${Math.min(...holguras.map((h) => h.holgura))} px`,
+    );
+
+    const desbordes = await pag.evaluate(() =>
+      [...document.querySelectorAll('[data-valor-canal]')].map((valor) => {
+        const tarjeta = valor.closest('.glass-card');
+        const estilo = getComputedStyle(tarjeta);
+        const limite =
+          tarjeta.getBoundingClientRect().right -
+          parseFloat(estilo.paddingRight) -
+          parseFloat(estilo.borderRightWidth);
+        return { texto: valor.textContent.trim(), sobra: Math.round(valor.getBoundingClientRect().right - limite) };
+      }),
+    );
+    const desbordados = desbordes.filter((d) => d.sobra > 0);
+    comprobar(
+      `Contáctanos ${etiqueta}: el teléfono y el correo caben en su tarjeta`,
+      desbordes.length === 2 && desbordados.length === 0,
+      desbordes.length === 2
+        ? desbordados.map((d) => `${d.texto} se sale ${d.sobra} px`).join(', ')
+        : `se esperaban 2 valores [data-valor-canal] y hay ${desbordes.length}`,
+    );
+
+    if (ancho === 1280) {
       const destinoSara = await urlDeVentana(ctx, () =>
         tarjeta.locator('a[data-asesora="Sara"][href^="https://wa.me/"]').click(),
       );
