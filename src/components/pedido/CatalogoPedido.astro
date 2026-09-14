@@ -891,10 +891,13 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
     const indice = new Map<string, string>();
     for (const p of catalogo) {
+      // El código SAP entra al índice aunque no sea texto que nadie "lea": la
+      // tarjeta y el panel lo MUESTRAN, así que quien lo tenga a mano -de una
+      // factura, del asesor- espera poder pegarlo aquí y llegar a la referencia.
       indice.set(
         p.id,
         normalizar(
-          `${p.marca} ${p.nombre} ${p.presentacion} ${p.categoria} ${p.subcategoria ?? ''}`,
+          `${p.marca} ${p.nombre} ${p.presentacion} ${p.categoria} ${p.subcategoria ?? ''} ${p.codigo}`,
         ),
       );
     }
