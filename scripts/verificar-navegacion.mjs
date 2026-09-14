@@ -16,6 +16,15 @@
  * Uso:
  *   npm run build
  *   node scripts/verificar-navegacion.mjs
+ *
+ * Puerto: 4399, el mismo en todos los scripts de verificación. Está lejos del
+ * 4321 de `astro dev` y de los que Astro toma cuando ese está ocupado (4322,
+ * 4323...), cosa frecuente aquí porque suele haber varias sesiones con su
+ * propio servidor de desarrollo. Ese choque no da error: Astro escucha en ::1
+ * y este servidor en ::, así que arrancan los dos y el navegador acaba en el de
+ * desarrollo, donde las comprobaciones fallan sin que la página tenga nada.
+ * Dos scripts de verificación a la vez sí se avisan (EADDRINUSE): se corren
+ * de uno en uno.
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -24,7 +33,7 @@ import { chromium } from 'playwright';
 
 const RAIZ = join(process.cwd(), 'dist', 'client');
 const BASE = '/proyecto_paginaWeb';
-const PUERTO = 4324;
+const PUERTO = 4399;
 
 const TIPOS = {
   '.html': 'text/html; charset=utf-8',

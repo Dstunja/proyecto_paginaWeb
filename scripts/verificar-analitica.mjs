@@ -22,8 +22,18 @@
  *
  * Al terminar, `npm run build` otra vez sin la variable deja dist/client/ limpio.
  *
- * Sirve dist/client/ con un servidor estático propio (sin dependencias nuevas) en el
- * puerto 4321, respetando el `base` de astro.config.mjs.
+ * Sirve dist/client/ con un servidor estático propio (sin dependencias nuevas),
+ * respetando el `base` de astro.config.mjs.
+ *
+ * Puerto: 4399, el mismo en todos los scripts de verificación. Está lejos del
+ * 4321 de `astro dev` y de los que Astro toma cuando ese está ocupado (4322,
+ * 4323...), cosa frecuente aquí porque suele haber varias sesiones con su
+ * propio servidor de desarrollo. Ese choque no da error: Astro escucha en ::1
+ * y este servidor en ::, así que arrancan los dos y el navegador acaba en el de
+ * desarrollo, donde las comprobaciones fallan sin que la página tenga nada.
+ * Este script usaba el 4321 y con `astro dev` abierto fallaban gtag y todos
+ * los eventos, porque en desarrollo gtag nunca se carga. Dos scripts de
+ * verificación a la vez sí se avisan (EADDRINUSE): se corren de uno en uno.
  */
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
@@ -32,7 +42,7 @@ import { chromium } from 'playwright';
 
 const RAIZ = join(process.cwd(), 'dist', 'client');
 const BASE = '/proyecto_paginaWeb';
-const PUERTO = 4321;
+const PUERTO = 4399;
 const CON_ID = process.argv.includes('--con-id');
 
 const TIPOS = {

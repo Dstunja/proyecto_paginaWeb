@@ -50,6 +50,15 @@
  * Sin dependencias nuevas: Playwright ya está en devDependencies. Los archivos
  * de prueba se generan en el directorio temporal del sistema, no en el
  * repositorio.
+ *
+ * Puerto: 4399, el mismo en todos los scripts de verificación. Está lejos del
+ * 4321 de `astro dev` y de los que Astro toma cuando ese está ocupado (4322,
+ * 4323...), cosa frecuente aquí porque suele haber varias sesiones con su
+ * propio servidor de desarrollo. Ese choque no da error: Astro escucha en ::1
+ * y este servidor en ::, así que arrancan los dos y el navegador acaba en el de
+ * desarrollo, donde las comprobaciones fallan sin que la página tenga nada.
+ * Dos scripts de verificación a la vez sí se avisan (EADDRINUSE): se corren
+ * de uno en uno.
  */
 import { createServer } from 'node:http';
 import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
@@ -60,7 +69,7 @@ import { chromium } from 'playwright';
 
 // Con el adaptador de Vercel el sitio estatico queda en dist/client.
 const RAIZ = join(process.cwd(), 'dist', 'client');
-const PUERTO = 4323;
+const PUERTO = 4399;
 
 /**
  * Prefijo con el que compila `npm run build` fuera de Vercel (el espejo de
