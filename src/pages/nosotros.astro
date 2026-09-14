@@ -19,7 +19,7 @@ import crecimientoCompartido from '../assets/valores/crecimiento-compartido.jpg'
    -> 'LL') para que el círculo no quede vacío entre los que sí lo tienen. */
 const equipoConFoto = equipo.map((persona) => ({
   ...persona,
-  ...imagenOMarcador(persona.foto, iniciales(persona.nombre || persona.cargo), 400, 400),
+  ...imagenOMarcador(persona.foto, iniciales(persona.nombre || persona.cargo), 480, 480),
 }));
 
 /** 'Nelson Arias' -> 'NA', para el marcador de posición de la foto. */
@@ -157,10 +157,10 @@ const valores = [
         </p>
       </div>
 
-      {/* EDITAR AQUÍ: las fotos van en public/img/equipo/; los nombres, cargos
-          y frases viven en src/data/equipo.ts. Una tarjeta sin nombre (cargo
-          aún sin cubrir) muestra «Próximamente», y una sin frase no la
-          dibuja. */}
+      {/* EDITAR AQUÍ: las fotos van en public/img/equipo/, cuadradas y ya
+          recortadas por `npm run fotos:equipo`; los nombres, cargos y frases
+          viven en src/data/equipo.ts. Una tarjeta sin nombre (cargo aún sin
+          cubrir) muestra «Próximamente», y una sin frase no la dibuja. */}
       <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4" data-revelar-grupo>
         {
           equipoConFoto.map((persona) => (
@@ -169,8 +169,8 @@ const valores = [
                 src={persona.src}
                 alt={persona.esMarcador ? '' : [persona.nombre, persona.cargo].filter(Boolean).join(', ')}
                 loading="lazy"
-                width="400"
-                height="400"
+                width="480"
+                height="480"
                 class="h-28 w-28 rounded-full border-4 border-surface object-cover shadow-[0_10px_28px_rgba(13,44,132,.14)] transition-transform duration-300 group-hover:scale-105"
               />
               <h3 class:list={['mt-6 mb-1 text-[17px]', !persona.nombre && 'text-muted']}>

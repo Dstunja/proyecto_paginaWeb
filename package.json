@@ -12,6 +12,7 @@
     "check": "astro check",
     "og": "node scripts/build-og.mjs",
     "favicon": "node scripts/build-favicon.mjs",
+    "fotos:equipo": "node scripts/recortar-fotos-equipo.mjs",
     "geocodificar": "node scripts/geocodificar.mjs",
     "iconos": "npm run favicon && npm run og",
     "check:env": "node scripts/check-env.mjs",

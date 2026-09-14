@@ -1,17 +1,27 @@
 /**
  * Equipo directivo que se muestra en /nosotros/.
  *
- * Los nombres y cargos de abajo son los reales. Quedan dos cosas pendientes:
- * las fotos (ver abajo) y el nombre de quien ocupa el cargo de Líder
- * Logístico, que todavía no está definido.
+ * Los nombres y cargos de abajo son los reales. Quedan pendientes las fotos de
+ * Nelson Arias y del Líder Logístico, y el nombre de quien ocupa ese último
+ * cargo, que todavía no está definido.
  *
  * FOTOS
  * -----
- * Deja cada foto en public/img/equipo/ y pon aquí su ruta, por ejemplo
- * '/img/equipo/gerente-general.jpg'. Mientras el archivo no exista se dibuja
- * un marcador con las iniciales de la persona, así que la sección nunca se ve
- * rota (ver `imagenOMarcador` en src/lib/imagenes.ts). Lo ideal son fotos
- * cuadradas (mismo alto y ancho), porque se recortan en círculo.
+ * Cada foto se nombra por la PERSONA, no por el cargo ('erica-abril.webp' y no
+ * 'talento-humano.webp'): los cargos se renombran cada tanto y arrastraban con
+ * ellos el nombre del archivo. La excepción es el Líder Logístico, que se queda
+ * con el nombre del cargo porque todavía no se sabe quién lo ocupa.
+ *
+ * Mientras el archivo no exista se dibuja un marcador con las iniciales de la
+ * persona, así que la sección nunca se ve rota (ver `imagenOMarcador` en
+ * src/lib/imagenes.ts) y las fotos se pueden ir poniendo de una en una.
+ *
+ * La foto tiene que ser CUADRADA, porque la tarjeta la recorta en círculo. Las
+ * que llegan del celular son verticales, así que no se suben tal cual: pasan
+ * por `npm run fotos:equipo` (scripts/recortar-fotos-equipo.mjs), que recorta
+ * el cuadrado centrado en la cara, lo deja en 480x480 WebP y le quita los
+ * metadatos EXIF. Los originales sin recortar NO van al repositorio —son fotos
+ * del personal—: viven en `recursos/fotos-equipo/`, que .gitignore excluye.
  *
  * FRASES
  * ------
@@ -36,19 +46,20 @@ export const equipo: Persona[] = [
   {
     nombre: 'Nelson Arias',
     cargo: 'Gerente General',
-    foto: '/img/equipo/gerente-general.jpg',
+    // PENDIENTE: falta la foto. Hasta que esté, la tarjeta muestra 'NA'.
+    foto: '/img/equipo/nelson-arias.jpg',
     frase: '',
   },
   {
     nombre: 'Camilo Acero',
-    cargo: 'Coordinador Comercial',
-    foto: '/img/equipo/coordinador-comercial.jpg',
+    cargo: 'Líder Comercial',
+    foto: '/img/equipo/camilo-acero.webp',
     frase: '',
   },
   {
     nombre: 'Erica Abril',
-    cargo: 'Coordinadora de Recursos Humanos',
-    foto: '/img/equipo/recursos-humanos.jpg',
+    cargo: 'Talento Humano',
+    foto: '/img/equipo/erica-abril.webp',
     frase: '',
   },
   {
