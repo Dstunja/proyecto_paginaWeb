@@ -61,7 +61,8 @@ import {
 } from '../../lib/plantillasCatalogo';
 import Icono from '../Icono.astro';
 import LoaderDST from '../LoaderDST.astro';
-import { empresa } from '../../data/site';
+import EnlaceTeleventas from '../EnlaceTeleventas.astro';
+import { ASESORA_POR_DEFECTO, enlaceTeleventas } from '../../lib/televentas';
 
 /**
  * Lo que se le manda al navegador de cada producto.
@@ -281,9 +282,8 @@ const htmlInicial = vistaPorMarcas(porMarca, estadoInicial);
 const conteoInicial = conteoSinFiltro(catalogo.length, marcas.length);
 const productosVisibles = Math.min(porMarca.get(primeraMarca ?? '')?.length ?? 0, TAMANO_TANDA);
 
-const mensajeSinJs = encodeURIComponent(
-  'Hola, quiero hacer un pedido y necesito que un asesor me acompañe.',
-);
+/** Sin saludo: "Hola {nombre}, " lo pone el reparto de Televentas. */
+const mensajeSinJs = 'quiero hacer un pedido y necesito que me acompañes.';
 
 /**
  * JSON dentro de un `<script>`: hay que neutralizar `<` para que un texto no
@@ -702,9 +702,11 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
         class="font-semibold text-secondary-dark underline"
         href={ruta('/catalogo/')}>el catálogo de marcas</a
       > o{' '}
+      {/* Un <a> normal y no EnlaceTeleventas: sin JavaScript no hay reparto, y
+          el script de ese componente no correría dentro de <noscript>. */}
       <a
         class="font-semibold text-secondary-dark underline"
-        href={`${empresa.whatsappTeleventas}?text=${mensajeSinJs}`}
+        href={enlaceTeleventas(ASESORA_POR_DEFECTO, mensajeSinJs)}
         target="_blank"
         rel="noopener">escríbenos por WhatsApp</a
       > y un asesor te toma el pedido.
@@ -772,11 +774,8 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   <span data-falla>
     No se pudieron cargar el buscador ni los filtros. Puedes seguir viendo las referencias de abajo
     o{' '}
-    <a
-      class="font-semibold text-secondary-dark underline"
-      href={`${empresa.whatsappTeleventas}?text=${mensajeSinJs}`}
-      target="_blank"
-      rel="noopener">escribirnos por WhatsApp</a
+    <EnlaceTeleventas class="font-semibold text-secondary-dark underline" mensaje={mensajeSinJs}
+      >escribirnos por WhatsApp</EnlaceTeleventas
     >.
   </span>
 </div>

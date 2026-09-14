@@ -1,28 +1,30 @@
 ---
-import { empresa } from '../data/site';
 import Icono from './Icono.astro';
+import EnlaceTeleventas from './EnlaceTeleventas.astro';
 import { esActual } from '../lib/rutas';
+import { MENSAJE_PEDIDO } from '../lib/televentas';
 
 /**
  * En /pedido/ este botón no se muestra: ahí el mismo rincón lo ocupa el botón
  * "Ver mi pedido", y esa página ya lleva a WhatsApp por dos caminos (el envío
  * del pedido armado y el enlace para escribir directo sin lista).
+ *
+ * Va a Televentas y se reparte entre las asesoras (ver EnlaceTeleventas.astro).
  */
 const ocultar = esActual('/pedido/', Astro.url.pathname);
 ---
 
 {
   !ocultar && (
-    <a
+    <EnlaceTeleventas
       class="group fixed right-6 bottom-6 z-[150] flex h-14 w-14 items-center justify-center rounded-full
              bg-whatsapp text-white shadow-[0_8px_20px_rgba(0,0,0,.2)]
              transition-all duration-200 hover:brightness-95 focus-visible:brightness-95"
-      href={empresa.whatsappTeleventas}
-      target="_blank"
-      rel="noopener"
+      mensaje={MENSAJE_PEDIDO}
       aria-label="Escríbenos por WhatsApp"
+      data-whatsapp-flotante
     >
       <Icono nombre="whatsapp" class="h-7 w-7" />
-    </a>
+    </EnlaceTeleventas>
   )
 }

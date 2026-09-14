@@ -5,7 +5,8 @@ import PageHero from '../components/PageHero.astro';
 import MapaCobertura from '../components/MapaCobertura.astro';
 import FormularioMailto from '../components/FormularioMailto.astro';
 import Icono from '../components/Icono.astro';
-import { empresa } from '../data/site';
+import { empresa, televentas } from '../data/site';
+import { enlaceTeleventas, MENSAJE_PEDIDO } from '../lib/televentas';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
 // EDITAR AQUÍ: horario real de atención.
@@ -15,18 +16,10 @@ const horario = [
   { dia: 'Domingos y festivos', horas: 'Cerrado' },
 ];
 
-// Ojo con los dos primeros: son números DISTINTOS y es a propósito. El de
-// WhatsApp es la línea de Televentas, que es la que toma pedidos; el de
-// teléfono es la línea de la oficina. Salen de `empresa` (src/data/site.ts).
+// La tarjeta de Televentas va aparte, antes de estos dos, porque lleva a cada
+// asesora con sus botones (ver `televentas` en src/data/site.ts). El teléfono
+// de aquí es la línea de la OFICINA: son números distintos a propósito.
 const canales = [
-  {
-    icono: 'whatsapp',
-    titulo: 'WhatsApp Televentas',
-    valor: empresa.televentas,
-    href: empresa.whatsappTeleventas,
-    externo: true,
-    nota: 'La vía más rápida para pedidos y asesoría comercial.',
-  },
   {
     icono: 'phone',
     titulo: 'Teléfono',
@@ -60,6 +53,53 @@ const canales = [
   <section class="section">
     <div class="wrap">
       <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3" data-revelar-grupo>
+        {/* Televentas: una fila por asesora, cada una con su WhatsApp y su
+            llamada. Aquí el cliente elige a quién escribir, así que estos
+            enlaces NO se reparten; `data-asesora` deja guardada la elegida
+            para que el botón flotante y el pedido armado vayan a la misma
+            (ver src/lib/televentas.ts). */}
+        <div class="group glass-card p-8" data-tarjeta-televentas>
+          <span class="icono-chip mb-5 h-12 w-12">
+            <Icono nombre="whatsapp" class="h-6 w-6" interactivo={false} />
+          </span>
+          <h2 class="mb-2 text-lg">WhatsApp Televentas</h2>
+          <p class="mt-0 mb-4 text-[14.5px] text-muted">
+            La vía más rápida para pedidos y asesoría comercial.
+          </p>
+          <ul class="m-0 flex list-none flex-col gap-3 p-0">
+            {
+              televentas.map((asesora) => (
+                <li class="rounded-xl border border-line bg-fondo p-4">
+                  <p class="m-0 font-display text-[15px] font-semibold text-ink">{asesora.nombre}</p>
+                  <p class="m-0 text-[14.5px] text-muted">{asesora.telefono}</p>
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    <a
+                      class="btn btn-whatsapp px-3 py-1.5 text-[13px]"
+                      href={enlaceTeleventas(asesora, MENSAJE_PEDIDO)}
+                      target="_blank"
+                      rel="noopener"
+                      data-asesora={asesora.nombre}
+                      aria-label={`Escribir a ${asesora.nombre} por WhatsApp`}
+                    >
+                      <Icono nombre="whatsapp" class="h-4 w-4" interactivo={false} />
+                      WhatsApp
+                    </a>
+                    <a
+                      class="btn btn-secondary px-3 py-1.5 text-[13px]"
+                      href={`tel:${asesora.telefonoE164}`}
+                      data-asesora={asesora.nombre}
+                      aria-label={`Llamar a ${asesora.nombre}`}
+                    >
+                      <Icono nombre="phone" class="h-4 w-4" interactivo={false} />
+                      Llamar
+                    </a>
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
         {
           canales.map((canal) => (
             <div class="group glass-card p-8">
@@ -170,3 +210,9 @@ const canales = [
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  import { enlazarTeleventas } from '../lib/televentas';
+
+  enlazarTeleventas();
+</script>

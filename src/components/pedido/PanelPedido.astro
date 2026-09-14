@@ -26,10 +26,16 @@
  * No hay servidor: el pedido se entrega por WhatsApp con el texto ya escrito, y
  * "Copiar pedido" deja la misma lista en el portapapeles para pegarla donde
  * haga falta (un correo, otro chat).
+ *
+ * A QUIÉN LLEGA. A la asesora de Televentas de este navegador (ver
+ * src/lib/televentas.ts), saludada por su nombre. Tras el envío se ofrece la
+ * otra ("¿Prefieres a Sara?"): un cliente que ya trabaja con una de ellas
+ * puede elegirla, y la elección queda guardada para los siguientes pedidos.
  */
 import { municipios } from '../../data/municipios';
 import { PRECIOS_ACTUALIZADOS } from '../../data/precios';
-import { empresa } from '../../data/site';
+import { MENSAJE_PEDIDO } from '../../lib/televentas';
+import EnlaceTeleventas from '../EnlaceTeleventas.astro';
 import Icono from '../Icono.astro';
 
 /** Municipios cargados hoy, como sugerencia. El campo admite escribir otro. */
@@ -229,6 +235,28 @@ const NOTA_PRECIOS =
       >
       </p>
 
+      {/* Cambio de asesora. Aparece tras abrir WhatsApp con el pedido y lo
+          pinta el script: el botón ofrece a la otra asesora y, una vez
+          elegida, el enlace abre WhatsApp con el pedido para ella (la ventana
+          del primer envío ya se fue con la anterior). */}
+      <p
+        class="mt-2 mb-0 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[13px]"
+        data-cambio-asesora
+        hidden
+      >
+        <a
+          class="font-semibold text-secondary-dark underline"
+          href="#"
+          target="_blank"
+          rel="noopener"
+          data-enlace-pedido
+          hidden></a>
+        <button
+          type="button"
+          class="font-semibold text-muted underline transition-colors duration-200 hover:text-primary"
+          data-otra-asesora></button>
+      </p>
+
       <div class="mt-4 flex flex-col gap-2.5">
         <button type="submit" class="btn btn-whatsapp w-full">
           Abrir WhatsApp con mi pedido
@@ -242,11 +270,8 @@ const NOTA_PRECIOS =
 
     <p class="mt-4 mb-0 text-center text-[13px] text-muted">
       ¿Prefieres que te lo tomen por chat?
-      <a
-        class="font-semibold text-secondary-dark underline"
-        href={empresa.whatsappTeleventas}
-        target="_blank"
-        rel="noopener">Escríbenos sin pedido armado</a
+      <EnlaceTeleventas class="font-semibold text-secondary-dark underline" mensaje={MENSAJE_PEDIDO}
+        >Escríbenos sin pedido armado</EnlaceTeleventas
       >.
     </p>
   </div>
@@ -328,7 +353,6 @@ const NOTA_PRECIOS =
 <script>
   import {
     alCambiarPedido,
-    enlaceWhatsapp,
     fijarCantidad,
     guardarPedido,
     leerPedido,
@@ -350,6 +374,13 @@ const NOTA_PRECIOS =
   } from '../../lib/precios';
   import { CANTIDAD_MAXIMA } from '../../data/pedido';
   import { registrarEvento } from '../../lib/analitica';
+  import {
+    asesoraAsignada,
+    elegirAsesora,
+    enlaceWhatsappDe,
+    otraAsesora,
+    type Asesora,
+  } from '../../lib/televentas';
 
   const panel = document.querySelector<HTMLElement>('[data-panel]');
   const velo = document.querySelector<HTMLElement>('[data-velo]');
@@ -363,6 +394,9 @@ const NOTA_PRECIOS =
   const barra = document.querySelector<HTMLElement>('[data-barra-pedido]');
   const botonBarra = document.querySelector<HTMLElement>('[data-boton-barra]');
   const textoBarra = document.querySelector<HTMLElement>('[data-texto-barra]');
+  const cambio = document.querySelector<HTMLElement>('[data-cambio-asesora]');
+  const enlacePedido = document.querySelector<HTMLAnchorElement>('[data-enlace-pedido]');
+  const botonOtra = document.querySelector<HTMLButtonElement>('[data-otra-asesora]');
 
   if (
     panel &&
@@ -683,13 +717,53 @@ const NOTA_PRECIOS =
     });
 
     // --- Avisos -------------------------------------------------------------
+    /** Con texto vacío se borra el aviso y, con él, el cambio de asesora. */
     function avisar(texto: string, tono: 'ok' | 'error' = 'ok') {
       if (!aviso) return;
       aviso.textContent = texto;
       aviso.classList.toggle('hidden', texto === '');
       aviso.classList.toggle('text-ok', tono === 'ok');
       aviso.classList.toggle('text-accent-text', tono === 'error');
+      if (texto === '' && cambio) cambio.hidden = true;
     }
+
+    // --- Cambio de asesora --------------------------------------------------
+    /** URL del pedido tal como está AHORA, para esa asesora. */
+    const urlDelPedido = (asesora: Asesora) =>
+      enlaceWhatsappDe(asesora, mensajeParaUrl(pedido, asesora).texto);
+
+    /**
+     * Ofrece a la otra asesora debajo del aviso de envío. Con `conEnlace`
+     * muestra además el enlace para abrir WhatsApp con el pedido y esta
+     * asesora, que es lo que hace falta justo después de cambiarla.
+     */
+    const ofrecerCambio = (asesora: Asesora, conEnlace: boolean) => {
+      const otra = otraAsesora(asesora);
+      if (!cambio || !enlacePedido || !botonOtra || !otra) return;
+      enlacePedido.hidden = !conEnlace;
+      enlacePedido.textContent = `Abrir el WhatsApp de ${asesora.nombre} con mi pedido`;
+      enlacePedido.href = urlDelPedido(asesora);
+      botonOtra.textContent = `¿Prefieres a ${otra.nombre}?`;
+      cambio.hidden = false;
+    };
+
+    botonOtra?.addEventListener('click', () => {
+      const otra = otraAsesora(asesoraAsignada());
+      if (!otra) return;
+      // Guarda la elección y reescribe los demás enlaces de Televentas de la
+      // página ("Escríbenos directo", "sin pedido armado").
+      elegirAsesora(otra);
+      avisar(`Listo: ahora tu asesora es ${otra.nombre}.`, 'ok');
+      ofrecerCambio(otra, true);
+      enlacePedido?.focus();
+    });
+
+    // El pedido pudo cambiar desde que se pintó el enlace: se rehace al tocarlo.
+    const refrescarEnlacePedido = () => {
+      if (enlacePedido) enlacePedido.href = urlDelPedido(asesoraAsignada());
+    };
+    enlacePedido?.addEventListener('pointerdown', refrescarEnlacePedido);
+    enlacePedido?.addEventListener('click', refrescarEnlacePedido);
 
     /**
      * Teléfono colombiano: 10 dígitos.
@@ -743,6 +817,7 @@ const NOTA_PRECIOS =
     // --- Enviar y copiar ----------------------------------------------------
     formulario.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (cambio) cambio.hidden = true;
       if (!validar()) return;
 
       /* Solo el tamano del pedido: ni el negocio, ni el contacto, ni el
@@ -754,10 +829,12 @@ const NOTA_PRECIOS =
         ).size,
       });
 
-      const { texto, recortado, omitidas } = mensajeParaUrl(pedido);
+      // La asesora de este navegador; si todavía no tiene, se sortea aquí.
+      const asesora = asesoraAsignada();
+      const { texto, recortado, omitidas } = mensajeParaUrl(pedido, asesora);
       // La ventana se abre dentro del propio clic: si se esperara a que
       // terminara de copiarse el texto, el navegador la bloquearía.
-      window.open(enlaceWhatsapp(texto), '_blank', 'noopener');
+      window.open(enlaceWhatsappDe(asesora, texto), '_blank', 'noopener');
 
       /* El pedido NO se vacía al enviarlo: es normal que el cliente vuelva a
          ajustar cantidades y mande una corrección. Para eso está "Vaciar
@@ -770,9 +847,11 @@ const NOTA_PRECIOS =
               : `El pedido no cabía en un solo mensaje: se enviaron las primeras referencias. Usa "Copiar pedido" y pega el resto.`,
             'error',
           );
+          ofrecerCambio(asesora, false);
         });
       } else {
-        avisar('Abrimos WhatsApp con tu pedido listo para enviar.', 'ok');
+        avisar(`Abrimos el WhatsApp de ${asesora.nombre} con tu pedido listo para enviar.`, 'ok');
+        ofrecerCambio(asesora, false);
       }
     });
 

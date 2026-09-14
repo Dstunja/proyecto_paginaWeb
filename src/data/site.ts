@@ -31,25 +31,14 @@ export const empresa = {
   sigla: 'DST',
   descripcion:
     'Distribuidores líderes del departamento de Boyacá, Cundinamarca y Santander. Calidad y cumplimiento en cada entrega.',
+  /**
+   * Línea de la OFICINA: la del pie, los enlaces `tel:` generales y el
+   * `telephone` de los datos estructurados. Los pedidos no van aquí sino a las
+   * asesoras de `televentas`, más abajo.
+   */
   telefono: '310 623 2429',
   telefonoE164: '+573106232429',
   whatsapp: 'https://wa.me/573106232429',
-  /**
-   * Línea de TELEVENTAS. Es la que la empresa publica en su canal de WhatsApp
-   * para pedidos y atención comercial, y va aparte del teléfono de arriba a
-   * propósito: `telefono` es la línea de la oficina —la que sale en el pie, en
-   * los enlaces `tel:` y en el `telephone` de los datos estructurados— y esta
-   * es la que toma pedidos.
-   *
-   * QUÉ USA CADA UNA. Todo lo que sea "haz tu pedido" o "habla con un asesor"
-   * apunta a Televentas: el botón flotante, los CTA de la portada, el botón de
-   * catálogo, el armador de pedido (src/data/pedido.ts) y la tarjeta de
-   * WhatsApp de Contáctanos. Los canales de contacto general y de PQRS siguen
-   * con `whatsapp`, porque ahí no se está pidiendo mercancía.
-   */
-  televentas: '311 237 1868',
-  televentasE164: '+573112371868',
-  whatsappTeleventas: 'https://wa.me/573112371868',
   email: 'informacioncomercialdst@gmail.com',
   direccion: 'Cra 2 Este #58‑79',
   ciudad: 'Tunja',
@@ -70,6 +59,41 @@ export const empresa = {
    */
   escribirResenaUrl: `https://search.google.com/local/writereview?placeid=${googlePlaceId}`,
 } as const;
+
+/**
+ * Asesoras de TELEVENTAS: las que toman pedidos y dan atención comercial.
+ *
+ * QUÉ USA ESTA LISTA. Todo lo que sea "haz tu pedido" o "habla con un asesor":
+ * el botón flotante, los CTA de la portada, "Pedir catálogo", el armador de
+ * pedido y la tarjeta de Televentas de Contáctanos. Los canales de contacto
+ * general, PQRS y empleos siguen con `empresa.whatsapp`, porque ahí no se
+ * está pidiendo mercancía.
+ *
+ * CÓMO SE REPARTEN. La primera vez que un cliente toca uno de esos enlaces se
+ * le sortea una asesora, y su navegador la recuerda: desde ahí todos los
+ * enlaces y el pedido armado van a la misma persona. El sorteo, lo guardado y
+ * el saludo por nombre viven en src/lib/televentas.ts.
+ *
+ * EDITAR AQUÍ al cambiar de asesoras. `nombre` es también la clave con la que
+ * el navegador recuerda la asignación: si cambia el número de una asesora,
+ * sus clientes la siguen teniendo; si una sale de la lista, a sus clientes se
+ * les sortea otra. `whatsapp` debe llevar los mismos dígitos que
+ * `telefonoE164` (scripts/verificar-pedido.mjs lo comprueba).
+ */
+export const televentas = [
+  {
+    nombre: 'Gabriela',
+    telefono: '310 621 8289',
+    telefonoE164: '+573106218289',
+    whatsapp: 'https://wa.me/573106218289',
+  },
+  {
+    nombre: 'Sara',
+    telefono: '350 746 1127',
+    telefonoE164: '+573507461127',
+    whatsapp: 'https://wa.me/573507461127',
+  },
+] as const;
 
 /**
  * Redes sociales de la empresa, en el orden en que salen en el pie.
