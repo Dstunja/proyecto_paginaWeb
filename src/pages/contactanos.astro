@@ -15,12 +15,15 @@ const horario = [
   { dia: 'Domingos y festivos', horas: 'Cerrado' },
 ];
 
+// Ojo con los dos primeros: son números DISTINTOS y es a propósito. El de
+// WhatsApp es la línea de Televentas, que es la que toma pedidos; el de
+// teléfono es la línea de la oficina. Salen de `empresa` (src/data/site.ts).
 const canales = [
   {
     icono: 'whatsapp',
-    titulo: 'WhatsApp',
-    valor: empresa.telefono,
-    href: empresa.whatsapp,
+    titulo: 'WhatsApp Televentas',
+    valor: empresa.televentas,
+    href: empresa.whatsappTeleventas,
     externo: true,
     nota: 'La vía más rápida para pedidos y asesoría comercial.',
   },

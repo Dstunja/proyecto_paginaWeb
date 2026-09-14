@@ -27,6 +27,22 @@ export const empresa = {
   telefono: '310 623 2429',
   telefonoE164: '+573106232429',
   whatsapp: 'https://wa.me/573106232429',
+  /**
+   * Línea de TELEVENTAS. Es la que la empresa publica en su canal de WhatsApp
+   * para pedidos y atención comercial, y va aparte del teléfono de arriba a
+   * propósito: `telefono` es la línea de la oficina —la que sale en el pie, en
+   * los enlaces `tel:` y en el `telephone` de los datos estructurados— y esta
+   * es la que toma pedidos.
+   *
+   * QUÉ USA CADA UNA. Todo lo que sea "haz tu pedido" o "habla con un asesor"
+   * apunta a Televentas: el botón flotante, los CTA de la portada, el botón de
+   * catálogo, el armador de pedido (src/data/pedido.ts) y la tarjeta de
+   * WhatsApp de Contáctanos. Los canales de contacto general y de PQRS siguen
+   * con `whatsapp`, porque ahí no se está pidiendo mercancía.
+   */
+  televentas: '311 237 1868',
+  televentasE164: '+573112371868',
+  whatsappTeleventas: 'https://wa.me/573112371868',
   email: 'informacioncomercialdst@gmail.com',
   direccion: 'Cra 2 Este #58‑79',
   ciudad: 'Tunja',

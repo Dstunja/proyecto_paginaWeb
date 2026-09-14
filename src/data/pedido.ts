@@ -19,8 +19,13 @@ import { empresa } from './site';
  */
 export const CLAVE_PEDIDO = 'dst:pedido:v1';
 
-/** Número de WhatsApp del asesor, en el formato que espera wa.me (sin +). */
-export const WHATSAPP_NUMERO = empresa.telefonoE164.replace(/\D/g, '');
+/**
+ * Número de WhatsApp del asesor, en el formato que espera wa.me (sin +).
+ *
+ * Es la línea de TELEVENTAS, no la de la oficina: es la que la empresa publica
+ * para pedidos, así que el pedido armado tiene que llegar ahí.
+ */
+export const WHATSAPP_NUMERO = empresa.televentasE164.replace(/\D/g, '');
 
 /**
  * Tope de caracteres del texto YA CODIFICADO que se manda en `?text=`.
