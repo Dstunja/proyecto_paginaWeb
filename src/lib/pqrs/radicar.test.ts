@@ -388,44 +388,61 @@ describe('archivos que hay que rechazar', () => {
 });
 
 describe('el tipo de solicitud manda', () => {
-  it('con Petición ignora los adjuntos, radica igual y los borra', async () => {
-    const adjunto = sembrar('factura.pdf', PDF);
+  /*
+   * LOS CINCO GUARDAN ADJUNTOS. Hasta hace poco solo lo hacían Queja y Reclamo:
+   * los otros tres radicaban igual, pero sus soportes se descartaban y se
+   * borraban del almacenamiento. Estas pruebas decían justamente eso, y hoy
+   * comprueban lo contrario, que es lo que hay que garantizar: el archivo llega
+   * a la carpeta del radicado y queda anunciado en el registro.
+   */
+  it.each(['Petición', 'Queja', 'Reclamo', 'Sugerencia', 'Felicitación'])(
+    'con %s guarda el adjunto y lo mueve a la carpeta del radicado',
+    async (tipo) => {
+      const adjunto = sembrar('factura.pdf', PDF);
+      const respuesta = await radicar(
+        peticion(solicitudBase({ tipo, adjuntos: [adjunto] })),
+        ENTORNO,
+      );
+
+      expect(respuesta.estado).toBe(201);
+      if (!respuesta.cuerpo.ok) throw new Error(respuesta.cuerpo.errores.join(' '));
+
+      const registro = registroDe(respuesta.cuerpo.radicado);
+      expect(registro.tipo).toBe(tipo);
+      expect(registro.adjuntos).toHaveLength(1);
+      expect(registro.adjuntos[0].nombreOriginal).toBe('factura.pdf');
+      expect(archivosDe(respuesta.cuerpo.radicado)).toHaveLength(1);
+      // El pendiente ya no está donde se subió: se movió, no se copió.
+      expect(almacenFalso.has(adjunto.pathname)).toBe(false);
+    },
+  );
+
+  it('el tope de 3 archivos vale para todos los tipos, no solo para Queja', async () => {
+    const adjuntos = [
+      sembrar('uno.pdf', PDF),
+      sembrar('dos.png', PNG),
+      sembrar('tres.jpg', JPEG),
+      sembrar('cuatro.pdf', PDF),
+    ];
     const respuesta = await radicar(
-      peticion(solicitudBase({ tipo: 'Petición', adjuntos: [adjunto] })),
+      peticion(solicitudBase({ tipo: 'Felicitación', adjuntos })),
       ENTORNO,
     );
 
-    expect(respuesta.estado).toBe(201);
-    if (!respuesta.cuerpo.ok) throw new Error(respuesta.cuerpo.errores.join(' '));
-
-    const registro = registroDe(respuesta.cuerpo.radicado);
-    expect(registro.adjuntos).toEqual([]);
-    expect(registro.tipo).toBe('Petición');
-    // El pendiente se borró en vez de quedarse colgado en el almacenamiento.
-    expect(almacenFalso.has(adjunto.pathname)).toBe(false);
-    expect(archivosDe(respuesta.cuerpo.radicado)).toHaveLength(0);
+    expect(respuesta.estado).toBe(400);
+    if (respuesta.cuerpo.ok) throw new Error('no debería haber radicado');
+    expect(respuesta.cuerpo.errores.join(' ')).toMatch(/3 archivos/);
   });
 
-  it.each(['Sugerencia', 'Felicitación'])('con %s tampoco guarda adjuntos', async (tipo) => {
-    const adjunto = sembrar('foto.png', PNG);
-    const respuesta = await radicar(peticion(solicitudBase({ tipo, adjuntos: [adjunto] })), ENTORNO);
+  it('un tipo sin adjuntos radica igual, con la lista vacía', async () => {
+    const respuesta = await radicar(
+      peticion(solicitudBase({ tipo: 'Sugerencia', adjuntos: [] })),
+      ENTORNO,
+    );
 
     expect(respuesta.estado).toBe(201);
     if (!respuesta.cuerpo.ok) throw new Error('debería haber radicado');
     expect(registroDe(respuesta.cuerpo.radicado).adjuntos).toEqual([]);
-    expect(almacenFalso.has(adjunto.pathname)).toBe(false);
-  });
-
-  it('con Reclamo sí guarda el adjunto', async () => {
-    const adjunto = sembrar('foto.png', PNG);
-    const respuesta = await radicar(
-      peticion(solicitudBase({ tipo: 'Reclamo', adjuntos: [adjunto] })),
-      ENTORNO,
-    );
-
-    expect(respuesta.estado).toBe(201);
-    if (!respuesta.cuerpo.ok) throw new Error('debería haber radicado');
-    expect(registroDe(respuesta.cuerpo.radicado).adjuntos).toHaveLength(1);
   });
 
   it('rechaza un tipo que no existe', async () => {

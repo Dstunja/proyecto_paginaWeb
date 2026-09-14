@@ -10,16 +10,17 @@
  *      y el formulario aparece sin recargar y con el foco en el primer campo.
  *
  * B) EL CAMPO DE SOPORTE, que no toca la red:
- *   1. En la categoría comercial solo existe para Queja y Reclamo. Con
- *      Petición, Sugerencia o Felicitación está oculto y el input deshabilitado.
- *   2. Al cambiar a un tipo sin soporte se limpia lo seleccionado.
+ *   1. En la categoría comercial existe para LOS CINCO TIPOS, siempre opcional.
+ *      Lo que lo hace desaparecer es cambiar de categoría, no de tipo.
+ *   2. Al cambiar de tipo se conserva lo ya seleccionado: no hay motivo para
+ *      obligar a volver a elegir los archivos.
  *   3. Un archivo válido de cada formato se acepta y se lista con su tamaño.
  *   4. Se rechazan el formato no permitido, la doble extensión, el contenido
  *      que no corresponde a la extensión y el exceso de peso.
  *   5. No se pueden adjuntar más de 3 archivos.
  *
- * C) LA CATEGORÍA ADMINISTRATIVA, que no toca la red tampoco: sale por
- *    `mailto:` sin adjuntos, sin radicado y sin llamar a ninguna función.
+ * C) LA CATEGORÍA ADMINISTRATIVA, que no radica: enseña el bloque de contacto y
+ *    esconde el paso 2 y el formulario entero. Se prueba aparte, en G).
  *
  * D) LA RADICACIÓN de la categoría comercial, interceptando las llamadas con
  *    `page.route()`:
@@ -399,7 +400,8 @@ async function instalarDobles(pagina, plan) {
  *
  * Se localiza por el `value` del radio que lleva dentro, no por su texto: el
  * texto de la tarjeta es de marketing y cambia, mientras que el `value` es lo
- * que viaja en el formulario y no puede cambiar sin romper `TIPOS_CON_SOPORTE`.
+ * que viaja en el formulario y lo compara `TIPOS_PQRS` en
+ * src/lib/pqrs/categorias.ts.
  */
 const tarjeta = (pagina, grupo, valor) =>
   pagina.locator(`label:has(input[name="${grupo}-opcion"][value="${valor}"])`);
@@ -542,29 +544,33 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
     resumen.trim(),
   );
 
-  // ---- 1. Solo para Queja y Reclamo ---------------------------------------
-  await elegirTipo('Petición');
-  comprobar(
-    `${etiqueta}: con "Petición" el campo de soporte no se ve`,
-    !(await bloque.isVisible()),
-  );
-  comprobar(`${etiqueta}: con "Petición" el input está deshabilitado`, await entrada.isDisabled());
-
-  for (const sinSoporte of ['Sugerencia', 'Felicitación']) {
-    await elegirTipo(sinSoporte);
+  // ---- 1. En los CINCO tipos de la comercial -------------------------------
+  // Antes el campo solo salía con Queja y Reclamo; con los otros tres estaba
+  // oculto y el input deshabilitado. Estas comprobaciones decían eso y ahora
+  // dicen lo contrario, que es el encargo: el soporte lo decide la categoría.
+  for (const tipo of ['Petición', 'Queja', 'Reclamo', 'Sugerencia', 'Felicitación']) {
+    await elegirTipo(tipo);
     comprobar(
-      `${etiqueta}: con "${sinSoporte}" el campo sigue oculto y deshabilitado`,
-      !(await bloque.isVisible()) && (await entrada.isDisabled()),
-    );
-  }
-
-  for (const conSoporte of ['Queja', 'Reclamo']) {
-    await elegirTipo(conSoporte);
-    comprobar(
-      `${etiqueta}: con "${conSoporte}" el campo aparece y queda habilitado`,
+      `${etiqueta}: con "${tipo}" el campo de soporte aparece y queda habilitado`,
       (await bloque.isVisible()) && !(await entrada.isDisabled()),
     );
   }
+
+  // Opcional quiere decir opcional: ni el bloque ni el input lo marcan como
+  // obligatorio, así que se puede radicar sin adjuntar nada.
+  comprobar(
+    `${etiqueta}: la etiqueta dice "Soportes o evidencias (opcional)"`,
+    ((await pagina.locator('[data-adjuntos] label').first().innerText()) ?? '')
+      .replace(/\s+/g, ' ')
+      .trim() === 'Soportes o evidencias (opcional)',
+    ((await pagina.locator('[data-adjuntos] label').first().innerText()) ?? '')
+      .replace(/\s+/g, ' ')
+      .trim(),
+  );
+  comprobar(
+    `${etiqueta}: el input de soporte no es obligatorio`,
+    !(await entrada.evaluate((e) => e.required)),
+  );
 
   // ---- Ayuda y accept ------------------------------------------------------
   const ayuda = (await pagina.locator('[data-adjuntos] [data-ayuda]').textContent()) ?? '';
@@ -654,19 +660,35 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
     ((await error.textContent()) ?? '').trim(),
   );
 
-  // ---- 2. Cambio de tipo ---------------------------------------------------
+  // ---- 2. Cambio de tipo: lo adjuntado se conserva -------------------------
+  // Con la regla vieja, pasar a "Petición" escondía el campo y tiraba los
+  // archivos. Ahora los cinco llevan soporte, así que cambiar de idea sobre el
+  // tipo no puede costarle a nadie volver a buscar sus tres archivos.
+  const antesDelCambio = await lista.locator('li').count();
   await elegirTipo('Petición');
   comprobar(
-    `${etiqueta}: al pasar a "Petición" el campo se oculta y se vacía`,
-    !(await bloque.isVisible()) &&
-      (await entrada.isDisabled()) &&
-      (await entrada.evaluate((e) => e.files.length)) === 0,
+    `${etiqueta}: al pasar a "Petición" el campo sigue visible y conserva los archivos`,
+    (await bloque.isVisible()) &&
+      !(await entrada.isDisabled()) &&
+      (await lista.locator('li').count()) === antesDelCambio &&
+      (await entrada.evaluate((e) => e.files.length)) === antesDelCambio,
+    `${antesDelCambio} archivos`,
   );
 
   await elegirTipo('Queja');
   comprobar(
-    `${etiqueta}: al volver a "Queja" la lista aparece vacía`,
-    (await bloque.isVisible()) && (await lista.locator('li').count()) === 0,
+    `${etiqueta}: al volver a "Queja" siguen estando`,
+    (await bloque.isVisible()) && (await lista.locator('li').count()) === antesDelCambio,
+  );
+
+  // Se vacía a mano para que lo que sigue arranque de cero.
+  for (let i = antesDelCambio; i > 0; i -= 1) {
+    await lista.locator('[data-quitar]').first().click();
+    await pagina.waitForTimeout(120);
+  }
+  comprobar(
+    `${etiqueta}: quitándolos uno a uno la lista queda vacía`,
+    (await lista.locator('li').count()) === 0,
   );
 
   // ---- C) Al pasar a "Administrativa" desaparece el formulario entero -------

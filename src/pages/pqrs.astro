@@ -20,7 +20,7 @@ import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
  *      Estos asuntos los atiende una persona, no un radicador.
  *   COMERCIAL -> sigue el camino de siempre: PASO 2 (Petición, Queja, Reclamo,
  *      Sugerencia, Felicitación) y el formulario de radicación, que devuelve un
- *      número y admite soportes en Queja y Reclamo.
+ *      número y admite soportes en los cinco tipos.
  *
  * El detalle de las dos categorías está en src/lib/pqrs/categorias.ts.
  *
@@ -290,7 +290,7 @@ const notas = Object.fromEntries(
               placeholder="Cuéntanos qué pasó: fecha, lugar, producto o factura relacionada."></textarea>
           </div>
 
-          <!-- Solo en la categoría comercial, y solo para Queja y Reclamo. El
+          <!-- Solo en la categoría comercial, y ahí en los cinco tipos. El
                componente se engancha a los dos campos ocultos por su id. -->
           <CampoAdjuntos controlador="tipo-pqrs" categoria="categoria-pqrs" />
 

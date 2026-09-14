@@ -2,13 +2,16 @@
 /**
  * Archivos de soporte de una PQRS.
  *
- * El campo SOLO existe cuando lo piden LAS DOS COSAS a la vez: la categoría
- * (solo la comercial admite soportes) y el tipo (hoy Queja y Reclamo, ver
- * `TIPOS_CON_SOPORTE` en src/lib/adjuntos.ts). La regla combinada es
- * `admiteSoporte` en src/lib/pqrs/categorias.ts, y por eso una queja
- * ADMINISTRATIVA no lleva adjuntos aunque "Queja" sí esté en la lista de tipos
- * con soporte: esa categoría sale por `mailto:`, y un `mailto:` no puede
- * adjuntar archivos.
+ * QUIÉN DECIDE SI EL CAMPO EXISTE. La CATEGORÍA, y solo ella: en la comercial
+ * lo llevan los cinco tipos por igual, y la administrativa no lo lleva nunca
+ * —de hecho ni siquiera enseña este formulario—. La regla es `admiteSoporte`
+ * en src/lib/pqrs/categorias.ts.
+ *
+ * Hubo una segunda condición: el tipo tenía que estar en una lista de "tipos
+ * con soporte" que eran Queja y Reclamo. Se quitó porque dejaba fuera casos
+ * reales: una Petición en la que hay que adjuntar el documento que se solicita,
+ * o una Felicitación con la foto de lo que salió bien. El campo sigue siendo
+ * OPCIONAL en los cinco.
  *
  * Se controla desde los campos cuyos id se pasan en `controlador` y
  * `categoria`. Da igual que sean un `<select>` o un `<input type="hidden">`
@@ -22,8 +25,9 @@
  * no llega a ejecutarse, el campo no aparece a medias ni viaja vacío.
  *
  * Las reglas (formatos, peso, doble extensión, saneado del nombre) no viven
- * aquí sino en src/lib/adjuntos.ts, para poder reutilizarlas tal cual el día que
- * exista un endpoint de verdad. Ver docs/PQRS-ADJUNTOS.md.
+ * aquí sino en src/lib/adjuntos.ts, y las vuelve a aplicar el servidor sobre los
+ * bytes ya subidos: lo que se valida en el navegador se salta con las DevTools
+ * abiertas. Ver docs/PQRS-ADJUNTOS.md.
  */
 import {
   ACEPTA,
@@ -33,7 +37,12 @@ import {
 } from '../lib/adjuntos';
 
 interface Props {
-  /** id del campo con el TIPO de solicitud (Petición, Queja…). */
+  /**
+   * id del campo con el TIPO de solicitud (Petición, Queja…). Ya no decide si
+   * hay soporte —eso lo hace la categoría—, pero sigue haciendo falta para
+   * saber que YA SE ELIGIÓ uno: sin él el campo asomaría nada más pulsar
+   * "Comercial", antes del paso 2.
+   */
   controlador: string;
   /** id del campo con la CATEGORÍA (administrativa, comercial). */
   categoria?: string;
@@ -66,13 +75,17 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
   data-max-mb={String(maxMb)}
 >
   <label class="field-label" for={id}>
-    Archivos de soporte{' '}
+    Soportes o evidencias{' '}
     <span class="font-normal text-muted">(opcional)</span>
   </label>
 
+  {/*
+    El texto no nombra ningún tipo de solicitud: el campo sale en los cinco, y
+    hablar solo de "lo ocurrido" sonaba a queja en una Felicitación.
+  */}
   <p class="mb-3 text-[14px] text-muted">
-    Si tienes factura, foto del producto o cualquier evidencia de lo ocurrido, adjúntala:
-    nos ayuda a resolver más rápido. Puedes subir hasta {maxArchivos} archivos.
+    Si tienes una factura, una foto o cualquier documento que nos ayude a atender tu solicitud,
+    adjúntalo. Puedes subir hasta {maxArchivos} archivos.
   </p>
 
   <input
@@ -260,7 +273,7 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
       avisar(problemas);
     });
 
-    // --- Visibilidad según el tipo de solicitud -----------------------------
+    // --- Visibilidad según la categoría -------------------------------------
 
     function sincronizarVisibilidad() {
       if (!entrada) return;
@@ -269,8 +282,8 @@ const ayuda = `Formatos permitidos: ${FORMATOS_LEGIBLES}. Máximo ${maxMb} MB.`;
       const clave = selectorCategoria ? selectorCategoria.value : 'comercial';
       const visible = admiteSoporte(clave, selector?.value);
       bloque.classList.toggle('hidden', !visible);
-      // Deshabilitado = fuera del FormData. Es lo que garantiza que para
-      // Petición, Sugerencia o Felicitación el adjunto ni siquiera se procese.
+      // Deshabilitado = fuera del FormData. Es lo que garantiza que en la
+      // categoría administrativa el adjunto ni siquiera se procese.
       entrada.disabled = !visible;
       if (!visible) limpiar();
     }

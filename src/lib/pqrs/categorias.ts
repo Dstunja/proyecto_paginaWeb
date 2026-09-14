@@ -17,10 +17,9 @@
  *
  * POR QUÉ LA CATEGORÍA VA ANTES QUE EL TIPO, Y NO EN SU LUGAR. El tipo
  * ("Petición", "Queja"…) solo tiene sentido dentro de la comercial, que es la
- * única que radica. Sus `value` los comparan `TIPOS_CON_SOPORTE` en
- * src/lib/adjuntos.ts, el asunto del correo y el campo `tipo` del registro de la
- * radicación; sustituirlos por las categorías habría roto las tres cosas a la
- * vez.
+ * única que radica. Sus `value` los comparan `TIPOS_PQRS` de aquí abajo, el
+ * asunto del correo y el campo `tipo` del registro de la radicación;
+ * sustituirlos por las categorías habría roto las tres cosas a la vez.
  *
  * ESTE ARCHIVO NO LEE EL ENTORNO NI IMPORTA DATOS DEL SITIO, igual que
  * src/lib/adjuntos.ts, así que el mismo módulo sirve en el navegador y en una
@@ -36,9 +35,39 @@
  * eliminó al pasar el envío administrativo al servidor, porque dos variables
  * apuntando al mismo buzón es la forma de que un día dejen de coincidir.
  */
-import { requiereSoporte } from '../adjuntos';
+import { normalizar } from '../adjuntos';
 
 export type ClaveCategoria = 'administrativa' | 'comercial';
+
+/**
+ * Los cinco tipos que ofrece el formulario, normalizados (sin tildes, en
+ * minúsculas).
+ *
+ * VIVE AQUÍ Y NO EN solicitud.ts porque este módulo no importa datos del sitio
+ * ni lee el entorno, así que lo pueden usar por igual el navegador y cualquiera
+ * de las funciones. `solicitud.ts`, que sería el otro sitio natural, arrastra
+ * los 87 municipios y construye su índice al cargarse: si /api/pqrs/token
+ * importara la lista de allí, cargaría ese índice en cada arranque en frío sin
+ * necesitarlo para nada.
+ *
+ * Se comparan NORMALIZADOS contra el `value` de las tarjetas de
+ * src/pages/pqrs.astro, que son los nombres con tilde. Así la comprobación no
+ * se rompe si algún día se cambia la capitalización de esos `value`.
+ */
+export const TIPOS_PQRS = [
+  'peticion',
+  'queja',
+  'reclamo',
+  'sugerencia',
+  'felicitacion',
+] as const;
+
+/** ¿Es uno de los cinco tipos del formulario? */
+export function esTipoValido(tipo: string | null | undefined): boolean {
+  if (!tipo) return false;
+  const clave = normalizar(tipo);
+  return TIPOS_PQRS.some((t) => t === clave);
+}
 
 /** Qué se le ofrece a quien elige la categoría. */
 export type Via = 'contacto' | 'radicacion';
@@ -55,8 +84,9 @@ export interface Categoria {
   nota: string;
   via: Via;
   /**
-   * Si la categoría admite archivos de soporte. Es una condición NECESARIA pero
-   * no suficiente: el tipo también tiene que pedirlos (ver `admiteSoporte`).
+   * Si la categoría admite archivos de soporte. Es lo ÚNICO que lo decide:
+   * dentro de la comercial lo llevan los cinco tipos por igual (ver
+   * `admiteSoporte`).
    */
   admiteSoporte: boolean;
 }
@@ -84,7 +114,7 @@ export const CATEGORIAS: readonly Categoria[] = [
       'Queda radicada con número y fecha, y puedes adjuntar soportes.',
     nota:
       'Queda radicada con un número de seguimiento y una fecha, que también te llegan ' +
-      'por correo. En quejas y reclamos puedes adjuntar evidencia.',
+      'por correo. Si tienes soportes o evidencias, puedes adjuntarlos.',
     via: 'radicacion',
     admiteSoporte: true,
   },
@@ -100,15 +130,21 @@ export function categoriaDe(clave: string | null | undefined): Categoria | undef
 /**
  * ¿Este envío admite archivos de soporte?
  *
- * Hacen falta las dos condiciones: una categoría que los acepte (solo la
- * comercial) y un tipo que los pida (hoy Queja y Reclamo). Una queja
- * administrativa NO lleva adjuntos, aunque "Queja" esté en `TIPOS_CON_SOPORTE`.
+ * Lo decide la CATEGORÍA, y solo la categoría: dentro de la comercial los cinco
+ * tipos llevan soporte por igual. Antes había una segunda condición —el tipo
+ * tenía que estar en una lista de "tipos con soporte", que eran Queja y
+ * Reclamo—, y se quitó: una Petición puede necesitar adjuntar el documento que
+ * se solicita, y una Felicitación, la foto de lo que salió bien.
+ *
+ * El `tipo` sigue haciendo falta, pero solo para saber que YA SE ELIGIÓ uno: sin
+ * esto el campo asomaría en cuanto se pulsa "Comercial", antes del paso 2.
+ * La categoría administrativa nunca lleva adjuntos, elija el tipo que elija.
  */
 export function admiteSoporte(
   clave: string | null | undefined,
   tipo: string | null | undefined,
 ): boolean {
-  return (categoriaDe(clave)?.admiteSoporte ?? false) && requiereSoporte(tipo);
+  return (categoriaDe(clave)?.admiteSoporte ?? false) && esTipoValido(tipo);
 }
 
 /**

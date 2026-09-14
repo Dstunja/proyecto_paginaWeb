@@ -22,7 +22,8 @@
  * bueno, porque todo lo demás ya se ha decidido antes.
  */
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
-import { EXTENSION_A_MIME, extensionDe, requiereSoporte } from '../adjuntos';
+import { EXTENSION_A_MIME, extensionDe } from '../adjuntos';
+import { esTipoValido } from './categorias';
 import {
   MIME_PERMITIDOS,
   esSessionIdValido,
@@ -129,9 +130,15 @@ export async function emitirToken(peticion: Request, env: Entorno): Promise<Resp
           throw new ErrorConCodigo('ruta-ajena');
         }
 
-        // Solo Queja y Reclamo llevan soporte. Sin esta línea alguien podría
-        // usar el store como alojamiento gratuito radicando "Felicitaciones".
-        if (!requiereSoporte(tipo)) throw new ErrorConCodigo('tipo-sin-soporte');
+        /*
+         * El tipo tiene que ser uno de los cinco del formulario. Antes esta
+         * línea comprobaba algo más estrecho —que fuera Queja o Reclamo, los
+         * únicos que entonces llevaban soporte—, pero el papel que de verdad
+         * cumple es otro y sigue haciendo falta: sin ella, cualquiera puede
+         * pedir tokens de subida mandando un `tipo` inventado o vacío y usar el
+         * store como alojamiento gratuito.
+         */
+        if (!esTipoValido(tipo)) throw new ErrorConCodigo('tipo-invalido');
 
         // La extensión de la ruta tiene que ser una de las aceptadas. Filtra
         // pero no demuestra nada —el nombre lo pone quien sube—: la comprobación

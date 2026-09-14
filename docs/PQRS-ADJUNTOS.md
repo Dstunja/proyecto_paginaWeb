@@ -19,7 +19,7 @@ y esconde cada tarjeta se declara en `src/pages/pqrs.astro`.
 | Qué enseña al elegirla | Bloque de contacto (`ContactoAdministrativo.astro`) | Paso 2 y formulario de radicación |
 | Cómo sale | `POST /api/pqrs/administrativa` (formulario corto, opcional) | `POST /api/pqrs` |
 | Destino | `PQRS_DESTINO` | `PQRS_DESTINO` |
-| Archivos de soporte | **No** | Sí, en Queja y Reclamo |
+| Archivos de soporte | **No** | Sí, en los cinco tipos (opcional) |
 | Antirrobots (Turnstile) | Sí | Sí |
 | Límite de tasa por IP | 5 cada 10 min | 5 cada 10 min |
 | Número de radicado | **No** | Sí |
@@ -66,7 +66,7 @@ correos. Ya no depende del gestor de correo de quien lo diligencia.
 | Formulario corto administrativo por Resend, con Turnstile | Hecho |
 | Elección por tarjetas, sin `<select>` ni botón de continuar | Hecho |
 | Municipio cerrado a los 87 de cobertura, validado también en el servidor | Hecho |
-| Campo de soporte solo en Comercial + Queja o Reclamo | Hecho |
+| Campo de soporte en los cinco tipos de la comercial, siempre opcional | Hecho |
 | Hasta 3 archivos, 5 MB cada uno | Hecho |
 | Validación por contenido real (bytes mágicos), en cliente **y** servidor | Hecho |
 | Subida de los archivos a Vercel Blob privado | Hecho |
@@ -120,8 +120,10 @@ Firma el permiso de subida (`handleUpload` de `@vercel/blob/client`). En
 
 1. `clientPayload` con `sessionId` (UUID v4), `tipo` y `turnstileToken`.
 2. Turnstile válido.
-3. Que el tipo normalizado sea `queja` o `reclamo`. Sin esto, cualquiera podría
-   usar el store como alojamiento gratuito radicando «Felicitaciones».
+3. Que el tipo normalizado sea **uno de los cinco** del formulario
+   (`TIPOS_PQRS`). No es para decidir si lleva soporte —lo llevan todos—, sino
+   para que nadie pida tokens de subida con un tipo inventado y use el store
+   como alojamiento gratuito. Si no lo es: `422 tipo-invalido`.
 4. Que la ruta pedida cuelgue de `pqrs/pendientes/{sessionId}/`.
 
 Y devuelve un token con `allowedContentTypes` (los cinco MIME permitidos),
@@ -148,7 +150,7 @@ Cuerpo JSON:
 | `autorizacion` | booleano | obligatorio `true` (Ley 1581 de 2012) |
 | `sessionId` | UUID v4 | el de las subidas |
 | `turnstileToken` | texto | token nuevo, distinto del de las subidas |
-| `adjuntos` | lista 0..3 | `{ url, pathname, nombreOriginal, tamano }` |
+| `adjuntos` | lista 0..3 | `{ url, pathname, nombreOriginal, tamano }`. Opcional en los cinco tipos |
 
 Respuestas:
 
@@ -293,6 +295,40 @@ eligió, manda su elección y no el GPS.
 
 El municipio elegido se guarda en `sessionStorage`, así que sobrevive a cambiar
 de categoría o de tipo y también a recargar la página.
+
+## Quién decide si hay campo de soporte
+
+**La categoría, y solo la categoría.** Dentro de la comercial lo llevan los
+cinco tipos —Petición, Queja, Reclamo, Sugerencia y Felicitación— y siempre es
+**opcional**. La administrativa no lo lleva nunca, porque ni siquiera enseña el
+formulario de radicación.
+
+Hubo una segunda condición: el tipo tenía que estar en una lista
+`TIPOS_CON_SOPORTE` que eran Queja y Reclamo. Se eliminó porque dejaba fuera
+casos reales —una Petición en la que hay que adjuntar el documento que se
+solicita, una Felicitación con la foto de lo que salió bien— y con ella se
+fueron la lista y su `requiereSoporte()` de `src/lib/adjuntos.ts`. La regla que
+queda es `admiteSoporte()` en `src/lib/pqrs/categorias.ts`.
+
+Eso tuvo tres consecuencias que conviene conocer:
+
+- **`/api/pqrs/token` sigue mirando el tipo**, pero para otra cosa. Antes
+  rechazaba lo que no fuera Queja o Reclamo; ahora comprueba que sea uno de los
+  cinco del formulario (`esTipoValido`, contra `TIPOS_PQRS`). El papel que de
+  verdad cumple es impedir que alguien pida tokens de subida con un tipo
+  inventado y use el Blob store como alojamiento gratuito, y ese sigue en pie.
+- **El código de error `tipo-sin-soporte` pasó a llamarse `tipo-invalido`**
+  (sigue en 422), con el mensaje «El tipo de solicitud no es válido. Recarga la
+  página e inténtalo de nuevo.». El nombre viejo habría quedado mintiendo en los
+  registros de Vercel: ningún tipo se queda ya sin soporte.
+- **`/api/pqrs` dejó de descartar adjuntos.** Tenía un atajo por el que los
+  tipos sin soporte salían sin revisar nada y sus archivos se borraban; ya no
+  existe, y con él se fue el campo `admiteSoporte` de `SolicitudValidada`.
+
+`TIPOS_PQRS` vive en `src/lib/pqrs/categorias.ts` y no en `solicitud.ts`, que
+sería el otro sitio natural: ese módulo arrastra los 87 municipios y construye
+su índice al cargarse, así que `/api/pqrs/token` pagaría ese arranque en frío
+sin necesitarlo. `solicitud.ts` lo reexporta como `TIPOS_VALIDOS`.
 
 ## Las reglas viven en un solo sitio
 
@@ -554,13 +590,16 @@ formulario cae al respaldo por correo.
 
 ## Pruebas
 
-`npm test` (Vitest, 82 comprobaciones: 32 de `radicar.ts`, 21 de
+`npm test` (Vitest, 90 comprobaciones: 35 de `radicar.ts`, 26 de
 `emitir-token.ts` y 29 de `administrativa.ts`) prueba el servidor con
 Vercel Blob y Resend simulados y bytes de archivo de verdad: los cinco formatos
 válidos, MIME falso, PNG que se hace pasar por PDF, ZIP renombrado a `.docx`,
 doble extensión, exceso de peso mintiendo sobre el tamaño, más de tres archivos,
-blob de otra sesión, Turnstile inválido o sin configurar, adjuntos con tipo
-Petición (se ignoran y se borran), autorización ausente, límite de tasa,
+blob de otra sesión, Turnstile inválido o sin configurar, que **los cinco
+tipos** guardan su adjunto y lo mueven a la carpeta del radicado, que el tope de
+tres archivos rige para todos, que un tipo inventado da `422 tipo-invalido` y
+que ese 422 llega **antes** que Turnstile —para poder diagnosticar sin gastar un
+token bueno—, autorización ausente, límite de tasa,
 municipio fuera de la lista de cobertura (400), municipio escrito sin tildes o
 en minúsculas (se acepta y se guarda con su nombre oficial) y el asunto del
 correo al área con categoría, tipo y municipio.
@@ -573,16 +612,18 @@ campos devuelve **todos** los errores a la vez, que Turnstile falla cerrado —s
 `TURNSTILE_SECRET` no sale nada—, que sin `PQRS_DESTINO` o sin `RESEND_API_KEY`
 responde 500 sin filtrar el motivo técnico, y que el límite de tasa cuenta por IP.
 
-`npm run verificar:pqrs` (Playwright, 172 comprobaciones en móvil y escritorio)
+`npm run verificar:pqrs` (Playwright, 176 comprobaciones en móvil y escritorio)
 cubre lo que se ve:
 
 - **La elección por clic**: que cada una de las dos categorías y cada uno de los
   cinco tipos se marca al pulsar su tarjeta, que el valor llega al campo que se
   envía, que el formulario aparece sin recargar y que el foco queda en el primer
   campo.
-- **El campo condicional y la validación de cliente**, incluido lo que pasa al
-  cambiar de categoría con un archivo ya puesto: la sección del formulario
-  entera desaparece y el adjunto se descarta.
+- **El campo de soporte y la validación de cliente**: que aparece habilitado en
+  los cinco tipos de la comercial, que la etiqueta es «Soportes o evidencias
+  (opcional)» y el input no es obligatorio, que cambiar de tipo **conserva** lo
+  ya adjuntado, y que cambiar de categoría con un archivo puesto se lleva la
+  sección entera y descarta el adjunto.
 - **El bloque administrativo**: que aparece al elegir la categoría y **dentro de
   la pantalla**, no bajo el pliegue; que el paso 2 y el formulario de PQRS no
   solo se ocultan sino que quedan fuera de alcance del foco y del lector de

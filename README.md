@@ -90,8 +90,9 @@ src/
     CampoMunicipio.astro   Municipio de la PQRS: combobox cerrado a los 87
                            municipios de cobertura, con busqueda sin tildes y
                            preseleccion opcional por ubicacion.
-    CampoAdjuntos.astro    Archivos de soporte de la PQRS. Solo aparece en la
-                           categoria comercial y con tipo Queja o Reclamo.
+    CampoAdjuntos.astro    Archivos de soporte de la PQRS, siempre opcionales.
+                           Aparece en la categoria comercial, en sus cinco
+                           tipos; lo decide la categoria, no el tipo.
     FormularioPqrs.astro   Formulario de radicacion de PQRS, solo de la
                            categoria comercial: sube los soportes a Vercel Blob,
                            llama a /api/pqrs y muestra el radicado.
