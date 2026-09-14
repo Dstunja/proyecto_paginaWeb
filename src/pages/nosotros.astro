@@ -158,10 +158,12 @@ const valores = [
       </div>
 
       {/* EDITAR AQUÍ: las fotos van en public/img/equipo/, cuadradas y ya
-          recortadas por `npm run fotos:equipo`; los nombres, cargos y frases
-          viven en src/data/equipo.ts. Una tarjeta sin nombre (cargo aún sin
-          cubrir) muestra «Próximamente», y una sin frase no la dibuja. */}
-      <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-4" data-revelar-grupo>
+          recortadas por `npm run fotos:equipo`; los nombres, cargos, frases y
+          el orden de las tarjetas viven en src/data/equipo.ts. Una tarjeta sin
+          nombre (cargo aún sin cubrir) muestra «Próximamente», y una sin frase
+          no la dibuja. La rejilla se reparte sola con cualquier número de
+          personas: ver .rejilla-equipo al final de este archivo. */}
+      <div class="rejilla-equipo grid gap-6" data-revelar-grupo>
         {
           equipoConFoto.map((persona) => (
             <div class="group glass-card flex flex-col items-center p-8 text-center">
@@ -244,3 +246,73 @@ const valores = [
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  /* Rejilla del equipo directivo.
+
+     Reparte cualquier número de tarjetas con el mismo ancho y deja CENTRADA la
+     fila incompleta del final, en vez de pegada a la izquierda. Con las cinco
+     de hoy queda así:
+
+       móvil       (< 520 px)   1 columna
+       tablet      (520-899 px) 2 + 2 + 1
+       escritorio  (>= 900 px)  3 + 2
+
+     Cinco en fila no caben: a 1440 px cada tarjeta mediría 204 px y los cargos
+     se partirían en dos líneas («Gerencia Estratégica» incluso bajando el
+     relleno de la tarjeta).
+
+     Para centrar sin cambiar el ancho de las tarjetas se duplican las columnas:
+     en tablet la rejilla tiene 4 y cada tarjeta ocupa 2, así que la tarjeta que
+     queda sola al final puede empezar en la columna 2 y cae en el centro. En
+     escritorio son 6 columnas de a 2, y la fila final se corre una columna si
+     tiene dos tarjetas, o dos si tiene una.
+
+     `grid-auto-rows: 1fr` iguala la altura de TODAS las filas, no solo la de
+     las tarjetas que comparten fila: si una frase o un cargo largo estira una
+     tarjeta, las de la otra fila crecen con ella y el conjunto no se descuadra.
+
+     Los dos anchos repiten a mano `--breakpoint-mob` y `--breakpoint-tablet`
+     (global.css); si allí cambian, aquí también. */
+  .rejilla-equipo {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: 1fr;
+  }
+
+  @media (min-width: 520px) {
+    .rejilla-equipo {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .rejilla-equipo > * {
+      grid-column: span 2;
+    }
+
+    /* Número impar de tarjetas: la última va sola en su fila. */
+    .rejilla-equipo > :last-child:nth-child(odd) {
+      grid-column: 2 / span 2;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .rejilla-equipo {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    /* Anula el centrado de tablet, que aquí no corresponde. */
+    .rejilla-equipo > *,
+    .rejilla-equipo > :last-child:nth-child(odd) {
+      grid-column: span 2;
+    }
+
+    /* Fila final de dos tarjetas: la primera empieza en la columna 2. */
+    .rejilla-equipo > :nth-child(3n + 1):nth-last-child(2) {
+      grid-column: 2 / span 2;
+    }
+
+    /* Fila final de una sola tarjeta: empieza en la columna 3. */
+    .rejilla-equipo > :nth-child(3n + 1):last-child {
+      grid-column: 3 / span 2;
+    }
+  }
+</style>

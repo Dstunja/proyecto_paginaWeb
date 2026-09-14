@@ -1,31 +1,30 @@
 /**
  * Equipo directivo que se muestra en /nosotros/.
  *
- * Los nombres y cargos de abajo son los reales. Quedan pendientes las fotos de
- * Nelson Arias y del Líder Logístico, y el nombre de quien ocupa ese último
- * cargo, que todavía no está definido.
+ * Los nombres, cargos y fotos de abajo son los reales. El orden del arreglo es
+ * el de las tarjetas en la página.
  *
  * FOTOS
  * -----
  * Cada foto se nombra por la PERSONA, no por el cargo ('erica-abril.webp' y no
  * 'talento-humano.webp'): los cargos se renombran cada tanto y arrastraban con
- * ellos el nombre del archivo. La excepción es el Líder Logístico, que se queda
- * con el nombre del cargo porque todavía no se sabe quién lo ocupa.
+ * ellos el nombre del archivo.
  *
- * Mientras el archivo no exista se dibuja un marcador con las iniciales de la
- * persona, así que la sección nunca se ve rota (ver `imagenOMarcador` en
- * src/lib/imagenes.ts) y las fotos se pueden ir poniendo de una en una.
+ * Si alguien entra sin foto, basta con dejar su ruta apuntando al archivo que
+ * tendrá: mientras no exista se dibuja un marcador con sus iniciales, así que
+ * la sección nunca se ve rota (ver `imagenOMarcador` en src/lib/imagenes.ts).
  *
  * La foto tiene que ser CUADRADA, porque la tarjeta la recorta en círculo. Las
  * que llegan del celular son verticales, así que no se suben tal cual: pasan
  * por `npm run fotos:equipo` (scripts/recortar-fotos-equipo.mjs), que recorta
- * el cuadrado centrado en la cara, lo deja en 480x480 WebP y le quita los
- * metadatos EXIF. Los originales sin recortar NO van al repositorio —son fotos
- * del personal—: viven en `recursos/fotos-equipo/`, que .gitignore excluye.
+ * un retrato de hombros para arriba con la cara del mismo tamaño en todas, lo
+ * deja en 480x480 WebP y le quita los metadatos EXIF. Los originales sin
+ * recortar NO van al repositorio —son fotos del personal—: viven en
+ * `recursos/fotos-equipo/`, que .gitignore excluye.
  *
  * FRASES
  * ------
- * Las cuatro están vacías a propósito y quedan PENDIENTES de que cada persona
+ * Las cinco están vacías a propósito y quedan PENDIENTES de que cada persona
  * aporte la suya. Antes había frases de ejemplo, pero al poner los nombres
  * reales pasaban a leerse como citas textuales de gente que nunca las dijo.
  * La tarjeta no dibuja nada cuando la frase está vacía, así que se pueden ir
@@ -46,8 +45,13 @@ export const equipo: Persona[] = [
   {
     nombre: 'Nelson Arias',
     cargo: 'Gerente General',
-    // PENDIENTE: falta la foto. Hasta que esté, la tarjeta muestra 'NA'.
-    foto: '/img/equipo/nelson-arias.jpg',
+    foto: '/img/equipo/nelson-arias.webp',
+    frase: '',
+  },
+  {
+    nombre: 'Álvaro Arias',
+    cargo: 'Gerencia Estratégica',
+    foto: '/img/equipo/alvaro-arias.webp',
     frase: '',
   },
   {
@@ -63,12 +67,9 @@ export const equipo: Persona[] = [
     frase: '',
   },
   {
-    // PENDIENTE: falta definir quién ocupa este cargo. Mientras `nombre` esté
-    // vacío la tarjeta muestra «Próximamente» y el avatar lleva las iniciales
-    // del cargo. Al saberlo, basta con escribir el nombre aquí.
-    nombre: '',
+    nombre: 'Julián Mejía',
     cargo: 'Líder Logístico',
-    foto: '/img/equipo/lider-logistico.jpg',
+    foto: '/img/equipo/julian-mejia.webp',
     frase: '',
   },
 ];
