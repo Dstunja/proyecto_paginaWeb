@@ -18,6 +18,13 @@ import coordenadas from './coordenadas.json';
  */
 const SEDE = coordenadas.__sede__ ?? { lat: 5.5353, lng: -73.3678 };
 
+/**
+ * Place ID de la ficha de la empresa en Google Maps. Es un identificador
+ * público, no una clave: sirve para armar enlaces directos a la ficha, como
+ * `empresa.escribirResenaUrl`.
+ */
+export const googlePlaceId = 'ChIJlU9bwI59ao4RyqsboFMWI6I';
+
 export const empresa = {
   nombre: 'Distribuciones Santiago de Tunja',
   razonSocial: 'Distribuciones Santiago de Tunja S.A.S.',
@@ -56,6 +63,12 @@ export const empresa = {
    * leyenda del mapa de cobertura (MapaRed.astro).
    */
   mapsUrl: `https://www.google.com/maps/search/?api=1&query=${SEDE.lat},${SEDE.lng}`,
+  /**
+   * Abre directamente el cuadro de "Escribir una reseña" de Google, no la
+   * ficha. Lo usa la invitación a opinar de la sección de reseñas del inicio
+   * (Resenas.astro); sirve igual para Contáctanos o el pie.
+   */
+  escribirResenaUrl: `https://search.google.com/local/writereview?placeid=${googlePlaceId}`,
 } as const;
 
 /**

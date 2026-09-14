@@ -9,6 +9,7 @@
  * haya que cambiar nada de aquí. Ver el comentario largo de src/data/reseñas.ts.
  */
 import Icono from './Icono.astro';
+import { empresa } from '../data/site';
 import { resenas as resenasLocales, resumenResenas, type Resena, type ResumenResenas } from '../data/reseñas';
 
 interface Props {
@@ -168,9 +169,10 @@ const columnas = resenas.length >= 4 ? 'tablet:grid-cols-4' : 'tablet:grid-cols-
 
         <p class="mt-8 text-center text-[13.5px] text-muted">
           ¿Ya eres cliente?{' '}
+          {/* Va al cuadro de escribir reseña, no a la ficha como "Ver todas las reseñas". */}
           <a
             class="font-semibold text-secondary-dark underline underline-offset-4"
-            href={resumen.url}
+            href={empresa.escribirResenaUrl}
             target="_blank"
             rel="noopener"
             data-cta="resenas"
