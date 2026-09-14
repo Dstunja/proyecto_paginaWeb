@@ -107,32 +107,27 @@ const VARIABLES = [
   {
     nombre: 'RESEND_API_KEY',
     nivel: 'radicacion',
-    para: 'Enviar los dos correos de cada radicación.',
+    para:
+      'Enviar los correos de PQRS: los dos de cada radicación comercial y el recado del ' +
+      'formulario administrativo.',
     donde: 'https://resend.com/api-keys',
     forma: (v) => (v.startsWith('re_') ? null : 'las claves de Resend empiezan por "re_"'),
   },
   {
+    /*
+     * Una sola variable para los dos caminos de la página de PQRS. Hasta hace
+     * poco había además una PUBLIC_PQRS_ADMIN_DESTINO para el `mailto:` que
+     * armaba el navegador; desapareció al pasar el envío administrativo al
+     * servidor. Si sigue definida en Vercel hay que borrarla: ya no la lee
+     * nadie y confunde al que vaya a cambiar el buzón.
+     */
     nombre: 'PQRS_DESTINO',
     nivel: 'radicacion',
-    para: 'Correo del área que recibe cada PQRS COMERCIAL, la que se radica.',
+    para:
+      'Correo del área que recibe TODO lo de la página de PQRS: las radicaciones ' +
+      'comerciales y los recados administrativos. Se separan por el asunto.',
     donde: 'Lo decide la empresa. Un correo que alguien lea de verdad.',
     forma: (v) => (v.includes('@') ? null : 'no parece un correo'),
-  },
-  {
-    nombre: 'PUBLIC_PQRS_ADMIN_DESTINO',
-    nivel: 'recomendada',
-    para:
-      'Correo de las PQRS ADMINISTRATIVAS, que salen por el gestor de correo de quien ' +
-      'escribe. Sin ella se usa el de la empresa (src/data/site.ts) y el formulario ' +
-      'funciona igual; definirla solo sirve para dirigirlas a otro buzón.',
-    donde:
-      'Lo decide la empresa. Admite varias direcciones separadas por coma.\n' +
-      '      OJO: se lee EN TIEMPO DE BUILD, porque el mailto: se arma en el navegador.\n' +
-      '      Si se añade en Vercel, hay que redesplegar.',
-    forma: (v) =>
-      v.split(',').every((c) => c.includes('@'))
-        ? null
-        : 'alguna de las direcciones no parece un correo',
   },
   {
     nombre: 'PQRS_IP_SALT',

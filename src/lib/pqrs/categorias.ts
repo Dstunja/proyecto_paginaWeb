@@ -2,33 +2,46 @@
  * Las dos categorías de PQRS: a quién va dirigida y por dónde sale.
  *
  * QUÉ DECIDE LA CATEGORÍA. No es una etiqueta decorativa: es lo que determina
- * el canal entero. La administrativa se dirige a la empresa y sale por el
- * gestor de correo de quien escribe (`mailto:`), sin adjuntos, sin antirrobots
- * y sin número de radicado. La comercial es la radicación de verdad: sube los
- * soportes a Vercel Blob, verifica Turnstile, guarda el registro y devuelve un
- * radicado. Son dos trámites distintos que comparten los mismos campos.
+ * el canal entero, y los dos caminos ya ni siquiera comparten pantalla.
  *
- * POR QUÉ LA CATEGORÍA VA ANTES QUE EL TIPO, Y NO EN SU LUGAR. Son ejes
- * independientes: existe la queja administrativa y la queja comercial. Además
- * los `value` de los tipos ("Petición", "Queja"…) los comparan `TIPOS_CON_SOPORTE`
- * en src/lib/adjuntos.ts, el asunto del correo y el campo `tipo` del registro de
- * la radicación; sustituirlos por las categorías habría roto las tres cosas a la
+ *   ADMINISTRATIVA (`via: 'contacto'`) NO ES UN TRÁMITE EN LÍNEA. Al elegirla
+ *   no aparece el paso 2 ni el formulario de PQRS: aparece un bloque con el
+ *   teléfono, el WhatsApp y el correo de la empresa, porque estos asuntos
+ *   —facturación, certificados, documentos— los atiende una persona del equipo
+ *   y no un radicador automático. Debajo lleva un formulario corto y opcional
+ *   para dejar los datos y que el equipo devuelva la llamada.
+ *
+ *   COMERCIAL (`via: 'radicacion'`) es la radicación de verdad: pide el tipo,
+ *   sube los soportes a Vercel Blob, verifica Turnstile, guarda el registro y
+ *   devuelve un número de radicado.
+ *
+ * POR QUÉ LA CATEGORÍA VA ANTES QUE EL TIPO, Y NO EN SU LUGAR. El tipo
+ * ("Petición", "Queja"…) solo tiene sentido dentro de la comercial, que es la
+ * única que radica. Sus `value` los comparan `TIPOS_CON_SOPORTE` en
+ * src/lib/adjuntos.ts, el asunto del correo y el campo `tipo` del registro de la
+ * radicación; sustituirlos por las categorías habría roto las tres cosas a la
  * vez.
  *
  * ESTE ARCHIVO NO LEE EL ENTORNO NI IMPORTA DATOS DEL SITIO, igual que
- * src/lib/adjuntos.ts: quien llama le pasa el entorno y el correo de respaldo a
- * `destinatarioDe`. Así el mismo módulo sirve en el navegador (con
- * `import.meta.env`, en tiempo de build) y en una función de Vercel (con
- * `process.env`, en cada petición) sin bifurcarse. Importar aquí
- * `src/data/site.ts` habría arrastrado sus 18 KB de coordenadas al JavaScript
- * del navegador solo por una dirección de correo.
+ * src/lib/adjuntos.ts, así que el mismo módulo sirve en el navegador y en una
+ * función de Vercel sin bifurcarse. Importar aquí `src/data/site.ts` habría
+ * arrastrado sus 18 KB de coordenadas al JavaScript del navegador solo por una
+ * dirección de correo.
+ *
+ * DÓNDE ESTÁ EL CORREO DE DESTINO. En una sola variable, `PQRS_DESTINO`, que
+ * lee `correoDestino()` en src/lib/pqrs/config.ts. La lee tanto la radicación
+ * comercial como el formulario administrativo: los dos acaban en el mismo
+ * buzón y se distinguen por el asunto. Antes había además una
+ * `PUBLIC_PQRS_ADMIN_DESTINO` para armar un `mailto:` en el navegador; se
+ * eliminó al pasar el envío administrativo al servidor, porque dos variables
+ * apuntando al mismo buzón es la forma de que un día dejen de coincidir.
  */
 import { requiereSoporte } from '../adjuntos';
 
 export type ClaveCategoria = 'administrativa' | 'comercial';
 
-/** Por dónde sale la solicitud una vez enviada. */
-export type Via = 'correo' | 'radicacion';
+/** Qué se le ofrece a quien elige la categoría. */
+export type Via = 'contacto' | 'radicacion';
 
 export interface Categoria {
   clave: ClaveCategoria;
@@ -46,13 +59,6 @@ export interface Categoria {
    * no suficiente: el tipo también tiene que pedirlos (ver `admiteSoporte`).
    */
   admiteSoporte: boolean;
-  /**
-   * Variable de entorno con el correo de destino. Las de la administrativa
-   * llevan prefijo PUBLIC_ porque el `mailto:` se arma EN EL NAVEGADOR y el
-   * valor tiene que estar dentro del JavaScript compilado. No es un secreto:
-   * es una dirección de contacto que el sitio ya publica.
-   */
-  variableDestino: string;
 }
 
 export const CATEGORIAS: readonly Categoria[] = [
@@ -61,14 +67,13 @@ export const CATEGORIAS: readonly Categoria[] = [
     nombre: 'Administrativa',
     icono: 'file-text',
     texto:
-      'Trámites, documentos, facturación, certificados o cualquier asunto de la ' +
-      'administración de la empresa. Escribes directamente a nuestros contactos.',
+      'Trámites, documentos, facturación, certificados o asuntos de administración. ' +
+      'Se atienden directamente por nuestro equipo.',
     nota:
-      'Se envía desde tu gestor de correo a la administración de la empresa. No lleva ' +
-      'archivos adjuntos ni número de radicado.',
-    via: 'correo',
+      'Te atendemos directamente por teléfono, WhatsApp o correo. No pasa por el ' +
+      'formulario de PQRS y no genera número de radicado.',
+    via: 'contacto',
     admiteSoporte: false,
-    variableDestino: 'PUBLIC_PQRS_ADMIN_DESTINO',
   },
   {
     clave: 'comercial',
@@ -82,7 +87,6 @@ export const CATEGORIAS: readonly Categoria[] = [
       'por correo. En quejas y reclamos puedes adjuntar evidencia.',
     via: 'radicacion',
     admiteSoporte: true,
-    variableDestino: 'PQRS_DESTINO',
   },
 ];
 
@@ -107,29 +111,6 @@ export function admiteSoporte(
   return (categoriaDe(clave)?.admiteSoporte ?? false) && requiereSoporte(tipo);
 }
 
-export type EntornoCategorias = Record<string, string | undefined>;
-
-/**
- * Correo al que va una categoría.
- *
- * `respaldo` es lo que se usa si la variable no está definida, y quien llama le
- * pasa el correo de la empresa (`empresa.email`, en src/data/site.ts). Con eso
- * el formulario administrativo funciona desde el primer despliegue, aunque
- * nadie haya definido la variable todavía, en lugar de armar un `mailto:` sin
- * destinatario. La dirección sigue sin estar escrita a mano en ningún
- * componente: sale de una variable de entorno o de un archivo de configuración.
- */
-export function destinatarioDe(
-  clave: string | null | undefined,
-  env: EntornoCategorias = {},
-  respaldo = '',
-): string {
-  const categoria = categoriaDe(clave);
-  if (!categoria) return respaldo;
-  const valor = env[categoria.variableDestino];
-  return typeof valor === 'string' && valor.trim() !== '' ? valor.trim() : respaldo;
-}
-
 /**
  * Asunto del correo.
  *
@@ -141,8 +122,13 @@ export function destinatarioDe(
  * Los argumentos van en un objeto y no sueltos a propósito: con cuatro trozos,
  * tres de ellos cadenas, el orden posicional se equivoca solo.
  *
- * @example asuntoDe({ categoria: 'administrativa', tipo: 'Petición', municipio: 'Tunja' })
- *          -> 'PQRS Administrativa · Petición · Tunja'
+ * Hoy solo lo usa la categoría COMERCIAL, que es la única que radica; sigue
+ * nombrando la categoría en primer lugar porque lo administrativo llega al
+ * mismo buzón por otra vía («Solicitud administrativa · Nombre», ver
+ * src/lib/pqrs/administrativa.ts) y en la bandeja hay que poder separarlos.
+ *
+ * @example asuntoDe({ categoria: 'comercial', tipo: 'Petición', municipio: 'Tunja' })
+ *          -> 'PQRS Comercial · Petición · Tunja'
  * @example asuntoDe({ categoria: 'comercial', tipo: 'Queja', municipio: 'Samacá', radicado: 'PQRS-…' })
  *          -> '[PQRS-…] PQRS Comercial · Queja · Samacá'
  */

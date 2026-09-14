@@ -99,12 +99,18 @@ const LIMITES = {
   descripcion: 5000,
 } as const;
 
-function texto(valor: unknown): string {
+/*
+ * `texto`, `limpiar` y `FORMA_CORREO` se exportan para que la solicitud
+ * administrativa (src/lib/pqrs/administrativa.ts) valide con las MISMAS reglas.
+ * Reescribirlas allí acabaría con dos ideas distintas de qué es un correo
+ * válido o de qué caracteres se quitan, y solo una de las dos se corregiría.
+ */
+export function texto(valor: unknown): string {
   return typeof valor === 'string' ? valor.trim() : '';
 }
 
 /** Quita caracteres de control: no aportan nada y ensucian correo y JSON. */
-function limpiar(valor: string): string {
+export function limpiar(valor: string): string {
   let salida = '';
   for (const caracter of valor) {
     const codigo = caracter.codePointAt(0) ?? 0;
@@ -114,7 +120,7 @@ function limpiar(valor: string): string {
   return salida;
 }
 
-const FORMA_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+export const FORMA_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
  * Comprueba el cuerpo JSON que manda el formulario.

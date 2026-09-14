@@ -1,21 +1,15 @@
 ---
 /**
- * Formulario de PQRS. Sirve a las DOS categorías, y la elegida decide el
- * camino entero (ver src/lib/pqrs/categorias.ts).
+ * Formulario de radicación de PQRS. Sirve SOLO a la categoría comercial.
  *
- * ADMINISTRATIVA (`via: 'correo'`). Sale por el gestor de correo de quien
- * escribe, a la dirección de PUBLIC_PQRS_ADMIN_DESTINO. No sube nada, no llama
- * a ninguna función, no verifica Turnstile y no genera radicado: es un correo,
- * y así se le dice. Funciona igual en Vercel y en el espejo de GitHub Pages,
- * que no tiene backend.
+ * LA ADMINISTRATIVA NO PASA POR AQUÍ. Antes sí: compartían formulario y la
+ * administrativa salía por un `mailto:` al pulsar enviar. Hoy esa categoría ni
+ * siquiera enseña el paso 2 —muestra el bloque de contacto de
+ * ContactoAdministrativo.astro, con el teléfono y el correo—, así que este
+ * componente se quedó con un solo camino. Si alguna vez vuelve a haber más de
+ * uno, el interruptor es `via` en src/lib/pqrs/categorias.ts.
  *
- * OJO CON NO CONFUNDIRLA CON EL RESPALDO. Los dos acaban en un `mailto:`, pero
- * son cosas distintas y el mensaje no puede ser el mismo: la administrativa es
- * el camino previsto y sale bien; el respaldo es lo que queda cuando la
- * radicación comercial ha fallado, y ahí hay que avisar de que la solicitud NO
- * quedó radicada. Se distinguen en el DOM con `data-enviado` y `data-respaldo`.
- *
- * COMERCIAL (`via: 'radicacion'`), el flujo largo:
+ * EL FLUJO, que es largo:
  *   1. Si hay archivos, se sube cada uno DIRECTAMENTE a Vercel Blob con
  *      `upload()`. No pasan por la función: una función de Vercel rechaza
  *      cuerpos de más de 4,5 MB y el tope por archivo es 5 MB.
@@ -23,11 +17,12 @@
  *      los blobs ya subidos.
  *   3. Se enseña el radicado y la fecha, con botón de copiar.
  *
- * RESPALDO DE LA COMERCIAL. Si la API no contesta (red caída, o el sitio servido desde un
- * espejo estático sin funciones) se cae al `mailto:` de siempre, pero con un
- * aviso claro de que eso NO es una radicación y de que los archivos hay que
- * adjuntarlos a mano. Un error 400 o 403 no activa el respaldo: ahí la API sí
- * contestó y lo que hay que hacer es enseñar el motivo.
+ * RESPALDO. Si la API no contesta (red caída, o el sitio servido desde un
+ * espejo estático sin funciones) se cae a un `mailto:`, pero con un aviso claro
+ * de que eso NO es una radicación y de que los archivos hay que adjuntarlos a
+ * mano; queda marcado en el DOM como `data-respaldo`. Un error 400 o 403 no
+ * activa el respaldo: ahí la API sí contestó y lo que hay que hacer es enseñar
+ * el motivo.
  */
 import { empresa } from '../data/site';
 import Icono from './Icono.astro';
@@ -35,17 +30,11 @@ import LoaderDST from './LoaderDST.astro';
 
 interface Props {
   boton?: string;
-  /** Correo del respaldo de la categoría comercial, cuando la API falla. */
+  /** Correo del respaldo, cuando la API falla. */
   destinatario?: string;
-  /** Correo de la categoría administrativa. Sale de PUBLIC_PQRS_ADMIN_DESTINO. */
-  destinoAdministrativa?: string;
 }
 
-const {
-  boton = 'Enviar PQRS',
-  destinatario = empresa.email,
-  destinoAdministrativa = empresa.email,
-} = Astro.props;
+const { boton = 'Enviar PQRS', destinatario = empresa.email } = Astro.props;
 
 const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'public' : 'private';
@@ -56,7 +45,6 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
   data-turnstile-key={claveTurnstile}
   data-blob-access={accesoBlob}
   data-destinatario={destinatario}
-  data-destino-admin={destinoAdministrativa}
 >
   <form data-form class="grid grid-cols-1 gap-5" novalidate={false}>
     <slot />
@@ -141,38 +129,6 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
     <p data-avisos-envio class="mt-4 mb-0 hidden text-[13.5px] text-accent-text"></p>
   </div>
 
-  <!-- Pantalla de "listo" de la categoría administrativa.
-       Es aparte de la de arriba, y no una versión de ella con trozos ocultos,
-       porque lo que tiene que decir es lo contrario: aquí NO hay radicado ni lo
-       va a haber, y lo que queda pendiente es que la persona pulse "enviar" en
-       su propio gestor de correo. Mezclarlas llevaría a prometer un número de
-       seguimiento que nadie generó. -->
-  <div data-confirmacion-correo class="hidden" role="status" aria-live="polite">
-    <span class="icono-chip mb-5 flex h-12 w-12">
-      <Icono nombre="mail" class="h-6 w-6" interactivo={false} />
-    </span>
-    <h3 class="mb-2 text-[22px]">Abrimos tu gestor de correo</h3>
-    <p class="mb-6 text-muted">
-      Tu solicitud administrativa ya va escrita. <strong>Revísala y pulsa enviar</strong> en tu
-      gestor de correo: hasta que lo hagas, no nos ha llegado.
-    </p>
-
-    <div class="mb-6 rounded-xl border border-line bg-fondo p-5">
-      <p class="kicker mb-2">Se envía a</p>
-      <p data-destino-mostrado class="m-0 font-display text-[16px] font-semibold text-primary"></p>
-    </div>
-
-    <p class="m-0 text-[14.5px] text-muted">
-      Esta categoría no genera número de radicado. Si necesitas constancia con número y fecha,
-      vuelve arriba y elige la categoría <strong>comercial</strong>.
-    </p>
-    <p class="mt-4 mb-0 text-[14.5px] text-muted">
-      ¿No se abrió nada? Escríbenos por{' '}
-      <a class="font-semibold text-secondary-dark underline" href={empresa.whatsapp} target="_blank" rel="noopener">
-        WhatsApp</a
-      >.
-    </p>
-  </div>
 
 </div>
 
@@ -246,9 +202,6 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
     const listaErrores = raiz.querySelector<HTMLUListElement>('[data-lista-errores]');
     const aviso = raiz.querySelector<HTMLElement>('[data-aviso]');
     const confirmacion = raiz.querySelector<HTMLElement>('[data-confirmacion]');
-    // Opcional: un formulario que solo sirva a la categoría comercial no la
-    // necesita, así que su ausencia no aborta el resto.
-    const confirmacionCorreo = raiz.querySelector<HTMLElement>('[data-confirmacion-correo]');
     const botonEnviar = raiz.querySelector<HTMLButtonElement>('[data-enviar]');
     const cajaEspera = raiz.querySelector<HTMLElement>('[data-espera]');
     if (!form || !cajaTurnstile || !progreso || !cajaErrores || !listaErrores) return;
@@ -257,7 +210,6 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
     const claveTurnstile = raiz.dataset.turnstileKey ?? '';
     const acceso = raiz.dataset.blobAccess === 'public' ? 'public' : 'private';
     const destinatario = raiz.dataset.destinatario ?? '';
-    const destinoAdmin = raiz.dataset.destinoAdmin ?? destinatario;
 
     let turnstileListo = false;
     if (claveTurnstile) {
@@ -584,40 +536,9 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
         `&body=${encodeURIComponent(cuerpo)}`;
     }
 
-    /** Pantalla de "listo" de la administrativa: sin radicado, porque no lo hay. */
-    function mostrarConfirmacionCorreo(destino: string) {
-      if (!confirmacionCorreo) return;
-      form!.classList.add('hidden');
-      confirmacionCorreo.classList.remove('hidden');
-      const caja = confirmacionCorreo.querySelector<HTMLElement>('[data-destino-mostrado]');
-      if (caja) caja.textContent = destino;
-      confirmacionCorreo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
     /**
-     * Envío de la categoría ADMINISTRATIVA.
-     *
-     * Es el camino previsto de esa categoría, no un remedio, y por eso no
-     * alarma: no promete un radicado que nunca hubo, pero tampoco da a entender
-     * que algo haya salido mal. El marcador es `data-enviado`, distinto del
-     * `data-respaldo` del fallo, para poder separarlos en la verificación y en
-     * cualquier medición posterior.
-     */
-    function enviarPorCorreo(clave: string, tipo: string) {
-      avisar('');
-      raiz.dataset.enviado = 'correo';
-      mostrarConfirmacionCorreo(destinoAdmin);
-      abrirCorreo(
-        destinoAdmin,
-        asuntoDe({ categoria: clave, tipo, municipio: valorDe('municipio-pqrs') }),
-        lineasDelFormulario(),
-      );
-    }
-
-    /**
-     * Respaldo de la categoría COMERCIAL cuando la radicación falla. NO es una
-     * radicación y así se dice: sin número, sin constancia y con los archivos
-     * por adjuntar a mano.
+     * Respaldo cuando la radicación falla. NO es una radicación y así se dice:
+     * sin número, sin constancia y con los archivos por adjuntar a mano.
      */
     function caerAlCorreo(motivo: string) {
       const lineas = lineasDelFormulario();
@@ -707,11 +628,16 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
         return;
       }
 
-      // La administrativa se va por correo aquí mismo: ni Turnstile, ni Blob,
-      // ni función. Sale antes de encender la espera porque no hay nada que
-      // esperar, y antes del `try` porque no hay respaldo al que caer.
-      if (categoria.via === 'correo') {
-        enviarPorCorreo(clave, tipoElegido);
+      /*
+       * Este formulario solo radica. La administrativa no llega hasta aquí
+       * —enseña el bloque de contacto y esconde esta sección entera—, pero si
+       * alguien fuerza el DOM para que llegue, mejor decírselo que mandarle a
+       * /api/pqrs una solicitud que el servidor guardaría como comercial.
+       */
+      if (categoria.via !== 'radicacion') {
+        mostrarErrores([
+          'Esta categoría no se radica en línea. Vuelve arriba y elige la categoría comercial, o escríbenos por los datos de contacto.',
+        ]);
         return;
       }
 

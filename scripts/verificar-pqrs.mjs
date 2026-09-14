@@ -275,7 +275,7 @@ async function responderBlob(ruta, camino) {
  *           comprobar el camino entero hasta el radicado, con adjunto incluido.
  */
 async function instalarDobles(pagina, plan) {
-  const registro = { token: [], radicar: [], blob: [] };
+  const registro = { token: [], radicar: [], blob: [], administrativa: [] };
 
   await pagina.route('https://challenges.cloudflare.com/**', (ruta) =>
     ruta.fulfill({ status: 200, contentType: 'text/javascript', body: TURNSTILE_FALSO }),
@@ -346,6 +346,45 @@ async function instalarDobles(pagina, plan) {
     });
   });
 
+  /*
+   * El recado del bloque administrativo. Se registra DESPUÉS del de
+   * '**\/api\/pqrs' a propósito: cuando dos rutas coinciden, Playwright aplica
+   * la registrada en último lugar, así que la más específica tiene que ir al
+   * final para que no se la coma la genérica.
+   */
+  await pagina.route('**/api/pqrs/administrativa', async (ruta) => {
+    registro.administrativa.push(JSON.parse(ruta.request().postData() ?? '{}'));
+
+    if (plan.administrativa === 'caida') {
+      await ruta.abort('connectionrefused');
+      return;
+    }
+    if (plan.administrativa === 'antirrobots') {
+      await ruta.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: false,
+          errores: ['La comprobación antirrobots no pasó. Recarga la página e inténtalo de nuevo.'],
+        }),
+      });
+      return;
+    }
+    if (plan.administrativa === 'error') {
+      await ruta.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: false, errores: ['El nombre es obligatorio.'] }),
+      });
+      return;
+    }
+    await ruta.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+
   // Chromium no emite ningún evento observable al abrir un mailto:, así que el
   // formulario marca `data-respaldo="correo"` en su raíz antes de navegar y eso
   // es lo que se comprueba.
@@ -384,10 +423,16 @@ const hayTurnstile = async (pagina) =>
 const esperadoTurnstile = (valor, conClave) =>
   conClave ? String(valor ?? '').startsWith('token-de-prueba-') : String(valor ?? '') === '';
 
-/** Elige categoría y tipo con dos clics, como lo haría una persona. */
-async function elegir(pagina, categoria, tipo) {
+/**
+ * Elige categoría y tipo con dos clics, como lo haría una persona.
+ *
+ * El tipo es opcional porque en la administrativa NO HAY paso 2: esa categoría
+ * enseña el bloque de contacto y esconde el formulario entero.
+ */
+async function elegir(pagina, categoria, tipo = '') {
   await tarjeta(pagina, 'categoria', categoria).click();
   await pagina.waitForTimeout(250);
+  if (!tipo) return;
   await tarjeta(pagina, 'tipo', tipo).click();
   await pagina.waitForTimeout(350);
 }
@@ -407,8 +452,12 @@ async function elegirMunicipio(pagina, escrito, aElegir = escrito) {
   await pagina.waitForTimeout(200);
 }
 
-async function rellenarFormulario(pagina, tipo = 'Queja', categoria = 'comercial') {
-  await elegir(pagina, categoria, tipo);
+/**
+ * Rellena el formulario de radicación. Solo sirve a la COMERCIAL: es la única
+ * categoría que tiene formulario de PQRS.
+ */
+async function rellenarFormulario(pagina, tipo = 'Queja') {
+  await elegir(pagina, 'comercial', tipo);
   await pagina.fill('#nombre-pqrs', 'Cristian Amaya');
   await pagina.fill('#telefono-pqrs', '3106232429');
   await pagina.fill('#correo-pqrs', 'practicaspasantiasdst@gmail.com');
@@ -620,9 +669,11 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
     (await bloque.isVisible()) && (await lista.locator('li').count()) === 0,
   );
 
-  // ---- C) La categoría administrativa no lleva adjuntos --------------------
-  // Es la comprobación que separa los dos ejes: "Queja" sigue estando en
-  // TIPOS_CON_SOPORTE, pero la categoría manda y esta no admite archivos.
+  // ---- C) Al pasar a "Administrativa" desaparece el formulario entero -------
+  // Antes las dos categorías compartían formulario y aquí solo se comprobaba
+  // que el campo de adjuntos se escondía. Hoy la administrativa ni siquiera
+  // tiene formulario, así que lo que hay que comprobar es más fuerte: que se
+  // va la sección completa y que lo adjuntado se descarta con ella.
   await adjuntar(archivos.pngValido);
   comprobar(
     `${etiqueta}: con "Comercial + Queja" el adjunto se aceptó (punto de partida)`,
@@ -630,12 +681,12 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   );
 
   await tarjeta(pagina, 'categoria', 'administrativa').click();
-  await pagina.waitForTimeout(250);
+  await pagina.waitForTimeout(300);
   comprobar(
-    `${etiqueta}: al pasar a "Administrativa" el campo de adjuntos desaparece aunque el tipo siga siendo "Queja"`,
-    !(await bloque.isVisible()) &&
-      (await entrada.isDisabled()) &&
-      (await pagina.locator('#tipo-pqrs').inputValue()) === 'Queja',
+    `${etiqueta}: al pasar a "Administrativa" se va la sección del formulario`,
+    !(await pagina.locator('[data-seccion-formulario]').isVisible()) &&
+      !(await bloque.isVisible()) &&
+      (await entrada.isDisabled()),
   );
   comprobar(
     `${etiqueta}: y el archivo que ya estaba puesto se descarta`,
@@ -644,10 +695,11 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   );
 
   await tarjeta(pagina, 'categoria', 'comercial').click();
-  await pagina.waitForTimeout(250);
+  await pagina.waitForTimeout(300);
   comprobar(
-    `${etiqueta}: al volver a "Comercial" el campo reaparece, vacío`,
-    (await bloque.isVisible()) &&
+    `${etiqueta}: al volver a "Comercial" reaparecen la sección y el campo, vacío`,
+    (await pagina.locator('[data-seccion-formulario]').isVisible()) &&
+      (await bloque.isVisible()) &&
       !(await entrada.isDisabled()) &&
       (await lista.locator('li').count()) === 0,
   );
@@ -660,55 +712,6 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
 async function revisarRadicacion(navegador, archivos) {
   console.log('\n=== B) Radicación contra la API (interceptada) ===\n');
   const contexto = await navegador.newContext({ viewport: { width: 1280, height: 900 } });
-
-  // ---- C) La categoría administrativa sale por correo ----------------------
-  {
-    const pagina = await contexto.newPage();
-    const registro = await instalarDobles(pagina, { radicar: 'ok' });
-    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
-    await pagina.waitForTimeout(400);
-    const rechazar = pagina.locator('[data-rechazar-cookies]');
-    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
-
-    await rellenarFormulario(pagina, 'Queja', 'administrativa');
-
-    comprobar(
-      'Administrativa: no hay campo de adjuntos ni siquiera con "Queja"',
-      !(await pagina.locator('[data-adjuntos]').isVisible()) &&
-        (await pagina.locator('[data-adjuntos] [data-entrada]').isDisabled()),
-    );
-
-    await pagina.click('[data-enviar]');
-    await pagina.waitForTimeout(700);
-
-    comprobar(
-      'Administrativa: no se llama a ninguna función (ni radicar ni pedir token)',
-      registro.radicar.length === 0 && registro.token.length === 0,
-    );
-    comprobar(
-      'Administrativa: queda marcada como envío por correo, no como respaldo de un fallo',
-      (await pagina.locator('[data-pqrs][data-enviado="correo"]').count()) === 1 &&
-        (await pagina.locator('[data-pqrs][data-respaldo]').count()) === 0,
-    );
-
-    // El destino no se escribe aquí: se compara con el que la página declara,
-    // que sale de PUBLIC_PQRS_ADMIN_DESTINO o del correo de src/data/site.ts.
-    const declarado = await pagina.locator('[data-pqrs]').getAttribute('data-destino-admin');
-    const mostrado = (await pagina.locator('[data-destino-mostrado]').textContent()) ?? '';
-    comprobar(
-      'Administrativa: se anuncia el destino configurado, y es un correo válido',
-      mostrado.trim() === (declarado ?? '').trim() && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mostrado.trim()),
-      mostrado.trim(),
-    );
-    comprobar(
-      'Administrativa: se dice que NO hay radicado y no se enseña ninguno',
-      !(await pagina.locator('[data-confirmacion]').isVisible()) &&
-        /no genera número de radicado/i.test(
-          (await pagina.locator('[data-confirmacion-correo]').textContent()) ?? '',
-        ),
-    );
-    await pagina.close();
-  }
 
   // ---- 6. Camino feliz sin adjuntos ---------------------------------------
   {
@@ -784,7 +787,7 @@ async function revisarRadicacion(navegador, archivos) {
 
     // Botón de copiar
     await contexto.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await pagina.click('[data-copiar]');
+    await pagina.click('[data-confirmacion] [data-copiar]');
     await pagina.waitForTimeout(250);
     const portapapeles = await pagina.evaluate(() => navigator.clipboard.readText());
     comprobar(
@@ -979,9 +982,11 @@ async function revisarMunicipio(navegador, etiqueta, viewport) {
     !(await campo.isVisible()),
   );
 
+  // Solo comercial: la administrativa no tiene paso 2 ni formulario, así que
+  // tampoco tiene campo de municipio que comprobar.
   const combinaciones = [
-    ['administrativa', 'Petición'],
-    ['administrativa', 'Queja'],
+    ['comercial', 'Petición'],
+    ['comercial', 'Queja'],
     ['comercial', 'Sugerencia'],
     ['comercial', 'Reclamo'],
   ];
@@ -1103,7 +1108,11 @@ async function revisarMunicipio(navegador, etiqueta, viewport) {
   );
 
   // ---- Sobrevive al cambio de categoría y de tipo -------------------------
-  await elegir(pagina, 'administrativa', 'Felicitación');
+  // El rodeo por la administrativa no es adorno: esa categoría esconde la
+  // sección del formulario entera, así que es el caso que de verdad podría
+  // llevarse por delante lo ya escrito.
+  await elegir(pagina, 'administrativa');
+  await elegir(pagina, 'comercial', 'Felicitación');
   comprobar(
     `${etiqueta}: el municipio elegido sobrevive a cambiar de categoría y de tipo`,
     (await campo.inputValue()) === 'Villa de Leyva',
@@ -1218,6 +1227,288 @@ async function revisarUbicacion(navegador) {
   }
 }
 
+// --- G) El bloque administrativo --------------------------------------------
+
+/**
+ * Datos de contacto que TIENEN que salir en el bloque, tal cual.
+ *
+ * Se escriben aquí a propósito, aunque el sitio los saque de `empresa` en
+ * src/data/site.ts: si se leyeran de la misma fuente que la página, la prueba
+ * diría que "coincide consigo mismo" y pasaría igual con un teléfono
+ * equivocado. Son los que pidió la empresa; si algún día cambian, se cambian en
+ * src/data/site.ts y también aquí, a la vez y a mano.
+ */
+const CONTACTO = {
+  telefono: '310 623 2429',
+  telefonoE164: '+573106232429',
+  correo: 'informacioncomercialdst@gmail.com',
+  whatsapp: '573106232429',
+};
+
+/** ¿El sitio compilado lleva clave de Turnstile en el bloque administrativo? */
+const hayTurnstileAdmin = async (pagina) =>
+  ((await pagina.locator('[data-contacto-admin-caja]').getAttribute('data-turnstile-key')) ?? '') !==
+  '';
+
+async function abrirAdministrativa(contexto, plan = { administrativa: 'ok' }) {
+  const pagina = await contexto.newPage();
+  const registro = await instalarDobles(pagina, plan);
+  await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+  await pagina.waitForTimeout(400);
+  const rechazar = pagina.locator('[data-rechazar-cookies]');
+  if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+  return { pagina, registro };
+}
+
+async function revisarAdministrativa(navegador) {
+  console.log('\n=== G) La categoría administrativa ===\n');
+  const contexto = await navegador.newContext({
+    viewport: { width: 1280, height: 900 },
+    // El botón de copiar usa navigator.clipboard, que sin permiso lanza.
+    permissions: ['clipboard-read', 'clipboard-write'],
+  });
+
+  // ---- 1. Qué aparece y qué desaparece al elegirla ------------------------
+  {
+    const { pagina } = await abrirAdministrativa(contexto);
+    const bloque = pagina.locator('[data-contacto-admin]');
+
+    comprobar(
+      'Administrativa: sin elegir nada, el bloque de contacto no se ve',
+      !(await bloque.isVisible()),
+    );
+
+    await elegir(pagina, 'administrativa');
+
+    comprobar('Administrativa: al elegirla aparece el bloque de contacto', await bloque.isVisible());
+
+    /*
+     * Esto es lo que se reportó como roto: en escritorio el bloque revelado
+     * caía por debajo del pliegue y no se desplazaba, así que al pulsar la
+     * tarjeta "no pasaba nada". Se comprueba que ahora queda a la vista.
+     */
+    const asoma = await bloque.evaluate((e) => {
+      const caja = e.getBoundingClientRect();
+      return caja.top >= 0 && caja.top <= window.innerHeight - 120;
+    });
+    comprobar('Administrativa: el bloque queda dentro de la pantalla, no bajo el pliegue', asoma);
+
+    comprobar(
+      'Administrativa: NO aparece el paso 2 ni el formulario de PQRS',
+      !(await pagina.locator('[data-paso-tipo]').isVisible()) &&
+        !(await pagina.locator('[data-seccion-formulario]').isVisible()) &&
+        !(await pagina.locator('[data-paso-formulario]').isVisible()),
+    );
+
+    /*
+     * El formulario de PQRS sigue en el árbol (esconderlo es lo que permite
+     * volver a la comercial sin recargar), pero tiene que estar fuera de
+     * alcance: ni se ve, ni se tabula, ni lo lee un lector de pantalla. Eso lo
+     * da `display:none`, y es lo que se comprueba de verdad.
+     */
+    const alcanzable = await pagina
+      .locator('#nombre-pqrs')
+      .evaluate((e) => e.offsetParent !== null || e.getClientRects().length > 0);
+    comprobar(
+      'Administrativa: los campos de la PQRS quedan fuera de alcance (ni foco ni lector)',
+      !alcanzable,
+    );
+
+    // ---- 2. Los datos exactos --------------------------------------------
+    const textoBloque = (await bloque.textContent()) ?? '';
+    comprobar(
+      'Administrativa: el título y el texto son los pedidos',
+      /Información Administrativa/.test(textoBloque) &&
+        /Si tu queja es de tipo administrativa/.test(textoBloque) &&
+        /También puedes dejarnos tus datos/.test(textoBloque),
+    );
+    comprobar(
+      `Administrativa: se muestra el teléfono ${CONTACTO.telefono}`,
+      textoBloque.includes(CONTACTO.telefono),
+    );
+    comprobar(
+      `Administrativa: se muestra el correo ${CONTACTO.correo}`,
+      textoBloque.includes(CONTACTO.correo),
+    );
+
+    // ---- 3. Los enlaces ---------------------------------------------------
+    const hrefTel = await bloque.locator('a[href^="tel:"]').first().getAttribute('href');
+    comprobar(
+      `Administrativa: el teléfono enlaza a tel:${CONTACTO.telefonoE164}`,
+      hrefTel === `tel:${CONTACTO.telefonoE164}`,
+      String(hrefTel),
+    );
+
+    const hrefCorreo = await bloque.locator('a[href^="mailto:"]').first().getAttribute('href');
+    comprobar(
+      'Administrativa: el correo enlaza a mailto: con el asunto "Solicitud administrativa"',
+      String(hrefCorreo).startsWith(`mailto:${CONTACTO.correo}?subject=`) &&
+        decodeURIComponent(String(hrefCorreo)).includes('subject=Solicitud administrativa'),
+      String(hrefCorreo),
+    );
+
+    const hrefWa = await bloque.locator('a[href*="wa.me"]').first().getAttribute('href');
+    comprobar(
+      'Administrativa: WhatsApp va a wa.me con el mensaje prellenado',
+      String(hrefWa).startsWith(`https://wa.me/${CONTACTO.whatsapp}?text=`) &&
+        decodeURIComponent(String(hrefWa)).includes('Hola, tengo una solicitud administrativa'),
+      String(hrefWa),
+    );
+
+    // ---- 4. Los botones de copiar ----------------------------------------
+    const botones = bloque.locator('[data-copiar-dato]');
+    comprobar(
+      'Administrativa: hay un botón de copiar junto a cada dato',
+      (await botones.count()) === 2,
+      String(await botones.count()),
+    );
+
+    await botones.first().click();
+    await pagina.waitForTimeout(200);
+    const copiado = await pagina.evaluate(() => navigator.clipboard.readText());
+    comprobar(
+      'Administrativa: copiar el teléfono deja el número en el portapapeles',
+      copiado === CONTACTO.telefono,
+      copiado,
+    );
+
+    // ---- 5. Al volver a comercial, se deshace -----------------------------
+    await elegir(pagina, 'comercial');
+    comprobar(
+      'Comercial: el bloque administrativo desaparece y vuelve el paso 2',
+      !(await bloque.isVisible()) &&
+        (await pagina.locator('[data-paso-tipo]').isVisible()) &&
+        (await pagina.locator('[data-seccion-formulario]').isVisible()),
+    );
+
+    await pagina.close();
+  }
+
+  // ---- 6. El formulario corto: envío válido -------------------------------
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto);
+    await elegir(pagina, 'administrativa');
+
+    await pagina.fill('#nombre-admin', 'Cristian Amaya');
+    await pagina.fill('#telefono-admin', '3106232429');
+    await pagina.fill('#correo-admin', 'practicaspasantiasdst@gmail.com');
+    await pagina.fill('#mensaje-admin', 'Necesito una copia de la factura del mes pasado.');
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(900);
+
+    comprobar(
+      'Administrativa: el formulario corto llama a /api/pqrs/administrativa una sola vez',
+      registro.administrativa.length === 1,
+      String(registro.administrativa.length),
+    );
+
+    const enviado = registro.administrativa[0] ?? {};
+    comprobar(
+      'Administrativa: viajan los cuatro campos tal como se escribieron',
+      enviado.nombre === 'Cristian Amaya' &&
+        enviado.telefono === '3106232429' &&
+        enviado.correo === 'practicaspasantiasdst@gmail.com' &&
+        enviado.mensaje === 'Necesito una copia de la factura del mes pasado.',
+      JSON.stringify(enviado),
+    );
+
+    comprobar(
+      'Administrativa: el envío lleva el token del antirrobots cuando el sitio tiene clave',
+      esperadoTurnstile(enviado.turnstileToken, await hayTurnstileAdmin(pagina)),
+      String(enviado.turnstileToken),
+    );
+
+    comprobar(
+      'Administrativa: no se radica nada por el camino (ni /api/pqrs ni token de subida)',
+      registro.radicar.length === 0 && registro.token.length === 0,
+    );
+
+    comprobar(
+      'Administrativa: sale la confirmación, el formulario se va y NO se abre el correo',
+      (await pagina.locator('[data-confirmacion-admin]').isVisible()) &&
+        !(await pagina.locator('[data-form-admin]').isVisible()) &&
+        (await pagina.locator('[data-contacto-admin-caja][data-respaldo]').count()) === 0,
+    );
+
+    comprobar(
+      'Administrativa: la confirmación no promete ningún número de radicado',
+      !/radicado/i.test((await pagina.locator('[data-confirmacion-admin]').textContent()) ?? ''),
+    );
+
+    await pagina.close();
+  }
+
+  // ---- 7. El formulario corto: Turnstile inválido -------------------------
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto, {
+      administrativa: 'antirrobots',
+    });
+    await elegir(pagina, 'administrativa');
+
+    await pagina.fill('#nombre-admin', 'Cristian Amaya');
+    await pagina.fill('#telefono-admin', '3106232429');
+    await pagina.fill('#mensaje-admin', 'Necesito una copia de la factura del mes pasado.');
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(900);
+
+    comprobar(
+      'Administrativa (antirrobots): se enseña el motivo que dio el servidor',
+      (await pagina.locator('[data-errores-admin]').isVisible()) &&
+        /antirrobots/i.test(
+          (await pagina.locator('[data-lista-errores-admin]').textContent()) ?? '',
+        ),
+    );
+
+    /*
+     * Un 403 NO cae al mailto:. Ahí el servidor sí contestó y dijo qué pasa; el
+     * respaldo es solo para cuando no contesta nadie. Si cayera, la persona se
+     * iría al gestor de correo creyendo que el formulario falló.
+     */
+    comprobar(
+      'Administrativa (antirrobots): no cae al correo ni da por buena la solicitud',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo]').count()) === 0 &&
+        !(await pagina.locator('[data-confirmacion-admin]').isVisible()) &&
+        (await pagina.locator('[data-form-admin]').isVisible()),
+    );
+
+    comprobar(
+      'Administrativa (antirrobots): el botón vuelve a quedar usable para reintentar',
+      !(await pagina.locator('[data-enviar-admin]').isDisabled()),
+    );
+
+    comprobar(
+      'Administrativa (antirrobots): se intentó una sola vez',
+      registro.administrativa.length === 1,
+      String(registro.administrativa.length),
+    );
+
+    await pagina.close();
+  }
+
+  // ---- 8. Sin backend, cae al gestor de correo ---------------------------
+  {
+    const { pagina } = await abrirAdministrativa(contexto, { administrativa: 'caida' });
+    await elegir(pagina, 'administrativa');
+
+    await pagina.fill('#nombre-admin', 'Cristian Amaya');
+    await pagina.fill('#telefono-admin', '3106232429');
+    await pagina.fill('#mensaje-admin', 'Necesito una copia de la factura del mes pasado.');
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(900);
+
+    // Chromium no emite ningún evento al abrir un mailto:, así que el
+    // componente marca `data-respaldo="correo"` antes de navegar.
+    comprobar(
+      'Administrativa: si la función no contesta, se abre el gestor de correo',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo="correo"]').count()) === 1,
+    );
+
+    await pagina.close();
+  }
+
+  await contexto.close();
+}
+
 // --- Ejecución --------------------------------------------------------------
 
 const archivos = await prepararArchivos();
@@ -1231,6 +1522,7 @@ try {
   await revisarMunicipio(navegador, 'Escritorio', { width: 1280, height: 800 });
   await revisarUbicacion(navegador);
   await revisarRadicacion(navegador, archivos);
+  await revisarAdministrativa(navegador);
 } finally {
   await navegador.close();
   servidor.close();

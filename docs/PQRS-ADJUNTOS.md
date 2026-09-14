@@ -2,32 +2,58 @@
 
 ## Qué hace hoy
 
-El formulario se elige en **dos pasos**, y cada clic se aplica al instante: no
-hay botón de «continuar» ni recarga.
+La página **empieza preguntando la categoría**, y ese primer clic decide todo lo
+demás. No hay botón de «continuar» ni recarga.
 
-1. **Categoría** — a quién va dirigida. Decide el canal entero.
-2. **Tipo** — Petición, Queja, Reclamo, Sugerencia o Felicitación.
+- **Administrativa** — no es un trámite en línea. Desaparecen el paso 2 y el
+  formulario de PQRS, y sale un bloque con el teléfono, el WhatsApp y el correo
+  de la empresa, más un formulario corto y opcional para dejar los datos.
+- **Comercial** — pide el **tipo** (Petición, Queja, Reclamo, Sugerencia o
+  Felicitación) y radica de verdad.
 
-Son ejes independientes a propósito: existe la queja administrativa y la queja
-comercial. Las dos categorías están descritas en `src/lib/pqrs/categorias.ts`.
+Las dos categorías están descritas en `src/lib/pqrs/categorias.ts`; lo que enseña
+y esconde cada tarjeta se declara en `src/pages/pqrs.astro`.
 
 | | Administrativa | Comercial |
 | --- | --- | --- |
-| Cómo sale | `mailto:` desde el navegador | `POST /api/pqrs` |
-| Destino | `PUBLIC_PQRS_ADMIN_DESTINO` | `PQRS_DESTINO` |
+| Qué enseña al elegirla | Bloque de contacto (`ContactoAdministrativo.astro`) | Paso 2 y formulario de radicación |
+| Cómo sale | `POST /api/pqrs/administrativa` (formulario corto, opcional) | `POST /api/pqrs` |
+| Destino | `PQRS_DESTINO` | `PQRS_DESTINO` |
 | Archivos de soporte | **No** | Sí, en Queja y Reclamo |
-| Antirrobots (Turnstile) | No | Sí |
+| Antirrobots (Turnstile) | Sí | Sí |
+| Límite de tasa por IP | 5 cada 10 min | 5 cada 10 min |
 | Número de radicado | **No** | Sí |
-| Asunto del correo | `PQRS Administrativa · {tipo} · {municipio}` | `[{radicado}] PQRS Comercial · {tipo} · {municipio}` |
-| Funciona en GitHub Pages | Sí | No (no hay funciones) |
+| Asunto del correo | `Solicitud administrativa · {nombre}` | `[{radicado}] PQRS Comercial · {tipo} · {municipio}` |
+| Correos que salen | 1 (al área) | 2 (al área y a quien radica) |
+| Funciona en GitHub Pages | Cae a `mailto:` | No (no hay funciones) |
 
-La administrativa no llega a tocar la red: sale por el gestor de correo de quien
-escribe y por eso no puede llevar adjuntos ni dejar constancia con número. Es el
-camino previsto de esa categoría, **no** un respaldo, y el formulario lo dice sin
-alarmar. No hay que confundirla con el respaldo por correo de la comercial, que
-solo aparece cuando la radicación ha fallado y sí avisa de que la solicitud no
-quedó radicada. En el DOM se distinguen con `data-enviado="correo"` (envío
-administrativo) y `data-respaldo="correo"` (respaldo tras un fallo).
+### Por qué la administrativa dejó de radicar
+
+Facturación, certificados, documentos y trámites los resuelve una persona
+consultando sistemas a los que el sitio no llega. Darles número de radicado y
+plazo de 15 días hábiles era prometer un trámite legal donde lo que hace falta
+es una llamada. Por eso hoy esa categoría enseña los datos de contacto primero
+—teléfono con `tel:` y botón de WhatsApp con el mensaje ya escrito, correo con
+`mailto:` y el asunto puesto, y botón de copiar en cada uno— y el formulario
+corto queda debajo como comodidad, no como requisito.
+
+Ese formulario **no radica**: manda un correo y responde `{ ok: true }`. Ni la
+pantalla ni el correo mencionan ningún número de seguimiento, a propósito.
+
+Antes esa categoría compartía el formulario de PQRS y salía por un `mailto:` que
+armaba el navegador, con su propia variable `PUBLIC_PQRS_ADMIN_DESTINO`. Las dos
+cosas desaparecieron: el envío es del servidor y el buzón es el mismo de la
+comercial. **Si `PUBLIC_PQRS_ADMIN_DESTINO` sigue definida en Vercel, hay que
+borrarla**; ya no la lee nadie.
+
+### El único `mailto:` que queda es el respaldo
+
+Los dos caminos caen a un `mailto:` cuando la función no contesta —red caída, o
+el sitio servido desde el espejo estático de GitHub Pages, que no tiene backend—.
+No es lo mismo que un error del servidor: un 400 o un 403 **no** activan el
+respaldo, porque ahí la API sí contestó y lo que toca es enseñar el motivo. En el
+DOM el respaldo queda marcado con `data-respaldo="correo"`, y en la comercial va
+además con un aviso explícito de que así la solicitud **no** quedó radicada.
 
 La categoría **comercial** es la que **radica de verdad**: guarda la solicitud,
 guarda los archivos de soporte, devuelve un número de radicado y manda dos
@@ -36,6 +62,8 @@ correos. Ya no depende del gestor de correo de quien lo diligencia.
 | Parte | Estado |
 | --- | --- |
 | Categoría previa (administrativa / comercial) | Hecho |
+| Bloque de contacto administrativo, sin paso 2 ni formulario de PQRS | Hecho |
+| Formulario corto administrativo por Resend, con Turnstile | Hecho |
 | Elección por tarjetas, sin `<select>` ni botón de continuar | Hecho |
 | Municipio cerrado a los 87 de cobertura, validado también en el servidor | Hecho |
 | Campo de soporte solo en Comercial + Queja o Reclamo | Hecho |
@@ -133,6 +161,44 @@ Respuestas:
 - `500` → no se pudo guardar el registro. Aquí **no hay radicación**.
 
 Los mensajes de `errores` están redactados en español y se muestran tal cual.
+
+### `POST /api/pqrs/administrativa`
+
+El recado del bloque administrativo. **No radica nada**: ni guarda en el Blob, ni
+genera número, ni admite adjuntos. Solo manda un correo al área para que
+devuelva el contacto. El trabajo está en `src/lib/pqrs/administrativa.ts`, con
+pruebas en `administrativa.test.ts`.
+
+Cuerpo JSON:
+
+| Campo | Tipo | Reglas |
+| --- | --- | --- |
+| `nombre` | texto | obligatorio, 3-150 |
+| `telefono` | texto | obligatorio, 7-15 dígitos (el `57` inicial no cuenta) |
+| `correo` | texto | **opcional**; si viene, tiene que ser un correo válido |
+| `mensaje` | texto | obligatorio, 10-1500 |
+| `turnstileToken` | texto | token del widget |
+
+El correo es opcional a propósito: a mucha gente de tienda es más fácil
+devolverle la llamada que escribirle. Cuando no viene, el mensaje al área lo dice
+(«Correo: (no lo dejó)») y **no se pone `replyTo`**, porque dejarlo vacío haría
+que responder desde la bandeja fuera a parar al remitente del propio sitio.
+
+Respuestas:
+
+- `200` → `{ ok: true }`. Sin radicado, porque no lo hay.
+- `400` → `{ ok: false, errores: [...] }`. Devuelve **todos** los errores, no
+  solo el primero.
+- `403` → Turnstile no pasó.
+- `429` → más de 5 envíos en 10 minutos desde la misma IP.
+- `500` → el correo no salió. El navegador cae entonces al `mailto:`.
+
+Ese `500` es deliberado, y no un `200` con un aviso: aquí **no hay registro en el
+Blob** que dé fe de que la solicitud existió, así que si el correo no sale no
+queda nada. Con el `500` la persona acaba escribiendo por su gestor de correo; con
+un `200` se iría convencida de que nos llegó. El motivo técnico (una clave mal
+puesta, el dominio del remitente sin verificar en Resend) se queda en el registro
+de Vercel y nunca viaja en la respuesta.
 
 ### `GET /api/pqrs/limpieza`
 
@@ -391,8 +457,7 @@ En **Settings → Environment Variables**, para Production y Preview:
 | `RESEND_API_KEY` | sí | API key de Resend |
 | `TURNSTILE_SECRET` | sí | Clave privada de Turnstile |
 | `PUBLIC_TURNSTILE_SITE_KEY` | sí | Clave pública de Turnstile (va al navegador) |
-| `PQRS_DESTINO` | sí | Correo del área que atiende las PQRS **comerciales** |
-| `PUBLIC_PQRS_ADMIN_DESTINO` | recomendada | Correo de las PQRS **administrativas**. Sin ella se usa `empresa.email` de `src/data/site.ts` |
+| `PQRS_DESTINO` | sí | Correo que recibe **todo** lo de la página de PQRS: radicaciones comerciales y recados administrativos. Hoy `informacioncomercialdst@gmail.com` |
 | `CRON_SECRET` | sí | Cadena larga y aleatoria; protege el cron de limpieza |
 | `PQRS_IP_SALT` | recomendada | Sal del hash de la IP |
 | `PQRS_REMITENTE` | opcional | Remitente; por defecto `pqrs@dstunja.com` |
@@ -404,12 +469,19 @@ En **Settings → Environment Variables**, para Production y Preview:
 | `UPSTASH_REDIS_REST_URL` | opcional | Límite de tasa compartido |
 | `UPSTASH_REDIS_REST_TOKEN` | opcional | Ídem |
 
+**Hay una variable que BORRAR: `PUBLIC_PQRS_ADMIN_DESTINO`.** Existió mientras la
+categoría administrativa salía por un `mailto:` que armaba el navegador. Hoy ese
+envío lo hace el servidor y va al mismo `PQRS_DESTINO`, así que ya no la lee
+nadie. Dejarla puesta no rompe nada, pero es una segunda dirección de destino
+que alguien intentará cambiar algún día creyendo que sirve para algo.
+
 Las que empiezan por `PUBLIC_` se leen **en tiempo de compilación** y acaban en
-el JavaScript del navegador: ahí no puede ir ningún secreto. `PUBLIC_PQRS_ADMIN_DESTINO`
-lo lleva por eso mismo: el `mailto:` se arma en el navegador, así que el valor
-tiene que estar dentro del bundle. No es un secreto —es una dirección de
-contacto que el sitio ya publica en el pie— pero **hay que redesplegar** después
-de cambiarla. Admite varias direcciones separadas por coma.
+el JavaScript del navegador: ahí no puede ir ningún secreto. Cambiar una de
+ellas en el panel de Vercel **no surte efecto hasta que se vuelve a compilar**.
+
+El teléfono y el correo que se MUESTRAN en el bloque administrativo no son
+variables de entorno: salen de `empresa`, en `src/data/site.ts`, que es la fuente
+única del sitio y ya alimenta el pie.
 
 `PQRS_ADJUNTO_MAX_MB` y `PUBLIC_PQRS_ADJUNTO_MAX_MB` deberían tener el mismo
 valor. La primera es la que manda (la aplica el servidor); la segunda es la que
@@ -482,7 +554,8 @@ formulario cae al respaldo por correo.
 
 ## Pruebas
 
-`npm test` (Vitest, 53 comprobaciones) cubre `src/lib/pqrs/radicar.ts` con
+`npm test` (Vitest, 82 comprobaciones: 32 de `radicar.ts`, 21 de
+`emitir-token.ts` y 29 de `administrativa.ts`) prueba el servidor con
 Vercel Blob y Resend simulados y bytes de archivo de verdad: los cinco formatos
 válidos, MIME falso, PNG que se hace pasar por PDF, ZIP renombrado a `.docx`,
 doble extensión, exceso de peso mintiendo sobre el tamaño, más de tres archivos,
@@ -492,26 +565,43 @@ municipio fuera de la lista de cobertura (400), municipio escrito sin tildes o
 en minúsculas (se acepta y se guarda con su nombre oficial) y el asunto del
 correo al área con categoría, tipo y municipio.
 
-`npm run verificar:pqrs` (Playwright, 152 comprobaciones en móvil y escritorio)
+Las 29 de `administrativa.ts` comprueban: que el recado sale al buzón
+de `PQRS_DESTINO` con el asunto «Solicitud administrativa · Nombre» y no con el
+de una radicación, que el correo de quien escribe es opcional de verdad (sin él
+no se pone `replyTo` y el mensaje lo dice) pero se valida si viene, que faltan
+campos devuelve **todos** los errores a la vez, que Turnstile falla cerrado —sin
+`TURNSTILE_SECRET` no sale nada—, que sin `PQRS_DESTINO` o sin `RESEND_API_KEY`
+responde 500 sin filtrar el motivo técnico, y que el límite de tasa cuenta por IP.
+
+`npm run verificar:pqrs` (Playwright, 172 comprobaciones en móvil y escritorio)
 cubre lo que se ve:
 
 - **La elección por clic**: que cada una de las dos categorías y cada uno de los
   cinco tipos se marca al pulsar su tarjeta, que el valor llega al campo que se
   envía, que el formulario aparece sin recargar y que el foco queda en el primer
   campo.
-- **El campo condicional y la validación de cliente**, incluida la regla que
-  cruza los dos ejes: con «Administrativa + Queja» el campo de adjuntos
-  desaparece y descarta lo que hubiera seleccionado.
-- **La categoría administrativa**: que no llama a ninguna función, que anuncia el
-  destino configurado, que dice que no hay radicado y que se marca como envío
-  deliberado y no como respaldo de un fallo.
+- **El campo condicional y la validación de cliente**, incluido lo que pasa al
+  cambiar de categoría con un archivo ya puesto: la sección del formulario
+  entera desaparece y el adjunto se descarta.
+- **El bloque administrativo**: que aparece al elegir la categoría y **dentro de
+  la pantalla**, no bajo el pliegue; que el paso 2 y el formulario de PQRS no
+  solo se ocultan sino que quedan fuera de alcance del foco y del lector de
+  pantalla; que el teléfono y el correo son los exactos, con sus enlaces
+  `tel:`, `mailto:` (con asunto) y `wa.me` (con el mensaje prellenado); que los
+  botones de copiar dejan el dato en el portapapeles; y que al volver a
+  comercial todo se deshace.
+- **El formulario corto administrativo**: que llama una sola vez a
+  `/api/pqrs/administrativa` con los cuatro campos y el token, que no radica nada
+  por el camino, que la confirmación no promete radicado, que un 403 de
+  antirrobots enseña el motivo **sin** caer al `mailto:` y dejando el botón
+  usable, y que si la función no contesta sí se abre el gestor de correo.
 - **La radicación comercial** con `POST /api/pqrs`, `POST /api/pqrs/token` y el
   script de Turnstile interceptados, incluido el **camino completo con adjunto**:
   se simulan los dos pasos de `@vercel/blob` (pedir el permiso y subir el archivo
   a `https://vercel.com/api/blob`) y se comprueba que la queja llega hasta su
   radicado con el soporte anunciado.
-- **El municipio**: que aparece con el formulario en las cuatro combinaciones de
-  categoría y tipo, que al enfocarlo se despliegan los 87, que filtra ignorando
+- **El municipio**: que aparece con el formulario en los cuatro tipos de la
+  categoría comercial, que al enfocarlo se despliegan los 87, que filtra ignorando
   tildes y mayúsculas en los dos sentidos, que se maneja con flechas, Enter y
   Escape anunciando la opción con `aria-activedescendant`, que un municipio
   fuera de cobertura deja el campo inválido y no deja enviar, que lo escrito a

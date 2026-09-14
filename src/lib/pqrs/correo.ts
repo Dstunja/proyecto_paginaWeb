@@ -13,6 +13,11 @@
  * Si falla el envío la radicación NO se deshace: el registro y los archivos ya
  * están guardados en el Blob, que es lo que da fe. El fallo se devuelve para
  * dejarlo en el registro del servidor y avisarlo en pantalla.
+ *
+ * Al final del archivo hay un tercer correo, `enviarCorreoAdministrativo`, que
+ * es de otro trámite: el formulario corto del bloque administrativo. Va al
+ * MISMO buzón (`PQRS_DESTINO`) porque todo lo que escribe un cliente acaba en
+ * la misma bandeja, y se separa por el asunto.
  */
 import { Resend } from 'resend';
 import { asuntoDe } from './categorias';
@@ -223,4 +228,92 @@ export async function enviarCorreos(
   }
 
   return { destinoOk, ciudadanoOk, errores };
+}
+
+// --- Solicitud administrativa ----------------------------------------------
+
+/**
+ * Lo que deja escrito quien usa el formulario corto del bloque administrativo.
+ * `correo` puede venir vacío: ahí el campo es opcional a propósito, porque a
+ * mucha gente de tienda es más fácil devolverle la llamada que escribirle.
+ */
+export interface SolicitudAdministrativa {
+  nombre: string;
+  telefono: string;
+  correo: string;
+  mensaje: string;
+}
+
+/**
+ * Avisa al equipo de una solicitud administrativa. UN SOLO correo, al mismo
+ * buzón de `PQRS_DESTINO` que la radicación comercial.
+ *
+ * No hay correo de vuelta para quien escribe, y no es un olvido: esto no genera
+ * radicado, así que no habría constancia que mandarle, y el campo del correo es
+ * opcional —en la mitad de los casos no hay dirección a la que escribir—. Lo
+ * que recibe es la confirmación en pantalla.
+ *
+ * El asunto es «Solicitud administrativa · Nombre», distinto a propósito del
+ * «PQRS Comercial · …» de `asuntoDe`: los dos caen en la misma bandeja y hay
+ * que poder separarlos con un filtro sin abrirlos.
+ *
+ * El `replyTo` solo se pone si hay correo. Ponerlo vacío haría que responder
+ * desde la bandeja fuera a parar al propio remitente del sitio.
+ */
+export async function enviarCorreoAdministrativo(
+  datos: SolicitudAdministrativa,
+  env: Entorno,
+): Promise<{ ok: boolean; error?: string }> {
+  const clave = env.RESEND_API_KEY;
+  const destino = correoDestino(env);
+  if (!clave) return { ok: false, error: 'Falta RESEND_API_KEY.' };
+  if (!destino) return { ok: false, error: 'Falta PQRS_DESTINO.' };
+
+  const resend = new Resend(clave);
+
+  const texto = [
+    'Solicitud administrativa desde el formulario de PQRS de dstunja.com.',
+    '',
+    `Nombre: ${datos.nombre}`,
+    `Teléfono: ${datos.telefono}`,
+    datos.correo ? `Correo: ${datos.correo}` : 'Correo: (no lo dejó)',
+    '',
+    'Mensaje:',
+    datos.mensaje,
+    '',
+    'Esta solicitud NO tiene número de radicado: es una petición de contacto.',
+  ].join('\n');
+
+  const html = `<div style="${ESTILO_CUERPO}">
+    <h2 style="margin:0 0 4px;color:#0d2c84">Solicitud administrativa</h2>
+    <p style="margin:0 0 20px;color:#5f6b73">
+      Alguien pidió que lo contactaran desde el bloque administrativo de la página de PQRS.
+    </p>
+    <table style="border-collapse:collapse;width:100%">
+      ${fila('Nombre', datos.nombre)}
+      ${fila('Teléfono', datos.telefono)}
+      ${fila('Correo', datos.correo || '(no lo dejó)')}
+    </table>
+    <p style="margin:20px 0 6px;${ESTILO_ETIQUETA}">Mensaje</p>
+    <p style="margin:0;white-space:pre-wrap">${escapar(datos.mensaje)}</p>
+    <p style="margin:24px 0 0;color:#5f6b73;font-size:13px">
+      Esta solicitud no tiene número de radicado: es una petición de contacto, no una PQRS
+      comercial.
+    </p>
+  </div>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: correoRemitente(env),
+      to: destino,
+      ...(datos.correo ? { replyTo: datos.correo } : {}),
+      subject: `Solicitud administrativa · ${datos.nombre}`,
+      html,
+      text: texto,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (fallo) {
+    return { ok: false, error: (fallo as Error).message };
+  }
 }

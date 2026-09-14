@@ -26,6 +26,12 @@
  * Al elegir se emite un `change` sobre el espejo (un campo oculto no lo emite
  * solo cuando se le asigna el valor por programa), que es de lo que ya cuelga
  * CampoAdjuntos.
+ *
+ * QUÉ SE REVELA AL ELEGIR. Hay dos niveles: lo del GRUPO (`revela`, `oculta` y
+ * `desplazaA` en las props) vale para cualquier opción, y lo de CADA OPCIÓN
+ * (los mismos tres campos en `Opcion`) manda cuando dos opciones del mismo
+ * grupo llevan a pantallas distintas. Se aplica primero lo del grupo y después
+ * lo de la opción, para que la opción pueda esconder algo que el grupo enseña.
  */
 import Icono from './Icono.astro';
 
@@ -35,6 +41,23 @@ export interface Opcion {
   nombre: string;
   icono?: string;
   texto?: string;
+  /*
+   * REVELAR Y OCULTAR POR OPCIÓN. Los tres de abajo se suman a los del grupo
+   * entero y ganan cuando ambos existen. Hacen falta cuando dos opciones del
+   * mismo grupo llevan a pantallas DISTINTAS, que es lo que pasa en la PQRS:
+   * «Administrativa» enseña el bloque de contacto y esconde el formulario,
+   * «Comercial» hace justo lo contrario.
+   *
+   * Cada opción declara las dos caras —lo que enseña y lo que esconde— para que
+   * cambiar de idea deshaga lo anterior. Si solo declarara `revela`, pasar de
+   * administrativa a comercial dejaría las dos pantallas a la vez.
+   */
+  /** Selector CSS de lo que se revela al elegir ESTA opción. */
+  revela?: string;
+  /** Selector CSS de lo que se oculta al elegir ESTA opción. */
+  oculta?: string;
+  /** Selector CSS del bloque al que se baja, solo en móvil, al elegir ESTA. */
+  desplazaA?: string;
 }
 
 interface Props {
@@ -95,6 +118,9 @@ const anchos =
             name={grupo}
             value={opcion.valor}
             data-opcion
+            data-revela={opcion.revela}
+            data-oculta={opcion.oculta}
+            data-desplaza-a={opcion.desplazaA}
           />
           {opcion.icono && (
             <span class="icono-chip mb-5 flex h-12 w-12">
@@ -147,11 +173,10 @@ const anchos =
 
 <script>
   /**
-   * Ancho a partir del cual el formulario deja de estar debajo y pasa a estar
-   * al lado. Es el `--breakpoint-tablet` de global.css: por encima de él, bajar
-   * a un bloque que ya se ve sería un salto molesto y no se desplaza.
+   * Cuánto del bloque recién revelado tiene que asomar para darlo por visto. Si
+   * asoma menos que esto, se baja hasta él.
    */
-  const TABLET = 900;
+  const MARGEN_VISIBLE = 120;
 
   const suave = () =>
     window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
@@ -166,10 +191,28 @@ const anchos =
     const enfoca = raiz.dataset.enfoca ?? '';
     const desplazaA = raiz.dataset.desplazaA ?? '';
 
-    /** Baja hasta el bloque, pero solo cuando está debajo (móvil y tableta). */
-    function desplazar() {
-      if (!desplazaA || window.innerWidth >= TABLET) return;
-      document.querySelector(desplazaA)?.scrollIntoView({ behavior: suave(), block: 'start' });
+    /**
+     * Baja hasta el bloque, pero solo si NO se ve ya.
+     *
+     * Antes la condición era el ancho de la ventana (`< 900px`), dando por hecho
+     * que en escritorio lo revelado cae al lado y ya está a la vista. Para el
+     * formulario es cierto, pero para el paso 1 no: en 1440x900 el paso 2
+     * aparecía 81 px por debajo del pliegue y no se desplazaba, así que al
+     * pulsar una tarjeta **no pasaba nada visible** salvo que se marcara el
+     * borde. Se reportó como un fallo, y lo era.
+     *
+     * Medir la posición en vez del ancho sirve para los dos casos: si el bloque
+     * ya asoma no se mueve nada (que es lo que se quería conservar), y si quedó
+     * fuera de pantalla se baja, sea cual sea el tamaño de la ventana.
+     */
+    function desplazar(selector: string) {
+      if (!selector) return;
+      const bloque = document.querySelector(selector);
+      if (!bloque) return;
+      const caja = bloque.getBoundingClientRect();
+      const seVe = caja.top >= 0 && caja.top <= window.innerHeight - MARGEN_VISIBLE;
+      if (seVe) return;
+      bloque.scrollIntoView({ behavior: suave(), block: 'start' });
     }
 
     /**
@@ -182,6 +225,13 @@ const anchos =
       document.querySelector<HTMLElement>(enfoca)?.focus({ preventScroll: true });
     }
 
+    const mostrar = (selector: string, ocultarlo: boolean) => {
+      if (!selector) return;
+      document.querySelectorAll<HTMLElement>(selector).forEach((bloque) => {
+        bloque.classList.toggle('hidden', ocultarlo);
+      });
+    };
+
     radios.forEach((radio) => {
       radio.addEventListener('change', () => {
         if (!radio.checked) return;
@@ -191,19 +241,19 @@ const anchos =
         // programa. CampoAdjuntos escucha ese evento, así que se emite a mano.
         espejo!.dispatchEvent(new Event('change', { bubbles: true }));
 
-        if (revela) {
-          document.querySelectorAll<HTMLElement>(revela).forEach((bloque) => {
-            bloque.classList.remove('hidden');
-          });
-        }
-        if (oculta) {
-          document.querySelectorAll<HTMLElement>(oculta).forEach((bloque) => {
-            bloque.classList.add('hidden');
-          });
-        }
+        /*
+         * Primero lo del grupo entero y después lo de la opción, que es lo que
+         * le deja tener la última palabra. El orden importa cuando una opción
+         * quiere ESCONDER algo que el grupo revela: si fuera al revés, el
+         * grupo lo volvería a enseñar.
+         */
+        mostrar(revela, false);
+        mostrar(oculta, true);
+        mostrar(radio.dataset.revela ?? '', false);
+        mostrar(radio.dataset.oculta ?? '', true);
 
         enfocarPrimerCampo();
-        desplazar();
+        desplazar(radio.dataset.desplazaA || desplazaA);
       });
     });
   });

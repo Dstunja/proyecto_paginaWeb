@@ -52,10 +52,14 @@ src/
                            Turnstile, limite de tasa, Vercel Blob, correos con
                            Resend y la orquestacion (radicar.ts, con pruebas).
   lib/pqrs/categorias.ts   Las dos categorias de PQRS (administrativa y
-                           comercial): a que correo va cada una, si admite
-                           adjuntos y si genera radicado. No lee el entorno.
-  pages/api/pqrs/          Funciones de Vercel: token de subida, radicacion y
-                           cron de limpieza. Ver docs/PQRS-ADJUNTOS.md.
+                           comercial): que enseña cada una, si admite adjuntos y
+                           si genera radicado. No lee el entorno.
+  lib/pqrs/administrativa.ts  El recado del bloque administrativo: valida, limita
+                           por IP, comprueba Turnstile y manda UN correo. No
+                           radica nada. Con pruebas.
+  pages/api/pqrs/          Funciones de Vercel: token de subida, radicacion,
+                           recado administrativo y cron de limpieza. Ver
+                           docs/PQRS-ADJUNTOS.md.
   lib/imagenes.ts          Imágenes con reemplazo automático: si el archivo aún
                            no existe se muestra un marcador de posición (o el
                            nombre en texto, para los logos de marca).
@@ -77,16 +81,20 @@ src/
                            de correo). La PQRS ya no lo usa.
     SelectorOpciones.astro Grupo de tarjetas seleccionables (radios nativos).
                            Lo usan los dos pasos de la PQRS: categoria y tipo.
+                           Cada opcion puede revelar y ocultar bloques distintos,
+                           que es como la categoria bifurca la pagina.
+    ContactoAdministrativo.astro  Lo que sale al elegir la categoria
+                           administrativa: telefono, WhatsApp y correo (de
+                           src/data/site.ts) con boton de copiar, mas un
+                           formulario corto y opcional que manda un recado.
     CampoMunicipio.astro   Municipio de la PQRS: combobox cerrado a los 87
                            municipios de cobertura, con busqueda sin tildes y
                            preseleccion opcional por ubicacion.
     CampoAdjuntos.astro    Archivos de soporte de la PQRS. Solo aparece en la
                            categoria comercial y con tipo Queja o Reclamo.
-    FormularioPqrs.astro   Formulario de PQRS. En la categoria comercial radica
-                           de verdad (sube los soportes a Vercel Blob, llama a
-                           /api/pqrs y muestra el radicado); en la
-                           administrativa abre el gestor de correo, sin
-                           adjuntos ni radicado.
+    FormularioPqrs.astro   Formulario de radicacion de PQRS, solo de la
+                           categoria comercial: sube los soportes a Vercel Blob,
+                           llama a /api/pqrs y muestra el radicado.
     PageHero.astro         Encabezado de las páginas internas.
   pages/                   Una página por archivo: index, nosotros, catalogo,
                            innovacion, empleos, contactanos, pqrs y 404.
@@ -298,11 +306,11 @@ corre una sola vez con `npm run geocodificar`; el resultado queda cacheado en
 ## Variables de entorno
 
 La radicación de PQRS **comercial** se apoya en tres servicios (Vercel Blob,
-Resend y Cloudflare Turnstile) y cada uno tiene su variable. La categoría
-**administrativa** no necesita ninguno: sale por el gestor de correo, y su
-destino es `PUBLIC_PQRS_ADMIN_DESTINO` (si falta, el correo de la empresa). **Cuando falta una, el
-síntoma es siempre un mensaje opaco del SDK de turno**, no un aviso claro: por
-eso hay un comprobador.
+Resend y Cloudflare Turnstile) y cada uno tiene su variable. El formulario corto
+de la categoría **administrativa** usa dos de los tres —Resend y Turnstile— y va
+al **mismo** buzón, el de `PQRS_DESTINO`. **Cuando falta una, el síntoma es
+siempre un mensaje opaco del SDK de turno**, no un aviso claro: por eso hay un
+comprobador.
 
 ```bash
 npm run check:env
@@ -332,7 +340,7 @@ npx vercel env pull .env.local
 | `TURNSTILE_SECRET` | Cloudflare → *Turnstile* → tu widget → *Settings* → **Secret Key**. |
 | `PUBLIC_TURNSTILE_SITE_KEY` | El mismo widget → **Site Key**. Lleva `PUBLIC_` porque el navegador la necesita. |
 | `RESEND_API_KEY` | <https://resend.com/api-keys>. El dominio del remitente debe estar verificado en Resend. |
-| `PQRS_DESTINO` | Lo decide la empresa: el correo del área que atiende las PQRS. |
+| `PQRS_DESTINO` | Lo decide la empresa: el correo que recibe **todo** lo de la página de PQRS, comercial y administrativo. Hoy `informacioncomercialdst@gmail.com`. |
 | `PQRS_IP_SALT`, `CRON_SECRET` | Se generan: `node -e "console.log(crypto.randomUUID())"`. |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | Vercel → *Marketplace* → Upstash (plan gratuito). Opcionales. |
 
@@ -364,27 +372,33 @@ completo de los adjuntos en `docs/PQRS-ADJUNTOS.md`.
 Los de contacto y empleos **arman un correo** con los datos y lo abren en el
 gestor de quien escribe (`src/components/FormularioMailto.astro`).
 
-El de **PQRS se elige en dos pasos**, categoría y tipo, y cada clic se aplica al
-instante: sin botón de «continuar» y sin recargar. La categoría decide el canal.
+El de **PQRS empieza preguntando la categoría**, y ese primer clic decide el
+resto de la página: no hay botón de «continuar» y no se recarga nada.
 
-- **Administrativa**: abre el gestor de correo con la solicitud escrita, hacia
-  `PUBLIC_PQRS_ADMIN_DESTINO`. Sin adjuntos, sin antirrobots y sin radicado, así
-  que funciona igual en Vercel y en el espejo de GitHub Pages.
+- **Administrativa**: **no radica**. En cuanto se elige, desaparecen el paso 2 y
+  el formulario de PQRS, y en su lugar sale un bloque
+  (`src/components/ContactoAdministrativo.astro`) con el teléfono, el WhatsApp y
+  el correo de la empresa —sacados de `empresa` en `src/data/site.ts`, no
+  escritos a mano— con botón de copiar en cada uno. Debajo hay un formulario
+  corto y opcional (nombre, teléfono, correo opcional y mensaje) que manda un
+  recado con `POST /api/pqrs/administrativa`; si esa función no está, cae a un
+  `mailto:`, así que en el espejo de GitHub Pages se sigue pudiendo escribir.
 El **municipio** es un combobox cerrado a los 87 municipios de cobertura, que
 salen de `src/data/municipios.ts`. Busca ignorando tildes y mayúsculas, se
 maneja con el teclado, y si la persona concede la ubicación preselecciona el más
 cercano (si la niega, no pasa nada). Se valida también en el servidor: un
 municipio que no esté en la lista devuelve 400.
 
-- **Comercial**: **radica de verdad** contra `src/pages/api/pqrs/`. Guarda la
-  solicitud y sus soportes, devuelve un número de radicado y manda dos correos.
-  Esas funciones **solo existen en Vercel**; en el espejo de GitHub Pages no hay
-  backend y el formulario cae al respaldo por correo, avisando de que así no
-  queda radicado. Necesita las variables de la sección anterior.
+- **Comercial**: pide el tipo (paso 2) y **radica de verdad** contra
+  `src/pages/api/pqrs/`. Guarda la solicitud y sus soportes, devuelve un número
+  de radicado y manda dos correos. Esas funciones **solo existen en Vercel**; en
+  el espejo de GitHub Pages no hay backend y el formulario cae al respaldo por
+  correo, avisando de que así no queda radicado. Necesita las variables de la
+  sección anterior.
 
-Los dos caminos acaban en un `mailto:` cuando toca, pero **no son lo mismo**: el
-administrativo es el previsto y sale bien; el de la comercial solo aparece
-cuando la radicación ha fallado. Detalle completo en `docs/PQRS-ADJUNTOS.md`.
+Los dos caminos acaban en el **mismo buzón**, el de `PQRS_DESTINO`, y se separan
+por el asunto: «Solicitud administrativa · Nombre» frente a «[PQRS-…] PQRS
+Comercial · …». Detalle completo en `docs/PQRS-ADJUNTOS.md`.
 
 ## Despliegue en Cloudflare
 
