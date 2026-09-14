@@ -84,6 +84,60 @@ export const pesos = (n: number) =>
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
+/**
+ * El renglón de precio de una referencia, como HTML: la cifra con su rótulo, o
+ * el aviso de "a consultar" cuando no hay ninguna.
+ *
+ * DÓNDE SE USA
+ * ------------
+ * En la tarjeta del catálogo (`tarjeta`, abajo) y en la de "Especiales del mes"
+ * del inicio (src/components/EspecialesMes.astro). Vive en una función, y no
+ * copiado en cada vista, por lo mismo que `detalleReferencia`: si cada una lo
+ * armara por su cuenta, bastaría con que una cambiara el rótulo o el formato de
+ * la cifra para que el sitio dijera dos cosas distintas del mismo producto. Sus
+ * estilos (`.precio-tarjeta*`) están por lo mismo en src/styles/global.css.
+ *
+ * EL PRECIO: siempre hay renglón, y siempre el MISMO rótulo
+ * ---------------------------------------------------------
+ * La cifra sale de uno de tres orígenes -PSP confirmado por el asesor, PSP
+ * del deck, o precio de lista de SAP-, pero los tres se pintan igual: con
+ * `ETIQUETA_PRECIO` (src/lib/precios.ts), hoy "Precio de referencia".
+ *
+ * Antes eran dos rótulos, "sugerido" y "Precio de lista". Se unificaron
+ * porque la distinción no le servía a quien usa la página: los tres son
+ * orientativos y los tres los confirma el asesor antes de despachar (ese
+ * aviso vive en el panel del pedido y en el mensaje de WhatsApp,
+ * `AVISO_PRECIOS`). El origen NO se perdió: sigue separado en los datos, en
+ * tres archivos distintos, y volver a distinguirlo en pantalla es cambiar
+ * este rótulo por dos otra vez.
+ *
+ * LA PRESENTACIÓN, SOLO EN LAS DE PRECIO DE LISTA
+ * -----------------------------------------------
+ * Esa sí se mantiene aparte, porque no es un rótulo de origen sino un dato
+ * del producto: el precio de lista corresponde a la unidad de venta, y
+ * cuando el maestro declara cuántas unidades trae ("caja x 12") decirlo es
+ * lo que le da sentido a la cifra. Cuando no la declara va el precio solo:
+ * inventarle un empaque sería peor que no decir nada.
+ *
+ * La única referencia que no tiene ninguno de los tres precios no deja el
+ * hueco ni pinta un $0: dice lo que diga `SIN_PSP` (src/lib/precios.ts), que
+ * es la misma frase que usa el panel del pedido, y así todas las tarjetas de
+ * una fila siguen midiendo lo mismo.
+ */
+export function bloquePrecio(p: Pick<ProductoPedido, 'psp' | 'lista'>): string {
+  const rotulo = `<span class="precio-tarjeta__nota">${escapar(ETIQUETA_PRECIO)}</span>`;
+  if (typeof p.psp === 'number') {
+    return `<p class="precio-tarjeta">${escapar(pesos(p.psp))}${rotulo}</p>`;
+  }
+  if (p.lista) {
+    const presentacion = p.lista.unidades
+      ? `<p class="precio-tarjeta__presentacion">${escapar(presentacionDeLista(p.lista.unidades))}</p>`
+      : '';
+    return `<p class="precio-tarjeta">${escapar(pesos(p.lista.valor))}${rotulo}</p>${presentacion}`;
+  }
+  return `<p class="precio-tarjeta precio-tarjeta--consultar">${escapar(SIN_PSP)}</p>`;
+}
+
 /** Marcas en el orden en que aparecen en el catálogo, con sus productos. */
 export function agruparPorMarca(catalogo: ProductoPedido[]): Map<string, ProductoPedido[]> {
   const porMarca = new Map<string, ProductoPedido[]>();
@@ -150,45 +204,7 @@ export function tarjeta(p: ProductoPedido, estado: EstadoCatalogo, ansiosa = fal
              <span class="tarjeta-foto__rotulo" aria-hidden="true">${escapar(p.nombre)}</span>
            </div>`;
 
-  /*
-   * EL PRECIO: siempre hay renglón, y siempre el MISMO rótulo
-   * ---------------------------------------------------------
-   * La cifra sale de uno de tres orígenes -PSP confirmado por el asesor, PSP
-   * del deck, o precio de lista de SAP-, pero los tres se pintan igual: con
-   * `ETIQUETA_PRECIO` (src/lib/precios.ts), hoy "Precio de referencia".
-   *
-   * Antes eran dos rótulos, "sugerido" y "Precio de lista". Se unificaron
-   * porque la distinción no le servía a quien usa la página: los tres son
-   * orientativos y los tres los confirma el asesor antes de despachar (ese
-   * aviso vive en el panel del pedido y en el mensaje de WhatsApp,
-   * `AVISO_PRECIOS`). El origen NO se perdió: sigue separado en los datos, en
-   * tres archivos distintos, y volver a distinguirlo en pantalla es cambiar
-   * este rótulo por dos otra vez.
-   *
-   * LA PRESENTACIÓN, SOLO EN LAS DE PRECIO DE LISTA
-   * -----------------------------------------------
-   * Esa sí se mantiene aparte, porque no es un rótulo de origen sino un dato
-   * del producto: el precio de lista corresponde a la unidad de venta, y
-   * cuando el maestro declara cuántas unidades trae ("caja x 12") decirlo es
-   * lo que le da sentido a la cifra. Cuando no la declara va el precio solo:
-   * inventarle un empaque sería peor que no decir nada.
-   *
-   * La única referencia que no tiene ninguno de los tres precios no deja el
-   * hueco ni pinta un $0: dice lo que diga `SIN_PSP` (src/lib/precios.ts), que
-   * es la misma frase que usa el panel del pedido, y así todas las tarjetas de
-   * una fila siguen midiendo lo mismo.
-   */
-  const rotulo = `<span class="precio-tarjeta__nota">${escapar(ETIQUETA_PRECIO)}</span>`;
-  const precio =
-    typeof p.psp === 'number'
-      ? `<p class="precio-tarjeta">${escapar(pesos(p.psp))}${rotulo}</p>`
-      : p.lista
-        ? `<p class="precio-tarjeta">${escapar(pesos(p.lista.valor))}${rotulo}</p>${
-            p.lista.unidades
-              ? `<p class="precio-tarjeta__presentacion">${escapar(presentacionDeLista(p.lista.unidades))}</p>`
-              : ''
-          }`
-        : `<p class="precio-tarjeta precio-tarjeta--consultar">${escapar(SIN_PSP)}</p>`;
+  const precio = bloquePrecio(p);
 
   return `
         <article class="glass-card flex flex-col overflow-hidden ${enPedido ? '!border-secondary/60' : ''}" data-tarjeta="${escapar(p.id)}">
