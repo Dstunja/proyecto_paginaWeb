@@ -50,13 +50,21 @@ jobs:
       # colgando de /client/ y la direccion daba 404.
       - name: Compilar el sitio con Astro
         uses: withastro/action@v5
-        # El ID de Google Analytics no vive en el codigo: se guarda como
-        # secreto del repositorio (Settings > Secrets and variables > Actions)
-        # y solo existe durante la compilacion. Si el secreto no esta definido
-        # la variable llega vacia y el sitio se publica sin analitica, sin
-        # fallar. Ver docs/ANALITICA.md.
+        # El ID del contenedor de Tag Manager no vive en el codigo: se guarda
+        # como variable del repositorio (Settings > Secrets and variables >
+        # Actions > Variables) y solo existe durante la compilacion. Si no esta
+        # definida, la variable llega vacia y el sitio se publica sin analitica,
+        # sin fallar. Ver docs/ANALITICA.md.
+        #
+        # Es una variable y no un secreto a proposito: el ID del contenedor
+        # viaja en el HTML de todas las paginas, asi que no hay nada que
+        # esconder. Como secreto solo conseguiriamos que no se pueda leer desde
+        # la propia interfaz de GitHub.
+        #
+        # La etiqueta de GA4 vive dentro del contenedor, asi que PUBLIC_GA_ID ya
+        # no hace falta: definirla ademas haria que GA4 contara doble.
         env:
-          PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
+          PUBLIC_GTM_CONTAINER_ID: ${{ vars.PUBLIC_GTM_CONTAINER_ID }}
         with:
           node-version: 22
           package-manager: npm
