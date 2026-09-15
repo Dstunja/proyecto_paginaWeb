@@ -416,7 +416,7 @@ con OWASP ZAP sobre dstunja.com:
 | `X-Frame-Options` | `DENY` |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(self)` |
 | `Access-Control-Allow-Origin` | `https://dstunja.com`, en lugar del `*` que pone Vercel a los archivos estáticos |
 
 Qué permite la CSP, además del propio origen:
@@ -431,7 +431,7 @@ Qué permite la CSP, además del propio origen:
 | `font-src` | ninguno | Las fuentes son propias (Fontsource) |
 | `frame-ancestors` | `'none'` | Nadie puede incrustar el sitio en un iframe |
 
-Dos consecuencias que hay que conocer:
+Tres consecuencias que hay que conocer:
 
 - **No puede haber scripts en línea.** Los tres que había (el interruptor del
   revelado, el arranque de gtag y el aviso del catálogo) están en `public/js/`, y
@@ -441,9 +441,11 @@ Dos consecuencias que hay que conocer:
   sí valen.
 - **Un servicio externo nuevo** (otro mapa, un chat, una herramienta de GTM) hay
   que añadirlo a la CSP de `vercel.json`, o el navegador lo bloqueará.
-- **La geolocalización está deshabilitada** (`geolocation=()`): la preselección
-  del municipio por ubicación en la PQRS ya no se ofrece y el campo se elige a
-  mano. Para recuperarla sin abrirla a terceros: `geolocation=(self)`.
+- **La geolocalización solo la puede pedir el propio sitio** (`geolocation=(self)`):
+  la PQRS la usa para preseleccionar el municipio más cercano, y ningún iframe de
+  terceros puede pedirla. Hubo un momento con `geolocation=()`, que la apagaba
+  del todo y dejaba el municipio sin preselección; no volver a ponerlo sin quitar
+  antes esa función. Cámara y micrófono siguen deshabilitados para todos.
 
 Los comentarios HTML de las plantillas **no se publican**: los quita
 `src/middleware.ts` al generar cada página.

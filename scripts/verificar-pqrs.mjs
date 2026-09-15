@@ -95,10 +95,20 @@ const TIPOS = {
   '.xml': 'application/xml',
 };
 
+/**
+ * Clave de prueba de Cloudflare que se inyecta en el HTML cuando la página se
+ * pide con `?turnstile=prueba`. Un build sin PUBLIC_TURNSTILE_SITE_KEY no monta
+ * Turnstile, y entonces no se podría probar qué hace el formulario cuando la
+ * verificación falla o pide la casilla. El doble de Cloudflare decide el resto.
+ */
+const CLAVE_TURNSTILE_PRUEBA = '1x00000000000000000000AA';
+
 function servir() {
   return new Promise((listo) => {
     const servidor = createServer(async (peticion, respuesta) => {
-      let ruta = decodeURIComponent(new URL(peticion.url, 'http://x').pathname);
+      const direccion = new URL(peticion.url, 'http://x');
+      const conTurnstile = direccion.searchParams.get('turnstile') === 'prueba';
+      let ruta = decodeURIComponent(direccion.pathname);
       if (ruta.startsWith(BASE)) ruta = ruta.slice(BASE.length);
       if (ruta.endsWith('/')) ruta += 'index.html';
       if (ruta === '') ruta = '/index.html';
@@ -112,7 +122,14 @@ function servir() {
       try {
         const info = await stat(archivo);
         if (info.isDirectory()) throw new Error('directorio');
-        const cuerpo = await readFile(archivo);
+        let cuerpo = await readFile(archivo);
+        if (conTurnstile && extname(archivo) === '.html') {
+          cuerpo = Buffer.from(
+            cuerpo
+              .toString('utf8')
+              .replace(/data-turnstile-key(="")?(?=[\s>])/g, `data-turnstile-key="${CLAVE_TURNSTILE_PRUEBA}"`),
+          );
+        }
         respuesta.writeHead(200, {
           'content-type': TIPOS[extname(archivo)] ?? 'application/octet-stream',
         });
@@ -238,12 +255,27 @@ const TURNSTILE_FALSO = `
     window.turnstile = {
       render: function (contenedor, opciones) {
         var id = 'widget-' + ++contador;
-        callbacks[id] = opciones.callback;
+        callbacks[id] = opciones;
         return id;
       },
+      // Modo fijado por la prueba antes de cargar (window.__modoTurnstile):
+      //   'ok'          token a los 10 ms
+      //   'interaccion' pide la casilla y el token llega a los
+      //                 window.__esperaInteraccionMs (más de 30 s)
+      //   'error'       Cloudflare responde con el error 600010
       execute: function (id) {
-        var cb = callbacks[id];
-        if (cb) setTimeout(function () { cb('token-de-prueba-' + Date.now()); }, 10);
+        var o = callbacks[id];
+        if (!o) return;
+        var modo = window.__modoTurnstile || 'ok';
+        var token = function () { o.callback('token-de-prueba-' + Date.now()); };
+        if (modo === 'interaccion') {
+          setTimeout(function () { o['before-interactive-callback'] && o['before-interactive-callback'](); }, 50);
+          setTimeout(token, window.__esperaInteraccionMs || 33000);
+        } else if (modo === 'error') {
+          setTimeout(function () { o['error-callback'] && o['error-callback']('600010'); }, 50);
+        } else {
+          setTimeout(token, 10);
+        }
       },
       reset: function () {},
       remove: function () {},
@@ -287,9 +319,23 @@ async function responderBlob(ruta, camino) {
 async function instalarDobles(pagina, plan) {
   const registro = { token: [], radicar: [], blob: [], administrativa: [] };
 
-  await pagina.route('https://challenges.cloudflare.com/**', (ruta) =>
-    ruta.fulfill({ status: 200, contentType: 'text/javascript', body: TURNSTILE_FALSO }),
-  );
+  if (plan.turnstile === 'bloqueado') {
+    // Lo que hace un bloqueador de anuncios: el script de Cloudflare no llega.
+    await pagina.route('https://challenges.cloudflare.com/**', (ruta) => ruta.abort('blockedbyclient'));
+  } else {
+    await pagina.route('https://challenges.cloudflare.com/**', (ruta) =>
+      ruta.fulfill({ status: 200, contentType: 'text/javascript', body: TURNSTILE_FALSO }),
+    );
+  }
+  if (plan.turnstile) {
+    await pagina.addInitScript(
+      ([modo, espera]) => {
+        window.__modoTurnstile = modo;
+        window.__esperaInteraccionMs = espera;
+      },
+      [plan.turnstile, plan.esperaInteraccionMs ?? 33000],
+    );
+  }
 
   await pagina.route('**/api/pqrs/token', async (ruta) => {
     registro.token.push(JSON.parse(ruta.request().postData() ?? '{}'));
@@ -1487,7 +1533,10 @@ const hayTurnstileAdmin = async (pagina) =>
 async function abrirAdministrativa(contexto, plan = { administrativa: 'ok' }) {
   const pagina = await contexto.newPage();
   const registro = await instalarDobles(pagina, plan);
-  await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+  // Con `plan.turnstile` se pide la página con la clave de prueba inyectada.
+  await pagina.goto(url(plan.turnstile ? '/pqrs/?turnstile=prueba' : '/pqrs/'), {
+    waitUntil: 'domcontentloaded',
+  });
   await pagina.waitForTimeout(400);
   const rechazar = pagina.locator('[data-rechazar-cookies]');
   if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
@@ -1789,6 +1838,115 @@ async function revisarAdministrativa(navegador) {
       '«¿Qué necesitas?» válido: ahora sí se envía',
       registro.administrativa.length === 1,
       String(registro.administrativa.length),
+    );
+    await pagina.close();
+  }
+
+  // ---- 8-ter. Turnstile falla: se explica y se puede reintentar ------------
+  /*
+   * Mismo arreglo que en Empleos. Antes, cualquier fallo de Turnstile caía al
+   * `catch` general y abría el `mailto:` sin haber llamado nunca a la API.
+   */
+  const rellenarAdministrativa = async (pagina) => {
+    await elegir(pagina, 'administrativa');
+    await pagina.fill('#nombre-admin', 'Cristian Amaya');
+    await pagina.fill('#telefono-admin', '3106232429');
+    await pagina.fill('#mensaje-admin', 'Necesito una copia de la factura del mes pasado.');
+  };
+
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto, {
+      administrativa: 'ok',
+      turnstile: 'error',
+    });
+    comprobar(
+      'Administrativa (Turnstile): la página lleva la clave de prueba inyectada',
+      await hayTurnstileAdmin(pagina),
+    );
+    await rellenarAdministrativa(pagina);
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(1000);
+
+    const errores = ((await pagina.locator('[data-errores-admin]').textContent()) ?? '').replace(/\s+/g, ' ');
+    comprobar(
+      'Administrativa (Turnstile falla): se explica la verificación de seguridad y se invita a reintentar',
+      (await pagina.locator('[data-errores-admin]').isVisible()) &&
+        /verificación de seguridad/.test(errores) &&
+        /Vuelve a pulsar/.test(errores),
+      errores.trim().slice(0, 120),
+    );
+    comprobar(
+      'Administrativa (Turnstile falla): NO se abre el gestor de correo ni se llama a la API',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo]').count()) === 0 &&
+        registro.administrativa.length === 0,
+      `respaldo=${await pagina.locator('[data-contacto-admin-caja]').getAttribute('data-respaldo')} llamadas=${registro.administrativa.length}`,
+    );
+    comprobar(
+      'Administrativa (Turnstile falla): el botón vuelve a quedar usable para reintentar',
+      !(await pagina.locator('[data-enviar-admin]').isDisabled()) &&
+        ((await pagina.locator('[data-enviar-admin]').textContent()) ?? '').trim() === 'Enviar mis datos',
+    );
+
+    // Al reintentar, si Cloudflare ya responde, el recado sale.
+    await pagina.evaluate(() => {
+      window.__modoTurnstile = 'ok';
+    });
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(1000);
+    comprobar(
+      'Administrativa (reintento): con la verificación ya bien, el recado llega a la API y sale la confirmación',
+      registro.administrativa.length === 1 && (await pagina.locator('[data-confirmacion-admin]').isVisible()),
+      String(registro.administrativa.length),
+    );
+    await pagina.close();
+  }
+
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto, {
+      administrativa: 'ok',
+      turnstile: 'interaccion',
+      esperaInteraccionMs: 33_000,
+    });
+    await rellenarAdministrativa(pagina);
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(800);
+
+    const aviso = pagina.locator('[data-aviso-verificacion-admin]');
+    comprobar(
+      'Administrativa (casilla pedida): aparece el aviso de que falta marcar la verificación',
+      (await aviso.isVisible()) && /marca la casilla/.test((await aviso.textContent()) ?? ''),
+    );
+    await pagina.waitForTimeout(30_500);
+    comprobar(
+      'Administrativa (casilla pedida): a los 31 s NO se ha caído al correo ni se ha rendido',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo]').count()) === 0 &&
+        registro.administrativa.length === 0 &&
+        (await aviso.isVisible()),
+    );
+    await pagina.waitForTimeout(3_500);
+    comprobar(
+      'Administrativa (casilla marcada): el recado llega con el token, sale la confirmación y el aviso se va',
+      registro.administrativa.length === 1 &&
+        String(registro.administrativa[0]?.turnstileToken ?? '').startsWith('token-de-prueba-') &&
+        (await pagina.locator('[data-confirmacion-admin]').isVisible()) &&
+        !(await aviso.isVisible()),
+      String(registro.administrativa[0]?.turnstileToken ?? '(no llegó)'),
+    );
+    await pagina.close();
+  }
+
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto, {
+      administrativa: 'ok',
+      turnstile: 'bloqueado',
+    });
+    await rellenarAdministrativa(pagina);
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(1200);
+    comprobar(
+      'Administrativa (Turnstile bloqueado): sin forma de verificar, sí se ofrece el correo, sin llamar a la API',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo="correo"]').count()) === 1 &&
+        registro.administrativa.length === 0,
     );
     await pagina.close();
   }

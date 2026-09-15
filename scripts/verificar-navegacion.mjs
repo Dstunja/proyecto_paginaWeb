@@ -334,7 +334,9 @@ const ESPERADAS = {
   'x-frame-options': 'DENY',
   'x-content-type-options': 'nosniff',
   'referrer-policy': 'strict-origin-when-cross-origin',
-  'permissions-policy': 'camera=(), microphone=(), geolocation=()',
+  // geolocation=(self): la PQRS preselecciona el municipio por ubicación; los
+  // iframes de terceros no pueden pedirla. Cámara y micrófono, para nadie.
+  'permissions-policy': 'camera=(), microphone=(), geolocation=(self)',
   'access-control-allow-origin': 'https://dstunja.com',
 };
 
@@ -576,6 +578,59 @@ async function revisarCspEnNavegador(navegador, { base, local, etiqueta }) {
       cargo && iframe && (await violaciones(pagina)).length === 0,
       `script=${cargo} widget=${iframe}`,
     );
+  }
+
+  // ---- Geolocalización bajo Permissions-Policy: geolocation=(self) ------------
+  {
+    // Coordenadas de la plaza de Samacá, con el permiso concedido. El municipio
+    // más cercano tiene que ser Samacá y no Tunja, a unos 20 km.
+    const conUbicacion = await navegador.newContext({
+      viewport: { width: 1280, height: 900 },
+      permissions: ['geolocation'],
+      geolocation: { latitude: 5.4918, longitude: -73.4853 },
+    });
+    await conUbicacion.addInitScript(() => {
+      window.__violacionesCsp = [];
+      document.addEventListener('securitypolicyviolation', (e) => {
+        window.__violacionesCsp.push(`${e.violatedDirective} → ${e.blockedURI || '(en línea)'}`);
+      });
+    });
+    const paginaGeo = await conUbicacion.newPage();
+    await paginaGeo.goto(`${base}/pqrs/`, { waitUntil: 'load' });
+    await rechazarCookies(paginaGeo);
+
+    const politica = await paginaGeo.evaluate(() => {
+      const fp = document.featurePolicy;
+      if (!fp) return null;
+      return {
+        geolocalizacion: fp.allowsFeature('geolocation'),
+        geolocalizacionTerceros: fp.allowsFeature('geolocation', 'https://example.com'),
+        camara: fp.allowsFeature('camera'),
+        microfono: fp.allowsFeature('microphone'),
+      };
+    });
+    comprobar(
+      `${etiqueta}: Permissions-Policy deja la geolocalización al propio sitio y a nadie más, sin cámara ni micrófono`,
+      politica !== null &&
+        politica.geolocalizacion === true &&
+        politica.geolocalizacionTerceros === false &&
+        politica.camara === false &&
+        politica.microfono === false,
+      JSON.stringify(politica),
+    );
+
+    await paginaGeo.locator('label:has(input[name="categoria-opcion"][value="comercial"])').click();
+    await paginaGeo.waitForTimeout(250);
+    await paginaGeo.locator('label:has(input[name="tipo-opcion"][value="Queja"])').click();
+    const preseleccion = await paginaGeo
+      .waitForFunction(() => document.querySelector('#municipio-pqrs')?.value === 'Samacá', null, { timeout: 15_000 })
+      .then(() => true, () => false);
+    comprobar(
+      `${etiqueta}: con ubicación concedida, la PQRS preselecciona el municipio más cercano`,
+      preseleccion && (await violaciones(paginaGeo)).length === 0,
+      await paginaGeo.locator('#municipio-pqrs').inputValue(),
+    );
+    await conUbicacion.close();
   }
 
   // ---- Analítica ---------------------------------------------------------------

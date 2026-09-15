@@ -504,6 +504,13 @@ eligió, manda su elección y no el GPS.
 El municipio elegido se guarda en `sessionStorage`, así que sobrevive a cambiar
 de categoría o de tipo y también a recargar la página.
 
+**Depende de la `Permissions-Policy` de `vercel.json`**, que tiene que decir
+`geolocation=(self)`: el propio sitio puede pedir la ubicación y ningún iframe de
+terceros puede. Con `geolocation=()` el navegador la niega sin preguntar y la
+preselección desaparece sin ningún error visible, justo por lo de arriba. Pasó un
+día en producción. `npm run verificar:navegacion` lo comprueba bajo la CSP con
+coordenadas de Samacá.
+
 ## Quién decide si hay campo de soporte
 
 **La categoría, y solo la categoría.** Dentro de la comercial lo llevan los
@@ -564,6 +571,13 @@ renombrado no cuele).
   de 5 minutos. Antes ese tope cortaba la espera con la casilla en pantalla y el
   formulario caía al correo sin llamar a la API; pasó en producción con Empleos
   (ver docs/EMPLEOS-POSTULACION.md).
+- **Un fallo de Turnstile no abre el correo en el formulario administrativo.**
+  Igual que en Empleos: si Cloudflare pide la casilla sale un aviso; si la
+  verificación falla o caduca, se explica («No pudimos completar la verificación
+  de seguridad… Vuelve a pulsar») y se puede reintentar. Solo si el script de
+  Cloudflare no carga (un bloqueador) se ofrece el correo. Antes cualquier fallo
+  de Turnstile abría el `mailto:` sin llamar nunca a la API. El formulario de
+  radicación comercial todavía cae al correo en ese caso.
 - **Blobs privados, sin opción pública.** Store `pqrs-adjuntos`, privado, y
   `access: 'private'` fijo en servidor (`ACCESO_BLOB` en `src/lib/pqrs/config.ts`)
   y navegador (`FormularioPqrs.astro`). La variable `PUBLIC_PQRS_BLOB_ACCESS`,
@@ -891,7 +905,7 @@ espacios en los extremos, saltos de línea y tabuladores (que el servidor no
 cuenta), emojis y el máximo justo y pasado por uno. También los textos del
 contador en singular y plural, y que los errores del servidor dicen el mínimo.
 
-`npm run verificar:pqrs` (Playwright, 195 comprobaciones en móvil y escritorio)
+`npm run verificar:pqrs` (Playwright, 204 comprobaciones en móvil y escritorio)
 cubre lo que se ve:
 
 - **La elección por clic**: que cada una de las dos categorías y cada uno de los
@@ -914,7 +928,11 @@ cubre lo que se ve:
   `/api/pqrs/administrativa` con los cuatro campos y el token, que no radica nada
   por el camino, que la confirmación no promete radicado, que un 403 de
   antirrobots enseña el motivo **sin** caer al `mailto:` y dejando el botón
-  usable, y que si la función no contesta sí se abre el gestor de correo.
+  usable, y que si la función no contesta sí se abre el gestor de correo. Con la
+  clave de prueba inyectada y un doble de Cloudflare: que un error de Turnstile se
+  explica sin abrir el correo ni llamar a la API y al reintentar el recado sale;
+  que si pide la casilla sale el aviso, a los 31 s no se ha rendido y al llegar
+  el token el recado llega; y que con el script bloqueado sí se ofrece el correo.
 - **La radicación comercial** con `POST /api/pqrs`, `POST /api/pqrs/token` y el
   script de Turnstile interceptados, incluido el **camino completo con adjunto**:
   se simulan los dos pasos de `@vercel/blob` (pedir el permiso y subir el archivo

@@ -154,6 +154,20 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
     <!-- Turnstile en modo `interaction-only`: normalmente no se ve nada. -->
     <div data-turnstile-admin class="empty:hidden"></div>
 
+    {/*
+      Solo aparece si, después de pulsar Enviar, Cloudflare pide marcar la
+      casilla. Mismo aviso que el formulario de Empleos.
+    */}
+    <p
+      data-aviso-verificacion-admin
+      class="m-0 hidden rounded-xl border border-secondary/30 bg-secondary-soft px-4 py-3 text-[14px] text-ink"
+      role="status"
+      aria-live="polite"
+    >
+      Falta un paso: marca la casilla de verificación de seguridad que aparece arriba para terminar
+      de enviar tus datos.
+    </p>
+
     <div class="flex flex-wrap items-center gap-4">
       <button type="submit" class="btn btn-primary" data-enviar-admin>Enviar mis datos</button>
       <div data-espera-admin class="hidden" role="status" aria-live="polite">
@@ -201,7 +215,7 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 </div>
 
 <script>
-  import { prepararTurnstile, tokenTurnstile } from '../lib/turnstile-cliente';
+  import { ErrorTurnstile, prepararTurnstile, tokenTurnstile } from '../lib/turnstile-cliente';
   import { ruta } from '../lib/rutas';
 
   /**
@@ -238,7 +252,9 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
     const confirmacion = raiz.querySelector<HTMLElement>('[data-confirmacion-admin]');
     const boton = raiz.querySelector<HTMLButtonElement>('[data-enviar-admin]');
     const espera = raiz.querySelector<HTMLElement>('[data-espera-admin]');
+    const avisoVerificacion = raiz.querySelector<HTMLElement>('[data-aviso-verificacion-admin]');
     if (!form || !cajaTurnstile || !cajaErrores || !listaErrores || !confirmacion || !boton) return;
+    if (!avisoVerificacion) return;
 
     const claveTurnstile = raiz.dataset.turnstileKey ?? '';
     const destino = raiz.dataset.destino ?? '';
@@ -262,9 +278,25 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
       );
     }
 
+    /**
+     * Token para el envío. Si Cloudflare pide marcar la casilla, se enseña el
+     * aviso y se lleva la casilla a la vista; la espera no vence mientras la
+     * persona la marca (ver src/lib/turnstile-cliente.ts).
+     */
     async function token(): Promise<string> {
       if (!claveTurnstile) return '';
-      return tokenTurnstile();
+      return tokenTurnstile({
+        alPedirInteraccion: () => {
+          raiz.dataset.verificacion = 'pendiente';
+          avisoVerificacion!.classList.remove('hidden');
+          cajaTurnstile!.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        },
+      });
+    }
+
+    function ocultarAvisoVerificacion() {
+      if (raiz.dataset.verificacion === 'pendiente') delete raiz.dataset.verificacion;
+      avisoVerificacion!.classList.add('hidden');
     }
 
     function valorDe(id: string): string {
@@ -332,6 +364,11 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
         boton!.textContent = 'Enviando…';
 
+        // El token se pide ANTES del fetch y aparte: si Turnstile falla, el
+        // `catch` de abajo lo distingue de una red caída.
+        const turnstileToken = await token();
+        ocultarAvisoVerificacion();
+
         const respuesta = await fetch(RUTA_ENVIO, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -340,7 +377,7 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
             telefono: valorDe('telefono-admin'),
             correo: valorDe('correo-admin'),
             mensaje: valorDe('mensaje-admin'),
-            turnstileToken: await token(),
+            turnstileToken,
           }),
         });
 
@@ -383,9 +420,27 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
         // 400, 403, 429: el servidor contestó y explicó por qué. No hay respaldo
         // que valga; hay que corregir lo que dice y volver a enviar.
         mostrarErrores(datos.ok ? ['Error desconocido.'] : datos.errores);
-      } catch {
+      } catch (fallo) {
+        /*
+         * Un fallo de la verificación de seguridad NO es "no hay función": el
+         * servidor ni siquiera se ha llamado. Antes caía aquí al `mailto:`, igual
+         * que pasaba en Empleos. Solo el script de Cloudflare bloqueado
+         * (`no-cargo`) justifica el respaldo por correo, porque desde la página
+         * no hay forma de pasar la comprobación; si falló o caducó, se explica y
+         * se puede volver a intentar.
+         */
+        if (fallo instanceof ErrorTurnstile && fallo.motivo !== 'no-cargo') {
+          console.warn('[pqrs/administrativa] verificación de seguridad:', fallo.motivo, fallo.codigo ?? '');
+          raiz.dataset.verificacion = 'fallida';
+          avisoVerificacion!.classList.add('hidden');
+          mostrarErrores([
+            'No pudimos completar la verificación de seguridad. Vuelve a pulsar «Enviar mis datos» y, si aparece la casilla, márcala. Si sigue fallando, llámanos o escríbenos por WhatsApp con los datos de arriba.',
+          ]);
+          return;
+        }
         caerAlCorreo();
       } finally {
+        ocultarAvisoVerificacion();
         ocultarEspera();
         boton!.disabled = false;
         boton!.textContent = textoBoton;
