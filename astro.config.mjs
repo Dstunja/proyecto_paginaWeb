@@ -9,7 +9,8 @@ import vercel from '@astrojs/vercel';
 // ---------------------------------------------------------------------------
 //
 // 1. VERCEL (publicacion principal, plan Hobby)
-//    https://paginaweb-beta-coral.vercel.app
+//    https://dstunja.com (tambien responde en paginaweb-beta-coral.vercel.app,
+//    pero el canonical, el Open Graph y el sitemap apuntan siempre a dstunja.com)
 //    El sitio cuelga de la RAIZ del dominio, asi que NO lleva `base`: los
 //    enlaces y los assets salen como "/pqrs/" y "/_astro/...". Vercel define
 //    la variable de entorno VERCEL='1' durante el build, y eso es lo unico
@@ -33,14 +34,13 @@ import vercel from '@astrojs/vercel';
 // partir del `base` de aqui abajo. Por eso el mismo codigo sirve para los dos
 // destinos sin tocar ni un componente.
 //
-// CUANDO dstunja.com APUNTE A VERCEL: basta con cambiar SITIO_VERCEL por
-// 'https://dstunja.com'. No hay que tocar nada mas (canonical, Open Graph y
-// sitemap se generan a partir de `site`). Ojo: hoy ese dominio sirve OTRO
-// sitio (una instalacion de WordPress), asi que apuntarlo antes de tiempo
-// haria que el canonical senale a una pagina que no es esta.
+// dstunja.com ya apunta a Vercel, en lugar del WordPress anterior. Canonical,
+// Open Graph y sitemap se generan a partir de `site`; la linea Sitemap de
+// public/robots.txt es estatica y va aparte. Las URLs viejas de WordPress
+// (/shop, /producto/..., /mi-cuenta/...) redirigen con 301 desde vercel.json.
 
-/** URL publica del despliegue en Vercel. */
-const SITIO_VERCEL = 'https://paginaweb-beta-coral.vercel.app';
+/** URL publica del despliegue en Vercel: el dominio oficial. */
+const SITIO_VERCEL = 'https://dstunja.com';
 /** URL y prefijo del espejo en GitHub Pages. */
 const SITIO_GITHUB_PAGES = 'https://dstunja.github.io';
 const BASE_GITHUB_PAGES = '/proyecto_paginaWeb';

@@ -320,7 +320,8 @@ corre una sola vez con `npm run geocodificar`; el resultado queda cacheado en
 
 ## Estado en producción
 
-El sitio se publica en Vercel (<https://paginaweb-beta-coral.vercel.app>) y los
+El sitio se publica en Vercel con el dominio oficial <https://dstunja.com> (también
+responde en <https://paginaweb-beta-coral.vercel.app>) y los
 formularios de PQRS y Empleos envían correo de verdad. Sin valores de claves:
 
 | Pieza | Configuración |
