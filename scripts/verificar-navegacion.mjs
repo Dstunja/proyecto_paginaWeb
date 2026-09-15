@@ -370,6 +370,16 @@ function revisarCsp(csp, etiqueta) {
   );
 }
 
+/**
+ * Referrer-Policy igual o MÁS estricta que la pedida. /api/pqrs/descarga pone
+ * `no-referrer` a propósito (no filtrar la URL firmada a la que redirige) y en
+ * Vercel la cabecera de la función prevalece sobre la de vercel.json.
+ */
+const REFERRER_ACEPTADAS = new Set(['strict-origin-when-cross-origin', 'same-origin', 'strict-origin', 'no-referrer']);
+
+const cabeceraCorrecta = (nombre, valor) =>
+  nombre === 'referrer-policy' ? REFERRER_ACEPTADAS.has(valor ?? '') : valor === ESPERADAS[nombre];
+
 function revisarCabeceras(cabeceras, etiqueta) {
   for (const [nombre, valor] of Object.entries(ESPERADAS)) {
     comprobar(`${etiqueta}: ${nombre}`, (cabeceras[nombre] ?? '') === valor, cabeceras[nombre] ?? '(ausente)');
@@ -543,10 +553,29 @@ async function revisarCspEnNavegador(navegador, { base, local, etiqueta }) {
   for (const camino of ['/pqrs/', '/empleos/']) {
     await pagina.goto(`${base}${camino}`, { waitUntil: 'load' });
     await rechazarCookies(pagina);
+    // Un despliegue de vista previa puede compilarse sin la clave (las
+    // variables están solo en Production): ahí el formulario ni monta Turnstile.
+    const clave = await pagina.locator('[data-turnstile-key]').first().getAttribute('data-turnstile-key');
+    if (!clave) {
+      console.log(`  --    ${etiqueta}: Turnstile omitido en ${camino} — el build no lleva PUBLIC_TURNSTILE_SITE_KEY`);
+      continue;
+    }
     const cargo = await pagina
       .waitForFunction(() => Boolean(window.turnstile), null, { timeout: 20_000 })
       .then(() => true, () => false);
-    comprobar(`${etiqueta}: Turnstile carga en ${camino}`, cargo);
+    const iframe = await pagina
+      .waitForFunction(
+        () => [...document.querySelectorAll('iframe')].some((f) => f.src.includes('challenges.cloudflare.com')) ||
+          document.querySelector('[name="cf-turnstile-response"]') !== null,
+        null,
+        { timeout: 20_000 },
+      )
+      .then(() => true, () => false);
+    comprobar(
+      `${etiqueta}: Turnstile carga y monta su widget en ${camino}`,
+      cargo && iframe && (await violaciones(pagina)).length === 0,
+      `script=${cargo} widget=${iframe}`,
+    );
   }
 
   // ---- Analítica ---------------------------------------------------------------
@@ -675,8 +704,11 @@ async function revisarProduccionHttp(origen) {
     const c = aObjeto(r.headers);
     comprobar(
       `${origen}${camino} (${r.status}): cabeceras de seguridad y sin Access-Control-Allow-Origin: *`,
-      Object.entries(ESPERADAS).every(([k, v]) => c[k] === v) && Boolean(c['content-security-policy']),
-      Object.entries(ESPERADAS).filter(([k, v]) => c[k] !== v).map(([k]) => `${k}=${c[k] ?? '(ausente)'}`).join(', '),
+      Object.keys(ESPERADAS).every((k) => cabeceraCorrecta(k, c[k])) && Boolean(c['content-security-policy']),
+      Object.keys(ESPERADAS)
+        .filter((k) => !cabeceraCorrecta(k, c[k]))
+        .map((k) => `${k}=${c[k] ?? '(ausente)'}`)
+        .join(', ') || `referrer-policy=${c['referrer-policy']}`,
     );
   }
 
