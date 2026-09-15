@@ -61,6 +61,11 @@ Stack: Astro + Tailwind 4 + TypeScript.
   código sirve con `base` y sin él, sin tocar los componentes uno a uno.
 - La radicación de PQRS necesita variables de entorno (Blob, Resend, Turnstile).
   Están documentadas en `.env.example` y en `docs/PQRS-ADJUNTOS.md`.
+- `vercel.json` aplica una **Content-Security-Policy sin `'unsafe-inline'` en
+  `script-src`**. Nada de `<script is:inline>` con código: va a un archivo de
+  `public/js/` (los de datos `type="application/json"` sí valen). Un servicio
+  externo nuevo hay que añadirlo a la CSP. Tras tocarla, `npm run
+  verificar:navegacion` (y `--url https://dstunja.com` después de desplegar).
 
 ## Marca
 

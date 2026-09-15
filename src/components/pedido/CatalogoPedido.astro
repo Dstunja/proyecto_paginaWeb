@@ -296,7 +296,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   Marca el documento como "con JavaScript" antes de que se pinte nada más, para
   que los controles que solo funcionan con script no lleguen a verse en un
   navegador que lo tiene desactivado, y para que el aviso de "activando…" no le
-  aparezca a quien nunca lo va a ver desaparecer. Va en línea y sin `type` a
+  aparezca a quien nunca lo va a ver desaparecer. Va síncrono y sin `type` a
   propósito: tiene que ejecutarse en el acto, no cuando llegue el módulo.
 
   El temporizador es la red de seguridad del caso feo: el JavaScript está
@@ -304,14 +304,11 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   bloqueado por la red de la tienda, error de sintaxis). Ahí el aviso se
   quedaría girando para siempre, así que a los diez segundos se convierte en
   una explicación con salida por WhatsApp. Las tarjetas ya impresas siguen ahí.
+
+  El código está en public/js/catalogo-con-js.js y no en línea: la
+  Content-Security-Policy de vercel.json no permite 'unsafe-inline' en script-src.
 */}
-<script is:inline>
-  document.documentElement.dataset.js = '1';
-  setTimeout(function () {
-    var aviso = document.querySelector('[data-cargando]');
-    if (aviso) aviso.dataset.cargando = 'falló';
-  }, 10000);
-</script>
+<script is:inline src={ruta('/js/catalogo-con-js.js')}></script>
 
 <style is:global>
   /*

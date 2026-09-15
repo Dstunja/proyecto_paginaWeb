@@ -404,6 +404,56 @@ TURNSTILE_SECRET=1x0000000000000000000000000000000AA
 El detalle de cada variable está comentado en `.env.example`, y el flujo
 completo de los adjuntos en `docs/PQRS-ADJUNTOS.md`.
 
+## Cabeceras de seguridad
+
+`vercel.json` aplica a **todas las rutas** estas cabeceras, que pidió un escaneo
+con OWASP ZAP sobre dstunja.com:
+
+| Cabecera | Valor |
+| --- | --- |
+| `Content-Security-Policy` | Ver la tabla de abajo |
+| `X-Frame-Options` | `DENY` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `Access-Control-Allow-Origin` | `https://dstunja.com`, en lugar del `*` que pone Vercel a los archivos estáticos |
+
+Qué permite la CSP, además del propio origen:
+
+| Directiva | Fuera del sitio | Para qué |
+| --- | --- | --- |
+| `script-src` | `challenges.cloudflare.com`, `www.googletagmanager.com` | Turnstile y gtag.js. **Sin `'unsafe-inline'`** |
+| `frame-src` | `challenges.cloudflare.com` | El iframe de Turnstile |
+| `img-src` | `*.tile.openstreetmap.fr`, `placehold.co`, Google Analytics, `data:` | Teselas del mapa, marcadores de imágenes que faltan, píxel de GA |
+| `connect-src` | Google Analytics, `vercel.com`, `*.blob.vercel-storage.com` | Envíos de GA y subida de soportes de PQRS a Vercel Blob |
+| `style-src` | `'unsafe-inline'` | Hay atributos `style` en el HTML (iconos, tarjetas) y Leaflet los usa |
+| `font-src` | ninguno | Las fuentes son propias (Fontsource) |
+| `frame-ancestors` | `'none'` | Nadie puede incrustar el sitio en un iframe |
+
+Dos consecuencias que hay que conocer:
+
+- **No puede haber scripts en línea.** Los tres que había (el interruptor del
+  revelado, el arranque de gtag y el aviso del catálogo) están en `public/js/`, y
+  `astro.config.mjs` pone `vite.build.assetsInlineLimit: 0` para que Astro no
+  incruste los scripts pequeños. Un `<script is:inline>` con código nuevo se
+  bloquearía en producción sin avisar; los de datos (`type="application/json"`)
+  sí valen.
+- **Un servicio externo nuevo** (otro mapa, un chat, una herramienta de GTM) hay
+  que añadirlo a la CSP de `vercel.json`, o el navegador lo bloqueará.
+- **La geolocalización está deshabilitada** (`geolocation=()`): la preselección
+  del municipio por ubicación en la PQRS ya no se ofrece y el campo se elige a
+  mano. Para recuperarla sin abrirla a terceros: `geolocation=(self)`.
+
+Los comentarios HTML de las plantillas **no se publican**: los quita
+`src/middleware.ts` al generar cada página.
+
+`npm run verificar:navegacion` aplica esas mismas cabeceras en su servidor local y
+comprueba, con la red real, que ninguna página provoca bloqueos de CSP, que los
+mapas cargan teselas, que Turnstile da token y los formularios llegan a su API, y
+que la analítica carga si el build lleva `PUBLIC_GA_ID`. Con
+`--url https://dstunja.com` revisa además producción: cabeceras, redirección de
+`http://` a `https://` y bloqueos en el navegador.
+
 ## Formularios
 
 El de **contacto** arma un correo con los datos y lo abre en el gestor de quien

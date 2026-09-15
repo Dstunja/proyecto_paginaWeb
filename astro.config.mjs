@@ -54,7 +54,16 @@ export default defineConfig({
   output: 'static',
   adapter: vercel(),
   integrations: [sitemap()],
+  // Los comentarios HTML de las plantillas NO se publican: los quita
+  // src/middleware.ts al generar cada pagina. Astro no tiene opcion para eso.
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      // Ningun script ni recurso se incrusta en el HTML. Por defecto Astro mete
+      // en linea los scripts de menos de 4 KB, y eso obligaria a la
+      // Content-Security-Policy de vercel.json a permitir 'unsafe-inline' en
+      // script-src. Con 0, todos salen como archivos de /_astro/ ('self').
+      assetsInlineLimit: 0,
+    },
   },
 });

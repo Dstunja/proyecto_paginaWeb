@@ -21,6 +21,8 @@
  * visitante entre sesiones, hasta que la persona acepta en la franja de
  * AvisoCookies.astro. Es lo que exige la Ley 1581 de 2012 en Colombia.
  */
+import { ruta } from '../lib/rutas';
+
 const ID = import.meta.env.PUBLIC_GA_ID ?? '';
 
 /** Sin ID o en desarrollo no se carga absolutamente nada. */
@@ -28,44 +30,20 @@ const activo = ID.trim() !== '' && import.meta.env.PROD;
 
 const src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ID)}`;
 
-/**
- * Arranque de gtag. Va como texto para poder inyectar el ID sin exponerlo en
- * un archivo del repositorio, y `is:inline` porque debe ejecutarse antes que
- * cualquier `registrarEvento` de los componentes.
+/*
+ * El arranque de gtag (dataLayer, Consent Mode y `config`) vive en
+ * public/js/analitica-arranque.js y recibe el ID por `data-ga-id`. Antes iba
+ * como script en línea con el ID dentro; se sacó a un archivo para que la
+ * Content-Security-Policy de vercel.json no tenga que permitir 'unsafe-inline'
+ * en script-src. Es síncrono para ejecutarse antes que gtag.js y que cualquier
+ * `registrarEvento`.
  */
-const arranque = `
-window.dataLayer = window.dataLayer || [];
-function gtag(){ window.dataLayer.push(arguments); }
-window.gtag = gtag;
-
-// Por defecto NADA se almacena: ni cookies de analítica ni publicidad.
-gtag('consent', 'default', {
-  analytics_storage: 'denied',
-  ad_storage: 'denied',
-  ad_user_data: 'denied',
-  ad_personalization: 'denied',
-});
-
-// Si la persona ya aceptó en una visita anterior, se restablece su decisión
-// antes del primer page_view para no perder esa visita.
-try {
-  if (window.localStorage.getItem('dst_consentimiento') === 'aceptado') {
-    gtag('consent', 'update', { analytics_storage: 'granted' });
-  }
-} catch (e) {}
-
-gtag('js', new Date());
-gtag('config', ${JSON.stringify(ID)}, {
-  anonymize_ip: true,
-  send_page_view: true,
-});
-`.trim();
 ---
 
 {
   activo && (
     <>
-      <script is:inline set:html={arranque} />
+      <script is:inline src={ruta('/js/analitica-arranque.js')} data-ga-id={ID}></script>
       {/* `async`: la analítica nunca debe retrasar el pintado de la página. */}
       <script is:inline async src={src} />
     </>
