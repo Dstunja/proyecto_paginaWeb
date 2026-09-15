@@ -5,7 +5,8 @@ import PageHero from '../components/PageHero.astro';
 import MapaCobertura from '../components/MapaCobertura.astro';
 import FormularioMailto from '../components/FormularioMailto.astro';
 import Icono from '../components/Icono.astro';
-import { empresa } from '../data/site';
+import { empresa, televentas } from '../data/site';
+import { enlaceTeleventas, MENSAJE_PEDIDO } from '../lib/televentas';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
 // EDITAR AQUÍ: horario real de atención.
@@ -15,15 +16,10 @@ const horario = [
   { dia: 'Domingos y festivos', horas: 'Cerrado' },
 ];
 
+// La tarjeta de Televentas va aparte, antes de estos dos, porque lleva a cada
+// asesora con sus botones (ver `televentas` en src/data/site.ts). El teléfono
+// de aquí es la línea de la OFICINA: son números distintos a propósito.
 const canales = [
-  {
-    icono: 'whatsapp',
-    titulo: 'WhatsApp',
-    valor: empresa.telefono,
-    href: empresa.whatsapp,
-    externo: true,
-    nota: 'La vía más rápida para pedidos y asesoría comercial.',
-  },
   {
     icono: 'phone',
     titulo: 'Teléfono',
@@ -57,6 +53,60 @@ const canales = [
   <section class="section">
     <div class="wrap">
       <div class="grid grid-cols-1 gap-6 tablet:grid-cols-3" data-revelar-grupo>
+        {/* Televentas: una fila por asesora, cada una con su WhatsApp y su
+            llamada. Aquí el cliente elige a quién escribir, así que estos
+            enlaces NO se reparten; `data-asesora` deja guardada la elegida
+            para que el botón flotante y el pedido armado vayan a la misma
+            (ver src/lib/televentas.ts). */}
+        <div class="group glass-card p-8" data-tarjeta-televentas>
+          <span class="icono-chip mb-5 h-12 w-12">
+            <Icono nombre="whatsapp" class="h-6 w-6" interactivo={false} />
+          </span>
+          <h2 class="mb-2 text-lg">WhatsApp Televentas</h2>
+          <p class="mt-0 mb-4 text-[14.5px] text-muted">
+            La vía más rápida para pedidos y asesoría comercial.
+          </p>
+          <ul class="m-0 flex list-none flex-col gap-3 p-0">
+            {
+              televentas.map((asesora) => (
+                <li class="rounded-xl border border-line bg-fondo p-4">
+                  <p class="m-0 font-display text-[15px] font-semibold text-ink">{asesora.nombre}</p>
+                  <p class="m-0 text-[14.5px] text-muted">{asesora.telefono}</p>
+                  {/* `pr-6` en móvil deja libre la franja del botón flotante
+                      de WhatsApp (fijo a 24 px del borde, 56 px de ancho):
+                      como no se mueve al desplazar, un botón que invada esa
+                      franja queda tapado en algún momento, esté donde esté
+                      la tarjeta. Si no caben los dos en la fila, "Llamar"
+                      baja a la siguiente. En tableta la tarjeta va en la
+                      columna izquierda y la reserva ya no hace falta. */}
+                  <div class="mt-3 flex flex-wrap gap-2 pr-6 tablet:pr-0">
+                    <a
+                      class="btn btn-whatsapp px-3 py-1.5 text-[13px]"
+                      href={enlaceTeleventas(asesora, MENSAJE_PEDIDO)}
+                      target="_blank"
+                      rel="noopener"
+                      data-asesora={asesora.nombre}
+                      aria-label={`Escribir a ${asesora.nombre} por WhatsApp`}
+                    >
+                      <Icono nombre="whatsapp" class="h-4 w-4" interactivo={false} />
+                      WhatsApp
+                    </a>
+                    <a
+                      class="btn btn-secondary px-3 py-1.5 text-[13px]"
+                      href={`tel:${asesora.telefonoE164}`}
+                      data-asesora={asesora.nombre}
+                      aria-label={`Llamar a ${asesora.nombre}`}
+                    >
+                      <Icono nombre="phone" class="h-4 w-4" interactivo={false} />
+                      Llamar
+                    </a>
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
         {
           canales.map((canal) => (
             <div class="group glass-card p-8">
@@ -64,12 +114,18 @@ const canales = [
                 <Icono nombre={canal.icono} class="h-6 w-6" interactivo={false} />
               </span>
               <h2 class="mb-2 text-lg">{canal.titulo}</h2>
+              {/* El correo es una sola "palabra" de 33 caracteres y no cabía
+                  en la tarjeta ni en móvil ni en tableta. El <wbr> antes de
+                  la arroba deja partirlo en "informacioncomercialdst" /
+                  "@gmail.com"; `wrap-anywhere` es el último recurso si ni la
+                  primera parte cabe. */}
               <a
-                class="text-[15px] font-semibold text-accent-text underline"
+                class="text-[15px] font-semibold wrap-anywhere text-accent-text underline"
                 href={canal.href}
                 {...canal.externo ? { target: '_blank', rel: 'noopener' } : {}}
+                data-valor-canal
               >
-                {canal.valor}
+                {canal.valor.split('@').map((parte, i) => (i > 0 ? <><wbr />@{parte}</> : parte))}
               </a>
               <p class="mt-3 mb-0 text-[14.5px] text-muted">{canal.nota}</p>
             </div>
@@ -167,3 +223,9 @@ const canales = [
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  import { enlazarTeleventas } from '../lib/televentas';
+
+  enlazarTeleventas();
+</script>

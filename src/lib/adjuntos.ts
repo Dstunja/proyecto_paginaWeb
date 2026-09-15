@@ -21,16 +21,17 @@ export const MAX_MB_POR_DEFECTO = 5;
 /** Cuántos soportes admite una radicación. */
 export const MAX_ARCHIVOS_POR_DEFECTO = 3;
 
-/**
- * Tipos de PQRS que piden soporte documental.
+/*
+ * AQUÍ YA NO SE DECIDE QUÉ TIPOS LLEVAN SOPORTE. Hubo una lista
+ * `TIPOS_CON_SOPORTE = ['queja', 'reclamo']` y un `requiereSoporte()` que la
+ * consultaba; se eliminaron al abrir los adjuntos a los cinco tipos de la
+ * categoría comercial. Hoy lo único que decide si hay campo de soporte es la
+ * CATEGORÍA, y eso vive en `admiteSoporte()` de src/lib/pqrs/categorias.ts.
  *
- * Se comparan normalizados (sin tildes, en minúsculas) contra el `value` del
- * `<select>` de src/pages/pqrs.astro, que hoy son los nombres con tilde:
- * "Petición", "Queja", "Reclamo", "Sugerencia" y "Felicitación". Normalizar
- * evita que el campo desaparezca si algún día se cambia la capitalización de
- * esos `value` o se les quitan las tildes.
+ * Este módulo se quedó con lo que siempre fue suyo: qué formatos se aceptan,
+ * cuánto pueden pesar y cómo se comprueba que el contenido es de verdad lo que
+ * dice la extensión.
  */
-export const TIPOS_CON_SOPORTE = ['queja', 'reclamo'] as const;
 
 /** Extensión aceptada al MIME que debe tener el contenido de verdad. */
 export const EXTENSION_A_MIME: Readonly<Record<string, string>> = {
@@ -91,13 +92,6 @@ export function normalizar(texto: string): string {
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .toLowerCase();
-}
-
-/** Este tipo de PQRS, admite archivos de soporte? */
-export function requiereSoporte(tipo: string | null | undefined): boolean {
-  if (!tipo) return false;
-  const clave = normalizar(tipo);
-  return TIPOS_CON_SOPORTE.some((t) => t === clave);
 }
 
 /** Extensión en minúsculas, con el punto. Cadena vacía si no tiene. */

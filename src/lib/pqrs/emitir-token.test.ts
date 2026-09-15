@@ -169,35 +169,57 @@ describe('emitirToken', () => {
     expect((cuerpo as { codigo: string }).codigo).toBe('ruta-ajena');
   });
 
-  it('422 tipo-sin-soporte: una Petición no admite adjuntos', async () => {
-    const evento = eventoSdk({ ...CARGA_VALIDA, tipo: 'Petición' });
+  /*
+   * Los CINCO tipos llevan soporte. Antes solo pasaban Queja y Reclamo, y una
+   * Petición se rechazaba con 422; hoy eso sería negarle a alguien adjuntar el
+   * documento que está pidiendo.
+   */
+  it.each(['Petición', 'Queja', 'Reclamo', 'Sugerencia', 'Felicitación'])(
+    'los cinco tipos admiten adjuntos: %s',
+    async (tipo) => {
+      const { estado } = await emitirToken(
+        peticion(eventoSdk({ ...CARGA_VALIDA, tipo })),
+        ENTORNO_COMPLETO,
+      );
+
+      expect(estado).toBe(200);
+    },
+  );
+
+  it('el tipo se compara sin tildes ni mayúsculas', async () => {
+    const evento = eventoSdk({ ...CARGA_VALIDA, tipo: 'FELICITACION' });
+
+    const { estado } = await emitirToken(peticion(evento), ENTORNO_COMPLETO);
+
+    expect(estado).toBe(200);
+  });
+
+  /*
+   * La comprobación del tipo no desapareció al abrir los adjuntos a todos: lo
+   * que impide es que alguien pida tokens de subida con un `tipo` inventado y
+   * use el store como alojamiento gratuito.
+   */
+  it('422 tipo-invalido: un tipo que no ofrece el formulario', async () => {
+    const evento = eventoSdk({ ...CARGA_VALIDA, tipo: 'Denuncia' });
 
     const { estado, cuerpo } = await emitirToken(peticion(evento), ENTORNO_COMPLETO);
 
     expect(estado).toBe(422);
     expect(cuerpo).toEqual({
       ok: false,
-      codigo: 'tipo-sin-soporte',
-      mensaje: 'Este tipo de solicitud no admite archivos de soporte.',
+      codigo: 'tipo-invalido',
+      mensaje: 'El tipo de solicitud no es válido. Recarga la página e inténtalo de nuevo.',
     });
   });
 
-  it('422 tipo-sin-soporte: el tipo no viaja en el clientPayload', async () => {
+  it('422 tipo-invalido: el tipo no viaja en el clientPayload', async () => {
     const { tipo, ...sinTipo } = CARGA_VALIDA;
     void tipo;
 
     const { estado, cuerpo } = await emitirToken(peticion(eventoSdk(sinTipo)), ENTORNO_COMPLETO);
 
     expect(estado).toBe(422);
-    expect((cuerpo as { codigo: string }).codigo).toBe('tipo-sin-soporte');
-  });
-
-  it('422: "Reclamo" sí admite adjuntos, y se compara sin tildes ni mayúsculas', async () => {
-    const evento = eventoSdk({ ...CARGA_VALIDA, tipo: 'RECLAMO' });
-
-    const { estado } = await emitirToken(peticion(evento), ENTORNO_COMPLETO);
-
-    expect(estado).toBe(200);
+    expect((cuerpo as { codigo: string }).codigo).toBe('tipo-invalido');
   });
 
   it('415 archivo-no-permitido: la extensión no está en la lista', async () => {
@@ -270,9 +292,9 @@ describe('emitirToken', () => {
   });
 
   it('el orden deja diagnosticar sin gastar un token de Turnstile bueno', async () => {
-    // Con el token vacío, un tipo que no admite adjuntos sigue respondiendo 422
-    // y no 403: es lo que permite al formulario repreguntar el motivo real.
-    const evento = eventoSdk({ sessionId: SESSION, tipo: 'Petición', turnstileToken: '' });
+    // Con el token vacío, un tipo inválido sigue respondiendo 422 y no 403: es
+    // lo que permite al formulario repreguntar el motivo real.
+    const evento = eventoSdk({ sessionId: SESSION, tipo: 'Denuncia', turnstileToken: '' });
 
     const { estado } = await emitirToken(peticion(evento), ENTORNO_COMPLETO);
 

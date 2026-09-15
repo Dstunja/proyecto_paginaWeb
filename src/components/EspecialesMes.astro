@@ -2,7 +2,16 @@
 import Icono from './Icono.astro';
 import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
-import { especialesDelMes, periodoEspeciales, hayEspecialesDelMes } from '../data/especiales';
+import { detalleReferencia } from '../lib/carrito';
+import { precioLista, precioSugerido } from '../lib/precios';
+import { bloquePrecio } from '../lib/plantillasCatalogo';
+import { productos as catalogo } from '../data/productos';
+import {
+  especialesDelMes,
+  periodoEspeciales,
+  hayEspecialesDelMes,
+  type ProductoEspecial,
+} from '../data/especiales';
 
 /**
  * "Especiales del mes": las ediciones especiales y colaboraciones vigentes.
@@ -29,6 +38,15 @@ import { especialesDelMes, periodoEspeciales, hayEspecialesDelMes } from '../dat
  * Es un carrusel a propósito y no una rejilla de nueve: nueve tarjetas
  * grandes seguidas convertían el inicio en un catálogo.
  *
+ * CÓDIGO Y PRECIO
+ * ---------------
+ * Los especiales que tienen `codigo` en src/data/especiales.ts muestran, bajo
+ * la descripción, la presentación y el precio de su referencia del catálogo,
+ * con las mismas funciones que la tarjeta del armador de pedidos (ver
+ * `referenciaDe`). Los que no lo tienen se quedan sin ese renglón. Los
+ * especiales marcados como pendientes ni siquiera llegan aquí: los filtra
+ * src/data/especiales.ts.
+ *
  * FOTOS
  * -----
  * Las fotos de producto vienen en cualquier proporción (frascos altos, cajas
@@ -41,7 +59,50 @@ import { especialesDelMes, periodoEspeciales, hayEspecialesDelMes } from '../dat
 const productos = especialesDelMes.map((producto) => ({
   ...producto,
   ...imagenOMarcador(producto.imagen, producto.nombre, 1000, 750),
+  referencia: referenciaDe(producto),
 }));
+
+/**
+ * La presentación y el precio de un especial, sacados por su código SAP de la
+ * referencia del catálogo, o `null` si el especial no tiene código.
+ *
+ * Hace exactamente lo mismo que la tarjeta del armador de pedidos
+ * (CatalogoPedido.astro): `precioSugerido` y `precioLista` deciden la cifra,
+ * `detalleReferencia` arma el renglón "170 g · Cód. 1092006" y `bloquePrecio`
+ * la pinta. Así el especial y la ficha del catálogo no pueden decir dos
+ * precios distintos del mismo producto.
+ *
+ * Un código que no está en el catálogo, o que está en más de una referencia,
+ * DETIENE la compilación. Publicar "Precio a consultar" —o el precio de otra
+ * referencia— sin que nadie se entere es peor que un build fallido que dice
+ * exactamente qué hay que corregir.
+ */
+function referenciaDe(especial: ProductoEspecial) {
+  const codigo = especial.codigo?.trim();
+  if (!codigo) return null;
+
+  const coincidencias = catalogo.filter((p) => p.codigo?.trim() === codigo);
+  if (coincidencias.length !== 1) {
+    throw new Error(
+      `Especiales del mes: el código ${codigo} de «${especial.nombre}» ` +
+        (coincidencias.length === 0
+          ? 'no existe en src/data/productos.ts.'
+          : `aparece en ${coincidencias.length} referencias de src/data/productos.ts y no se sabe a cuál corresponde.`) +
+        ' Corrígelo o quítalo en src/data/especiales.ts.',
+    );
+  }
+
+  const [referencia] = coincidencias;
+  const psp = precioSugerido(referencia);
+  const lista = precioLista(referencia);
+  return {
+    detalle: detalleReferencia(referencia),
+    precio: bloquePrecio({
+      ...(psp !== null ? { psp } : {}),
+      ...(lista ? { lista } : {}),
+    }),
+  };
+}
 
 const esCarrusel = productos.length > 3;
 
@@ -175,6 +236,18 @@ const columnas =
                 </p>
                 <h3 class="mt-2 text-[18px]">{producto.nombre}</h3>
                 <p class="mt-2 mb-0 text-[14px] text-muted">{producto.descripcion}</p>
+
+                {/* Presentación y precio, iguales a los de la ficha del
+                    catálogo (ver `referenciaDe` arriba). `mt-auto` los manda
+                    al fondo de la tarjeta: las tarjetas de una fila miden lo
+                    mismo, así que los precios quedan alineados aunque las
+                    descripciones ocupen distinto número de líneas. */}
+                {producto.referencia && (
+                  <div class="mt-auto pt-4">
+                    <p class="m-0 text-[13px] text-muted">{producto.referencia.detalle}</p>
+                    <Fragment set:html={producto.referencia.precio} />
+                  </div>
+                )}
               </div>
             </article>
           ))}

@@ -21,7 +21,7 @@ export type CodigoError =
   | 'cuerpo-invalido'
   | 'sesion-invalida'
   | 'ruta-ajena'
-  | 'tipo-sin-soporte'
+  | 'tipo-invalido'
   | 'archivo-no-permitido'
   | 'antirrobots'
   | 'demasiadas-peticiones';
@@ -41,8 +41,13 @@ export interface Respuesta<T = unknown> {
  * HTTP de cada código.
  *
  * 415 y 422 no son adorno: distinguen "este archivo no vale" (cambia el
- * archivo) de "esta solicitud no admite archivos" (cambia el tipo de PQRS), que
- * es lo primero que hay que saber para arreglarlo.
+ * archivo) de "esta solicitud no es una de las que admite el formulario"
+ * (recarga la página), que es lo primero que hay que saber para arreglarlo.
+ *
+ * `tipo-invalido` se llamó `tipo-sin-soporte` mientras solo Queja y Reclamo
+ * admitían adjuntos. Al abrirlos a los cinco tipos, lo único que puede
+ * dispararlo es un `tipo` ausente o inventado —es decir, alguien llamando al
+ * endpoint a mano—, así que el nombre pasó a decir eso.
  */
 export const ESTADO: Record<CodigoError, number> = {
   'config-incompleta': 500,
@@ -51,7 +56,7 @@ export const ESTADO: Record<CodigoError, number> = {
   'ruta-ajena': 400,
   'antirrobots': 403,
   'archivo-no-permitido': 415,
-  'tipo-sin-soporte': 422,
+  'tipo-invalido': 422,
   'demasiadas-peticiones': 429,
 };
 
@@ -64,7 +69,7 @@ export const MENSAJE: Record<CodigoError, string> = {
   'ruta-ajena': 'La ruta de subida no corresponde a esta sesión. Recarga la página.',
   'antirrobots': 'No se pudo verificar que no eres un robot. Recarga la página e inténtalo de nuevo.',
   'archivo-no-permitido': `Este tipo de archivo no está permitido. Solo aceptamos ${FORMATOS_LEGIBLES}.`,
-  'tipo-sin-soporte': 'Este tipo de solicitud no admite archivos de soporte.',
+  'tipo-invalido': 'El tipo de solicitud no es válido. Recarga la página e inténtalo de nuevo.',
   'demasiadas-peticiones': 'Demasiadas subidas seguidas. Espera un momento e inténtalo de nuevo.',
 };
 

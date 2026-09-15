@@ -17,9 +17,9 @@ import {
   CANTIDAD_MAXIMA,
   CLAVE_PEDIDO,
   LIMITE_TEXTO_URL,
-  WHATSAPP_NUMERO,
 } from '../data/pedido';
 import { empresa } from '../data/site';
+import { saludar, type Asesora } from './televentas';
 import {
   formatearPesos,
   resumirPrecios,
@@ -380,18 +380,28 @@ function largoCodificado(valor: string): number {
 }
 
 /**
- * Arma el mensaje que cabe en la URL de WhatsApp.
+ * Arma el mensaje que cabe en la URL de WhatsApp, saludando a la asesora por
+ * su nombre ("Hola Gabriela, te envío mi pedido.").
+ *
+ * El saludo va solo aquí y no en `mensajePedido`: ese texto es también el de
+ * "Copiar pedido" y el que se pega como segundo mensaje cuando el pedido no
+ * cabe, y ahí repetir el "Hola" sobra.
  *
  * Si el pedido es muy largo se envían las primeras referencias y se avisa
  * —dentro del propio mensaje— cuántas faltan; el pedido completo se copia al
- * portapapeles para pegarlo enseguida como segundo mensaje.
+ * portapapeles para pegarlo enseguida como segundo mensaje. El tope se mide
+ * con el saludo incluido.
  */
-export function mensajeParaUrl(pedido: Pedido): {
+export function mensajeParaUrl(
+  pedido: Pedido,
+  asesora: Asesora,
+): {
   texto: string;
   recortado: boolean;
   omitidas: number;
 } {
-  const completo = mensajePedido(pedido);
+  const saludo = saludar(asesora, 'te envío mi pedido.\n\n');
+  const completo = `${saludo}${mensajePedido(pedido)}`;
   if (largoCodificado(completo) <= LIMITE_TEXTO_URL) {
     return { texto: completo, recortado: false, omitidas: 0 };
   }
@@ -400,7 +410,7 @@ export function mensajeParaUrl(pedido: Pedido): {
     const omitidas = pedido.items.length - cuantas;
     const lineas = pedido.items.slice(0, cuantas).map(lineaDeItem);
     const aviso = `\n_(Van las primeras ${cuantas}; las otras ${omitidas} se las envío en el siguiente mensaje.)_`;
-    return `${encabezado(pedido)}${titulo(pedido)}\n${lineas.join('\n')}${aviso}\n\n${AVISO_PRECIOS}`;
+    return `${saludo}${encabezado(pedido)}${titulo(pedido)}\n${lineas.join('\n')}${aviso}\n\n${AVISO_PRECIOS}`;
   };
 
   // Búsqueda binaria de cuántas líneas caben: con 709 referencias posibles,
@@ -414,9 +424,4 @@ export function mensajeParaUrl(pedido: Pedido): {
   }
 
   return { texto: armar(bajo), recortado: true, omitidas: pedido.items.length - bajo };
-}
-
-/** URL de WhatsApp con el mensaje prellenado. */
-export function enlaceWhatsapp(valor: string): string {
-  return `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(valor)}`;
 }

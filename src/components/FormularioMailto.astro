@@ -4,14 +4,16 @@ import { empresa } from '../data/site';
 /**
  * Formulario que abre el gestor de correo.
  *
- * Lo usan CONTACTO y EMPLEOS, que son páginas estáticas: no envían nada por sí
- * mismas, arman un correo con lo que escribió la persona y lo abren en su
- * gestor. Para esos dos casos basta, porque no hay nada de lo que dejar
- * constancia ni plazo legal que contar.
+ * Lo usa CONTACTO, que es una página estática: no envía nada por sí misma,
+ * arma un correo con lo que escribió la persona y lo abre en su gestor. Para
+ * ese caso basta, porque no hay nada de lo que dejar constancia ni plazo legal
+ * que contar.
  *
- * La PQRS ya NO usa este componente: radica de verdad contra /api/pqrs y sube
- * los soportes a Vercel Blob. Ver src/components/FormularioPqrs.astro. Si algún
- * día contacto o empleos necesitan constancia, el camino es el mismo.
+ * Ni la PQRS ni EMPLEOS usan ya este componente: la PQRS radica de verdad
+ * contra /api/pqrs (src/components/FormularioPqrs.astro) y empleos manda la
+ * postulación con la hoja de vida adjunta a /api/empleos/postular
+ * (src/components/FormularioEmpleo.astro). Si algún día contacto necesita
+ * constancia, el camino es el mismo.
  */
 interface Props {
   asunto: string;

@@ -1,0 +1,40 @@
+---
+/**
+ * Enlace de WhatsApp a Televentas que se reparte entre las asesoras.
+ *
+ * Sale impreso con la primera asesora de `televentas` (src/data/site.ts), para
+ * que funcione sin JavaScript, y el script de abajo lo reescribe con la
+ * asesora de este navegador (ver src/lib/televentas.ts). El mensaje se pasa
+ * SIN el saludo: "Hola {nombre}, " lo pone el reparto.
+ *
+ * Cualquier otro atributo (`class`, `data-magnetico`, `aria-label`...) pasa tal
+ * cual al <a>.
+ *
+ * OJO: no usarlo dentro de <noscript>. El script se imprime junto al primer
+ * enlace de la página y ahí dentro no correría para los demás; en <noscript>
+ * basta con un <a> normal con `enlaceTeleventas(ASESORA_POR_DEFECTO, ...)`.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { ASESORA_POR_DEFECTO, enlaceTeleventas } from '../lib/televentas';
+
+interface Props extends Omit<HTMLAttributes<'a'>, 'href'> {
+  /** Lo que va después de "Hola {nombre}, ". */
+  mensaje: string;
+}
+
+const { mensaje, ...resto } = Astro.props;
+---
+
+<a
+  href={enlaceTeleventas(ASESORA_POR_DEFECTO, mensaje)}
+  target="_blank"
+  rel="noopener"
+  data-televentas={mensaje}
+  {...resto}><slot /></a
+>
+
+<script>
+  import { enlazarTeleventas } from '../lib/televentas';
+
+  enlazarTeleventas();
+</script>

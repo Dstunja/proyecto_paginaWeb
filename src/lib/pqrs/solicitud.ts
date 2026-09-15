@@ -6,7 +6,8 @@
  * JSON) y sale un objeto validado o una lista de errores en español. Eso lo
  * hace fácil de probar y deja los endpoints como pura fontanería.
  */
-import { normalizar, requiereSoporte } from '../adjuntos';
+import { normalizar } from '../adjuntos';
+import { TIPOS_PQRS } from './categorias';
 import { municipios } from '../../data/municipios';
 import { buscarMunicipio, indexarMunicipios } from '../municipios-busqueda';
 import { esSessionIdValido } from './config';
@@ -26,14 +27,14 @@ import { esSessionIdValido } from './config';
  */
 const INDICE_MUNICIPIOS = indexarMunicipios(municipios);
 
-/** Los cinco tipos que ofrece el formulario, normalizados. */
-export const TIPOS_VALIDOS = [
-  'peticion',
-  'queja',
-  'reclamo',
-  'sugerencia',
-  'felicitacion',
-] as const;
+/**
+ * Los cinco tipos que ofrece el formulario, normalizados.
+ *
+ * Se reexporta, no se redefine: la lista vive en `./categorias`, que es el
+ * módulo sin entorno ni datos del sitio, para que /api/pqrs/token pueda
+ * consultarla sin arrastrar el índice de municipios de este archivo.
+ */
+export const TIPOS_VALIDOS = TIPOS_PQRS;
 
 export interface AdjuntoAnunciado {
   /** URL que devolvió `upload()` en el navegador. */
@@ -57,8 +58,6 @@ export interface SolicitudValidada {
   sessionId: string;
   turnstileToken: string;
   adjuntos: AdjuntoAnunciado[];
-  /** `false` para Petición, Sugerencia y Felicitación. */
-  admiteSoporte: boolean;
 }
 
 export type ResultadoSolicitud =
@@ -99,12 +98,18 @@ const LIMITES = {
   descripcion: 5000,
 } as const;
 
-function texto(valor: unknown): string {
+/*
+ * `texto`, `limpiar` y `FORMA_CORREO` se exportan para que la solicitud
+ * administrativa (src/lib/pqrs/administrativa.ts) valide con las MISMAS reglas.
+ * Reescribirlas allí acabaría con dos ideas distintas de qué es un correo
+ * válido o de qué caracteres se quitan, y solo una de las dos se corregiría.
+ */
+export function texto(valor: unknown): string {
   return typeof valor === 'string' ? valor.trim() : '';
 }
 
 /** Quita caracteres de control: no aportan nada y ensucian correo y JSON. */
-function limpiar(valor: string): string {
+export function limpiar(valor: string): string {
   let salida = '';
   for (const caracter of valor) {
     const codigo = caracter.codePointAt(0) ?? 0;
@@ -114,7 +119,7 @@ function limpiar(valor: string): string {
   return salida;
 }
 
-const FORMA_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+export const FORMA_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /**
  * Comprueba el cuerpo JSON que manda el formulario.
@@ -214,7 +219,6 @@ export function validarSolicitud(cuerpo: unknown): ResultadoSolicitud {
       sessionId,
       turnstileToken,
       adjuntos,
-      admiteSoporte: requiereSoporte(tipo),
     },
   };
 }

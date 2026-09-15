@@ -6,9 +6,11 @@
  * lista y entregársela a un asesor por WhatsApp, que es el canal que la
  * empresa ya usa. Por eso aquí no hay precios ni inventario: solo referencias
  * y cantidades.
+ *
+ * A quién llega el pedido no se configura aquí: va a la asesora de Televentas
+ * de cada navegador (`televentas` en src/data/site.ts, reparto en
+ * src/lib/televentas.ts).
  */
-
-import { empresa } from './site';
 
 /**
  * Clave de localStorage. Lleva el prefijo del sitio para no chocar con nada
@@ -18,9 +20,6 @@ import { empresa } from './site';
  * más adelante sin romperle la sesión a quien tenga uno guardado.
  */
 export const CLAVE_PEDIDO = 'dst:pedido:v1';
-
-/** Número de WhatsApp del asesor, en el formato que espera wa.me (sin +). */
-export const WHATSAPP_NUMERO = empresa.telefonoE164.replace(/\D/g, '');
 
 /**
  * Tope de caracteres del texto YA CODIFICADO que se manda en `?text=`.

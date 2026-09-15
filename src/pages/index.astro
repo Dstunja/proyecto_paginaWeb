@@ -8,13 +8,14 @@ import BuscadorMunicipio from '../components/BuscadorMunicipio.astro';
 import EspecialesMes from '../components/EspecialesMes.astro';
 import BotonPideky from '../components/BotonPideky.astro';
 import Icono from '../components/Icono.astro';
+import EnlaceTeleventas from '../components/EnlaceTeleventas.astro';
 import Resenas from '../components/Resenas.astro';
 import AnaliticaSecciones from '../components/AnaliticaSecciones.astro';
+import { MENSAJE_PEDIDO } from '../lib/televentas';
 import {
   cifras,
   marcasDeLaFranja,
   beneficios,
-  empresa,
   CLIENTES_TEXTO,
   PIDEKY_URL,
   HERO_IMAGEN,
@@ -100,16 +101,10 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
               si el sistema no pide menos movimiento; lo gobierna
               src/lib/interacciones.ts. */}
           <div class="mt-10 flex flex-wrap gap-4">
-            <a
-              class="btn btn-whatsapp"
-              href={empresa.whatsapp}
-              target="_blank"
-              rel="noopener"
-              data-magnetico
-            >
+            <EnlaceTeleventas class="btn btn-whatsapp" mensaje={MENSAJE_PEDIDO} data-magnetico>
               Haz tu pedido
               <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
-            </a>
+            </EnlaceTeleventas>
             <a class="btn btn-secondary" href={ruta('/catalogo/')} data-magnetico>
               Conoce nuestro portafolio
             </a>
@@ -358,15 +353,10 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
           <p class="mt-3 mb-8 max-w-[30ch] text-[14.5px] text-muted">
             Habla con un asesor y realiza tu pedido.
           </p>
-          <a
-            class="btn btn-whatsapp mt-auto"
-            href={empresa.whatsapp}
-            target="_blank"
-            rel="noopener"
-          >
+          <EnlaceTeleventas class="btn btn-whatsapp mt-auto" mensaje={MENSAJE_PEDIDO}>
             Escribir ahora
             <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
-          </a>
+          </EnlaceTeleventas>
         </div>
 
         {

@@ -5,21 +5,29 @@ import FormularioPqrs from '../components/FormularioPqrs.astro';
 import CampoAdjuntos from '../components/CampoAdjuntos.astro';
 import SelectorOpciones from '../components/SelectorOpciones.astro';
 import CampoMunicipio from '../components/CampoMunicipio.astro';
+import ContactoAdministrativo from '../components/ContactoAdministrativo.astro';
 import { empresa } from '../data/site';
-import { CATEGORIAS, destinatarioDe } from '../lib/pqrs/categorias';
+import { CATEGORIAS } from '../lib/pqrs/categorias';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
 /**
- * La radicación se elige en dos pasos, y cada uno se aplica al instante: no hay
+ * La página se bifurca en el PASO 1, y cada clic se aplica al instante: no hay
  * botón de "continuar" ni recarga.
  *
- *   1. CATEGORÍA (administrativa o comercial). Decide el canal entero: a qué
- *      correo va, si hay adjuntos y si hay número de radicado.
- *   2. TIPO (Petición, Queja, Reclamo, Sugerencia, Felicitación). Decide el
- *      trámite y, dentro de la comercial, si admite soportes.
+ *   ADMINISTRATIVA -> no hay paso 2 ni formulario de PQRS. Aparece debajo de
+ *      las tarjetas el bloque de contacto (ContactoAdministrativo.astro) con el
+ *      teléfono, el WhatsApp y el correo, más un formulario corto y opcional.
+ *      Estos asuntos los atiende una persona, no un radicador.
+ *   COMERCIAL -> sigue el camino de siempre: PASO 2 (Petición, Queja, Reclamo,
+ *      Sugerencia, Felicitación) y el formulario de radicación, que devuelve un
+ *      número y admite soportes en los cinco tipos.
  *
- * Los dos son ejes independientes a propósito: existe la queja administrativa y
- * la queja comercial. El detalle está en src/lib/pqrs/categorias.ts.
+ * El detalle de las dos categorías está en src/lib/pqrs/categorias.ts.
+ *
+ * QUIÉN ENSEÑA Y ESCONDE QUÉ. Cada tarjeta lo declara por su cuenta, en
+ * `opcionesCategoria` de aquí abajo, y lo aplica SelectorOpciones. No hay
+ * ningún script de página coordinándolo: así, al cambiar de idea, lo que
+ * enseñaba la otra categoría se esconde solo.
  *
  * DÓNDE VIVE EL VALOR ELEGIDO. En los dos `<input type="hidden">` que están
  * DENTRO del formulario, más abajo. Las tarjetas se pintan aquí arriba pero
@@ -41,21 +49,38 @@ const tipos = [
 ];
 
 /**
- * Correo de la categoría administrativa, resuelto EN TIEMPO DE BUILD.
+ * Qué enseña y qué esconde cada tarjeta del paso 1.
  *
- * Tiene que ser así porque el `mailto:` de esa categoría se arma en el
- * navegador: el valor necesita estar dentro del JavaScript compilado. Por eso
- * la variable lleva prefijo PUBLIC_. No es un secreto —es una dirección de
- * contacto que el sitio ya publica en el pie—, pero sí hay que redesplegar
- * después de cambiarla en Vercel.
+ * Las dos declaran las DOS caras —lo que revelan y lo que ocultan— y no solo lo
+ * que revelan. Es lo que hace que cambiar de idea deshaga lo anterior: sin el
+ * `oculta` de la comercial, pasar de administrativa a comercial dejaría en
+ * pantalla el bloque de contacto y el formulario a la vez.
+ *
+ * `[data-seccion-formulario]` sale visible del servidor, con su marcador de
+ * posición dentro, y solo la administrativa lo esconde. Así quien llegue sin
+ * JavaScript sigue viendo la dirección, el correo y la explicación en vez de
+ * una página a medias.
  */
-const destinoAdministrativa = destinatarioDe('administrativa', import.meta.env, empresa.email);
+const PANTALLA_POR_CATEGORIA: Record<string, { revela: string; oculta: string; desplazaA: string }> =
+  {
+    administrativa: {
+      revela: '[data-contacto-admin]',
+      oculta: '[data-paso-tipo], [data-seccion-formulario]',
+      desplazaA: '[data-contacto-admin]',
+    },
+    comercial: {
+      revela: '[data-paso-tipo], [data-seccion-formulario]',
+      oculta: '[data-contacto-admin]',
+      desplazaA: '[data-paso-tipo]',
+    },
+  };
 
 const opcionesCategoria = CATEGORIAS.map((categoria) => ({
   valor: categoria.clave,
   nombre: categoria.nombre,
   icono: categoria.icono,
   texto: categoria.texto,
+  ...PANTALLA_POR_CATEGORIA[categoria.clave],
 }));
 
 const opcionesTipo = tipos.map((tipo) => ({
@@ -93,22 +118,31 @@ const notas = Object.fromEntries(
         <span class="kicker">Paso 1 de 2</span>
         <h2 class="text-[28px] tablet:text-[38px]">¿A quién va dirigida?</h2>
         <p class="mt-3 text-base text-muted">
-          Cada una sigue un camino distinto: la administrativa llega a nuestros contactos, y la
-          comercial queda radicada con un número de seguimiento.
+          Cada una sigue un camino distinto: la administrativa la atiende directamente nuestro
+          equipo, y la comercial queda radicada con un número de seguimiento.
         </p>
       </div>
 
+      <!--
+        Sin `revela` ni `desplazaA` de grupo: aquí las dos tarjetas llevan a
+        pantallas distintas y cada una lo declara en `opcionesCategoria`.
+      -->
       <SelectorOpciones
         espejo="categoria-pqrs"
         grupo="categoria-opcion"
         leyenda="Categoría de la solicitud"
         opciones={opcionesCategoria}
         columnas={2}
-        revela="[data-paso-tipo]"
-        desplazaA="[data-paso-tipo]"
       />
 
-      <!-- PASO 2: TIPO. Aparece al elegir categoría; nunca antes. -->
+      <!-- ADMINISTRATIVA: contacto directo, sin paso 2 y sin radicación. -->
+      <!-- `mx-auto`: las tarjetas de arriba van centradas, y un bloque pegado
+           al margen izquierdo dejaba media pantalla vacía a su derecha. -->
+      <div class="mx-auto mt-14 hidden max-w-[64ch]" data-contacto-admin>
+        <ContactoAdministrativo />
+      </div>
+
+      <!-- PASO 2: TIPO. Solo en la comercial, y solo al elegirla. -->
       <div class="mt-20 hidden" data-paso-tipo id="paso-tipo">
         <div class="mb-14 max-w-[56ch]">
           <span class="kicker">Paso 2 de 2</span>
@@ -138,8 +172,14 @@ const notas = Object.fromEntries(
     </div>
   </section>
 
-  <!-- FORMULARIO -->
-  <section class="section border-y border-line bg-fondo">
+  <!--
+    FORMULARIO. Solo sirve a la categoría comercial, así que la administrativa
+    esconde la SECCIÓN ENTERA y no solo la tarjeta del formulario: dejar en
+    pantalla el encabezado "Formulario de PQRS" y el aviso legal de la
+    radicación, debajo de un bloque que dice que esto se atiende por teléfono,
+    sería anunciar un trámite que en esa categoría no existe.
+  -->
+  <section class="section border-y border-line bg-fondo" data-seccion-formulario>
     <div class="wrap grid grid-cols-1 items-start gap-14 tablet:grid-cols-[.9fr_1.1fr]">
       <div>
         <span class="kicker">Radicación</span>
@@ -188,7 +228,7 @@ const notas = Object.fromEntries(
       </div>
 
       <div class="glass-card hidden p-8" data-paso-formulario>
-        <FormularioPqrs boton="Enviar PQRS" destinoAdministrativa={destinoAdministrativa}>
+        <FormularioPqrs boton="Enviar PQRS">
           <!--
             El valor de los dos selectores de arriba. Son campos ocultos y no
             `<select>`, pero conservan id y name, así que `FormData` los recoge
@@ -250,7 +290,7 @@ const notas = Object.fromEntries(
               placeholder="Cuéntanos qué pasó: fecha, lugar, producto o factura relacionada."></textarea>
           </div>
 
-          <!-- Solo en la categoría comercial, y solo para Queja y Reclamo. El
+          <!-- Solo en la categoría comercial, y ahí en los cinco tipos. El
                componente se engancha a los dos campos ocultos por su id. -->
           <CampoAdjuntos controlador="tipo-pqrs" categoria="categoria-pqrs" />
 
@@ -270,12 +310,10 @@ const notas = Object.fromEntries(
         </FormularioPqrs>
 
         <p class="mt-6 mb-0 border-t border-line pt-5 text-[13px] text-muted">
-          En la categoría <strong>comercial</strong> tu solicitud queda radicada con un número y una
-          fecha, y los archivos de soporte se guardan en un almacenamiento privado; recibirás el
-          radicado por correo. Si en ese momento el servicio no estuviera disponible, el formulario
-          abre tu gestor de correo como respaldo y te avisa de que así la solicitud NO queda
-          radicada. La categoría <strong>administrativa</strong> se envía siempre desde tu gestor de
-          correo y no genera radicado.{' '}
+          Tu solicitud queda radicada con un número y una fecha, y los archivos de soporte se
+          guardan en un almacenamiento privado; recibirás el radicado por correo. Si en ese momento
+          el servicio no estuviera disponible, el formulario abre tu gestor de correo como respaldo
+          y te avisa de que así la solicitud NO queda radicada.{' '}
           Detalles técnicos en <code>docs/PQRS-ADJUNTOS.md</code>.
         </p>
       </div>

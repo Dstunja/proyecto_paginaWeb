@@ -61,7 +61,8 @@ import {
 } from '../../lib/plantillasCatalogo';
 import Icono from '../Icono.astro';
 import LoaderDST from '../LoaderDST.astro';
-import { empresa } from '../../data/site';
+import EnlaceTeleventas from '../EnlaceTeleventas.astro';
+import { ASESORA_POR_DEFECTO, enlaceTeleventas } from '../../lib/televentas';
 
 /**
  * Lo que se le manda al navegador de cada producto.
@@ -281,9 +282,8 @@ const htmlInicial = vistaPorMarcas(porMarca, estadoInicial);
 const conteoInicial = conteoSinFiltro(catalogo.length, marcas.length);
 const productosVisibles = Math.min(porMarca.get(primeraMarca ?? '')?.length ?? 0, TAMANO_TANDA);
 
-const mensajeSinJs = encodeURIComponent(
-  'Hola, quiero hacer un pedido y necesito que un asesor me acompañe.',
-);
+/** Sin saludo: "Hola {nombre}, " lo pone el reparto de Televentas. */
+const mensajeSinJs = 'quiero hacer un pedido y necesito que me acompañes.';
 
 /**
  * JSON dentro de un `<script>`: hay que neutralizar `<` para que un texto no
@@ -458,54 +458,10 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
     color: #ffffff;
   }
 
-  /* --- El precio de la tarjeta -------------------------------------------
-     Va entre el nombre y el selector de cantidad, y SIEMPRE ocupa su
-     renglón: con cifra cuando el PSP está cargado y con "Precio a consultar"
-     cuando no. Que el renglón exista siempre es lo que mantiene alineados el
-     selector y el botón "Agregar" de todas las tarjetas de una misma fila.
-
-     El aviso "a consultar" va en gris y con el peso del cuerpo, no en azul y
-     en negrita como la cifra: es una nota, no un precio, y no debe competir
-     con las tarjetas que sí traen número. */
-  .precio-tarjeta {
-    margin: 0.25rem 0 0;
-    font-family: var(--font-display);
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--color-primary);
-  }
-
-  .precio-tarjeta__nota {
-    margin-left: 0.375rem;
-    font-family: var(--font-body);
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-muted);
-  }
-
-  .precio-tarjeta--consultar {
-    font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--color-muted);
-  }
-
-  /* --- La presentación del precio de lista --------------------------------
-     Renglón propio bajo la cifra, no un `<span>` a su lado: "Precio de lista"
-     ya ocupa el hueco de la derecha y encadenar ahí un "Presentación: caja x
-     12" dejaría una línea que se parte en cualquier tarjeta angosta.
-
-     Va en gris y con el cuerpo de texto porque es la aclaración de la cifra,
-     no otra cifra. */
-  .precio-tarjeta__presentacion {
-    margin: 0.125rem 0 0;
-    font-family: var(--font-body);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--color-muted);
-  }
+  /* Los estilos del precio (`.precio-tarjeta*`) no están aquí sino en
+     src/styles/global.css: el mismo renglón de precio lo pinta también la
+     tarjeta de "Especiales del mes" del inicio, que no carga este componente.
+     Ver `bloquePrecio` en src/lib/plantillasCatalogo.ts. */
 
   /* --- "Imagen de referencia del producto" --------------------------------
      Pegado bajo el marco de la foto y con la misma sangría que el texto de la
@@ -746,9 +702,11 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
         class="font-semibold text-secondary-dark underline"
         href={ruta('/catalogo/')}>el catálogo de marcas</a
       > o{' '}
+      {/* Un <a> normal y no EnlaceTeleventas: sin JavaScript no hay reparto, y
+          el script de ese componente no correría dentro de <noscript>. */}
       <a
         class="font-semibold text-secondary-dark underline"
-        href={`${empresa.whatsapp}?text=${mensajeSinJs}`}
+        href={enlaceTeleventas(ASESORA_POR_DEFECTO, mensajeSinJs)}
         target="_blank"
         rel="noopener">escríbenos por WhatsApp</a
       > y un asesor te toma el pedido.
@@ -816,11 +774,8 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   <span data-falla>
     No se pudieron cargar el buscador ni los filtros. Puedes seguir viendo las referencias de abajo
     o{' '}
-    <a
-      class="font-semibold text-secondary-dark underline"
-      href={`${empresa.whatsapp}?text=${mensajeSinJs}`}
-      target="_blank"
-      rel="noopener">escribirnos por WhatsApp</a
+    <EnlaceTeleventas class="font-semibold text-secondary-dark underline" mensaje={mensajeSinJs}
+      >escribirnos por WhatsApp</EnlaceTeleventas
     >.
   </span>
 </div>
@@ -891,10 +846,13 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
 
     const indice = new Map<string, string>();
     for (const p of catalogo) {
+      // El código SAP entra al índice aunque no sea texto que nadie "lea": la
+      // tarjeta y el panel lo MUESTRAN, así que quien lo tenga a mano -de una
+      // factura, del asesor- espera poder pegarlo aquí y llegar a la referencia.
       indice.set(
         p.id,
         normalizar(
-          `${p.marca} ${p.nombre} ${p.presentacion} ${p.categoria} ${p.subcategoria ?? ''}`,
+          `${p.marca} ${p.nombre} ${p.presentacion} ${p.categoria} ${p.subcategoria ?? ''} ${p.codigo}`,
         ),
       );
     }

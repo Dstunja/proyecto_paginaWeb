@@ -2,33 +2,75 @@
  * Las dos categorías de PQRS: a quién va dirigida y por dónde sale.
  *
  * QUÉ DECIDE LA CATEGORÍA. No es una etiqueta decorativa: es lo que determina
- * el canal entero. La administrativa se dirige a la empresa y sale por el
- * gestor de correo de quien escribe (`mailto:`), sin adjuntos, sin antirrobots
- * y sin número de radicado. La comercial es la radicación de verdad: sube los
- * soportes a Vercel Blob, verifica Turnstile, guarda el registro y devuelve un
- * radicado. Son dos trámites distintos que comparten los mismos campos.
+ * el canal entero, y los dos caminos ya ni siquiera comparten pantalla.
  *
- * POR QUÉ LA CATEGORÍA VA ANTES QUE EL TIPO, Y NO EN SU LUGAR. Son ejes
- * independientes: existe la queja administrativa y la queja comercial. Además
- * los `value` de los tipos ("Petición", "Queja"…) los comparan `TIPOS_CON_SOPORTE`
- * en src/lib/adjuntos.ts, el asunto del correo y el campo `tipo` del registro de
- * la radicación; sustituirlos por las categorías habría roto las tres cosas a la
- * vez.
+ *   ADMINISTRATIVA (`via: 'contacto'`) NO ES UN TRÁMITE EN LÍNEA. Al elegirla
+ *   no aparece el paso 2 ni el formulario de PQRS: aparece un bloque con el
+ *   teléfono, el WhatsApp y el correo de la empresa, porque estos asuntos
+ *   —facturación, certificados, documentos— los atiende una persona del equipo
+ *   y no un radicador automático. Debajo lleva un formulario corto y opcional
+ *   para dejar los datos y que el equipo devuelva la llamada.
+ *
+ *   COMERCIAL (`via: 'radicacion'`) es la radicación de verdad: pide el tipo,
+ *   sube los soportes a Vercel Blob, verifica Turnstile, guarda el registro y
+ *   devuelve un número de radicado.
+ *
+ * POR QUÉ LA CATEGORÍA VA ANTES QUE EL TIPO, Y NO EN SU LUGAR. El tipo
+ * ("Petición", "Queja"…) solo tiene sentido dentro de la comercial, que es la
+ * única que radica. Sus `value` los comparan `TIPOS_PQRS` de aquí abajo, el
+ * asunto del correo y el campo `tipo` del registro de la radicación;
+ * sustituirlos por las categorías habría roto las tres cosas a la vez.
  *
  * ESTE ARCHIVO NO LEE EL ENTORNO NI IMPORTA DATOS DEL SITIO, igual que
- * src/lib/adjuntos.ts: quien llama le pasa el entorno y el correo de respaldo a
- * `destinatarioDe`. Así el mismo módulo sirve en el navegador (con
- * `import.meta.env`, en tiempo de build) y en una función de Vercel (con
- * `process.env`, en cada petición) sin bifurcarse. Importar aquí
- * `src/data/site.ts` habría arrastrado sus 18 KB de coordenadas al JavaScript
- * del navegador solo por una dirección de correo.
+ * src/lib/adjuntos.ts, así que el mismo módulo sirve en el navegador y en una
+ * función de Vercel sin bifurcarse. Importar aquí `src/data/site.ts` habría
+ * arrastrado sus 18 KB de coordenadas al JavaScript del navegador solo por una
+ * dirección de correo.
+ *
+ * DÓNDE ESTÁ EL CORREO DE DESTINO. En una sola variable, `PQRS_DESTINO`, que
+ * lee `correoDestino()` en src/lib/pqrs/config.ts. La lee tanto la radicación
+ * comercial como el formulario administrativo: los dos acaban en el mismo
+ * buzón y se distinguen por el asunto. Antes había además una
+ * `PUBLIC_PQRS_ADMIN_DESTINO` para armar un `mailto:` en el navegador; se
+ * eliminó al pasar el envío administrativo al servidor, porque dos variables
+ * apuntando al mismo buzón es la forma de que un día dejen de coincidir.
  */
-import { requiereSoporte } from '../adjuntos';
+import { normalizar } from '../adjuntos';
 
 export type ClaveCategoria = 'administrativa' | 'comercial';
 
-/** Por dónde sale la solicitud una vez enviada. */
-export type Via = 'correo' | 'radicacion';
+/**
+ * Los cinco tipos que ofrece el formulario, normalizados (sin tildes, en
+ * minúsculas).
+ *
+ * VIVE AQUÍ Y NO EN solicitud.ts porque este módulo no importa datos del sitio
+ * ni lee el entorno, así que lo pueden usar por igual el navegador y cualquiera
+ * de las funciones. `solicitud.ts`, que sería el otro sitio natural, arrastra
+ * los 87 municipios y construye su índice al cargarse: si /api/pqrs/token
+ * importara la lista de allí, cargaría ese índice en cada arranque en frío sin
+ * necesitarlo para nada.
+ *
+ * Se comparan NORMALIZADOS contra el `value` de las tarjetas de
+ * src/pages/pqrs.astro, que son los nombres con tilde. Así la comprobación no
+ * se rompe si algún día se cambia la capitalización de esos `value`.
+ */
+export const TIPOS_PQRS = [
+  'peticion',
+  'queja',
+  'reclamo',
+  'sugerencia',
+  'felicitacion',
+] as const;
+
+/** ¿Es uno de los cinco tipos del formulario? */
+export function esTipoValido(tipo: string | null | undefined): boolean {
+  if (!tipo) return false;
+  const clave = normalizar(tipo);
+  return TIPOS_PQRS.some((t) => t === clave);
+}
+
+/** Qué se le ofrece a quien elige la categoría. */
+export type Via = 'contacto' | 'radicacion';
 
 export interface Categoria {
   clave: ClaveCategoria;
@@ -42,17 +84,11 @@ export interface Categoria {
   nota: string;
   via: Via;
   /**
-   * Si la categoría admite archivos de soporte. Es una condición NECESARIA pero
-   * no suficiente: el tipo también tiene que pedirlos (ver `admiteSoporte`).
+   * Si la categoría admite archivos de soporte. Es lo ÚNICO que lo decide:
+   * dentro de la comercial lo llevan los cinco tipos por igual (ver
+   * `admiteSoporte`).
    */
   admiteSoporte: boolean;
-  /**
-   * Variable de entorno con el correo de destino. Las de la administrativa
-   * llevan prefijo PUBLIC_ porque el `mailto:` se arma EN EL NAVEGADOR y el
-   * valor tiene que estar dentro del JavaScript compilado. No es un secreto:
-   * es una dirección de contacto que el sitio ya publica.
-   */
-  variableDestino: string;
 }
 
 export const CATEGORIAS: readonly Categoria[] = [
@@ -61,14 +97,13 @@ export const CATEGORIAS: readonly Categoria[] = [
     nombre: 'Administrativa',
     icono: 'file-text',
     texto:
-      'Trámites, documentos, facturación, certificados o cualquier asunto de la ' +
-      'administración de la empresa. Escribes directamente a nuestros contactos.',
+      'Trámites, documentos, facturación, certificados o asuntos de administración. ' +
+      'Se atienden directamente por nuestro equipo.',
     nota:
-      'Se envía desde tu gestor de correo a la administración de la empresa. No lleva ' +
-      'archivos adjuntos ni número de radicado.',
-    via: 'correo',
+      'Te atendemos directamente por teléfono, WhatsApp o correo. No pasa por el ' +
+      'formulario de PQRS y no genera número de radicado.',
+    via: 'contacto',
     admiteSoporte: false,
-    variableDestino: 'PUBLIC_PQRS_ADMIN_DESTINO',
   },
   {
     clave: 'comercial',
@@ -79,10 +114,9 @@ export const CATEGORIAS: readonly Categoria[] = [
       'Queda radicada con número y fecha, y puedes adjuntar soportes.',
     nota:
       'Queda radicada con un número de seguimiento y una fecha, que también te llegan ' +
-      'por correo. En quejas y reclamos puedes adjuntar evidencia.',
+      'por correo. Si tienes soportes o evidencias, puedes adjuntarlos.',
     via: 'radicacion',
     admiteSoporte: true,
-    variableDestino: 'PQRS_DESTINO',
   },
 ];
 
@@ -96,38 +130,21 @@ export function categoriaDe(clave: string | null | undefined): Categoria | undef
 /**
  * ¿Este envío admite archivos de soporte?
  *
- * Hacen falta las dos condiciones: una categoría que los acepte (solo la
- * comercial) y un tipo que los pida (hoy Queja y Reclamo). Una queja
- * administrativa NO lleva adjuntos, aunque "Queja" esté en `TIPOS_CON_SOPORTE`.
+ * Lo decide la CATEGORÍA, y solo la categoría: dentro de la comercial los cinco
+ * tipos llevan soporte por igual. Antes había una segunda condición —el tipo
+ * tenía que estar en una lista de "tipos con soporte", que eran Queja y
+ * Reclamo—, y se quitó: una Petición puede necesitar adjuntar el documento que
+ * se solicita, y una Felicitación, la foto de lo que salió bien.
+ *
+ * El `tipo` sigue haciendo falta, pero solo para saber que YA SE ELIGIÓ uno: sin
+ * esto el campo asomaría en cuanto se pulsa "Comercial", antes del paso 2.
+ * La categoría administrativa nunca lleva adjuntos, elija el tipo que elija.
  */
 export function admiteSoporte(
   clave: string | null | undefined,
   tipo: string | null | undefined,
 ): boolean {
-  return (categoriaDe(clave)?.admiteSoporte ?? false) && requiereSoporte(tipo);
-}
-
-export type EntornoCategorias = Record<string, string | undefined>;
-
-/**
- * Correo al que va una categoría.
- *
- * `respaldo` es lo que se usa si la variable no está definida, y quien llama le
- * pasa el correo de la empresa (`empresa.email`, en src/data/site.ts). Con eso
- * el formulario administrativo funciona desde el primer despliegue, aunque
- * nadie haya definido la variable todavía, en lugar de armar un `mailto:` sin
- * destinatario. La dirección sigue sin estar escrita a mano en ningún
- * componente: sale de una variable de entorno o de un archivo de configuración.
- */
-export function destinatarioDe(
-  clave: string | null | undefined,
-  env: EntornoCategorias = {},
-  respaldo = '',
-): string {
-  const categoria = categoriaDe(clave);
-  if (!categoria) return respaldo;
-  const valor = env[categoria.variableDestino];
-  return typeof valor === 'string' && valor.trim() !== '' ? valor.trim() : respaldo;
+  return (categoriaDe(clave)?.admiteSoporte ?? false) && esTipoValido(tipo);
 }
 
 /**
@@ -141,8 +158,13 @@ export function destinatarioDe(
  * Los argumentos van en un objeto y no sueltos a propósito: con cuatro trozos,
  * tres de ellos cadenas, el orden posicional se equivoca solo.
  *
- * @example asuntoDe({ categoria: 'administrativa', tipo: 'Petición', municipio: 'Tunja' })
- *          -> 'PQRS Administrativa · Petición · Tunja'
+ * Hoy solo lo usa la categoría COMERCIAL, que es la única que radica; sigue
+ * nombrando la categoría en primer lugar porque lo administrativo llega al
+ * mismo buzón por otra vía («Solicitud administrativa · Nombre», ver
+ * src/lib/pqrs/administrativa.ts) y en la bandeja hay que poder separarlos.
+ *
+ * @example asuntoDe({ categoria: 'comercial', tipo: 'Petición', municipio: 'Tunja' })
+ *          -> 'PQRS Comercial · Petición · Tunja'
  * @example asuntoDe({ categoria: 'comercial', tipo: 'Queja', municipio: 'Samacá', radicado: 'PQRS-…' })
  *          -> '[PQRS-…] PQRS Comercial · Queja · Samacá'
  */

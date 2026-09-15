@@ -12,6 +12,7 @@
     "check": "astro check",
     "og": "node scripts/build-og.mjs",
     "favicon": "node scripts/build-favicon.mjs",
+    "fotos:equipo": "node scripts/recortar-fotos-equipo.mjs",
     "geocodificar": "node scripts/geocodificar.mjs",
     "fotos:descargar": "node scripts/descargar-fotos.mjs",
     "fotos:conectar": "node scripts/conectar-fotos.mjs",
@@ -22,6 +23,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verificar:pqrs": "node scripts/verificar-pqrs.mjs",
+    "verificar:empleos": "node scripts/verificar-empleos.mjs",
     "verificar:cobertura": "node scripts/verificar-cobertura.mjs",
     "verificar:navegacion": "node scripts/verificar-navegacion.mjs"
   },

@@ -978,6 +978,62 @@
   .conteo-filtro[data-rebote] {
     animation: rebote-conteo 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
+
+  /* --- El renglón de precio de una referencia ------------------------------
+     Lo pintan dos tarjetas: la del catálogo del armador de pedidos y la de
+     "Especiales del mes" del inicio. Por eso vive aquí y no en
+     CatalogoPedido.astro, que es donde nació: el inicio no carga ese
+     componente. El HTML lo arma una sola función para las dos,
+     `bloquePrecio` en src/lib/plantillasCatalogo.ts. */
+
+  /* --- El precio de la tarjeta -------------------------------------------
+     Va entre el nombre y el selector de cantidad, y SIEMPRE ocupa su
+     renglón: con cifra cuando el PSP está cargado y con "Precio a consultar"
+     cuando no. Que el renglón exista siempre es lo que mantiene alineados el
+     selector y el botón "Agregar" de todas las tarjetas de una misma fila.
+
+     El aviso "a consultar" va en gris y con el peso del cuerpo, no en azul y
+     en negrita como la cifra: es una nota, no un precio, y no debe competir
+     con las tarjetas que sí traen número. */
+  .precio-tarjeta {
+    margin: 0.25rem 0 0;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
+  .precio-tarjeta__nota {
+    margin-left: 0.375rem;
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .precio-tarjeta--consultar {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  /* --- La presentación del precio de lista --------------------------------
+     Renglón propio bajo la cifra, no un `<span>` a su lado: "Precio de lista"
+     ya ocupa el hueco de la derecha y encadenar ahí un "Presentación: caja x
+     12" dejaría una línea que se parte en cualquier tarjeta angosta.
+
+     Va en gris y con el cuerpo de texto porque es la aclaración de la cifra,
+     no otra cifra. */
+  .precio-tarjeta__presentacion {
+    margin: 0.125rem 0 0;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
 }
 
 @keyframes rebote-conteo {
@@ -1028,11 +1084,16 @@
 
   .js-revelado [data-revelar][data-revelado],
   .js-revelado [data-revelar-grupo] > [data-revelado] {
-    /* 400 ms y una curva que frena al final: se nota, pero no compite con el
+    /* 550 ms y una curva que frena al final: se nota, pero sigue por debajo del
        conteo de las cifras del hero (900 ms), que es la animación protagonista
        de la portada. La variante la decide `data-variante-revelado`, que
-       escribe src/lib/revelado.ts al revelar. */
-    animation: revelar-subir 400ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+       escribe src/lib/revelado.ts al revelar.
+
+       Ojo al sumarlo con el escalonado: la última tarjeta de una fila arranca
+       con el tope de 480 ms (src/lib/revelado.ts) y termina a 1,03 s de que la
+       fila asome. Ese tope es lo que evita que una rejilla ancha se alargue
+       sola al subir la duración. */
+    animation: revelar-subir 550ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
     animation-delay: var(--retraso-revelado, 0ms);
   }
 

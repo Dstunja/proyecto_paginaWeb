@@ -181,11 +181,13 @@ interface ArchivoRevisado {
 type Revision = { ok: true; archivos: ArchivoRevisado[] } | { ok: false; errores: string[] };
 
 async function revisarAdjuntos(datos: SolicitudValidada, env: Entorno): Promise<Revision> {
-  // Petición, Sugerencia y Felicitación no llevan soporte. Si aun así llegan
-  // adjuntos es que alguien mandó el JSON a mano: se ignoran y se borran, sin
-  // devolver error, porque la solicitud en sí es válida.
-  if (!datos.admiteSoporte) return { ok: true, archivos: [] };
-
+  /*
+   * Aquí había un atajo: los tipos que no eran Queja ni Reclamo salían sin
+   * revisar nada y sus adjuntos se descartaban. Ya no existe, porque los cinco
+   * tipos de la categoría comercial admiten soporte. El `tipo` ya viene
+   * validado contra `TIPOS_VALIDOS` por `validarSolicitud`, así que todo lo que
+   * llega hasta aquí es una solicitud con derecho a adjuntar.
+   */
   const tope = maxArchivos(env);
   if (datos.adjuntos.length > tope) {
     return { ok: false, errores: [`Solo puedes adjuntar ${tope} archivos.`] };
