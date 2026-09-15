@@ -15,6 +15,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { crc32 } from 'node:zlib';
 
 const correosEnviados: Array<Record<string, unknown>> = [];
+/** Clave con la que se creó cada cliente de Resend, en orden. */
+const clavesUsadas: string[] = [];
 /** Lo que devuelve el doble de Resend. Se cambia para probar el fallo. */
 let respuestaResend: { data: unknown; error: { message: string } | null } = {
   data: { id: 'correo-de-prueba' },
@@ -23,6 +25,9 @@ let respuestaResend: { data: unknown; error: { message: string } | null } = {
 
 vi.mock('resend', () => ({
   Resend: class {
+    constructor(clave: string) {
+      clavesUsadas.push(clave);
+    }
     emails = {
       send: async (mensaje: Record<string, unknown>) => {
         correosEnviados.push(mensaje);
@@ -164,6 +169,7 @@ function adjuntos(): Array<{ filename: string; content: Buffer; contentType: str
 
 beforeEach(() => {
   correosEnviados.length = 0;
+  clavesUsadas.length = 0;
   respuestaResend = { data: { id: 'correo-de-prueba' }, error: null };
   reiniciarMemoria();
   turnstileResponde(true);
@@ -256,11 +262,23 @@ describe('postulación válida', () => {
 // --- Destino y remitente -----------------------------------------------------
 
 describe('destino y remitente', () => {
-  it('sin variables, el remitente es el mismo de PQRS', async () => {
+  it('sin variables, el remitente es el de pruebas de Resend, el mismo de PQRS', async () => {
     await atenderPostulacion(peticion(campos()), ENTORNO);
-    expect(correosEnviados[0]!.from).toBe(
-      'PQRS Distribuciones Santiago de Tunja <pqrs@dstunja.com>',
-    );
+    expect(correosEnviados[0]!.from).toBe('onboarding@resend.dev');
+  });
+
+  /*
+   * PQRS y Empleos usan cuentas de Resend distintas. Si Empleos tomara la clave
+   * de PQRS, sus correos saldrían por la cuenta equivocada y Resend los
+   * rechazaría: con el remitente de pruebas cada cuenta solo entrega a su titular.
+   */
+  it('usa RESEND_API_KEY aunque exista PQRS_RESEND_API_KEY', async () => {
+    const respuesta = await atenderPostulacion(peticion(campos()), {
+      ...ENTORNO,
+      PQRS_RESEND_API_KEY: 're_de_pqrs',
+    });
+    expect(respuesta.estado).toBe(200);
+    expect(clavesUsadas.at(-1)).toBe('re_prueba');
   });
 
   it('EMPLEOS_DESTINO y EMPLEOS_REMITENTE mandan si están definidas', async () => {

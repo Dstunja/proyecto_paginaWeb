@@ -345,6 +345,27 @@ async function instalarDobles(pagina, plan) {
       });
       return;
     }
+    // Al servidor le falta el Blob o la clave de Resend.
+    if (plan.radicar === 'config') {
+      await ruta.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: false,
+          codigo: 'config-incompleta',
+          errores: ['La radicación en línea no está disponible en este momento.'],
+        }),
+      });
+      return;
+    }
+    // Radica, pero la constancia no sale (remitente de pruebas) y, en
+    // 'sin-area', tampoco el correo al área.
+    const correos =
+      plan.radicar === 'omitida'
+        ? { correoArea: true, constancia: 'omitida' }
+        : plan.radicar === 'sin-area'
+          ? { correoArea: false, constancia: 'omitida' }
+          : {};
     await ruta.fulfill({
       status: 201,
       contentType: 'application/json',
@@ -352,6 +373,7 @@ async function instalarDobles(pagina, plan) {
         ok: true,
         radicado: 'PQRS-20260907-A7K2M9',
         fecha: '7 de septiembre de 2026, 9:15',
+        ...correos,
       }),
     });
   });
@@ -376,6 +398,18 @@ async function instalarDobles(pagina, plan) {
         body: JSON.stringify({
           ok: false,
           errores: ['La comprobación antirrobots no pasó. Recarga la página e inténtalo de nuevo.'],
+        }),
+      });
+      return;
+    }
+    if (plan.administrativa === 'config') {
+      await ruta.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: false,
+          codigo: 'config-incompleta',
+          errores: ['El envío en línea no está disponible en este momento.'],
         }),
       });
       return;
@@ -987,6 +1021,108 @@ async function revisarRadicacion(navegador, archivos) {
     await pagina.close();
   }
 
+  // ---- 10. Servidor sin Blob o sin Resend: avisa y ofrece el correo ---------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'config' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(1200);
+
+    const aviso = (await pagina.locator('[data-form] [data-aviso]').textContent()) ?? '';
+    comprobar(
+      'Config incompleta: se avisa de que la radicación en línea no está disponible',
+      /no está disponible en este momento/i.test(aviso) && /NO queda radicada/i.test(aviso),
+      aviso.trim().slice(0, 120),
+    );
+    comprobar(
+      'Config incompleta: se ofrece el correo y no hay confirmación falsa',
+      (await pagina.locator('[data-pqrs][data-respaldo="correo"][data-configuracion="incompleta"]').count()) === 1 &&
+        !(await pagina.locator('[data-confirmacion]').isVisible()) &&
+        registro.radicar.length === 1,
+    );
+    await pagina.close();
+  }
+
+  // ---- 11. Radicada sin constancia por correo (remitente de pruebas) --------
+  {
+    const pagina = await contexto.newPage();
+    await instalarDobles(pagina, { radicar: 'omitida' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+
+    const textoConfirmacion = ((await pagina.locator('[data-confirmacion]').textContent()) ?? '').replace(/\s+/g, ' ');
+    comprobar(
+      'Sin constancia: la confirmación NO dice que se lo enviamos por correo',
+      (await pagina.locator('[data-confirmacion]').isVisible()) &&
+        !(await pagina.locator('[data-constancia-enviada]').isVisible()),
+    );
+    const avisosEnvio = pagina.locator('[data-avisos-envio]');
+    comprobar(
+      'Sin constancia: pide copiar o anotar el número, sin jerga técnica',
+      (await avisosEnvio.isVisible()) &&
+        /cópialo o anótalo/i.test((await avisosEnvio.textContent()) ?? '') &&
+        !/resend|api_key|falta /i.test(textoConfirmacion),
+      ((await avisosEnvio.textContent()) ?? '').trim(),
+    );
+    await pagina.close();
+  }
+
+  // ---- 12. Radicada, pero el correo al área no salió -------------------------
+  {
+    const pagina = await contexto.newPage();
+    await instalarDobles(pagina, { radicar: 'sin-area' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+
+    const avisosEnvio = ((await pagina.locator('[data-avisos-envio]').textContent()) ?? '').trim();
+    comprobar(
+      'Sin correo al área: la radicación se confirma y se sugiere WhatsApp con el número',
+      (await pagina.locator('[data-radicado]').textContent()) === 'PQRS-20260907-A7K2M9' &&
+        /no pudimos avisar al equipo/i.test(avisosEnvio) &&
+        /WhatsApp/.test(avisosEnvio),
+      avisosEnvio.slice(0, 120),
+    );
+    await pagina.close();
+  }
+
+  // ---- 13. Camino feliz de siempre: la confirmación sí menciona el correo --
+  {
+    const pagina = await contexto.newPage();
+    await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+    comprobar(
+      'Con constancia enviada: dice que también se envió por correo y no hay avisos',
+      (await pagina.locator('[data-constancia-enviada]').isVisible()) &&
+        !(await pagina.locator('[data-avisos-envio]').isVisible()),
+    );
+    await pagina.close();
+  }
+
   await contexto.close();
 }
 
@@ -1534,6 +1670,32 @@ async function revisarAdministrativa(navegador) {
       (await pagina.locator('[data-contacto-admin-caja][data-respaldo="correo"]').count()) === 1,
     );
 
+    await pagina.close();
+  }
+
+  // ---- 9. Servidor sin clave de Resend: avisa y abre el correo ------------
+  {
+    const { pagina } = await abrirAdministrativa(contexto, { administrativa: 'config' });
+    await elegir(pagina, 'administrativa');
+
+    await pagina.fill('#nombre-admin', 'Cristian Amaya');
+    await pagina.fill('#telefono-admin', '3106232429');
+    await pagina.fill('#mensaje-admin', 'Necesito una copia de la factura del mes pasado.');
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(900);
+
+    const errores = ((await pagina.locator('[data-errores-admin]').textContent()) ?? '').replace(/\s+/g, ' ');
+    comprobar(
+      'Administrativa (config incompleta): avisa de que el envío no está disponible',
+      (await pagina.locator('[data-errores-admin]').isVisible()) &&
+        /no está disponible en este momento/i.test(errores) &&
+        !/resend|api_key/i.test(errores),
+      errores.trim().slice(0, 120),
+    );
+    comprobar(
+      'Administrativa (config incompleta): y ofrece el gestor de correo',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo="correo"][data-configuracion="incompleta"]').count()) === 1,
+    );
     await pagina.close();
   }
 

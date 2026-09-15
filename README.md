@@ -349,14 +349,16 @@ npx vercel env pull .env.local
 
 | Variable | Dónde se consigue |
 | --- | --- |
-| `BLOB_READ_WRITE_TOKEN` | **No se copia a mano.** Vercel → proyecto → *Storage* → *Connect Store* → *Blob*. Al conectar el store, Vercel define la variable sola. |
+| `BLOB_READ_WRITE_TOKEN` | **No se copia a mano.** Vercel → proyecto → *Storage* → `pqrs-adjuntos` (privado) → *Connect*. Vercel la define sola, junto con `BLOB_STORE_ID` y `BLOB_WEBHOOK_PUBLIC_KEY`, que el código no necesita. |
 | `TURNSTILE_SECRET` | Cloudflare → *Turnstile* → tu widget → *Settings* → **Secret Key**. |
 | `PUBLIC_TURNSTILE_SITE_KEY` | El mismo widget → **Site Key**. Lleva `PUBLIC_` porque el navegador la necesita. |
-| `RESEND_API_KEY` | <https://resend.com/api-keys>. El dominio del remitente debe estar verificado en Resend. |
-| `PQRS_DESTINO` | Lo decide la empresa: el correo que recibe **todo** lo de la página de PQRS, comercial y administrativo. Hoy `informacioncomercialdst@gmail.com`. |
+| `PQRS_RESEND_API_KEY` | <https://resend.com/api-keys>, con la cuenta de Resend de PQRS (registrada con `informacioncomercialdst@gmail.com`). Si falta, PQRS usa `RESEND_API_KEY`. |
+| `RESEND_API_KEY` | <https://resend.com/api-keys>, con la cuenta de Resend de Empleos. |
+| `PQRS_DESTINO`, `PQRS_REMITENTE` | Opcionales. Por defecto `informacioncomercialdst@gmail.com` y `onboarding@resend.dev`. Sin dominio verificado, Resend solo entrega al titular de la cuenta, así que la constancia a quien radica no se envía. |
 | `PQRS_IP_SALT`, `CRON_SECRET` | Se generan: `node -e "console.log(crypto.randomUUID())"`. |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | Vercel → *Marketplace* → Upstash (plan gratuito). Opcionales. |
 | `EMPLEOS_DESTINO`, `EMPLEOS_REMITENTE` | Opcionales. Buzón y remitente de las postulaciones de empleos; sin ellas se usa el correo de `contactoEmpleo` (`src/data/vacantes.ts`) y el remitente de PQRS. Ver `docs/EMPLEOS-POSTULACION.md`. |
+| `PUBLIC_PQRS_BLOB_ACCESS` | **Ya no existe.** El acceso a los blobs es privado y fijo; si sigue definida en Vercel, borrarla. |
 
 Para desarrollo, Cloudflare publica un par de claves de prueba que **aceptan
 cualquier token**, y por eso no pueden acabar en producción:

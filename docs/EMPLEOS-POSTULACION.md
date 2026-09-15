@@ -12,7 +12,8 @@ Humano con los datos en el cuerpo y el archivo adjunto.
 | --- | --- |
 | Cómo sale | `POST /api/empleos/postular` (multipart/form-data) |
 | Destino | `EMPLEOS_DESTINO`; por defecto `contactoEmpleo.email` de `src/data/vacantes.ts` (`ghsantiagodetunja@gmail.com`) |
-| Remitente | `EMPLEOS_REMITENTE`; por defecto el de PQRS (`PQRS_REMITENTE`) |
+| Remitente | `EMPLEOS_REMITENTE`; por defecto el de PQRS (`PQRS_REMITENTE` o `onboarding@resend.dev`) |
+| Clave de Resend | `RESEND_API_KEY`, de la cuenta de Resend de Empleos (distinta de la de PQRS) |
 | Asunto | `Postulación: {cargo} – {nombre}` |
 | Responder desde la bandeja | Va al candidato (`replyTo`) |
 | Hoja de vida | **Obligatoria**, PDF, DOC o DOCX, **máximo 4 MB**, adjunta al correo |
@@ -23,10 +24,11 @@ Humano con los datos en el cuerpo y el archivo adjunto.
 | Número de radicado | No |
 | Funciona en GitHub Pages | Cae a `mailto:`, pidiendo adjuntar la hoja de vida a mano |
 
-Todo reutiliza la infraestructura de PQRS: el mismo Resend, el mismo Turnstile, el
-mismo limitador por IP (`src/lib/pqrs/limite-tasa.ts`, con Upstash si está
-configurado) y las mismas reglas de archivos (`src/lib/adjuntos.ts`). **No hace
-falta ninguna cuenta ni variable nueva.**
+Reutiliza la infraestructura de PQRS: el mismo proveedor (Resend), el mismo
+Turnstile, el mismo limitador por IP (`src/lib/pqrs/limite-tasa.ts`, con Upstash
+si está configurado) y las mismas reglas de archivos (`src/lib/adjuntos.ts`). La
+**cuenta** de Resend sí es otra: sin dominio verificado cada cuenta solo entrega a
+su titular, así que Empleos usa `RESEND_API_KEY` y PQRS `PQRS_RESEND_API_KEY`.
 
 ## Por qué el archivo SÍ pasa por la función (y en PQRS no)
 
@@ -200,18 +202,14 @@ alternativa.
 
 ## Variables de entorno
 
-Se reutilizan las de PQRS: `RESEND_API_KEY`, `TURNSTILE_SECRET`,
-`PUBLIC_TURNSTILE_SITE_KEY` y, si están, `UPSTASH_REDIS_REST_URL` y
-`UPSTASH_REDIS_REST_TOKEN`. Las dos propias son **opcionales**:
+Comparte con PQRS `TURNSTILE_SECRET`, `PUBLIC_TURNSTILE_SITE_KEY` y, si están,
+`UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`. Las suyas:
 
 | Variable | Obligatoria | Qué es |
 | --- | --- | --- |
-| `EMPLEOS_DESTINO` | no | Buzón de Talento Humano. Sin ella, `contactoEmpleo.email` de `src/data/vacantes.ts`, que es la dirección que ya se publica en la página |
-| `EMPLEOS_REMITENTE` | no | Remitente. Sin ella, el de PQRS, que es el dominio verificado en Resend. Para que diga «Empleos …», una dirección del **mismo** dominio |
-
-Si los correos de PQRS salen hoy en producción, estos también: usan la misma
-clave y el mismo remitente. Si no hay `EMPLEOS_REMITENTE`, no hay nada que
-verificar de más en Resend.
+| `RESEND_API_KEY` | sí | Clave de la cuenta de Resend de Empleos. PQRS tiene la suya (`PQRS_RESEND_API_KEY`) y solo usa esta si no la tiene |
+| `EMPLEOS_DESTINO` | no | Buzón de Talento Humano. Sin ella, `contactoEmpleo.email` de `src/data/vacantes.ts`. Con `onboarding@resend.dev` tiene que ser el **titular de la cuenta** de `RESEND_API_KEY` |
+| `EMPLEOS_REMITENTE` | no | Remitente. Sin ella, `PQRS_REMITENTE` o `onboarding@resend.dev`. Cuando haya un dominio verificado en la cuenta de Empleos, una dirección de ese dominio |
 
 ## Dónde vive cada cosa
 

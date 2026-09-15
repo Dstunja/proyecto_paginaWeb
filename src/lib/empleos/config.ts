@@ -5,11 +5,16 @@
  * src/lib/pqrs/config.ts: así la función recoge un cambio de variable sin
  * recompilar y las pruebas pueden inyectar un entorno distinto.
  *
- * NO HACE FALTA NINGUNA VARIABLE NUEVA. Las dos de aquí son opcionales y tienen
- * un valor por defecto que ya funciona: el destino sale de `contactoEmpleo` en
- * src/data/vacantes.ts (la misma dirección que se enseña en la página) y el
- * remitente es el de PQRS, que es el que ya está verificado en Resend. La clave
- * de Resend, el secreto de Turnstile y las de Upstash son las de PQRS.
+ * Las dos variables de aquí son opcionales y tienen valor por defecto: el
+ * destino sale de `contactoEmpleo` en src/data/vacantes.ts (la misma dirección
+ * que se enseña en la página) y el remitente es el de PQRS, que por defecto es
+ * `onboarding@resend.dev`.
+ *
+ * LA CLAVE DE RESEND ES RESEND_API_KEY, no la de PQRS. Son cuentas distintas:
+ * con el remitente de pruebas cada cuenta solo entrega a su titular, así que
+ * EMPLEOS_DESTINO tiene que ser el correo con el que está registrada la cuenta
+ * de esa clave. PQRS usa PQRS_RESEND_API_KEY. El secreto de Turnstile y las
+ * variables de Upstash sí son compartidos.
  */
 import { contactoEmpleo } from '../../data/vacantes';
 import { correoRemitente, type Entorno } from '../pqrs/config';
@@ -36,10 +41,10 @@ export function correoDestinoEmpleos(env: Entorno = entornoActual()): string {
 /**
  * Remitente. Variable: EMPLEOS_REMITENTE (opcional).
  *
- * Sin ella se usa el mismo remitente que PQRS (`PQRS_REMITENTE` o su valor por
- * defecto). Es a propósito: ese es el dominio que está verificado en Resend, y
- * si los correos de PQRS salen, estos también. Para que el remitente diga
- * «Empleos …», definir EMPLEOS_REMITENTE con una dirección del MISMO dominio.
+ * Sin ella se usa el mismo remitente que PQRS: `PQRS_REMITENTE` o, si tampoco
+ * está, `onboarding@resend.dev`. Cuando haya un dominio verificado en la cuenta
+ * de Resend de Empleos, definir EMPLEOS_REMITENTE con una dirección de ese
+ * dominio.
  */
 export function correoRemitenteEmpleos(env: Entorno = entornoActual()): string {
   const valor = env.EMPLEOS_REMITENTE?.trim();

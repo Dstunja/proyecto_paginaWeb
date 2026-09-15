@@ -1,18 +1,26 @@
 /**
  * Correos de una radicación de PQRS, con Resend.
  *
- * Salen dos:
+ * Salen, como mucho, dos:
  *
- * 1. Al área de PQRS (`PQRS_DESTINO`) con todos los datos y un enlace firmado
- *    por adjunto. NO se adjuntan los archivos: el enlace caduca y el correo se
- *    reenvía, así que meter el soporte de una queja dentro del mensaje lo
- *    esparce sin control. El `replyTo` es el correo de quien radica, para que
- *    responder desde la bandeja funcione sin copiar direcciones.
- * 2. A quien radica, con el radicado y la fecha. Es su constancia.
+ * 1. Al área de PQRS (`PQRS_DESTINO`, por defecto informacioncomercialdst@gmail.com)
+ *    con todos los datos y un enlace de descarga por adjunto. NO se adjuntan los
+ *    archivos: el enlace caduca y el correo se reenvía, así que meter el soporte
+ *    de una queja dentro del mensaje lo esparce sin control. El `replyTo` es el
+ *    correo de quien radica, para que responder desde la bandeja funcione sin
+ *    copiar direcciones.
+ * 2. A quien radica, con el radicado y la fecha. Es su constancia. SOLO sale si
+ *    el remitente es de un dominio verificado: con `onboarding@resend.dev`
+ *    Resend rechaza a cualquier destinatario que no sea el titular de la cuenta,
+ *    así que ni se intenta y la pantalla le pide a la persona que guarde el
+ *    número (`constancia: 'omitida'`).
+ *
+ * La clave es la de la cuenta de Resend de PQRS: PQRS_RESEND_API_KEY y, si no
+ * está, RESEND_API_KEY (ver `claveResend` en ./config.ts).
  *
  * Si falla el envío la radicación NO se deshace: el registro y los archivos ya
- * están guardados en el Blob, que es lo que da fe. El fallo se devuelve para
- * dejarlo en el registro del servidor y avisarlo en pantalla.
+ * están guardados en el Blob, que es lo que da fe. El motivo técnico va al
+ * registro del servidor; la respuesta solo dice QUÉ no salió.
  *
  * Al final del archivo hay un tercer correo, `enviarCorreoAdministrativo`, que
  * es de otro trámite: el formulario corto del bloque administrativo. Va al
@@ -21,7 +29,13 @@
  */
 import { Resend } from 'resend';
 import { asuntoDe } from './categorias';
-import { correoDestino, correoRemitente, type Entorno } from './config';
+import {
+  claveResend,
+  correoDestino,
+  correoRemitente,
+  esRemitenteDePrueba,
+  type Entorno,
+} from './config';
 import type { RegistroPqrs } from './solicitud';
 
 export interface AdjuntoParaCorreo {
@@ -30,9 +44,19 @@ export interface AdjuntoParaCorreo {
   enlace: string;
 }
 
+/**
+ * Qué pasó con la constancia a quien radica.
+ * - `enviada`: salió.
+ * - `omitida`: no se intentó, porque el remitente es el de pruebas de Resend.
+ * - `fallida`: se intentó y Resend la rechazó.
+ */
+export type EstadoConstancia = 'enviada' | 'omitida' | 'fallida';
+
 export interface ResultadoCorreo {
+  /** El correo al área salió. */
   destinoOk: boolean;
-  ciudadanoOk: boolean;
+  constancia: EstadoConstancia;
+  /** Motivos técnicos, para el registro del servidor. Nunca van al navegador. */
   errores: string[];
 }
 
@@ -171,14 +195,17 @@ export async function enviarCorreos(
   env: Entorno,
 ): Promise<ResultadoCorreo> {
   const errores: string[] = [];
-  const clave = env.RESEND_API_KEY;
+  const clave = claveResend(env);
   const destino = correoDestino(env);
 
+  // /api/pqrs ya comprueba la clave antes de radicar (`faltaParaRadicar`); esto
+  // es la red por si alguien llama a esta función desde otro sitio.
   if (!clave) {
-    return { destinoOk: false, ciudadanoOk: false, errores: ['Falta RESEND_API_KEY.'] };
-  }
-  if (!destino) {
-    return { destinoOk: false, ciudadanoOk: false, errores: ['Falta PQRS_DESTINO.'] };
+    return {
+      destinoOk: false,
+      constancia: 'fallida',
+      errores: ['Falta PQRS_RESEND_API_KEY (o RESEND_API_KEY).'],
+    };
   }
 
   const resend = new Resend(clave);
@@ -211,7 +238,13 @@ export async function enviarCorreos(
     errores.push(`Correo al área de PQRS: ${(fallo as Error).message}`);
   }
 
-  let ciudadanoOk = false;
+  // Con el remitente de pruebas Resend solo entrega al titular de la cuenta:
+  // la constancia a quien radica fallaría siempre, así que no se intenta.
+  if (esRemitenteDePrueba(remitente)) {
+    return { destinoOk, constancia: 'omitida', errores };
+  }
+
+  let constancia: EstadoConstancia = 'fallida';
   try {
     const { error } = await resend.emails.send({
       from: remitente,
@@ -222,12 +255,12 @@ export async function enviarCorreos(
       text: cuerpoCiudadanoTexto(registro),
     });
     if (error) errores.push(`Correo de confirmación: ${error.message}`);
-    else ciudadanoOk = true;
+    else constancia = 'enviada';
   } catch (fallo) {
     errores.push(`Correo de confirmación: ${(fallo as Error).message}`);
   }
 
-  return { destinoOk, ciudadanoOk, errores };
+  return { destinoOk, constancia, errores };
 }
 
 // --- Solicitud administrativa ----------------------------------------------
@@ -264,10 +297,9 @@ export async function enviarCorreoAdministrativo(
   datos: SolicitudAdministrativa,
   env: Entorno,
 ): Promise<{ ok: boolean; error?: string }> {
-  const clave = env.RESEND_API_KEY;
+  const clave = claveResend(env);
   const destino = correoDestino(env);
-  if (!clave) return { ok: false, error: 'Falta RESEND_API_KEY.' };
-  if (!destino) return { ok: false, error: 'Falta PQRS_DESTINO.' };
+  if (!clave) return { ok: false, error: 'Falta PQRS_RESEND_API_KEY (o RESEND_API_KEY).' };
 
   const resend = new Resend(clave);
 

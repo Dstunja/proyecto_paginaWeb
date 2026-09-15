@@ -346,13 +346,27 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
           return;
         }
 
-        const datos = (await respuesta.json()) as { ok: true } | { ok: false; errores: string[] };
+        const datos = (await respuesta.json()) as
+          | { ok: true }
+          | { ok: false; errores: string[]; codigo?: string };
 
         if (respuesta.ok && datos.ok) {
           raiz.dataset.enviado = 'api';
           form!.classList.add('hidden');
           confirmacion!.classList.remove('hidden');
           confirmacion!.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+
+        // 503 config-incompleta: el servidor no tiene clave de Resend. Se avisa
+        // con claridad antes de abrir el correo, para que la persona sepa por
+        // qué se le abre su gestor en lugar de enviarse desde la página.
+        if (!datos.ok && datos.codigo === 'config-incompleta') {
+          raiz.dataset.configuracion = 'incompleta';
+          mostrarErrores([
+            'El envío desde la página no está disponible en este momento. Te abrimos tu gestor de correo con los datos para que nos escribas, o llámanos al número de arriba.',
+          ]);
+          caerAlCorreo();
           return;
         }
 

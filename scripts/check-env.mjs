@@ -66,19 +66,25 @@ const definida = (clave) => {
 
 /**
  * `nivel`:
- *   'radicacion'  sin ella la PQRS NO se radica (el formulario cae al correo)
+ *   'radicacion'  sin ella la PQRS NO se radica (el formulario avisa y cae al correo)
  *   'adjuntos'    sin ella no se pueden subir archivos de soporte
- *   'recomendada' funciona sin ella, pero peor o menos seguro
+ *   'envio'       sin ella no salen las postulaciones de Empleos
+ *   'recomendada' funciona sin ella (tiene valor por defecto o es una mejora)
+ *
+ * `alternativa`: otra variable que la sustituye. Si está la alternativa, la
+ * variable cuenta como definida.
  */
 const VARIABLES = [
   {
     nombre: 'BLOB_READ_WRITE_TOKEN',
-    nivel: 'adjuntos',
-    para: 'Guardar los soportes y el registro de cada radicación.',
+    nivel: 'radicacion',
+    para:
+      'Guardar los soportes y el registro de cada radicación en el store PRIVADO ' +
+      'pqrs-adjuntos, y firmar los enlaces de descarga del correo.',
     donde:
-      'Vercel > tu proyecto > Storage > Connect Store > Blob. Al conectar el store, Vercel\n' +
-      '      define la variable sola; después hay que REDESPLEGAR para que la función la vea.\n' +
-      '      En local: `vercel env pull .env.local`.',
+      'Vercel > tu proyecto > Storage > pqrs-adjuntos > Connect. Al conectar el store, Vercel\n' +
+      '      define la variable sola (con BLOB_STORE_ID y BLOB_WEBHOOK_PUBLIC_KEY, que el código\n' +
+      '      no necesita); después hay que REDESPLEGAR. En local: `vercel env pull .env.local`.',
     forma: (v) => (v.startsWith('vercel_blob_rw_') ? null : 'debería empezar por "vercel_blob_rw_"'),
   },
   {
@@ -105,30 +111,49 @@ const VARIABLES = [
     forma: (v) => (/^[01]x/.test(v) ? null : 'las claves de Turnstile empiezan por "0x" o "1x"'),
   },
   {
-    nombre: 'RESEND_API_KEY',
+    /*
+     * PQRS tiene su propia cuenta de Resend. Con el remitente de pruebas
+     * (onboarding@resend.dev) cada cuenta solo entrega a su titular, y el buzón
+     * de PQRS y el de Talento Humano son de titulares distintos. Si no está,
+     * PQRS usa RESEND_API_KEY.
+     */
+    nombre: 'PQRS_RESEND_API_KEY',
+    alternativa: 'RESEND_API_KEY',
     nivel: 'radicacion',
     para:
-      'Enviar los correos de PQRS: los dos de cada radicación comercial y el recado del ' +
-      'formulario administrativo. También las postulaciones de /empleos/, con la hoja de ' +
-      'vida adjunta.',
-    donde: 'https://resend.com/api-keys',
+      'Enviar los correos de PQRS con la cuenta de Resend registrada con ' +
+      'informacioncomercialdst@gmail.com. Sin ella se usa RESEND_API_KEY.',
+    donde: 'https://resend.com/api-keys, iniciando sesión con la cuenta de PQRS.',
+    forma: (v) => (v.startsWith('re_') ? null : 'las claves de Resend empiezan por "re_"'),
+  },
+  {
+    nombre: 'RESEND_API_KEY',
+    nivel: 'envio',
+    para:
+      'Enviar las postulaciones de /empleos/ con la cuenta de Resend de Empleos. ' +
+      'También es el respaldo de PQRS si no hay PQRS_RESEND_API_KEY.',
+    donde: 'https://resend.com/api-keys, iniciando sesión con la cuenta de Empleos.',
     forma: (v) => (v.startsWith('re_') ? null : 'las claves de Resend empiezan por "re_"'),
   },
   {
     /*
-     * Una sola variable para los dos caminos de la página de PQRS. Hasta hace
-     * poco había además una PUBLIC_PQRS_ADMIN_DESTINO para el `mailto:` que
-     * armaba el navegador; desapareció al pasar el envío administrativo al
-     * servidor. Si sigue definida en Vercel hay que borrarla: ya no la lee
-     * nadie y confunde al que vaya a cambiar el buzón.
+     * Opcional desde que tiene valor por defecto. Hubo además una
+     * PUBLIC_PQRS_ADMIN_DESTINO para el `mailto:` que armaba el navegador; si
+     * sigue definida en Vercel hay que borrarla: ya no la lee nadie.
      */
     nombre: 'PQRS_DESTINO',
-    nivel: 'radicacion',
+    nivel: 'recomendada',
     para:
-      'Correo del área que recibe TODO lo de la página de PQRS: las radicaciones ' +
-      'comerciales y los recados administrativos. Se separan por el asunto.',
-    donde: 'Lo decide la empresa. Un correo que alguien lea de verdad.',
+      'Buzón que recibe TODO lo de la página de PQRS. Por defecto ' +
+      'informacioncomercialdst@gmail.com, que es el titular de la cuenta de Resend de PQRS.',
+    donde: 'Lo decide la empresa. Con onboarding@resend.dev tiene que ser el titular de la cuenta.',
     forma: (v) => (v.includes('@') ? null : 'no parece un correo'),
+  },
+  {
+    nombre: 'PQRS_REMITENTE',
+    nivel: 'recomendada',
+    para: 'Remitente de los correos de PQRS. Por defecto onboarding@resend.dev.',
+    donde: 'Una dirección de un dominio verificado en Resend, cuando lo haya.',
   },
   {
     nombre: 'PQRS_IP_SALT',
@@ -161,6 +186,7 @@ const VARIABLES = [
 const ETIQUETA = {
   radicacion: 'sin ella NO se radica',
   adjuntos: 'sin ella NO se suben adjuntos',
+  envio: 'sin ella NO salen las postulaciones de Empleos',
   recomendada: 'recomendada',
 };
 
@@ -178,7 +204,12 @@ console.log(
 console.log('');
 
 for (const variable of VARIABLES) {
-  const { nombre, nivel, forma, aviso } = variable;
+  const { nombre, nivel, forma, aviso, alternativa } = variable;
+
+  if (!definida(nombre) && alternativa && definida(alternativa)) {
+    console.log(`  ~  ${nombre}  (no definida; se usa ${alternativa})`);
+    continue;
+  }
 
   if (!definida(nombre)) {
     if (nivel === 'recomendada') {

@@ -13,6 +13,7 @@ import { validarArchivo } from '../adjuntos';
 import * as almacen from './almacen';
 import {
   MINUTOS_ENLACE_DESCARGA,
+  faltaParaRadicar,
   maxArchivos,
   maxBytes,
   maxMb,
@@ -21,7 +22,8 @@ import {
   rutaSolicitud,
   type Entorno,
 } from './config';
-import { enviarCorreos, type AdjuntoParaCorreo } from './correo';
+import { enviarCorreos, type AdjuntoParaCorreo, type EstadoConstancia } from './correo';
+import { enlaceDescarga } from './descarga';
 import { limitar } from './limite-tasa';
 import { fechaLegible, generarRadicado } from './radicado';
 import {
@@ -33,11 +35,27 @@ import {
 } from './solicitud';
 import { verificarTurnstile } from './turnstile';
 
+/**
+ * Respuesta de POST /api/pqrs.
+ *
+ * En la radicación correcta NO viajan los motivos técnicos de un correo que no
+ * salió (antes iban en `avisos` y el formulario los enseñaba tal cual: «Falta
+ * RESEND_API_KEY.», o el inglés de Resend). Viaja solo QUÉ pasó:
+ * - `correoArea`: si el correo al área salió.
+ * - `constancia`: si a quien radica le llegó su número por correo.
+ * El detalle queda en el registro de Vercel.
+ */
 export interface Respuesta {
   estado: number;
   cuerpo:
-    | { ok: true; radicado: string; fecha: string; avisos?: string[] }
-    | { ok: false; errores: string[] };
+    | {
+        ok: true;
+        radicado: string;
+        fecha: string;
+        correoArea: boolean;
+        constancia: EstadoConstancia;
+      }
+    | { ok: false; errores: string[]; codigo?: 'config-incompleta' };
 }
 
 const LIMITE = { maximo: 5, ventanaSegundos: 600, prefijo: 'pqrs:radicar' };
@@ -47,6 +65,23 @@ function error(estado: number, ...errores: string[]): Respuesta {
 }
 
 export async function radicar(peticion: Request, env: Entorno): Promise<Respuesta> {
+  // --- 0. Configuración -----------------------------------------------------
+  // Sin Blob no hay dónde guardar la solicitud y sin Resend nadie se entera de
+  // que existe. Se comprueba antes de todo y se responde 503 con un código que
+  // el formulario reconoce: avisa y ofrece el correo, en vez de radicar a medias.
+  const faltan = faltaParaRadicar(env);
+  if (faltan.length > 0) {
+    console.error(`[pqrs] configuración incompleta: faltan ${faltan.join(', ')}.`);
+    return {
+      estado: 503,
+      cuerpo: {
+        ok: false,
+        codigo: 'config-incompleta',
+        errores: ['La radicación en línea no está disponible en este momento.'],
+      },
+    };
+  }
+
   // --- 1. Cuerpo ------------------------------------------------------------
   let bruto: unknown;
   try {
@@ -127,35 +162,39 @@ export async function radicar(peticion: Request, env: Entorno): Promise<Respuest
     adjuntos: guardados,
   };
 
-  const avisos: string[] = [];
   try {
     await almacen.guardarJson(rutaSolicitud(radicado), registro, env);
   } catch (fallo) {
-    // Sin registro no hay constancia: esto sí es un fallo del servidor.
+    // Sin registro no hay constancia: esto sí es un fallo del servidor. El
+    // motivo técnico va al registro de Vercel, no a la respuesta.
+    console.error('[pqrs] no se pudo guardar solicitud.json:', (fallo as Error).message);
     return error(
       500,
       'No pudimos guardar la solicitud. Vuelve a intentarlo o escríbenos por WhatsApp.',
-      (fallo as Error).message,
     );
   }
 
   // --- 7. Correos -----------------------------------------------------------
+  /*
+   * Cada adjunto va con un enlace a /api/pqrs/descarga, firmado y válido 7
+   * días. El store es privado: la URL del blob a secas no abre nada. El origen
+   * sale de la propia petición, así el enlace apunta al despliegue que radicó.
+   */
+  const origen = new URL(peticion.url).origin;
+  const vence = ahora.getTime() + MINUTOS_ENLACE_DESCARGA * 60 * 1000;
   const paraCorreo: AdjuntoParaCorreo[] = [];
   for (const adjunto of guardados) {
-    try {
-      paraCorreo.push({
-        nombreOriginal: adjunto.nombreOriginal,
-        tamano: adjunto.tamano,
-        enlace: await almacen.enlaceFirmado(adjunto.ruta, MINUTOS_ENLACE_DESCARGA, env),
-      });
-    } catch {
-      avisos.push(`No se pudo firmar el enlace de ${adjunto.nombreOriginal}.`);
-    }
+    paraCorreo.push({
+      nombreOriginal: adjunto.nombreOriginal,
+      tamano: adjunto.tamano,
+      enlace: await enlaceDescarga(origen, adjunto.ruta, vence, env),
+    });
   }
 
-  const caducidad = fechaLegible(new Date(ahora.getTime() + MINUTOS_ENLACE_DESCARGA * 60 * 1000));
-  const correo = await enviarCorreos(registro, paraCorreo, caducidad, env);
-  avisos.push(...correo.errores);
+  const correo = await enviarCorreos(registro, paraCorreo, fechaLegible(new Date(vence)), env);
+  if (correo.errores.length > 0) {
+    console.error(`[pqrs] ${radicado}: ${correo.errores.join(' | ')}`);
+  }
 
   return {
     estado: 201,
@@ -163,7 +202,8 @@ export async function radicar(peticion: Request, env: Entorno): Promise<Respuest
       ok: true,
       radicado,
       fecha: fechaLegible(ahora),
-      ...(avisos.length > 0 ? { avisos } : {}),
+      correoArea: correo.destinoOk,
+      constancia: correo.constancia,
     },
   };
 }

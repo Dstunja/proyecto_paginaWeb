@@ -42,30 +42,89 @@ export function maxArchivos(env: Entorno = entornoActual()): number {
 export const MIME_PERMITIDOS: readonly string[] = [...new Set(Object.values(EXTENSION_A_MIME))];
 
 /**
- * Acceso con el que se crean los blobs. Variable: PUBLIC_PQRS_BLOB_ACCESS.
+ * Acceso con el que se crean y se leen los blobs: SIEMPRE privado.
  *
- * Por defecto `private`: los soportes de una queja no pueden quedar servidos en
- * una URL pública, aunque sea larga. Si el plan de la cuenta no admitiera blobs
- * privados, poner `public` deja el sistema funcionando, pero entonces la única
- * protección es que la ruta lleva un UUID no adivinable. Está documentado en
- * docs/PQRS-ADJUNTOS.md; no es equivalente y conviene volver a `private`.
- *
- * Lleva prefijo PUBLIC_ porque el navegador necesita el MISMO valor al llamar a
- * `upload()`: si servidor y cliente no coinciden, el blob se crea con un acceso
- * y se lee con otro. Una sola variable evita esa desincronización.
+ * Hubo una variable, PUBLIC_PQRS_BLOB_ACCESS, que permitía `public` para
+ * cuentas sin blobs privados. Se quitó: el store del proyecto (pqrs-adjuntos)
+ * es privado, un store privado rechaza las subidas con acceso público, y los
+ * soportes de una queja no pueden quedar servidos en una URL abierta. El
+ * navegador usa el mismo valor fijo al llamar a `upload()`
+ * (src/components/FormularioPqrs.astro).
  */
-export function accesoBlob(env: Entorno = entornoActual()): 'private' | 'public' {
-  return env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'public' : 'private';
-}
+export const ACCESO_BLOB = 'private' as const;
 
-/** Correo al que llega cada radicación. Variable: PQRS_DESTINO. */
+/**
+ * Buzón que recibe TODO lo de la página de PQRS. Variable: PQRS_DESTINO.
+ *
+ * Por defecto, informacioncomercialdst@gmail.com. No es un valor cualquiera:
+ * mientras el remitente sea `onboarding@resend.dev` (sin dominio verificado),
+ * Resend SOLO entrega al correo con el que está registrada la cuenta, y la
+ * cuenta de PQRS está registrada con esa dirección.
+ */
+export const DESTINO_PQRS_POR_DEFECTO = 'informacioncomercialdst@gmail.com';
+
 export function correoDestino(env: Entorno = entornoActual()): string {
-  return env.PQRS_DESTINO ?? '';
+  return env.PQRS_DESTINO?.trim() || DESTINO_PQRS_POR_DEFECTO;
 }
 
-/** Remitente de los correos. Debe ser un dominio verificado en Resend. */
+/**
+ * Remitente de los correos. Variable: PQRS_REMITENTE.
+ *
+ * Por defecto `onboarding@resend.dev`, el remitente de pruebas que Resend deja
+ * usar sin verificar ningún dominio. Cuando haya un dominio verificado (por
+ * ejemplo dstunja.com), basta con poner aquí una dirección de ese dominio.
+ *
+ * Empleos lo hereda si no tiene EMPLEOS_REMITENTE (src/lib/empleos/config.ts).
+ */
+export const REMITENTE_POR_DEFECTO = 'onboarding@resend.dev';
+
 export function correoRemitente(env: Entorno = entornoActual()): string {
-  return env.PQRS_REMITENTE ?? 'PQRS Distribuciones Santiago de Tunja <pqrs@dstunja.com>';
+  return env.PQRS_REMITENTE?.trim() || REMITENTE_POR_DEFECTO;
+}
+
+/**
+ * ¿Es el remitente de pruebas de Resend (`@resend.dev`)?
+ *
+ * Con él, Resend rechaza cualquier destinatario que no sea el titular de la
+ * cuenta. El correo al área sí sale (el área ES la titular), pero la constancia
+ * a quien radica fallaría siempre: por eso no se intenta mandar.
+ */
+export function esRemitenteDePrueba(remitente: string): boolean {
+  const direccion = /<([^>]+)>/.exec(remitente)?.[1] ?? remitente;
+  return direccion.trim().toLowerCase().endsWith('@resend.dev');
+}
+
+/**
+ * Clave de Resend de PQRS. Variables: PQRS_RESEND_API_KEY, y si no está,
+ * RESEND_API_KEY.
+ *
+ * Son dos porque PQRS y Empleos usan CUENTAS DE RESEND DISTINTAS: con el
+ * remitente de pruebas cada cuenta solo entrega a su titular, y los buzones de
+ * PQRS y de Talento Humano son de titulares distintos. Empleos usa
+ * RESEND_API_KEY; PQRS usa la suya y solo cae a la otra si no la tiene.
+ */
+export function claveResend(env: Entorno = entornoActual()): string {
+  return env.PQRS_RESEND_API_KEY?.trim() || env.RESEND_API_KEY?.trim() || '';
+}
+
+/** ¿Hay token del Blob store? Lo pone Vercel al conectar el store. */
+export function blobConfigurado(env: Entorno = entornoActual()): boolean {
+  return Boolean(env.BLOB_READ_WRITE_TOKEN?.trim());
+}
+
+/**
+ * Nombres de lo que falta para radicar. Nunca valores.
+ *
+ * Se consulta ANTES de hacer nada: sin Blob no hay dónde guardar la solicitud y
+ * sin Resend nadie se entera de que existe. En los dos casos se responde 503
+ * con `codigo: 'config-incompleta'` y el formulario lo avisa y ofrece el correo,
+ * en vez de que la radicación reviente a mitad de camino.
+ */
+export function faltaParaRadicar(env: Entorno = entornoActual()): string[] {
+  const faltan: string[] = [];
+  if (!blobConfigurado(env)) faltan.push('BLOB_READ_WRITE_TOKEN');
+  if (!claveResend(env)) faltan.push('PQRS_RESEND_API_KEY (o RESEND_API_KEY)');
+  return faltan;
 }
 
 // --- Rutas dentro del store de Blob ----------------------------------------
@@ -79,8 +138,17 @@ export const PREFIJO_RADICADAS = 'pqrs/';
 /** Horas que un pendiente sobrevive antes de que el cron lo borre. */
 export const HORAS_RETENCION_PENDIENTES = 24;
 
-/** Minutos que dura un enlace de descarga firmado del correo. */
+/**
+ * Minutos que dura el enlace de descarga que va en el correo al área (7 días).
+ *
+ * Ese enlace apunta a /api/pqrs/descarga, que lo verifica y redirige a una URL
+ * firmada de Vercel Blob de vida corta (`MINUTOS_ENLACE_BLOB`). Así la vida del
+ * enlace del correo no depende de cuánto admita Vercel para una URL firmada.
+ */
 export const MINUTOS_ENLACE_DESCARGA = 60 * 24 * 7;
+
+/** Minutos que dura la URL firmada de Blob a la que redirige la descarga. */
+export const MINUTOS_ENLACE_BLOB = 5;
 
 /**
  * Un `sessionId` es un UUID v4 generado por el navegador. Se valida con esta
