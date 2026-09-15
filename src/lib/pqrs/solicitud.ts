@@ -11,6 +11,7 @@ import { TIPOS_PQRS } from './categorias';
 import { municipios } from '../../data/municipios';
 import { buscarMunicipio, indexarMunicipios } from '../municipios-busqueda';
 import { esSessionIdValido } from './config';
+import { LIMITES_TEXTO, limpiar, texto } from './limites-texto';
 
 /**
  * Los 87 municipios donde distribuye la empresa, indexados sin tildes ni
@@ -95,29 +96,16 @@ const LIMITES = {
   telefono: 30,
   correo: 150,
   municipio: 100,
-  descripcion: 5000,
 } as const;
 
 /*
  * `texto`, `limpiar` y `FORMA_CORREO` se exportan para que la solicitud
- * administrativa (src/lib/pqrs/administrativa.ts) valide con las MISMAS reglas.
- * Reescribirlas allí acabaría con dos ideas distintas de qué es un correo
- * válido o de qué caracteres se quitan, y solo una de las dos se corregiría.
+ * administrativa (src/lib/pqrs/administrativa.ts) y Empleos validen con las
+ * MISMAS reglas. `texto` y `limpiar` viven en ./limites-texto.ts, que no arrastra
+ * datos del sitio, porque el contador de caracteres del navegador cuenta con
+ * ellas igual que el servidor; aquí solo se reexportan.
  */
-export function texto(valor: unknown): string {
-  return typeof valor === 'string' ? valor.trim() : '';
-}
-
-/** Quita caracteres de control: no aportan nada y ensucian correo y JSON. */
-export function limpiar(valor: string): string {
-  let salida = '';
-  for (const caracter of valor) {
-    const codigo = caracter.codePointAt(0) ?? 0;
-    if (codigo < 0x20 || codigo === 0x7f) continue;
-    salida += caracter;
-  }
-  return salida;
-}
+export { limpiar, texto };
 
 export const FORMA_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -176,11 +164,15 @@ export function validarSolicitud(cuerpo: unknown): ResultadoSolicitud {
     errores.push('Selecciona un municipio de la lista.');
   }
 
+  // Los límites son los mismos que enseña el contador bajo el campo.
+  const { min: minDescripcion, max: maxDescripcion } = LIMITES_TEXTO.descripcion;
   const descripcion = limpiar(texto(datos.descripcion));
-  if (descripcion.length < 10) {
-    errores.push('La descripción es obligatoria: cuéntanos qué pasó con algo de detalle.');
-  } else if (descripcion.length > LIMITES.descripcion) {
-    errores.push(`La descripción no puede pasar de ${LIMITES.descripcion} caracteres.`);
+  if (descripcion.length < minDescripcion) {
+    errores.push(
+      `La descripción es obligatoria: cuéntanos qué pasó en al menos ${minDescripcion} caracteres.`,
+    );
+  } else if (descripcion.length > maxDescripcion) {
+    errores.push(`La descripción no puede pasar de ${maxDescripcion} caracteres.`);
   }
 
   // La autorización de tratamiento de datos (Ley 1581 de 2012) es la única

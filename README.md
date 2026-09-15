@@ -102,6 +102,8 @@ src/
     CampoMunicipio.astro   Municipio de la PQRS: combobox cerrado a los 87
                            municipios de cobertura, con busqueda sin tildes y
                            preseleccion opcional por ubicacion.
+    ContadorCaracteres.astro  Minimo y contador de caracteres bajo un campo de
+                           texto largo (descripcion y "¿Que necesitas?" de PQRS).
     CampoAdjuntos.astro    Archivos de soporte de la PQRS, siempre opcionales.
                            Aparece en la categoria comercial, en sus cinco
                            tipos; lo decide la categoria, no el tipo.
@@ -316,6 +318,25 @@ La geocodificación de municipios y de la sede también es libre (Nominatim) y s
 corre una sola vez con `npm run geocodificar`; el resultado queda cacheado en
 `src/data/coordenadas.json`.
 
+## Estado en producción
+
+El sitio se publica en Vercel (<https://paginaweb-beta-coral.vercel.app>) y los
+formularios de PQRS y Empleos envían correo de verdad. Sin valores de claves:
+
+| Pieza | Configuración |
+| --- | --- |
+| Antirrobots | Cloudflare Turnstile, widget «DST web», modo Non-interactive. Hostnames: `dstunja.com`, `paginaweb-beta-coral.vercel.app`, `vercel.app` y `localhost` |
+| Correo de PQRS | Resend, cuenta de informacioncomercialdst@gmail.com (`PQRS_RESEND_API_KEY`) |
+| Correo de Empleos | Resend, cuenta de ghsantiagodetunja@gmail.com (`RESEND_API_KEY`) |
+| Remitente | `onboarding@resend.dev` en las dos cuentas, sin dominio verificado. Por eso la constancia a quien radica una PQRS **no se envía** |
+| Soportes de PQRS | Blob store privado `pqrs-adjuntos`, conectado al proyecto. El correo al área los enlaza por `/api/pqrs/descarga` |
+| Faltan en Vercel | `CRON_SECRET`, `PQRS_IP_SALT` y las dos de Upstash |
+| Pendiente | Verificar dstunja.com en Resend: remitente propio, constancia al ciudadano y una sola cuenta |
+
+El detalle, con la tabla de variables cargadas y los registros DNS que pide
+Resend, está en `docs/PQRS-ADJUNTOS.md` (secciones «Estado en producción» y
+«Pendiente: verificar dstunja.com en Resend») y en `docs/EMPLEOS-POSTULACION.md`.
+
 ## Variables de entorno
 
 La radicación de PQRS **comercial** se apoya en tres servicios (Vercel Blob,
@@ -414,6 +435,13 @@ salen de `src/data/municipios.ts`. Busca ignorando tildes y mayúsculas, se
 maneja con el teclado, y si la persona concede la ubicación preselecciona el más
 cercano (si la niega, no pasa nada). Se valida también en el servidor: un
 municipio que no esté en la lista devuelve 400.
+
+La **descripción** de la comercial y el **«¿Qué necesitas?»** de la
+administrativa piden 10 caracteres como mínimo, y lo dicen bajo el campo antes de
+escribir («Mínimo 10 caracteres.»). Al escribir, un contador indica cuántos
+faltan y el envío se frena en el navegador hasta llegar
+(`src/components/ContadorCaracteres.astro`). El servidor valida con los mismos
+límites y la misma forma de contar, que viven en `src/lib/pqrs/limites-texto.ts`.
 
 - **Comercial**: pide el tipo (paso 2) y **radica de verdad** contra
   `src/pages/api/pqrs/`. Guarda la solicitud y sus soportes, devuelve un número

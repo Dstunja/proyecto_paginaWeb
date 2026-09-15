@@ -26,6 +26,8 @@
  * Nadie se queda sin poder escribir porque falle una función.
  */
 import { empresa } from '../data/site';
+import { LIMITES_TEXTO } from '../lib/pqrs/limites-texto';
+import ContadorCaracteres from './ContadorCaracteres.astro';
 import Icono from './Icono.astro';
 import LoaderDST from './LoaderDST.astro';
 
@@ -143,7 +145,10 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
         name="mensaje-admin"
         rows="4"
         required
+        maxlength={LIMITES_TEXTO.mensajeAdministrativo.max}
+        aria-describedby="mensaje-admin-ayuda"
         placeholder="Cuéntanos en pocas líneas qué trámite o documento necesitas."></textarea>
+      <ContadorCaracteres para="mensaje-admin" limites={LIMITES_TEXTO.mensajeAdministrativo} />
     </div>
 
     <!-- Turnstile en modo `interaction-only`: normalmente no se ve nada. -->

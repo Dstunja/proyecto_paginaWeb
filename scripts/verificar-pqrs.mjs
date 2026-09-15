@@ -1021,6 +1021,73 @@ async function revisarRadicacion(navegador, archivos) {
     await pagina.close();
   }
 
+  // ---- 9-bis. Mínimo de la descripción, visible y con contador --------------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await elegir(pagina, 'comercial', 'Petición');
+    const contador = pagina.locator('#descripcion-pqrs-ayuda');
+    const campo = pagina.locator('#descripcion-pqrs');
+    comprobar(
+      'Descripción: antes de escribir dice «Mínimo 10 caracteres.» y está enlazado al campo',
+      (await contador.isVisible()) &&
+        ((await contador.textContent()) ?? '').trim() === 'Mínimo 10 caracteres.' &&
+        (await campo.getAttribute('aria-describedby')) === 'descripcion-pqrs-ayuda',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await rellenarFormulario(pagina, 'Petición');
+    await campo.fill('');
+    await campo.type('Hola', { delay: 5 });
+    comprobar(
+      'Descripción: al escribir poco dice cuántos faltan',
+      ((await contador.textContent()) ?? '').trim() === 'Faltan 6 caracteres (mínimo 10).',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(600);
+    const mensajeValidez = await campo.evaluate((e) => e.validationMessage);
+    comprobar(
+      'Descripción corta: el envío se frena en el navegador con cuánto falta, sin llamar a la API',
+      registro.radicar.length === 0 && /al menos 10 caracteres/.test(mensajeValidez),
+      mensajeValidez,
+    );
+
+    // Los saltos de línea no cuentan, como en el servidor.
+    await campo.fill('12345\n6789');
+    await campo.dispatchEvent('input');
+    comprobar(
+      'Descripción: los saltos de línea no cuentan, igual que en el servidor',
+      ((await contador.textContent()) ?? '').trim() === 'Falta 1 carácter (mínimo 10).',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await campo.fill('Prueba automática del contador de caracteres.');
+    await campo.dispatchEvent('input');
+    comprobar(
+      'Descripción: al llegar al mínimo cuenta sobre el máximo y el campo es válido',
+      /^\d+ de 5000 caracteres\.$/.test(((await contador.textContent()) ?? '').trim()) &&
+        (await campo.evaluate((e) => e.checkValidity())) &&
+        (await campo.getAttribute('maxlength')) === '5000',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+    comprobar(
+      'Descripción válida: ahora sí se radica',
+      registro.radicar.length === 1,
+      String(registro.radicar.length),
+    );
+    await pagina.close();
+  }
+
   // ---- 10. Servidor sin Blob o sin Resend: avisa y ofrece el correo ---------
   {
     const pagina = await contexto.newPage();
@@ -1670,6 +1737,59 @@ async function revisarAdministrativa(navegador) {
       (await pagina.locator('[data-contacto-admin-caja][data-respaldo="correo"]').count()) === 1,
     );
 
+    await pagina.close();
+  }
+
+  // ---- 8-bis. «¿Qué necesitas?»: mínimo visible y contador ----------------
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto, { administrativa: 'ok' });
+    await elegir(pagina, 'administrativa');
+
+    const contador = pagina.locator('#mensaje-admin-ayuda');
+    const campo = pagina.locator('#mensaje-admin');
+    comprobar(
+      '«¿Qué necesitas?»: antes de escribir dice «Mínimo 10 caracteres.»',
+      (await contador.isVisible()) &&
+        ((await contador.textContent()) ?? '').trim() === 'Mínimo 10 caracteres.' &&
+        (await campo.getAttribute('aria-describedby')) === 'mensaje-admin-ayuda' &&
+        (await campo.getAttribute('maxlength')) === '1500',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.fill('#nombre-admin', 'Cristian Amaya');
+    await pagina.fill('#telefono-admin', '3106232429');
+    await campo.type('Factura', { delay: 5 });
+    comprobar(
+      '«¿Qué necesitas?»: al escribir poco dice cuántos faltan, en su color de aviso',
+      ((await contador.textContent()) ?? '').trim() === 'Faltan 3 caracteres (mínimo 10).' &&
+        (await contador.getAttribute('data-estado')) === 'corto',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(600);
+    const mensajeValidez = await campo.evaluate((e) => e.validationMessage);
+    comprobar(
+      '«¿Qué necesitas?» corto: no sale ninguna petición y el navegador dice cuánto falta',
+      registro.administrativa.length === 0 && /al menos 10 caracteres/.test(mensajeValidez),
+      mensajeValidez,
+    );
+
+    await campo.type(' del mes', { delay: 5 });
+    comprobar(
+      '«¿Qué necesitas?»: al llegar al mínimo pasa a «N de 1500 caracteres.»',
+      ((await contador.textContent()) ?? '').trim() === '15 de 1500 caracteres.' &&
+        (await contador.getAttribute('data-estado')) === 'ok',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(900);
+    comprobar(
+      '«¿Qué necesitas?» válido: ahora sí se envía',
+      registro.administrativa.length === 1,
+      String(registro.administrativa.length),
+    );
     await pagina.close();
   }
 
