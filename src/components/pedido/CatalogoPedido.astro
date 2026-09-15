@@ -1161,8 +1161,9 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       // que se acaba de tocar, si quedó puesta o quitada, y cuántas hay activas
       // en total. Así el informe distingue "entró a Galletas" de "quitó
       // Galletas y se quedó con otras tres".
-      registrarEvento('catalogo_filtrar_categoria', {
-        categoria: categoria || 'todas',
+      registrarEvento('filtro_catalogo', {
+        tipo: 'categoria',
+        valor: categoria || 'todas',
         accion: !categoria ? 'limpiar' : categoriasSel.has(categoria) ? 'poner' : 'quitar',
         activas: categoriasSel.size,
       });
@@ -1182,9 +1183,10 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       // El segundo nivel no existía cuando se instrumentó el catálogo, pero es
       // un filtro real: sin este evento el informe mostraría a la gente
       // entrando a "Pastas" y no lo que hace después dentro.
-      registrarEvento('catalogo_filtrar_subcategoria', {
+      registrarEvento('filtro_catalogo', {
+        tipo: 'subcategoria',
+        valor: casilla.value,
         categoria,
-        subcategoria: casilla.value,
         accion: casilla.checked ? 'poner' : 'quitar',
       });
     });
@@ -1196,8 +1198,9 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       else marcasSel.delete(casilla.value);
       filtroCambio();
 
-      registrarEvento('catalogo_filtrar_marca', {
-        marca: casilla.value,
+      registrarEvento('filtro_catalogo', {
+        tipo: 'marca',
+        valor: casilla.value,
         accion: casilla.checked ? 'poner' : 'quitar',
         activas: marcasSel.size,
       });

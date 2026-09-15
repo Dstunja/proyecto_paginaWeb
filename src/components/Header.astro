@@ -75,6 +75,7 @@ const enPedido = esActual('/pedido/', actual);
             pantalla completa la píldora de la barra queda tapada. */}
         <a
           href={ruta('/pedido/')}
+          data-cta-pedido="menu"
           class="btn btn-accent mt-6 w-full !py-3 tracking-[0.08em] uppercase nav:hidden"
         >
           <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
@@ -87,6 +88,7 @@ const enPedido = esActual('/pedido/', actual);
       {/* Acción principal + carrito, en un solo control. */}
       <a
         href={ruta('/pedido/')}
+        data-cta-pedido="barra"
         data-abrir-pedido={enPedido ? '' : undefined}
         aria-haspopup={enPedido ? 'dialog' : undefined}
         class="btn btn-accent relative whitespace-nowrap !px-4 !py-2.5 !text-[12px] tracking-[0.06em] uppercase mob:!px-5 mob:!text-[12.5px] mob:tracking-[0.08em]"
@@ -189,6 +191,7 @@ const enPedido = esActual('/pedido/', actual);
 
 <script>
   import { alCambiarPedido, leerPedido, totalUnidades, type Pedido } from '../lib/carrito';
+  import { registrarEvento } from '../lib/analitica';
 
   const toggle = document.getElementById('nav-toggle');
   const nav = document.getElementById('main-nav');
@@ -284,4 +287,22 @@ const enPedido = esActual('/pedido/', actual);
     pintar(leerPedido());
     alCambiarPedido(pintar);
   }
+
+  /*
+   * Evento `cta_arma_pedido`: la accion principal del sitio, medida aparte.
+   *
+   * AnaliticaEnlaces.astro ya cuenta un `clic_cta` generico con destino
+   * 'pedido', pero ese cae igual para el pie, el hero y cualquier otro enlace
+   * a /pedido. Este mide solo los dos CTA del encabezado y guarda desde que
+   * pagina se pulso, que es lo que dice si la barra fija sirve de algo fuera
+   * del inicio. `sitio` distingue la pildora de la barra del boton del menu.
+   */
+  document.querySelectorAll<HTMLElement>('[data-cta-pedido]').forEach((cta) => {
+    cta.addEventListener('click', () => {
+      registrarEvento('cta_arma_pedido', {
+        pagina: window.location.pathname,
+        sitio: cta.dataset.ctaPedido ?? 'barra',
+      });
+    });
+  });
 </script>

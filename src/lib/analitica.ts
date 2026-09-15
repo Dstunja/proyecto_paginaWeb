@@ -1,21 +1,25 @@
 /**
- * Analítica del sitio: envoltorio sobre Google Analytics 4 (gtag.js).
+ * Analítica del sitio: capa sobre el `dataLayer` de Google Tag Manager.
  *
  * POR QUÉ ASÍ
  * -----------
- * El sitio es 100 % estático (Astro en GitHub Pages y, más adelante, en
- * Hostinger): no hay backend donde guardar visitas ni sistema de login propio
- * con el que proteger un panel. Por eso la recolección y el panel los pone
- * GA4, y el control de acceso lo resuelve la propia cuenta de Google: la
- * propiedad se comparte solo con el correo de la persona autorizada. Ver
- * docs/ANALITICA.md.
+ * El sitio es 100 % estático (Astro en Vercel, con espejo en GitHub Pages): no
+ * hay backend donde guardar visitas ni sistema de login propio con el que
+ * proteger un panel. Por eso la recolección y el panel los pone GA4, y el
+ * control de acceso lo resuelve la propia cuenta de Google: la propiedad se
+ * comparte solo con el correo de la persona autorizada. Ver docs/ANALITICA.md.
+ *
+ * GA4 no se carga directamente: el sitio inyecta el contenedor de Tag Manager
+ * (ver Analitica.astro) y la etiqueta de GA4 se crea dentro de ese contenedor.
+ * Desde aquí solo se empujan eventos al `dataLayer`; qué se hace con ellos se
+ * decide en la interfaz de GTM, sin volver a tocar el código.
  *
  * Este módulo SOLO corre en el navegador (se importa desde los `<script>` de
  * los componentes, nunca desde el frontmatter de un `.astro`).
  *
- * Todo lo de aquí es "no-op" si `gtag` no existe: en `npm run dev`, sin
- * PUBLIC_GA_ID configurado o con un bloqueador de anuncios, el resto del sitio
- * sigue funcionando exactamente igual y ninguna llamada lanza un error.
+ * Nada de aquí falla si GTM no llegó a cargar: en `npm run dev`, sin ID de
+ * contenedor o con un bloqueador de anuncios, los eventos se acumulan en un
+ * array suelto que nadie lee y el resto del sitio funciona igual.
  */
 
 /** Clave de localStorage donde se recuerda la decisión sobre las cookies. */
@@ -37,7 +41,20 @@ declare global {
 export type ParametrosEvento = Record<string, string | number | boolean>;
 
 /**
- * Registra un evento personalizado en GA4.
+ * Registra un evento personalizado empujándolo al `dataLayer` de Google Tag
+ * Manager.
+ *
+ * El formato `{ event: 'nombre', ...datos }` es el que GTM sabe leer: cada
+ * `event` se conecta a su etiqueta desde la interfaz de Tag Manager, y de ahí
+ * pasa a GA4. Antes esta función llamaba a `gtag('event', ...)` directamente;
+ * ahora la etiqueta de GA4 vive dentro del contenedor (ver Analitica.astro).
+ *
+ * El `dataLayer` se crea aquí si todavía no existe. Eso hace que un evento
+ * disparado antes de que GTM termine de cargar no se pierda ni lance un error:
+ * queda en la cola y el contenedor lo procesa al arrancar. Y si GTM nunca llega
+ * a cargar —en `npm run dev`, sin ID de contenedor o con un bloqueador— esto
+ * sigue siendo un `push` a un array suelto, así que el resto del sitio funciona
+ * exactamente igual.
  *
  * @param nombre  en snake_case y máximo 40 caracteres (límite de GA4).
  * @param params  parámetros del evento. Nunca datos personales del cliente.
@@ -46,9 +63,8 @@ export type ParametrosEvento = Record<string, string | number | boolean>;
  */
 export function registrarEvento(nombre: string, params?: ParametrosEvento): void {
   if (typeof window === 'undefined') return;
-  const gtag = window.gtag;
-  if (typeof gtag !== 'function') return; // sin analítica cargada: no hace nada
-  gtag('event', nombre, params ?? {});
+  const capa = (window.dataLayer = window.dataLayer ?? []);
+  capa.push({ event: nombre, ...(params ?? {}) });
 }
 
 /**

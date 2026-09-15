@@ -22,6 +22,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import WhatsappFlotante from '../components/WhatsappFlotante.astro';
 import Analitica from '../components/Analitica.astro';
+import AnaliticaNoscript from '../components/AnaliticaNoscript.astro';
 import AnaliticaEnlaces from '../components/AnaliticaEnlaces.astro';
 import AvisoCookies from '../components/AvisoCookies.astro';
 import { empresa, redes } from '../data/site';
@@ -116,11 +117,15 @@ const jsonLd = {
       }
     </script>
 
-    {/* Estadisticas de uso. No se inyecta nada sin PUBLIC_GA_ID ni en desarrollo. */}
+    {/* Google Tag Manager. No se inyecta nada sin PUBLIC_GTM_CONTAINER_ID ni en
+        desarrollo. La etiqueta de GA4 vive dentro del contenedor. */}
     <Analitica />
   </head>
 
   <body>
+    {/* Respaldo de GTM sin JavaScript: Google lo pide como primer elemento del body. */}
+    <AnaliticaNoscript />
+
     <a
       href="#main"
       class="absolute -left-[999px] top-3 z-[200] rounded-full bg-secondary px-5 py-2.5 font-display text-sm font-semibold text-white shadow-[0_8px_24px_rgba(30,136,229,.4)] focus:left-3"

@@ -1,0 +1,24 @@
+---
+/**
+ * Mitad visible del fragmento de Google Tag Manager: el <iframe> de respaldo
+ * para navegadores sin JavaScript. Va como PRIMER elemento del <body>, que es
+ * donde lo pide Google.
+ *
+ * Se mantiene aparte de Analitica.astro porque el otro trozo va en el <head> y
+ * un componente de Astro no puede sembrar marcado en dos sitios distintos del
+ * documento. Los dos leen la misma variable y la misma condicion: si uno no se
+ * inyecta, el otro tampoco.
+ */
+const ID = import.meta.env.PUBLIC_GTM_CONTAINER_ID ?? '';
+const activo = ID.trim() !== '' && import.meta.env.PROD;
+
+const src = `https://www.googletagmanager.com/ns.html?id=${encodeURIComponent(ID)}`;
+---
+
+{
+  activo && (
+    <noscript>
+      <iframe src={src} height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager" />
+    </noscript>
+  )
+}

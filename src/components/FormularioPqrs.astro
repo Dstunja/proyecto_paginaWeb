@@ -138,6 +138,7 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
   import { ruta } from '../lib/rutas';
   import { prepararTurnstile, tokenTurnstile } from '../lib/turnstile-cliente';
   import { asuntoDe, categoriaDe } from '../lib/pqrs/categorias';
+  import { registrarEvento } from '../lib/analitica';
 
   /**
    * La ruta pasa por `ruta()` como todas las del sitio. Escrita a mano
@@ -640,6 +641,19 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
         ]);
         return;
       }
+
+      /*
+       * Evento `envio_pqrs`: se dispara cuando la solicitud ya paso las
+       * validaciones y sale de verdad hacia la API, no antes. Solo viaja como
+       * esta clasificada la solicitud: ni el nombre, ni el correo, ni el
+       * telefono, ni el texto de lo que la persona escribio. Con esto se ve
+       * que tipo de PQRS llega mas, sin tocar ningun dato del cliente.
+       */
+      registrarEvento('envio_pqrs', {
+        formulario: 'pqrs',
+        categoria: clave,
+        tipo: tipoElegido,
+      });
 
       botonEnviar.disabled = true;
       const textoBoton = botonEnviar.textContent;

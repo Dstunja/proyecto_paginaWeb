@@ -156,6 +156,7 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
             <a
               class="btn btn-whatsapp"
               href={`https://wa.me/${contactoEmpleo.whatsapp.numero}?text=${mensajeWhatsapp}`}
+              data-whatsapp-vacante="general"
               target="_blank"
               rel="noopener"
             >
@@ -167,6 +168,7 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
                 <a
                   class="btn btn-secondary"
                   href={`https://wa.me/${vacante.whatsappExtra.numero}?text=${mensajeWhatsapp}`}
+                  data-whatsapp-vacante="extra"
                   target="_blank"
                   rel="noopener"
                 >
@@ -226,6 +228,22 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
 
     document.querySelector('[data-postular-vacante]')?.addEventListener('click', () => {
       registrarEvento('vacante_postular', { vacante });
+    });
+
+    /*
+     * Evento `contacto_vacante`: escribir por WhatsApp preguntando por esta
+     * convocatoria. Es un camino distinto al de `vacante_postular`, que lleva
+     * al formulario con la hoja de vida: aqui la persona prefiere preguntar
+     * antes. `linea` separa el numero general del propio de la vacante, cuando
+     * la convocatoria trae uno aparte.
+     */
+    document.querySelectorAll<HTMLElement>('[data-whatsapp-vacante]').forEach((boton) => {
+      boton.addEventListener('click', () => {
+        registrarEvento('contacto_vacante', {
+          vacante,
+          linea: boton.dataset.whatsappVacante ?? 'general',
+        });
+      });
     });
   }
 </script>

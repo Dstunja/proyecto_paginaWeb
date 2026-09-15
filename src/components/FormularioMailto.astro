@@ -20,15 +20,27 @@ interface Props {
   /** Texto del botón de envío. */
   boton?: string;
   destinatario?: string;
+  /**
+   * Nombre con el que este formulario aparece en la analítica. Viaja en el
+   * evento `envio_contacto` para poder distinguir un formulario de otro si
+   * algún día hay más de uno; nunca lleva nada de lo que la persona escribió.
+   */
+  medicion?: string;
 }
 
-const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
+const {
+  asunto,
+  boton = 'Enviar',
+  destinatario = empresa.email,
+  medicion = 'contacto',
+} = Astro.props;
 ---
 
 <form
   data-mailto
   data-asunto={asunto}
   data-destinatario={destinatario}
+  data-medicion={medicion}
   novalidate={false}
   class="grid grid-cols-1 gap-5"
 >
@@ -45,6 +57,8 @@ const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
 </form>
 
 <script>
+  import { registrarEvento } from '../lib/analitica';
+
   const ETIQUETAS: Record<string, string> = {};
 
   document.querySelectorAll<HTMLFormElement>('form[data-mailto]').forEach((form) => {
@@ -69,6 +83,19 @@ const { asunto, boton = 'Enviar', destinatario = empresa.email } = Astro.props;
       const destinatario = form.dataset.destinatario ?? '';
       const asunto = form.dataset.asunto ?? 'Mensaje desde la web';
       const cuerpo = `${lineas.join('\n')}\n\n---\nEnviado desde dstunja.com`;
+
+      /*
+       * Evento `envio_contacto`: la persona dio a enviar y se le abre el gestor
+       * de correo. Solo viaja qué formulario fue; nada de lo que escribió, que
+       * es justo lo que este componente mete en el cuerpo del correo.
+       *
+       * OJO: esto mide la intención, no la entrega. El mensaje sale del gestor
+       * de correo de la persona, y desde aquí no hay forma de saber si acabó
+       * pulsando enviar allí.
+       */
+      registrarEvento('envio_contacto', {
+        formulario: form.dataset.medicion ?? 'contacto',
+      });
 
       const aviso = form.querySelector<HTMLElement>('[data-aviso]');
       if (aviso) {

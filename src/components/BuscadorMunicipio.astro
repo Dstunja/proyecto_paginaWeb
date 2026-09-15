@@ -191,7 +191,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
       /* Qué municipios busca la gente y cuáles todavía no tenemos cargados: es
          la lista de por dónde conviene ampliar la cobertura. El término se
          limpia por si alguien escribe ahí un correo o un teléfono. */
-      registrarEvento('cobertura_buscar', {
+      registrarEvento('busqueda_cobertura', {
         municipio: limpiarTermino(texto),
         encontrado: Boolean(encontrado),
       });

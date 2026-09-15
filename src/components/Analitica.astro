@@ -1,44 +1,57 @@
 ---
 /**
- * Carga de Google Analytics 4. Va una sola vez, dentro del <head> del layout.
+ * Carga de Google Tag Manager. Va una sola vez, dentro del <head> del layout.
  *
- * CUÁNDO SE CARGA
+ * POR QUE GTM Y NO gtag.js
+ * ------------------------
+ * Hasta ahora este componente cargaba `gtag.js` con el ID de GA4 directamente.
+ * Ahora la etiqueta de GA4 vive DENTRO del contenedor de Tag Manager, creada a
+ * mano en su interfaz. Cargar las dos cosas a la vez haria que GA4 contara cada
+ * pagina vista dos veces, asi que aqui solo se carga el contenedor.
+ *
+ * Los eventos del sitio se mandan con `registrarEvento()` de src/lib/analitica.ts,
+ * que empuja al `dataLayer` en el formato que GTM sabe leer (`{event: '...'}`).
+ * Cada uno se conecta a su etiqueta desde la interfaz de Tag Manager.
+ *
+ * CUANDO SE CARGA
  * ---------------
- * Solo si hay un ID de medición en PUBLIC_GA_ID y la compilación es de
- * producción. En `npm run dev` nunca se inyecta nada: las pruebas locales no
- * ensucian las estadísticas de la empresa.
+ * Solo si hay un ID de contenedor en PUBLIC_GTM_CONTAINER_ID y la compilacion
+ * es de produccion. En `npm run dev` nunca se inyecta nada: las pruebas locales
+ * no ensucian las estadisticas de la empresa.
  *
- * DÓNDE VIVE EL ID
+ * DONDE VIVE EL ID
  * ----------------
- * En el secreto PUBLIC_GA_ID del repositorio (GitHub → Settings → Secrets and
- * variables → Actions), que el workflow pasa como variable de entorno al
- * compilar. No se escribe en el código. Ver docs/ANALITICA.md.
+ * En la variable PUBLIC_GTM_CONTAINER_ID del repositorio (GitHub > Settings >
+ * Secrets and variables > Actions) y en las variables de entorno de Vercel. El
+ * workflow la pasa como variable de entorno al compilar. Ver docs/ANALITICA.md.
  *
  * CONSENTIMIENTO
  * --------------
- * Se arranca con `analytics_storage: 'denied'` (Consent Mode). GA4 recibe las
- * páginas vistas y los eventos, pero sin escribir cookies ni identificar al
+ * Se arranca con `analytics_storage: 'denied'` (Consent Mode). El contenedor se
+ * carga y recibe los eventos, pero sin escribir cookies ni identificar al
  * visitante entre sesiones, hasta que la persona acepta en la franja de
  * AvisoCookies.astro. Es lo que exige la Ley 1581 de 2012 en Colombia.
+ *
+ * El `gtag` que define el arranque es el envoltorio estandar de Google sobre
+ * `dataLayer`: es lo que permite que `guardarConsentimiento()` siga funcionando
+ * igual que antes, sin que le importe si detras hay gtag.js o GTM.
  */
-const ID = import.meta.env.PUBLIC_GA_ID ?? '';
+const ID = import.meta.env.PUBLIC_GTM_CONTAINER_ID ?? '';
 
 /** Sin ID o en desarrollo no se carga absolutamente nada. */
 const activo = ID.trim() !== '' && import.meta.env.PROD;
 
-const src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ID)}`;
-
 /**
- * Arranque de gtag. Va como texto para poder inyectar el ID sin exponerlo en
- * un archivo del repositorio, y `is:inline` porque debe ejecutarse antes que
- * cualquier `registrarEvento` de los componentes.
+ * Consentimiento por defecto. Va ANTES del contenedor, y por eso en un
+ * `<script>` aparte: si GTM arrancara primero, sus etiquetas podrian dispararse
+ * con el consentimiento sin declarar.
  */
-const arranque = `
+const consentimiento = `
 window.dataLayer = window.dataLayer || [];
 function gtag(){ window.dataLayer.push(arguments); }
 window.gtag = gtag;
 
-// Por defecto NADA se almacena: ni cookies de analítica ni publicidad.
+// Por defecto NADA se almacena: ni cookies de analitica ni publicidad.
 gtag('consent', 'default', {
   analytics_storage: 'denied',
   ad_storage: 'denied',
@@ -46,28 +59,30 @@ gtag('consent', 'default', {
   ad_personalization: 'denied',
 });
 
-// Si la persona ya aceptó en una visita anterior, se restablece su decisión
+// Si la persona ya acepto en una visita anterior, se restablece su decision
 // antes del primer page_view para no perder esa visita.
 try {
   if (window.localStorage.getItem('dst_consentimiento') === 'aceptado') {
     gtag('consent', 'update', { analytics_storage: 'granted' });
   }
 } catch (e) {}
+`.trim();
 
-gtag('js', new Date());
-gtag('config', ${JSON.stringify(ID)}, {
-  anonymize_ip: true,
-  send_page_view: true,
-});
+/** Fragmento oficial del contenedor, con el ID inyectado desde la variable. */
+const contenedor = `
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer',${JSON.stringify(ID)});
 `.trim();
 ---
 
 {
   activo && (
     <>
-      <script is:inline set:html={arranque} />
-      {/* `async`: la analítica nunca debe retrasar el pintado de la página. */}
-      <script is:inline async src={src} />
+      <script is:inline set:html={consentimiento} />
+      <script is:inline set:html={contenedor} />
     </>
   )
 }

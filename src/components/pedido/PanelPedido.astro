@@ -373,7 +373,7 @@ const NOTA_PRECIOS =
     SIN_PSP,
   } from '../../lib/precios';
   import { CANTIDAD_MAXIMA } from '../../data/pedido';
-  import { registrarEvento } from '../../lib/analitica';
+  import { limpiarTermino, registrarEvento } from '../../lib/analitica';
   import {
     asesoraAsignada,
     elegirAsesora,
@@ -820,10 +820,18 @@ const NOTA_PRECIOS =
       if (cambio) cambio.hidden = true;
       if (!validar()) return;
 
-      /* Solo el tamano del pedido: ni el negocio, ni el contacto, ni el
-         telefono, ni el municipio salen del navegador. */
-      registrarEvento('pedido_enviar', {
-        items: pedido.items.length,
+      /* Evento `pedido_whatsapp`: el pedido sale del sitio hacia WhatsApp.
+         Va el tamano del pedido y el municipio de entrega, que es un dato
+         geografico agregado y sirve para ver por donde entran los pedidos. Lo
+         que NO sale del navegador sigue sin salir: ni el negocio, ni el nombre
+         del contacto, ni el telefono. El municipio es campo libre (la lista de
+         sugerencias no obliga), asi que pasa por `limpiarTermino` por si
+         alguien escribe ahi un correo o un telefono. */
+      const campoMunicipio = formulario.querySelector<HTMLInputElement>('[data-campo="municipio"]');
+
+      registrarEvento('pedido_whatsapp', {
+        productos: pedido.items.length,
+        municipio: limpiarTermino(campoMunicipio?.value ?? ''),
         marcas_distintas: new Set(
           pedido.items.map((item) => obtenerProducto(item.id)?.marca).filter(Boolean),
         ).size,
