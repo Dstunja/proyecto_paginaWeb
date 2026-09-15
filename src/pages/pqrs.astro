@@ -9,6 +9,7 @@ import ContactoAdministrativo from '../components/ContactoAdministrativo.astro';
 import { empresa } from '../data/site';
 import { CATEGORIAS } from '../lib/pqrs/categorias';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
+import { ruta } from '../lib/rutas';
 
 /**
  * La página se bifurca en el PASO 1, y cada clic se aplica al instante: no hay
@@ -190,7 +191,10 @@ const notas = Object.fromEntries(
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
           Al enviar autorizas el tratamiento de tus datos personales para gestionar y responder tu
-          solicitud, conforme a la Ley 1581 de 2012 y a nuestra política de tratamiento de datos.
+          solicitud, conforme a la Ley 1581 de 2012 y a nuestra{' '}
+          <a class="font-semibold text-secondary-dark underline" href={ruta('/privacidad/')}
+            >política de tratamiento de datos</a
+          >.
         </p>
         <p class="mt-4 text-[14.5px] text-muted">
           También puedes radicar presencialmente en{' '}
@@ -304,7 +308,11 @@ const notas = Object.fromEntries(
               class="mt-1 h-4 w-4 shrink-0 accent-[var(--color-primary)]"
             />
             <span>
-              Autorizo el tratamiento de mis datos personales para la gestión de esta solicitud. *
+              Autorizo el tratamiento de mis datos personales para la gestión de esta solicitud,
+              según la{' '}
+              <a class="font-semibold text-secondary-dark underline" href={ruta('/privacidad/')}
+                >política de tratamiento de datos</a
+              >. *
             </span>
           </label>
         </FormularioPqrs>

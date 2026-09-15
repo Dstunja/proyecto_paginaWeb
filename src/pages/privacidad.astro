@@ -3,9 +3,11 @@
  * Política de tratamiento de datos personales.
  *
  * ⚠️ BORRADOR. El texto de abajo es una base redactada a partir de lo que el
- * sitio hace hoy (formularios que abren el gestor de correo, pedidos que se
- * envían por WhatsApp y analítica con Google Analytics 4). NO ha sido revisado
- * por un abogado. Antes de publicarlo en dstunja.com hay que:
+ * sitio hace hoy (PQRS que se radican en un servidor propio, postulaciones de
+ * empleo con hoja de vida adjunta, contacto que abre el gestor de correo,
+ * pedidos que se envían por WhatsApp y analítica con Google Analytics 4 servida
+ * por Google Tag Manager). NO ha sido revisado por un abogado. Antes de
+ * publicarlo en dstunja.com hay que:
  *
  *   1. Confirmar la razón social, el NIT y la dirección de notificaciones.
  *   2. Definir el correo del responsable de atender peticiones de datos.
@@ -21,7 +23,7 @@ import { ruta } from '../lib/rutas';
 import { empresa } from '../data/site';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
-const actualizado = '3 de septiembre de 2026';
+const actualizado = '15 de septiembre de 2026';
 
 /** Eventos y datos que recoge la analítica, para poder listarlos sin repetir. */
 const queSeRecoge = [
@@ -77,15 +79,25 @@ const queNoSeRecoge = [
 
       <h2 class="mt-12 text-[24px] tablet:text-[28px]">2. Qué datos recogemos</h2>
       <p class="mt-4 text-muted">
-        <strong class="text-ink">Los que tú nos escribes.</strong> Los formularios de contacto, PQRS
-        y postulación de empleo no se envían a ningún servidor nuestro: abren tu propio gestor de
-        correo con el mensaje ya redactado, y los datos llegan a nosotros como un correo corriente.
-        El armador de pedidos guarda tu lista y los datos de tu negocio únicamente en tu navegador,
-        y el mensaje se envía por WhatsApp cuando tú lo decides.
+        <strong class="text-ink">Los que tú nos escribes.</strong> La PQRS que radicas y la
+        postulación de empleo sí se envían a nuestro servidor: la solicitud queda guardada con un
+        número de radicado y los archivos de soporte y las hojas de vida se almacenan en un
+        repositorio privado, porque es la única forma de darte constancia y de responderte. El
+        formulario de contacto, en cambio, no se envía a ningún servidor nuestro: abre tu propio
+        gestor de correo con el mensaje ya redactado. El armador de pedidos guarda tu lista y los
+        datos de tu negocio únicamente en tu navegador, y el mensaje se envía por WhatsApp cuando tú
+        lo decides.
       </p>
       <p class="mt-4 text-muted">
-        <strong class="text-ink">Estadísticas de uso.</strong> Usamos Google Analytics 4 para
-        entender cómo se navega el sitio. Esa herramienta recoge:
+        Todo lo que nos llega por esos formularios se usa <strong class="text-ink">solo</strong> para
+        atender la solicitud que lo motivó: responder tu PQRS, contestar tu mensaje o evaluar tu
+        hoja de vida en el proceso de selección. No se usa para enviarte publicidad que no hayas
+        pedido ni se cruza con la analítica del sitio.
+      </p>
+      <p class="mt-4 text-muted">
+        <strong class="text-ink">Estadísticas de uso.</strong> Usamos Google Analytics 4, cargado a
+        través de Google Tag Manager, para entender cómo se navega el sitio. Las cifras que vemos
+        son siempre agregadas: cuánta gente hace algo, no quién lo hace. Esa herramienta recoge:
       </p>
       <ul class="mt-4 flex list-disc flex-col gap-2 pl-6 text-muted">
         {queSeRecoge.map((linea) => <li class="text-[15px]">{linea}</li>)}
@@ -107,9 +119,11 @@ const queNoSeRecoge = [
       <p class="mt-4 text-muted">
         La primera vez que entras aparece una franja para que decidas. Mientras no aceptes, la
         analítica funciona en modo restringido: no se guardan cookies en tu equipo ni se te
-        identifica entre visitas. Si aceptas, Google Analytics guarda una cookie propia para
-        distinguir visitas nuevas de visitas repetidas. Tu decisión se recuerda en tu navegador y
-        puedes cambiarla borrando los datos del sitio.
+        identifica entre visitas. Eso vale también para Google Tag Manager, que es lo que carga la
+        analítica: el contenedor se carga, pero no puede almacenar nada hasta que tú aceptes. Si
+        aceptas, Google Analytics guarda una cookie propia para distinguir visitas nuevas de visitas
+        repetidas. Tu decisión se recuerda en tu navegador y puedes cambiarla borrando los datos del
+        sitio.
       </p>
 
       <h2 class="mt-12 text-[24px] tablet:text-[28px]">5. Tus derechos</h2>
