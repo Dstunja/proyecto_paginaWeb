@@ -146,6 +146,44 @@ peso, doble extensión (`hoja.exe.pdf`), saneado del nombre y **bytes mágicos**
   del archivo viaja saneado (`sanitizarNombre`).
 - **La IP no se guarda**: solo se usa para el límite de tasa y para Turnstile.
 
+## Turnstile: cuando Cloudflare pide marcar la casilla
+
+El widget va en modo `interaction-only`: normalmente no se ve, pero Cloudflare
+puede decidir, **después de pulsar Enviar**, que hace falta marcar la casilla
+«Verifique que es un ser humano». Entonces:
+
+- Sale el aviso «Falta un paso: marca la casilla de verificación de seguridad que
+  aparece arriba…» y la casilla se lleva a la vista.
+- La espera **no vence** mientras la persona la marca. Hay un tope de 30 s para
+  cuando Cloudflare resuelve solo, y de 5 minutos a partir de que aparece la
+  casilla; antes de eso suele avisar el propio Cloudflare con `timeout-callback`.
+- Al marcarla llega el token y la postulación sale hacia la función.
+
+Si la verificación **falla o caduca**, se muestra «No pudimos completar la
+verificación de seguridad…» y se puede volver a pulsar Enviar. **No** se abre el
+correo: la función ni siquiera se ha llamado, así que no es un caso de «no hay
+backend». Solo si el script de Cloudflare **no carga** (un bloqueador, una red
+corporativa) se cae al `mailto:`, porque desde la página no hay forma de pasar la
+comprobación.
+
+### El fallo que hubo en producción
+
+Antes el tope de 30 s corría también mientras la casilla estaba en pantalla, y
+cualquier fallo de Turnstile se trataba como «no hay función». El resultado: la
+casilla aparecía, a los 30 s el formulario abría el `mailto:` y **nunca llamaba a
+`/api/empleos/postular`**. Por eso ni los logs de Vercel ni los de Resend
+registraban nada aunque las variables estuvieran bien. El arreglo vive en
+`src/lib/turnstile-cliente.ts`, que comparten los tres formularios, así que PQRS
+también deja de cortar la espera mientras se marca la casilla.
+
+Para diagnosticar: si el formulario cae al correo y en Vercel no aparece ninguna
+petición a la función, el problema está en el navegador, antes del `fetch`. La
+consola del navegador muestra `[turnstile] error <código>` o
+`[empleos] verificación de seguridad: <motivo>`. El código `110200` significa que
+el dominio desde el que se sirve la página no está autorizado en el widget de
+Cloudflare: hay que añadir `paginaweb-beta-coral.vercel.app` y, más adelante,
+`dstunja.com` en **Turnstile → el widget → Hostnames**.
+
 ## GitHub Pages: el respaldo por correo
 
 La función **solo existe en Vercel**. En el espejo estático de GitHub Pages la
@@ -202,15 +240,30 @@ Para probar **el envío real** hace falta el entorno de Vercel, que es quien
 resuelve las funciones:
 
 ```bash
-npx vercel dev                                             # con las variables puestas
-node scripts/verificar-empleos.mjs --api http://localhost:3000
+npx vercel login                                   # una vez, es interactivo
+npx vercel link --yes --project paginaweb --scope practicaspasantiasdst-6024
+npx vercel env pull .env.local --environment production
+npx vercel dev
+node scripts/verificar-empleos.mjs --solo-api --api http://localhost:3000
 ```
 
 Eso manda un multipart de verdad con un PDF de prueba a
-`/api/empleos/postular`. Con las claves de **prueba** de Turnstile (`1x…`)
-cualquier token pasa. Ojo: si `RESEND_API_KEY` es real, **el correo llega de
-verdad** a Talento Humano; el nombre del candidato de prueba lo dice para que no
-lo confundan con una postulación.
+`/api/empleos/postular` y enseña la respuesta completa. `--solo-api` salta las
+pruebas de navegador. Dos cosas que no son obvias:
+
+- **El token es de mentira**, así que solo pasa si el servidor usa la clave
+  secreta de **prueba** de Turnstile, `1x0000000000000000000000000000000AA`. Con
+  la de producción la función responde `403`, que ya demuestra que contesta.
+- **La petición lleva cabecera `Origin`.** Astro rechaza con `403 Cross-site POST
+  form submissions are forbidden` cualquier multipart sin ella; el navegador la
+  pone solo, `fetch` de Node no, y `curl` tampoco si no se le añade `-H "Origin: …"`.
+
+Ojo: si `RESEND_API_KEY` es real, **el correo llega de verdad** a
+`EMPLEOS_DESTINO`; el nombre del candidato de prueba lo dice para que no lo
+confundan con una postulación.
+
+Astro solo permite **un** `astro dev` por carpeta. Si otra sesión ya tiene uno en
+marcha, `vercel dev` o `astro dev` salen con «Dev server already running».
 
 ## Pruebas
 
@@ -238,3 +291,10 @@ con «Enviando…»; la confirmación; que un 400 o un 403 se muestran sin caer 
 correo; que un 500, el HTML del espejo o la red caída sí abren el gestor de
 correo con el aviso de adjuntar la hoja de vida y el botón de WhatsApp a la
 vista; y el cargo preseleccionado desde `?cargo=` y desde «Postularme».
+
+La sección de Turnstile inyecta una clave de prueba en el HTML (el build local
+no lleva ninguna) y un doble de Cloudflare con cuatro modos: sin interacción, el
+token viaja en el multipart; **pidiendo la casilla con el token a los 33 s**, sale
+el aviso, a los 31 s no se ha caído al correo y al llegar el token la postulación
+llega a la función; con error, se explica sin caer al correo ni llamar a la
+función; y con el script bloqueado, sí se cae al correo.

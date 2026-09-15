@@ -32,14 +32,25 @@
  *      y el botón de WhatsApp a la vista.
  *  10. El cargo llega preseleccionado desde ?cargo= y desde "Postularme".
  *
- * C) OPCIONAL, EL ENVÍO REAL contra una función en marcha:
+ * C) TURNSTILE, con una clave de prueba inyectada en el HTML y un doble de
+ *    Cloudflare:
+ *  11. Sin interacción, el token del widget viaja con la postulación.
+ *  12. Si Cloudflare pide marcar la casilla, sale un aviso, la espera NO vence a
+ *      los 30 s y, cuando llega el token, la postulación llega a la función.
+ *      Es el fallo que hubo en producción: al vencer ese tope se abría el
+ *      `mailto:` sin llamar nunca a la API.
+ *  13. Un error de Cloudflare se explica y no cae al correo.
+ *  14. Con el script de Cloudflare bloqueado sí se cae al correo.
+ *
+ * D) OPCIONAL, EL ENVÍO REAL contra una función en marcha:
  *      node scripts/verificar-empleos.mjs --api http://localhost:3000
- *    Manda un multipart de verdad (con un PDF de prueba) a
- *    <url>/api/empleos/postular y enseña la respuesta. Hace falta `vercel dev`
- *    con las variables puestas; con las claves de PRUEBA de Turnstile
- *    (1x…) cualquier token pasa. OJO: si RESEND_API_KEY es real, el correo
- *    LLEGA de verdad a Talento Humano; el nombre del candidato de prueba lo
- *    dice para que no lo confundan con una postulación.
+ *      node scripts/verificar-empleos.mjs --solo-api --api http://localhost:3000
+ *    Manda un multipart de verdad (con un PDF de prueba y cabecera Origin) a
+ *    <url>/api/empleos/postular y enseña la respuesta completa. Hace falta
+ *    `vercel dev` con las variables puestas y la clave secreta de PRUEBA de
+ *    Turnstile (1x…), porque el token es de mentira. OJO: si RESEND_API_KEY es
+ *    real, el correo LLEGA de verdad a EMPLEOS_DESTINO; el nombre del
+ *    candidato de prueba lo dice para que no lo confundan con una postulación.
  *
  * El script de Cloudflare Turnstile también se intercepta: se sirve un doble
  * que devuelve un token de mentira. Así la prueba no depende de la red ni de
@@ -156,10 +167,24 @@ async function atenderFuncion(peticion, respuesta) {
   }
 }
 
+/**
+ * Clave de prueba de Cloudflare que se inyecta en el HTML cuando la página se
+ * pide con `?turnstile=prueba`.
+ *
+ * `npm run build` sin `.env` compila el formulario SIN clave, y entonces el
+ * cliente ni siquiera monta Turnstile: el camino que falló en producción
+ * (casilla interactiva, error, script bloqueado) quedaría sin probar. Con la
+ * clave inyectada el cliente monta el widget, y el doble de Turnstile
+ * (`TURNSTILE_FALSO`) decide qué pasa.
+ */
+const CLAVE_TURNSTILE_PRUEBA = '1x00000000000000000000AA';
+
 function servir() {
   return new Promise((listo) => {
     const servidor = createServer(async (peticion, respuesta) => {
-      let ruta = decodeURIComponent(new URL(peticion.url, 'http://x').pathname);
+      const direccion = new URL(peticion.url, 'http://x');
+      const conTurnstile = direccion.searchParams.get('turnstile') === 'prueba';
+      let ruta = decodeURIComponent(direccion.pathname);
       if (ruta.startsWith(BASE)) ruta = ruta.slice(BASE.length);
 
       if (ruta === RUTA_FUNCION) {
@@ -179,7 +204,18 @@ function servir() {
       try {
         const info = await stat(archivo);
         if (info.isDirectory()) throw new Error('directorio');
-        const cuerpo = await readFile(archivo);
+        let cuerpo = await readFile(archivo);
+        if (conTurnstile && extname(archivo) === '.html') {
+          // Astro pinta el atributo vacío sin valor: `data-turnstile-key`.
+          cuerpo = Buffer.from(
+            cuerpo
+              .toString('utf8')
+              .replace(
+                /data-turnstile-key(="")?(?=[\s>])/g,
+                `data-turnstile-key="${CLAVE_TURNSTILE_PRUEBA}"`,
+              ),
+          );
+        }
         respuesta.writeHead(200, {
           'content-type': TIPOS[extname(archivo)] ?? 'application/octet-stream',
         });
@@ -289,12 +325,28 @@ const TURNSTILE_FALSO = `
     window.turnstile = {
       render: function (contenedor, opciones) {
         var id = 'widget-' + ++contador;
-        callbacks[id] = opciones.callback;
+        callbacks[id] = opciones;
         return id;
       },
+      // El modo lo fija la prueba antes de cargar la página (window.__modoTurnstile):
+      //   'ok'          token a los 10 ms, sin interacción
+      //   'interaccion' pide la casilla y el token llega a los
+      //                 window.__esperaInteraccionMs (más de 30 s: el tope viejo)
+      //   'error'       Cloudflare responde con el error 110200
       execute: function (id) {
-        var cb = callbacks[id];
-        if (cb) setTimeout(function () { cb('token-de-prueba-' + Date.now()); }, 10);
+        var o = callbacks[id];
+        if (!o) return;
+        window.__ejecucionesTurnstile = (window.__ejecucionesTurnstile || 0) + 1;
+        var modo = window.__modoTurnstile || 'ok';
+        var token = function () { o.callback('token-de-prueba-' + Date.now()); };
+        if (modo === 'interaccion') {
+          setTimeout(function () { o['before-interactive-callback'] && o['before-interactive-callback'](); }, 50);
+          setTimeout(token, window.__esperaInteraccionMs || 33000);
+        } else if (modo === 'error') {
+          setTimeout(function () { o['error-callback'] && o['error-callback']('110200'); }, 50);
+        } else {
+          setTimeout(token, 10);
+        }
       },
       reset: function () {},
       remove: function () {},
@@ -346,17 +398,42 @@ async function instalarDobles(pagina, plan = {}) {
   funcion.plan = plan;
   funcion.envios = [];
 
-  await pagina.route('https://challenges.cloudflare.com/**', (ruta) =>
-    ruta.fulfill({ status: 200, contentType: 'text/javascript', body: TURNSTILE_FALSO }),
-  );
+  if (plan.turnstile === 'bloqueado') {
+    // Lo que hace un bloqueador de anuncios: el script de Cloudflare no llega.
+    await pagina.route('https://challenges.cloudflare.com/**', (ruta) => ruta.abort('blockedbyclient'));
+  } else {
+    await pagina.route('https://challenges.cloudflare.com/**', (ruta) =>
+      ruta.fulfill({ status: 200, contentType: 'text/javascript', body: TURNSTILE_FALSO }),
+    );
+  }
+
+  if (plan.turnstile) {
+    await pagina.addInitScript(
+      ([modo, espera]) => {
+        window.__modoTurnstile = modo;
+        window.__esperaInteraccionMs = espera;
+      },
+      [plan.turnstile, plan.esperaInteraccionMs ?? 33000],
+    );
+  }
 
   return funcion;
 }
 
+/**
+ * Abre una página con los dobles puestos. Con `plan.turnstile` la página se
+ * pide con `?turnstile=prueba`, que hace que el servidor inyecte la clave de
+ * prueba y el cliente monte el widget.
+ */
 async function abrir(contexto, plan = {}, camino = '/empleos/') {
   const pagina = await contexto.newPage();
   const registro = await instalarDobles(pagina, plan);
-  await pagina.goto(url(camino), { waitUntil: 'domcontentloaded' });
+  let destino = camino;
+  if (plan.turnstile) {
+    const [ruta, ancla = ''] = camino.split('#');
+    destino = `${ruta}${ruta.includes('?') ? '&' : '?'}turnstile=prueba${ancla ? `#${ancla}` : ''}`;
+  }
+  await pagina.goto(url(destino), { waitUntil: 'domcontentloaded' });
   await pagina.waitForTimeout(400);
   const rechazar = pagina.locator('[data-rechazar-cookies]');
   if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
@@ -744,10 +821,149 @@ async function revisarCargo(navegador) {
   await contexto.close();
 }
 
-// --- D) Opcional: envío real -------------------------------------------------
+// --- D) Turnstile: interacción, error y script bloqueado ----------------------
 
+/**
+ * El fallo que hubo en producción: al pulsar Enviar, Cloudflare pedía marcar la
+ * casilla, el cliente esperaba como mucho 30 segundos y, al vencer, abría el
+ * `mailto:` sin haber llamado nunca a la función. Aquí se prueba con la clave
+ * de prueba inyectada y el doble de Turnstile en cada modo.
+ */
+async function revisarTurnstile(navegador, archivos) {
+  console.log('\n=== D) Turnstile ===\n');
+  const contexto = await navegador.newContext({ viewport: { width: 1280, height: 900 } });
+
+  // ---- 1. Sin interacción: el token viaja en el multipart ------------------
+  {
+    const { pagina, registro } = await abrir(contexto, { turnstile: 'ok' });
+    await pagina.waitForTimeout(300);
+    comprobar(
+      'Turnstile: con la clave inyectada el formulario la lleva',
+      (await pagina.locator('[data-form-empleo]').getAttribute('data-turnstile-key')) ===
+        CLAVE_TURNSTILE_PRUEBA,
+    );
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+    await pagina.click('[data-enviar-empleo]');
+    await pagina.waitForTimeout(1200);
+    const token = registro.envios[0]?.partes?.find((p) => p.nombre === 'turnstileToken');
+    comprobar(
+      'Turnstile: el token del widget viaja con la postulación y sale la confirmación',
+      (token?.datos.toString('utf8') ?? '').startsWith('token-de-prueba-') &&
+        (await pagina.locator('[data-confirmacion-empleo]').isVisible()),
+      String(token?.datos.toString('utf8') ?? '(no llegó)'),
+    );
+    await pagina.close();
+  }
+
+  // ---- 2. Pide la casilla y el token llega pasados los 30 s ----------------
+  {
+    const { pagina, registro } = await abrir(contexto, {
+      turnstile: 'interaccion',
+      esperaInteraccionMs: 33_000,
+    });
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+    await pagina.click('[data-enviar-empleo]');
+    await pagina.waitForTimeout(800);
+
+    const aviso = pagina.locator('[data-aviso-verificacion]');
+    comprobar(
+      'Casilla pedida: aparece el aviso de que falta marcar la verificación',
+      (await aviso.isVisible()) && (await textoDe(aviso)).includes('marca la casilla'),
+      await textoDe(aviso),
+    );
+    comprobar(
+      'Casilla pedida: el botón sigue deshabilitado con "Enviando…"',
+      (await pagina.locator('[data-enviar-empleo]').isDisabled()) &&
+        (await textoDe(pagina.locator('[data-enviar-empleo]'))) === 'Enviando…',
+    );
+
+    // Pasado el tope viejo de 30 s: antes aquí ya se había abierto el correo.
+    await pagina.waitForTimeout(30_500);
+    comprobar(
+      'Casilla pedida: a los 31 s NO se ha caído al correo ni se ha rendido',
+      (await pagina.locator('[data-form-empleo][data-respaldo]').count()) === 0 &&
+        registro.envios.length === 0 &&
+        (await aviso.isVisible()),
+      `respaldo=${await pagina.locator('[data-form-empleo]').getAttribute('data-respaldo')} envíos=${registro.envios.length}`,
+    );
+
+    await pagina.waitForTimeout(3_500);
+    comprobar(
+      'Casilla marcada: la postulación llega a la función con el token',
+      registro.envios.length === 1 &&
+        (registro.envios[0].partes?.find((p) => p.nombre === 'turnstileToken')?.datos.toString('utf8') ?? '')
+          .startsWith('token-de-prueba-'),
+      String(registro.envios.length),
+    );
+    comprobar(
+      'Casilla marcada: sale la confirmación y el aviso desaparece',
+      (await pagina.locator('[data-confirmacion-empleo]').isVisible()) && !(await aviso.isVisible()),
+    );
+    await pagina.close();
+  }
+
+  // ---- 3. Cloudflare responde con error ------------------------------------
+  {
+    const { pagina, registro } = await abrir(contexto, { turnstile: 'error' });
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+    await pagina.click('[data-enviar-empleo]');
+    await pagina.waitForTimeout(1000);
+
+    const errores = pagina.locator('[data-errores-empleo]');
+    comprobar(
+      'Error de Turnstile: se explica y se invita a reintentar',
+      (await errores.isVisible()) && (await textoDe(errores)).includes('verificación de seguridad'),
+      await textoDe(errores),
+    );
+    comprobar(
+      'Error de Turnstile: NO cae al correo y no llama a la función',
+      (await pagina.locator('[data-form-empleo][data-respaldo]').count()) === 0 &&
+        registro.envios.length === 0,
+    );
+    comprobar(
+      'Error de Turnstile: el botón vuelve a quedar usable y WhatsApp a la vista',
+      !(await pagina.locator('[data-enviar-empleo]').isDisabled()) &&
+        (await pagina.locator('[data-whatsapp-empleo]').isVisible()),
+    );
+    await pagina.close();
+  }
+
+  // ---- 4. El script de Cloudflare no carga ---------------------------------
+  {
+    const { pagina, registro } = await abrir(contexto, { turnstile: 'bloqueado' });
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+    await pagina.click('[data-enviar-empleo]');
+    await pagina.waitForTimeout(1200);
+    comprobar(
+      'Turnstile bloqueado: no hay forma de verificar y se cae al correo, sin llamar a la función',
+      (await pagina.locator('[data-form-empleo][data-respaldo="correo"]').count()) === 1 &&
+        registro.envios.length === 0,
+    );
+    await pagina.close();
+  }
+
+  await contexto.close();
+}
+
+// --- E) Opcional: envío real -------------------------------------------------
+
+/**
+ * POST multipart de verdad contra una función en marcha.
+ *
+ * Dos requisitos que no son obvios:
+ * - Lleva cabecera `Origin`. Astro rechaza con 403 «Cross-site POST form
+ *   submissions are forbidden» cualquier multipart que llegue sin ella o con
+ *   otro origen; el navegador la pone solo, `fetch` de Node no.
+ * - El token es de mentira, así que solo pasa si el servidor usa la clave
+ *   secreta de PRUEBA de Turnstile (1x0000000000000000000000000000000AA). Con
+ *   la de producción la función responde 403, y eso ya prueba que contesta.
+ */
 async function envioReal(base, archivos) {
-  console.log(`\n=== D) Envío real contra ${base} ===\n`);
+  console.log(`\n=== E) Envío real contra ${base} ===\n`);
   const cuerpo = new FormData();
   cuerpo.set('nombre', 'Prueba automática de dstunja.com');
   cuerpo.set('correo', 'practicaspasantiasdst@gmail.com');
@@ -762,11 +978,15 @@ async function envioReal(base, archivos) {
   );
 
   try {
+    const origen = new URL(base).origin;
     const respuesta = await fetch(`${base.replace(/\/$/, '')}/api/empleos/postular`, {
       method: 'POST',
+      headers: { origin: origen },
       body: cuerpo,
     });
     const texto = await respuesta.text();
+    console.log(`  Respuesta completa: HTTP ${respuesta.status} ${respuesta.headers.get('content-type') ?? ''}`);
+    console.log(`  ${texto}`);
     comprobar(
       'Envío real: la función respondió JSON',
       (respuesta.headers.get('content-type') ?? '').includes('application/json'),
@@ -781,17 +1001,21 @@ async function envioReal(base, archivos) {
 // --- Ejecución --------------------------------------------------------------
 
 const archivos = await prepararArchivos();
-const servidor = await servir();
-const navegador = await chromium.launch();
 
-try {
-  await revisarCampo(navegador, archivos, 'Móvil', { width: 375, height: 720 });
-  await revisarCampo(navegador, archivos, 'Escritorio', { width: 1280, height: 800 });
-  await revisarEnvio(navegador, archivos);
-  await revisarCargo(navegador);
-} finally {
-  await navegador.close();
-  servidor.close();
+// `--solo-api` salta las pruebas de navegador y hace solo el envío real.
+if (!process.argv.includes('--solo-api')) {
+  const servidor = await servir();
+  const navegador = await chromium.launch();
+  try {
+    await revisarCampo(navegador, archivos, 'Móvil', { width: 375, height: 720 });
+    await revisarCampo(navegador, archivos, 'Escritorio', { width: 1280, height: 800 });
+    await revisarEnvio(navegador, archivos);
+    await revisarCargo(navegador);
+    await revisarTurnstile(navegador, archivos);
+  } finally {
+    await navegador.close();
+    servidor.close();
+  }
 }
 
 const indiceApi = process.argv.indexOf('--api');

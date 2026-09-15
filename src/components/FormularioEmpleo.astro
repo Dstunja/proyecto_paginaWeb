@@ -29,6 +29,12 @@
  * un `mailto:` no puede llevar archivos. Un 400, 403 o 429 NO cae al correo:
  * ahí el servidor sí contestó y lo que toca es enseñar el motivo. El botón de
  * WhatsApp está siempre, como alternativa.
+ *
+ * UN FALLO DE TURNSTILE TAMPOCO CAE AL CORREO, salvo que el script de
+ * Cloudflare no cargue. Si tras pulsar Enviar Cloudflare pide marcar la
+ * casilla, sale un aviso y la espera no vence mientras la persona la marca; si
+ * la verificación falla o caduca, se explica y se puede reintentar. Antes todo
+ * eso abría el `mailto:` sin haber llamado nunca a la función.
  */
 import { contactoEmpleo } from '../data/vacantes';
 import { cargosAdmitidos } from '../lib/empleos/cargos';
@@ -186,6 +192,21 @@ const cargos = cargosAdmitidos();
   <!-- Turnstile en modo `interaction-only`: normalmente no se ve nada. -->
   <div data-turnstile-empleo class="empty:hidden"></div>
 
+  {/*
+    Solo aparece si, después de pulsar Enviar, Cloudflare pide marcar la
+    casilla. Sin este aviso la casilla salía sin explicación y la espera
+    vencía mientras la persona se preguntaba qué pasaba.
+  */}
+  <p
+    data-aviso-verificacion
+    class="m-0 hidden rounded-xl border border-secondary/30 bg-secondary-soft px-4 py-3 text-[14px] text-ink"
+    role="status"
+    aria-live="polite"
+  >
+    Falta un paso: marca la casilla de verificación de seguridad que aparece arriba para terminar
+    de enviar tu postulación.
+  </p>
+
   <div class="flex flex-wrap items-center gap-4">
     <button type="submit" class="btn btn-primary" data-enviar-empleo>Enviar postulación</button>
     <a
@@ -255,7 +276,7 @@ const cargos = cargosAdmitidos();
   import { registrarEvento } from '../lib/analitica';
   import { validarFileHojaDeVida } from '../lib/empleos/hoja-de-vida';
   import { ruta } from '../lib/rutas';
-  import { prepararTurnstile, tokenTurnstile } from '../lib/turnstile-cliente';
+  import { ErrorTurnstile, prepararTurnstile, tokenTurnstile } from '../lib/turnstile-cliente';
 
   /**
    * La ruta pasa por `ruta()` como todas las del sitio. Escrita a mano
@@ -274,6 +295,7 @@ const cargos = cargosAdmitidos();
     const cajaErrores = form.querySelector<HTMLElement>('[data-errores-empleo]');
     const listaErrores = form.querySelector<HTMLUListElement>('[data-lista-errores-empleo]');
     const avisoRespaldo = form.querySelector<HTMLElement>('[data-aviso-respaldo]');
+    const avisoVerificacion = form.querySelector<HTMLElement>('[data-aviso-verificacion]');
     const boton = form.querySelector<HTMLButtonElement>('[data-enviar-empleo]');
     const espera = form.querySelector<HTMLElement>('[data-espera-empleo]');
     const confirmacion = form.parentElement?.querySelector<HTMLElement>(
@@ -289,6 +311,7 @@ const cargos = cargosAdmitidos();
       !cajaErrores ||
       !listaErrores ||
       !avisoRespaldo ||
+      !avisoVerificacion ||
       !boton ||
       !confirmacion
     ) {
@@ -385,9 +408,25 @@ const cargos = cargosAdmitidos();
       );
     }
 
+    /**
+     * Token para el envío. Si Cloudflare pide marcar la casilla, se enseña el
+     * aviso y se lleva la casilla a la vista; la espera ya no vence mientras
+     * la persona la marca (ver src/lib/turnstile-cliente.ts).
+     */
     async function token(): Promise<string> {
       if (!claveTurnstile) return '';
-      return tokenTurnstile();
+      return tokenTurnstile({
+        alPedirInteraccion: () => {
+          form.dataset.verificacion = 'pendiente';
+          avisoVerificacion!.classList.remove('hidden');
+          cajaTurnstile!.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        },
+      });
+    }
+
+    function ocultarAvisoVerificacion() {
+      delete form.dataset.verificacion;
+      avisoVerificacion!.classList.add('hidden');
     }
 
     // --- Mensajes -----------------------------------------------------------
@@ -484,6 +523,7 @@ const cargos = cargosAdmitidos();
         // la pone el navegador, con el boundary.
         const cuerpo = new FormData(form);
         cuerpo.set('turnstileToken', await token());
+        ocultarAvisoVerificacion();
 
         const respuesta = await fetch(RUTA_ENVIO, { method: 'POST', body: cuerpo });
 
@@ -509,9 +549,27 @@ const cargos = cargosAdmitidos();
         // 400, 403, 429: el servidor contestó y explicó por qué. No hay respaldo
         // que valga; hay que corregir lo que dice y volver a enviar.
         mostrarErrores(datos.ok ? ['Error desconocido.'] : datos.errores);
-      } catch {
+      } catch (fallo) {
+        /*
+         * Un fallo de la verificación de seguridad NO es "no hay función": el
+         * servidor ni siquiera se ha llamado. Antes caía aquí al `mailto:` y la
+         * postulación no llegaba nunca a /api/empleos/postular. Solo el script
+         * de Cloudflare bloqueado (`no-cargo`) justifica el respaldo por correo,
+         * porque desde esta página no hay forma de pasar la comprobación; si
+         * falló o caducó, se explica y se puede volver a intentar.
+         */
+        if (fallo instanceof ErrorTurnstile && fallo.motivo !== 'no-cargo') {
+          console.warn('[empleos] verificación de seguridad:', fallo.motivo, fallo.codigo ?? '');
+          form.dataset.verificacion = 'fallida';
+          mostrarErrores([
+            'No pudimos completar la verificación de seguridad. Vuelve a pulsar «Enviar postulación» y, si aparece la casilla, márcala. Si sigue fallando, escríbenos por WhatsApp.',
+          ]);
+          avisoVerificacion!.classList.add('hidden');
+          return;
+        }
         caerAlCorreo();
       } finally {
+        if (form.dataset.verificacion === 'pendiente') ocultarAvisoVerificacion();
         ocultarEspera();
         boton!.disabled = false;
         boton!.textContent = textoBoton;

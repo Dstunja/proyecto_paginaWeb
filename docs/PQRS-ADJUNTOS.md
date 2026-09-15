@@ -351,6 +351,11 @@ renombrado no cuele).
 - **Turnstile en los dos endpoints.** El token es de un solo uso, así que el
   navegador pide uno nuevo por cada archivo y otro para radicar. Si no hay
   `TURNSTILE_SECRET`, el servidor **rechaza**: no se deja pasar por defecto.
+- **La espera del token no vence mientras se marca la casilla.** Si Cloudflare
+  pide interacción, `src/lib/turnstile-cliente.ts` cambia el tope de 30 s por uno
+  de 5 minutos. Antes ese tope cortaba la espera con la casilla en pantalla y el
+  formulario caía al correo sin llamar a la API; pasó en producción con Empleos
+  (ver docs/EMPLEOS-POSTULACION.md).
 - **Blobs privados** (`access: 'private'`). La URL sola no sirve; el correo al
   área lleva enlaces firmados con caducidad de 7 días
   (`issueSignedToken` + `presignUrl`).
