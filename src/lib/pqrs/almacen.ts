@@ -5,14 +5,20 @@
  * mantiene el `access` y el token en un único sitio y, sobre todo, deja que las
  * pruebas simulen el almacenamiento sustituyendo este módulo entero en vez de
  * remedar la superficie completa del SDK.
+ *
+ * EL STORE ES PRIVADO (pqrs-adjuntos) y todo se crea y se lee con
+ * `access: 'private'`: un blob privado no se puede abrir con su URL a secas.
+ * La única forma de leerlo desde fuera es una URL firmada con caducidad
+ * (`enlaceFirmado`), y el correo al área ni siquiera lleva esa: lleva un enlace a
+ * /api/pqrs/descarga, que la genera en el momento (ver ./descarga.ts).
  */
 import { copy, del, get, head, list, put } from '@vercel/blob';
 import { issueSignedToken, presignUrl } from '@vercel/blob';
-import { accesoBlob, type Entorno } from './config';
+import { ACCESO_BLOB, type Entorno } from './config';
 
 function opciones(env: Entorno) {
   return {
-    access: accesoBlob(env),
+    access: ACCESO_BLOB,
     token: env.BLOB_READ_WRITE_TOKEN,
   } as const;
 }
@@ -118,23 +124,32 @@ export async function listar(prefijo: string, env: Entorno): Promise<DatosBlob[]
   return salida;
 }
 
-/** Borra todos los pendientes de una sesión. */
+/**
+ * Borra todos los pendientes de una sesión.
+ *
+ * Nunca lanza: se usa en caminos de error (Turnstile rechazado, adjunto
+ * inválido) y un fallo del almacén ahí no puede tapar el motivo real con un 500.
+ */
 export async function borrarSesion(prefijo: string, env: Entorno): Promise<number> {
-  const blobs = await listar(prefijo, env);
-  await borrar(
-    blobs.map((b) => b.pathname),
-    env,
-  );
-  return blobs.length;
+  try {
+    const blobs = await listar(prefijo, env);
+    await borrar(
+      blobs.map((b) => b.pathname),
+      env,
+    );
+    return blobs.length;
+  } catch {
+    return 0;
+  }
 }
 
 /**
- * Enlace de descarga firmado y con caducidad.
+ * URL firmada y con caducidad para LEER un blob privado.
  *
- * Es lo que va en el correo al área de PQRS. Con `access: 'private'` el enlace
- * es la única forma de leer el archivo y deja de servir al caducar. Si la
- * cuenta obligara a `access: 'public'`, esto sigue funcionando pero la URL sin
- * firmar también valdría: la caducidad deja de ser una garantía.
+ * La usa /api/pqrs/descarga con una vida de pocos minutos, justo antes de
+ * redirigir a quien pulsó el enlace del correo. No se mete directamente en el
+ * correo: así la duración del enlace del correo no depende del máximo que
+ * acepte Vercel para una URL firmada.
  */
 export async function enlaceFirmado(
   pathname: string,
@@ -152,7 +167,7 @@ export async function enlaceFirmado(
     operation: 'get',
     pathname,
     validUntil,
-    access: accesoBlob(env),
+    access: ACCESO_BLOB,
   });
   return presignedUrl;
 }

@@ -1,5 +1,33 @@
 # Postulaciones de Empleos con hoja de vida adjunta
 
+## Estado en producción
+
+El formulario envía postulaciones de verdad desde
+<https://paginaweb-beta-coral.vercel.app/empleos/>. Aquí no va ningún valor de
+clave: solo nombres y dónde vive cada cosa.
+
+| Pieza | Configuración |
+| --- | --- |
+| Correo | Cuenta de Resend registrada con **ghsantiagodetunja@gmail.com**, clave en `RESEND_API_KEY`. Remitente `onboarding@resend.dev`, sin dominio verificado. Destino: ghsantiagodetunja@gmail.com, el titular de la cuenta y el valor por defecto de `EMPLEOS_DESTINO` |
+| Antirrobots | Cloudflare Turnstile, widget **«DST web»**, modo **Non-interactive**, compartido con PQRS. Hostnames: `dstunja.com`, `paginaweb-beta-coral.vercel.app`, `vercel.app` y `localhost` |
+| Hoja de vida | Adjunta al correo; no se guarda en ningún sitio (tampoco en el Blob store de PQRS) |
+| Cuenta de PQRS | Es otra: informacioncomercialdst@gmail.com, con `PQRS_RESEND_API_KEY`. No se mezclan, porque con el remitente de pruebas cada cuenta solo entrega a su titular |
+
+Variables que usa Empleos y su estado en Vercel (Production):
+
+| Variable | Estado |
+| --- | --- |
+| `RESEND_API_KEY` | Cargada (cuenta de ghsantiagodetunja@gmail.com) |
+| `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET` | Cargadas (widget «DST web») |
+| `EMPLEOS_DESTINO`, `EMPLEOS_REMITENTE` | Opcionales. Sus valores por defecto son los de producción (ghsantiagodetunja@gmail.com y `onboarding@resend.dev`); si están cargadas, tienen que valer eso |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | **Faltan**. Sin ellas el límite de 5 postulaciones cada 10 minutos por IP vive en la memoria de cada instancia |
+
+Al candidato no le llega ningún correo, y eso no depende del dominio: la
+confirmación es la pantalla. Lo que desbloquea verificar dstunja.com en Resend
+(remitente propio, una sola cuenta para los dos formularios) y qué registros DNS
+pide está en «Pendiente: verificar dstunja.com en Resend», en
+docs/PQRS-ADJUNTOS.md.
+
 ## Qué hace
 
 El formulario de `/empleos/` **envía la postulación desde la página**, sin abrir el
@@ -12,7 +40,8 @@ Humano con los datos en el cuerpo y el archivo adjunto.
 | --- | --- |
 | Cómo sale | `POST /api/empleos/postular` (multipart/form-data) |
 | Destino | `EMPLEOS_DESTINO`; por defecto `contactoEmpleo.email` de `src/data/vacantes.ts` (`ghsantiagodetunja@gmail.com`) |
-| Remitente | `EMPLEOS_REMITENTE`; por defecto el de PQRS (`PQRS_REMITENTE`) |
+| Remitente | `EMPLEOS_REMITENTE`; por defecto el de PQRS (`PQRS_REMITENTE` o `onboarding@resend.dev`) |
+| Clave de Resend | `RESEND_API_KEY`, de la cuenta de Resend de Empleos (distinta de la de PQRS) |
 | Asunto | `Postulación: {cargo} – {nombre}` |
 | Responder desde la bandeja | Va al candidato (`replyTo`) |
 | Hoja de vida | **Obligatoria**, PDF, DOC o DOCX, **máximo 4 MB**, adjunta al correo |
@@ -23,10 +52,11 @@ Humano con los datos en el cuerpo y el archivo adjunto.
 | Número de radicado | No |
 | Funciona en GitHub Pages | Cae a `mailto:`, pidiendo adjuntar la hoja de vida a mano |
 
-Todo reutiliza la infraestructura de PQRS: el mismo Resend, el mismo Turnstile, el
-mismo limitador por IP (`src/lib/pqrs/limite-tasa.ts`, con Upstash si está
-configurado) y las mismas reglas de archivos (`src/lib/adjuntos.ts`). **No hace
-falta ninguna cuenta ni variable nueva.**
+Reutiliza la infraestructura de PQRS: el mismo proveedor (Resend), el mismo
+Turnstile, el mismo limitador por IP (`src/lib/pqrs/limite-tasa.ts`, con Upstash
+si está configurado) y las mismas reglas de archivos (`src/lib/adjuntos.ts`). La
+**cuenta** de Resend sí es otra: sin dominio verificado cada cuenta solo entrega a
+su titular, así que Empleos usa `RESEND_API_KEY` y PQRS `PQRS_RESEND_API_KEY`.
 
 ## Por qué el archivo SÍ pasa por la función (y en PQRS no)
 
@@ -148,6 +178,11 @@ peso, doble extensión (`hoja.exe.pdf`), saneado del nombre y **bytes mágicos**
 
 ## Turnstile: cuando Cloudflare pide marcar la casilla
 
+En producción el widget «DST web» está en modo **Non-interactive**: Cloudflare no
+pide marcar ninguna casilla y, con `appearance: 'interaction-only'`, no se ve
+nada. Lo que sigue es la red por si el modo cambiara o Cloudflare decidiera pedir
+interacción, que fue lo que pasó antes de configurarlo así.
+
 El widget va en modo `interaction-only`: normalmente no se ve, pero Cloudflare
 puede decidir, **después de pulsar Enviar**, que hace falta marcar la casilla
 «Verifique que es un ser humano». Entonces:
@@ -181,8 +216,10 @@ petición a la función, el problema está en el navegador, antes del `fetch`. L
 consola del navegador muestra `[turnstile] error <código>` o
 `[empleos] verificación de seguridad: <motivo>`. El código `110200` significa que
 el dominio desde el que se sirve la página no está autorizado en el widget de
-Cloudflare: hay que añadir `paginaweb-beta-coral.vercel.app` y, más adelante,
-`dstunja.com` en **Turnstile → el widget → Hostnames**.
+Cloudflare. Hoy «DST web» autoriza `dstunja.com`, `paginaweb-beta-coral.vercel.app`,
+`vercel.app` y `localhost`; un dominio nuevo se añade en **Turnstile → «DST web» →
+Hostnames**. `vercel.app` cubre cualquier subdominio de Vercel, también ajenos:
+si no se usan las vistas previas de rama, conviene quitarlo.
 
 ## GitHub Pages: el respaldo por correo
 
@@ -200,18 +237,14 @@ alternativa.
 
 ## Variables de entorno
 
-Se reutilizan las de PQRS: `RESEND_API_KEY`, `TURNSTILE_SECRET`,
-`PUBLIC_TURNSTILE_SITE_KEY` y, si están, `UPSTASH_REDIS_REST_URL` y
-`UPSTASH_REDIS_REST_TOKEN`. Las dos propias son **opcionales**:
+Comparte con PQRS `TURNSTILE_SECRET`, `PUBLIC_TURNSTILE_SITE_KEY` y, si están,
+`UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`. Las suyas:
 
 | Variable | Obligatoria | Qué es |
 | --- | --- | --- |
-| `EMPLEOS_DESTINO` | no | Buzón de Talento Humano. Sin ella, `contactoEmpleo.email` de `src/data/vacantes.ts`, que es la dirección que ya se publica en la página |
-| `EMPLEOS_REMITENTE` | no | Remitente. Sin ella, el de PQRS, que es el dominio verificado en Resend. Para que diga «Empleos …», una dirección del **mismo** dominio |
-
-Si los correos de PQRS salen hoy en producción, estos también: usan la misma
-clave y el mismo remitente. Si no hay `EMPLEOS_REMITENTE`, no hay nada que
-verificar de más en Resend.
+| `RESEND_API_KEY` | sí | Clave de la cuenta de Resend de Empleos, registrada con ghsantiagodetunja@gmail.com. PQRS tiene la suya (`PQRS_RESEND_API_KEY`) y solo usa esta si no la tiene |
+| `EMPLEOS_DESTINO` | no | Buzón de Talento Humano. Sin ella, `contactoEmpleo.email` de `src/data/vacantes.ts` (ghsantiagodetunja@gmail.com). Con `onboarding@resend.dev` tiene que ser el **titular de la cuenta** de `RESEND_API_KEY` |
+| `EMPLEOS_REMITENTE` | no | Remitente. Sin ella, `PQRS_REMITENTE` o `onboarding@resend.dev`. Cuando haya un dominio verificado en la cuenta de Empleos, una dirección de ese dominio |
 
 ## Dónde vive cada cosa
 

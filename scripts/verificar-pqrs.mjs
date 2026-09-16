@@ -95,10 +95,20 @@ const TIPOS = {
   '.xml': 'application/xml',
 };
 
+/**
+ * Clave de prueba de Cloudflare que se inyecta en el HTML cuando la página se
+ * pide con `?turnstile=prueba`. Un build sin PUBLIC_TURNSTILE_SITE_KEY no monta
+ * Turnstile, y entonces no se podría probar qué hace el formulario cuando la
+ * verificación falla o pide la casilla. El doble de Cloudflare decide el resto.
+ */
+const CLAVE_TURNSTILE_PRUEBA = '1x00000000000000000000AA';
+
 function servir() {
   return new Promise((listo) => {
     const servidor = createServer(async (peticion, respuesta) => {
-      let ruta = decodeURIComponent(new URL(peticion.url, 'http://x').pathname);
+      const direccion = new URL(peticion.url, 'http://x');
+      const conTurnstile = direccion.searchParams.get('turnstile') === 'prueba';
+      let ruta = decodeURIComponent(direccion.pathname);
       if (ruta.startsWith(BASE)) ruta = ruta.slice(BASE.length);
       if (ruta.endsWith('/')) ruta += 'index.html';
       if (ruta === '') ruta = '/index.html';
@@ -112,7 +122,14 @@ function servir() {
       try {
         const info = await stat(archivo);
         if (info.isDirectory()) throw new Error('directorio');
-        const cuerpo = await readFile(archivo);
+        let cuerpo = await readFile(archivo);
+        if (conTurnstile && extname(archivo) === '.html') {
+          cuerpo = Buffer.from(
+            cuerpo
+              .toString('utf8')
+              .replace(/data-turnstile-key(="")?(?=[\s>])/g, `data-turnstile-key="${CLAVE_TURNSTILE_PRUEBA}"`),
+          );
+        }
         respuesta.writeHead(200, {
           'content-type': TIPOS[extname(archivo)] ?? 'application/octet-stream',
         });
@@ -238,12 +255,27 @@ const TURNSTILE_FALSO = `
     window.turnstile = {
       render: function (contenedor, opciones) {
         var id = 'widget-' + ++contador;
-        callbacks[id] = opciones.callback;
+        callbacks[id] = opciones;
         return id;
       },
+      // Modo fijado por la prueba antes de cargar (window.__modoTurnstile):
+      //   'ok'          token a los 10 ms
+      //   'interaccion' pide la casilla y el token llega a los
+      //                 window.__esperaInteraccionMs (más de 30 s)
+      //   'error'       Cloudflare responde con el error 600010
       execute: function (id) {
-        var cb = callbacks[id];
-        if (cb) setTimeout(function () { cb('token-de-prueba-' + Date.now()); }, 10);
+        var o = callbacks[id];
+        if (!o) return;
+        var modo = window.__modoTurnstile || 'ok';
+        var token = function () { o.callback('token-de-prueba-' + Date.now()); };
+        if (modo === 'interaccion') {
+          setTimeout(function () { o['before-interactive-callback'] && o['before-interactive-callback'](); }, 50);
+          setTimeout(token, window.__esperaInteraccionMs || 33000);
+        } else if (modo === 'error') {
+          setTimeout(function () { o['error-callback'] && o['error-callback']('600010'); }, 50);
+        } else {
+          setTimeout(token, 10);
+        }
       },
       reset: function () {},
       remove: function () {},
@@ -287,9 +319,23 @@ async function responderBlob(ruta, camino) {
 async function instalarDobles(pagina, plan) {
   const registro = { token: [], radicar: [], blob: [], administrativa: [] };
 
-  await pagina.route('https://challenges.cloudflare.com/**', (ruta) =>
-    ruta.fulfill({ status: 200, contentType: 'text/javascript', body: TURNSTILE_FALSO }),
-  );
+  if (plan.turnstile === 'bloqueado') {
+    // Lo que hace un bloqueador de anuncios: el script de Cloudflare no llega.
+    await pagina.route('https://challenges.cloudflare.com/**', (ruta) => ruta.abort('blockedbyclient'));
+  } else {
+    await pagina.route('https://challenges.cloudflare.com/**', (ruta) =>
+      ruta.fulfill({ status: 200, contentType: 'text/javascript', body: TURNSTILE_FALSO }),
+    );
+  }
+  if (plan.turnstile) {
+    await pagina.addInitScript(
+      ([modo, espera]) => {
+        window.__modoTurnstile = modo;
+        window.__esperaInteraccionMs = espera;
+      },
+      [plan.turnstile, plan.esperaInteraccionMs ?? 33000],
+    );
+  }
 
   await pagina.route('**/api/pqrs/token', async (ruta) => {
     registro.token.push(JSON.parse(ruta.request().postData() ?? '{}'));
@@ -345,6 +391,27 @@ async function instalarDobles(pagina, plan) {
       });
       return;
     }
+    // Al servidor le falta el Blob o la clave de Resend.
+    if (plan.radicar === 'config') {
+      await ruta.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: false,
+          codigo: 'config-incompleta',
+          errores: ['La radicación en línea no está disponible en este momento.'],
+        }),
+      });
+      return;
+    }
+    // Radica, pero la constancia no sale (remitente de pruebas) y, en
+    // 'sin-area', tampoco el correo al área.
+    const correos =
+      plan.radicar === 'omitida'
+        ? { correoArea: true, constancia: 'omitida' }
+        : plan.radicar === 'sin-area'
+          ? { correoArea: false, constancia: 'omitida' }
+          : {};
     await ruta.fulfill({
       status: 201,
       contentType: 'application/json',
@@ -352,6 +419,7 @@ async function instalarDobles(pagina, plan) {
         ok: true,
         radicado: 'PQRS-20260907-A7K2M9',
         fecha: '7 de septiembre de 2026, 9:15',
+        ...correos,
       }),
     });
   });
@@ -376,6 +444,18 @@ async function instalarDobles(pagina, plan) {
         body: JSON.stringify({
           ok: false,
           errores: ['La comprobación antirrobots no pasó. Recarga la página e inténtalo de nuevo.'],
+        }),
+      });
+      return;
+    }
+    if (plan.administrativa === 'config') {
+      await ruta.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ok: false,
+          codigo: 'config-incompleta',
+          errores: ['El envío en línea no está disponible en este momento.'],
         }),
       });
       return;
@@ -987,6 +1067,175 @@ async function revisarRadicacion(navegador, archivos) {
     await pagina.close();
   }
 
+  // ---- 9-bis. Mínimo de la descripción, visible y con contador --------------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await elegir(pagina, 'comercial', 'Petición');
+    const contador = pagina.locator('#descripcion-pqrs-ayuda');
+    const campo = pagina.locator('#descripcion-pqrs');
+    comprobar(
+      'Descripción: antes de escribir dice «Mínimo 10 caracteres.» y está enlazado al campo',
+      (await contador.isVisible()) &&
+        ((await contador.textContent()) ?? '').trim() === 'Mínimo 10 caracteres.' &&
+        (await campo.getAttribute('aria-describedby')) === 'descripcion-pqrs-ayuda',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await rellenarFormulario(pagina, 'Petición');
+    await campo.fill('');
+    await campo.type('Hola', { delay: 5 });
+    comprobar(
+      'Descripción: al escribir poco dice cuántos faltan',
+      ((await contador.textContent()) ?? '').trim() === 'Faltan 6 caracteres (mínimo 10).',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(600);
+    const mensajeValidez = await campo.evaluate((e) => e.validationMessage);
+    comprobar(
+      'Descripción corta: el envío se frena en el navegador con cuánto falta, sin llamar a la API',
+      registro.radicar.length === 0 && /al menos 10 caracteres/.test(mensajeValidez),
+      mensajeValidez,
+    );
+
+    // Los saltos de línea no cuentan, como en el servidor.
+    await campo.fill('12345\n6789');
+    await campo.dispatchEvent('input');
+    comprobar(
+      'Descripción: los saltos de línea no cuentan, igual que en el servidor',
+      ((await contador.textContent()) ?? '').trim() === 'Falta 1 carácter (mínimo 10).',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await campo.fill('Prueba automática del contador de caracteres.');
+    await campo.dispatchEvent('input');
+    comprobar(
+      'Descripción: al llegar al mínimo cuenta sobre el máximo y el campo es válido',
+      /^\d+ de 5000 caracteres\.$/.test(((await contador.textContent()) ?? '').trim()) &&
+        (await campo.evaluate((e) => e.checkValidity())) &&
+        (await campo.getAttribute('maxlength')) === '5000',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+    comprobar(
+      'Descripción válida: ahora sí se radica',
+      registro.radicar.length === 1,
+      String(registro.radicar.length),
+    );
+    await pagina.close();
+  }
+
+  // ---- 10. Servidor sin Blob o sin Resend: avisa y ofrece el correo ---------
+  {
+    const pagina = await contexto.newPage();
+    const registro = await instalarDobles(pagina, { radicar: 'config' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(1200);
+
+    const aviso = (await pagina.locator('[data-form] [data-aviso]').textContent()) ?? '';
+    comprobar(
+      'Config incompleta: se avisa de que la radicación en línea no está disponible',
+      /no está disponible en este momento/i.test(aviso) && /NO queda radicada/i.test(aviso),
+      aviso.trim().slice(0, 120),
+    );
+    comprobar(
+      'Config incompleta: se ofrece el correo y no hay confirmación falsa',
+      (await pagina.locator('[data-pqrs][data-respaldo="correo"][data-configuracion="incompleta"]').count()) === 1 &&
+        !(await pagina.locator('[data-confirmacion]').isVisible()) &&
+        registro.radicar.length === 1,
+    );
+    await pagina.close();
+  }
+
+  // ---- 11. Radicada sin constancia por correo (remitente de pruebas) --------
+  {
+    const pagina = await contexto.newPage();
+    await instalarDobles(pagina, { radicar: 'omitida' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+
+    const textoConfirmacion = ((await pagina.locator('[data-confirmacion]').textContent()) ?? '').replace(/\s+/g, ' ');
+    comprobar(
+      'Sin constancia: la confirmación NO dice que se lo enviamos por correo',
+      (await pagina.locator('[data-confirmacion]').isVisible()) &&
+        !(await pagina.locator('[data-constancia-enviada]').isVisible()),
+    );
+    const avisosEnvio = pagina.locator('[data-avisos-envio]');
+    comprobar(
+      'Sin constancia: pide copiar o anotar el número, sin jerga técnica',
+      (await avisosEnvio.isVisible()) &&
+        /cópialo o anótalo/i.test((await avisosEnvio.textContent()) ?? '') &&
+        !/resend|api_key|falta /i.test(textoConfirmacion),
+      ((await avisosEnvio.textContent()) ?? '').trim(),
+    );
+    await pagina.close();
+  }
+
+  // ---- 12. Radicada, pero el correo al área no salió -------------------------
+  {
+    const pagina = await contexto.newPage();
+    await instalarDobles(pagina, { radicar: 'sin-area' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+
+    const avisosEnvio = ((await pagina.locator('[data-avisos-envio]').textContent()) ?? '').trim();
+    comprobar(
+      'Sin correo al área: la radicación se confirma y se sugiere WhatsApp con el número',
+      (await pagina.locator('[data-radicado]').textContent()) === 'PQRS-20260907-A7K2M9' &&
+        /no pudimos avisar al equipo/i.test(avisosEnvio) &&
+        /WhatsApp/.test(avisosEnvio),
+      avisosEnvio.slice(0, 120),
+    );
+    await pagina.close();
+  }
+
+  // ---- 13. Camino feliz de siempre: la confirmación sí menciona el correo --
+  {
+    const pagina = await contexto.newPage();
+    await instalarDobles(pagina, { radicar: 'ok' });
+    await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+    await pagina.waitForTimeout(400);
+    const rechazar = pagina.locator('[data-rechazar-cookies]');
+    if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
+
+    await rellenarFormulario(pagina, 'Petición');
+    await pagina.click('[data-enviar]');
+    await pagina.waitForTimeout(900);
+    comprobar(
+      'Con constancia enviada: dice que también se envió por correo y no hay avisos',
+      (await pagina.locator('[data-constancia-enviada]').isVisible()) &&
+        !(await pagina.locator('[data-avisos-envio]').isVisible()),
+    );
+    await pagina.close();
+  }
+
   await contexto.close();
 }
 
@@ -1284,7 +1533,10 @@ const hayTurnstileAdmin = async (pagina) =>
 async function abrirAdministrativa(contexto, plan = { administrativa: 'ok' }) {
   const pagina = await contexto.newPage();
   const registro = await instalarDobles(pagina, plan);
-  await pagina.goto(url('/pqrs/'), { waitUntil: 'domcontentloaded' });
+  // Con `plan.turnstile` se pide la página con la clave de prueba inyectada.
+  await pagina.goto(url(plan.turnstile ? '/pqrs/?turnstile=prueba' : '/pqrs/'), {
+    waitUntil: 'domcontentloaded',
+  });
   await pagina.waitForTimeout(400);
   const rechazar = pagina.locator('[data-rechazar-cookies]');
   if (await rechazar.isVisible().catch(() => false)) await rechazar.click();
@@ -1534,6 +1786,194 @@ async function revisarAdministrativa(navegador) {
       (await pagina.locator('[data-contacto-admin-caja][data-respaldo="correo"]').count()) === 1,
     );
 
+    await pagina.close();
+  }
+
+  // ---- 8-bis. «¿Qué necesitas?»: mínimo visible y contador ----------------
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto, { administrativa: 'ok' });
+    await elegir(pagina, 'administrativa');
+
+    const contador = pagina.locator('#mensaje-admin-ayuda');
+    const campo = pagina.locator('#mensaje-admin');
+    comprobar(
+      '«¿Qué necesitas?»: antes de escribir dice «Mínimo 10 caracteres.»',
+      (await contador.isVisible()) &&
+        ((await contador.textContent()) ?? '').trim() === 'Mínimo 10 caracteres.' &&
+        (await campo.getAttribute('aria-describedby')) === 'mensaje-admin-ayuda' &&
+        (await campo.getAttribute('maxlength')) === '1500',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.fill('#nombre-admin', 'Cristian Amaya');
+    await pagina.fill('#telefono-admin', '3106232429');
+    await campo.type('Factura', { delay: 5 });
+    comprobar(
+      '«¿Qué necesitas?»: al escribir poco dice cuántos faltan, en su color de aviso',
+      ((await contador.textContent()) ?? '').trim() === 'Faltan 3 caracteres (mínimo 10).' &&
+        (await contador.getAttribute('data-estado')) === 'corto',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(600);
+    const mensajeValidez = await campo.evaluate((e) => e.validationMessage);
+    comprobar(
+      '«¿Qué necesitas?» corto: no sale ninguna petición y el navegador dice cuánto falta',
+      registro.administrativa.length === 0 && /al menos 10 caracteres/.test(mensajeValidez),
+      mensajeValidez,
+    );
+
+    await campo.type(' del mes', { delay: 5 });
+    comprobar(
+      '«¿Qué necesitas?»: al llegar al mínimo pasa a «N de 1500 caracteres.»',
+      ((await contador.textContent()) ?? '').trim() === '15 de 1500 caracteres.' &&
+        (await contador.getAttribute('data-estado')) === 'ok',
+      ((await contador.textContent()) ?? '').trim(),
+    );
+
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(900);
+    comprobar(
+      '«¿Qué necesitas?» válido: ahora sí se envía',
+      registro.administrativa.length === 1,
+      String(registro.administrativa.length),
+    );
+    await pagina.close();
+  }
+
+  // ---- 8-ter. Turnstile falla: se explica y se puede reintentar ------------
+  /*
+   * Mismo arreglo que en Empleos. Antes, cualquier fallo de Turnstile caía al
+   * `catch` general y abría el `mailto:` sin haber llamado nunca a la API.
+   */
+  const rellenarAdministrativa = async (pagina) => {
+    await elegir(pagina, 'administrativa');
+    await pagina.fill('#nombre-admin', 'Cristian Amaya');
+    await pagina.fill('#telefono-admin', '3106232429');
+    await pagina.fill('#mensaje-admin', 'Necesito una copia de la factura del mes pasado.');
+  };
+
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto, {
+      administrativa: 'ok',
+      turnstile: 'error',
+    });
+    comprobar(
+      'Administrativa (Turnstile): la página lleva la clave de prueba inyectada',
+      await hayTurnstileAdmin(pagina),
+    );
+    await rellenarAdministrativa(pagina);
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(1000);
+
+    const errores = ((await pagina.locator('[data-errores-admin]').textContent()) ?? '').replace(/\s+/g, ' ');
+    comprobar(
+      'Administrativa (Turnstile falla): se explica la verificación de seguridad y se invita a reintentar',
+      (await pagina.locator('[data-errores-admin]').isVisible()) &&
+        /verificación de seguridad/.test(errores) &&
+        /Vuelve a pulsar/.test(errores),
+      errores.trim().slice(0, 120),
+    );
+    comprobar(
+      'Administrativa (Turnstile falla): NO se abre el gestor de correo ni se llama a la API',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo]').count()) === 0 &&
+        registro.administrativa.length === 0,
+      `respaldo=${await pagina.locator('[data-contacto-admin-caja]').getAttribute('data-respaldo')} llamadas=${registro.administrativa.length}`,
+    );
+    comprobar(
+      'Administrativa (Turnstile falla): el botón vuelve a quedar usable para reintentar',
+      !(await pagina.locator('[data-enviar-admin]').isDisabled()) &&
+        ((await pagina.locator('[data-enviar-admin]').textContent()) ?? '').trim() === 'Enviar mis datos',
+    );
+
+    // Al reintentar, si Cloudflare ya responde, el recado sale.
+    await pagina.evaluate(() => {
+      window.__modoTurnstile = 'ok';
+    });
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(1000);
+    comprobar(
+      'Administrativa (reintento): con la verificación ya bien, el recado llega a la API y sale la confirmación',
+      registro.administrativa.length === 1 && (await pagina.locator('[data-confirmacion-admin]').isVisible()),
+      String(registro.administrativa.length),
+    );
+    await pagina.close();
+  }
+
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto, {
+      administrativa: 'ok',
+      turnstile: 'interaccion',
+      esperaInteraccionMs: 33_000,
+    });
+    await rellenarAdministrativa(pagina);
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(800);
+
+    const aviso = pagina.locator('[data-aviso-verificacion-admin]');
+    comprobar(
+      'Administrativa (casilla pedida): aparece el aviso de que falta marcar la verificación',
+      (await aviso.isVisible()) && /marca la casilla/.test((await aviso.textContent()) ?? ''),
+    );
+    await pagina.waitForTimeout(30_500);
+    comprobar(
+      'Administrativa (casilla pedida): a los 31 s NO se ha caído al correo ni se ha rendido',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo]').count()) === 0 &&
+        registro.administrativa.length === 0 &&
+        (await aviso.isVisible()),
+    );
+    await pagina.waitForTimeout(3_500);
+    comprobar(
+      'Administrativa (casilla marcada): el recado llega con el token, sale la confirmación y el aviso se va',
+      registro.administrativa.length === 1 &&
+        String(registro.administrativa[0]?.turnstileToken ?? '').startsWith('token-de-prueba-') &&
+        (await pagina.locator('[data-confirmacion-admin]').isVisible()) &&
+        !(await aviso.isVisible()),
+      String(registro.administrativa[0]?.turnstileToken ?? '(no llegó)'),
+    );
+    await pagina.close();
+  }
+
+  {
+    const { pagina, registro } = await abrirAdministrativa(contexto, {
+      administrativa: 'ok',
+      turnstile: 'bloqueado',
+    });
+    await rellenarAdministrativa(pagina);
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(1200);
+    comprobar(
+      'Administrativa (Turnstile bloqueado): sin forma de verificar, sí se ofrece el correo, sin llamar a la API',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo="correo"]').count()) === 1 &&
+        registro.administrativa.length === 0,
+    );
+    await pagina.close();
+  }
+
+  // ---- 9. Servidor sin clave de Resend: avisa y abre el correo ------------
+  {
+    const { pagina } = await abrirAdministrativa(contexto, { administrativa: 'config' });
+    await elegir(pagina, 'administrativa');
+
+    await pagina.fill('#nombre-admin', 'Cristian Amaya');
+    await pagina.fill('#telefono-admin', '3106232429');
+    await pagina.fill('#mensaje-admin', 'Necesito una copia de la factura del mes pasado.');
+    await pagina.click('[data-enviar-admin]');
+    await pagina.waitForTimeout(900);
+
+    const errores = ((await pagina.locator('[data-errores-admin]').textContent()) ?? '').replace(/\s+/g, ' ');
+    comprobar(
+      'Administrativa (config incompleta): avisa de que el envío no está disponible',
+      (await pagina.locator('[data-errores-admin]').isVisible()) &&
+        /no está disponible en este momento/i.test(errores) &&
+        !/resend|api_key/i.test(errores),
+      errores.trim().slice(0, 120),
+    );
+    comprobar(
+      'Administrativa (config incompleta): y ofrece el gestor de correo',
+      (await pagina.locator('[data-contacto-admin-caja][data-respaldo="correo"][data-configuracion="incompleta"]').count()) === 1,
+    );
     await pagina.close();
   }
 

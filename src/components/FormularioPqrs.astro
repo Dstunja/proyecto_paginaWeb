@@ -37,13 +37,11 @@ interface Props {
 const { boton = 'Enviar PQRS', destinatario = empresa.email } = Astro.props;
 
 const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
-const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'public' : 'private';
 ---
 
 <div
   data-pqrs
   data-turnstile-key={claveTurnstile}
-  data-blob-access={accesoBlob}
   data-destinatario={destinatario}
 >
   <form data-form class="grid grid-cols-1 gap-5" novalidate={false}>
@@ -105,8 +103,15 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
       <Icono nombre="circle-check" class="h-6 w-6" interactivo={false} />
     </span>
     <h3 class="mb-2 text-[22px]">Radicamos tu solicitud</h3>
+    {/*
+      "También te lo enviamos por correo" solo se dice si es verdad. Con el
+      remitente de pruebas de Resend la constancia no sale (solo entrega al
+      titular de la cuenta) y el servidor lo indica con `constancia`.
+    */}
     <p class="mb-6 text-muted">
-      Guarda este número: con él puedes hacer seguimiento. También te lo enviamos por correo.
+      Guarda este número: con él puedes hacer seguimiento.<span data-constancia-enviada>
+        También te lo enviamos por correo.</span
+      >
     </p>
 
     <div class="mb-6 rounded-xl border border-line bg-fondo p-5">
@@ -209,7 +214,12 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
     if (!aviso || !confirmacion || !botonEnviar) return;
 
     const claveTurnstile = raiz.dataset.turnstileKey ?? '';
-    const acceso = raiz.dataset.blobAccess === 'public' ? 'public' : 'private';
+    /*
+     * Siempre privado, igual que `ACCESO_BLOB` en src/lib/pqrs/config.ts. El
+     * store (pqrs-adjuntos) es privado y rechaza subidas públicas; antes esto
+     * dependía de PUBLIC_PQRS_BLOB_ACCESS, que ya no existe.
+     */
+    const acceso = 'private' as const;
     const destinatario = raiz.dataset.destinatario ?? '';
 
     let turnstileListo = false;
@@ -572,18 +582,48 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
       );
     }
 
-    function mostrarConfirmacion(radicado: string, fecha: string, avisos: string[]) {
+    /**
+     * Qué pasó con los correos, según /api/pqrs.
+     *
+     * Antes llegaba una lista `avisos` con los motivos técnicos y se pintaba tal
+     * cual: la persona podía leer «Falta RESEND_API_KEY.» o el inglés de Resend.
+     * Ahora el servidor solo dice QUÉ no salió y aquí se explica en llano. Si no
+     * viene (una versión anterior de la API, o la prueba), se asume que todo salió.
+     */
+    interface EstadoCorreos {
+      correoArea?: boolean;
+      constancia?: 'enviada' | 'omitida' | 'fallida';
+    }
+
+    function mostrarConfirmacion(radicado: string, fecha: string, correos: EstadoCorreos) {
       form!.classList.add('hidden');
       confirmacion!.classList.remove('hidden');
       confirmacion!.querySelector('[data-radicado]')!.textContent = radicado;
       confirmacion!.querySelector('[data-fecha]')!.textContent = fecha;
 
+      const constancia = correos.constancia ?? 'enviada';
+      confirmacion!
+        .querySelector<HTMLElement>('[data-constancia-enviada]')
+        ?.classList.toggle('hidden', constancia !== 'enviada');
+      raiz.dataset.constancia = constancia;
+
+      const mensajes: string[] = [];
+      if (correos.correoArea === false) {
+        mensajes.push(
+          'Tu solicitud quedó radicada, pero no pudimos avisar al equipo por correo. ' +
+            'Si en unos días no te contactamos, escríbenos por WhatsApp citando el número.',
+        );
+      }
+      if (constancia !== 'enviada') {
+        mensajes.push(
+          'No te enviamos el número por correo: cópialo o anótalo antes de salir de esta página.',
+        );
+      }
+
       const cajaAvisos = confirmacion!.querySelector<HTMLElement>('[data-avisos-envio]');
-      if (cajaAvisos && avisos.length > 0) {
-        cajaAvisos.textContent =
-          'Tu solicitud quedó guardada, pero hubo un problema al enviar los correos: ' +
-          `${avisos.join(' ')} Anota el radicado por si acaso.`;
-        cajaAvisos.classList.remove('hidden');
+      if (cajaAvisos) {
+        cajaAvisos.textContent = mensajes.join(' ');
+        cajaAvisos.classList.toggle('hidden', mensajes.length === 0);
       }
       confirmacion!.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -695,12 +735,21 @@ const accesoBlob = import.meta.env.PUBLIC_PQRS_BLOB_ACCESS === 'public' ? 'publi
         }
 
         const datos = (await respuesta.json()) as
-          | { ok: true; radicado: string; fecha: string; avisos?: string[] }
-          | { ok: false; errores: string[] };
+          | ({ ok: true; radicado: string; fecha: string } & EstadoCorreos)
+          | { ok: false; errores: string[]; codigo?: string };
 
         if (respuesta.ok && datos.ok) {
           avisar('');
-          mostrarConfirmacion(datos.radicado, datos.fecha, datos.avisos ?? []);
+          mostrarConfirmacion(datos.radicado, datos.fecha, datos);
+          return;
+        }
+
+        // 503 config-incompleta: al servidor le falta el Blob o la clave de
+        // Resend. Se dice con claridad y se ofrece el correo; reintentar no
+        // arreglaría nada.
+        if (!datos.ok && datos.codigo === 'config-incompleta') {
+          raiz.dataset.configuracion = 'incompleta';
+          caerAlCorreo('La radicación en línea no está disponible en este momento.');
           return;
         }
 

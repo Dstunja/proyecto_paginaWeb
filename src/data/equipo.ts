@@ -56,12 +56,12 @@ export const equipo: Persona[] = [
   },
   {
     nombre: 'Camilo Acero',
-    cargo: 'Líder Comercial',
+    cargo: 'Gerente Comercial',
     foto: '/img/equipo/camilo-acero.webp',
     frase: '',
   },
   {
-    nombre: 'Erica Abril',
+    nombre: 'Erika Abril',
     cargo: 'Talento Humano',
     foto: '/img/equipo/erica-abril.webp',
     frase: '',

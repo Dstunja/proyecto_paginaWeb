@@ -102,6 +102,8 @@ src/
     CampoMunicipio.astro   Municipio de la PQRS: combobox cerrado a los 87
                            municipios de cobertura, con busqueda sin tildes y
                            preseleccion opcional por ubicacion.
+    ContadorCaracteres.astro  Minimo y contador de caracteres bajo un campo de
+                           texto largo (descripcion y "¿Que necesitas?" de PQRS).
     CampoAdjuntos.astro    Archivos de soporte de la PQRS, siempre opcionales.
                            Aparece en la categoria comercial, en sus cinco
                            tipos; lo decide la categoria, no el tipo.
@@ -316,6 +318,26 @@ La geocodificación de municipios y de la sede también es libre (Nominatim) y s
 corre una sola vez con `npm run geocodificar`; el resultado queda cacheado en
 `src/data/coordenadas.json`.
 
+## Estado en producción
+
+El sitio se publica en Vercel con el dominio oficial <https://dstunja.com> (también
+responde en <https://paginaweb-beta-coral.vercel.app>) y los
+formularios de PQRS y Empleos envían correo de verdad. Sin valores de claves:
+
+| Pieza | Configuración |
+| --- | --- |
+| Antirrobots | Cloudflare Turnstile, widget «DST web», modo Non-interactive. Hostnames: `dstunja.com`, `paginaweb-beta-coral.vercel.app`, `vercel.app` y `localhost` |
+| Correo de PQRS | Resend, cuenta de informacioncomercialdst@gmail.com (`PQRS_RESEND_API_KEY`) |
+| Correo de Empleos | Resend, cuenta de ghsantiagodetunja@gmail.com (`RESEND_API_KEY`) |
+| Remitente | `onboarding@resend.dev` en las dos cuentas, sin dominio verificado. Por eso la constancia a quien radica una PQRS **no se envía** |
+| Soportes de PQRS | Blob store privado `pqrs-adjuntos`, conectado al proyecto. El correo al área los enlaza por `/api/pqrs/descarga` |
+| Faltan en Vercel | `CRON_SECRET`, `PQRS_IP_SALT` y las dos de Upstash |
+| Pendiente | Verificar dstunja.com en Resend: remitente propio, constancia al ciudadano y una sola cuenta |
+
+El detalle, con la tabla de variables cargadas y los registros DNS que pide
+Resend, está en `docs/PQRS-ADJUNTOS.md` (secciones «Estado en producción» y
+«Pendiente: verificar dstunja.com en Resend») y en `docs/EMPLEOS-POSTULACION.md`.
+
 ## Variables de entorno
 
 La radicación de PQRS **comercial** se apoya en tres servicios (Vercel Blob,
@@ -349,14 +371,16 @@ npx vercel env pull .env.local
 
 | Variable | Dónde se consigue |
 | --- | --- |
-| `BLOB_READ_WRITE_TOKEN` | **No se copia a mano.** Vercel → proyecto → *Storage* → *Connect Store* → *Blob*. Al conectar el store, Vercel define la variable sola. |
+| `BLOB_READ_WRITE_TOKEN` | **No se copia a mano.** Vercel → proyecto → *Storage* → `pqrs-adjuntos` (privado) → *Connect*. Vercel la define sola, junto con `BLOB_STORE_ID` y `BLOB_WEBHOOK_PUBLIC_KEY`, que el código no necesita. |
 | `TURNSTILE_SECRET` | Cloudflare → *Turnstile* → tu widget → *Settings* → **Secret Key**. |
 | `PUBLIC_TURNSTILE_SITE_KEY` | El mismo widget → **Site Key**. Lleva `PUBLIC_` porque el navegador la necesita. |
-| `RESEND_API_KEY` | <https://resend.com/api-keys>. El dominio del remitente debe estar verificado en Resend. |
-| `PQRS_DESTINO` | Lo decide la empresa: el correo que recibe **todo** lo de la página de PQRS, comercial y administrativo. Hoy `informacioncomercialdst@gmail.com`. |
+| `PQRS_RESEND_API_KEY` | <https://resend.com/api-keys>, con la cuenta de Resend de PQRS (registrada con `informacioncomercialdst@gmail.com`). Si falta, PQRS usa `RESEND_API_KEY`. |
+| `RESEND_API_KEY` | <https://resend.com/api-keys>, con la cuenta de Resend de Empleos. |
+| `PQRS_DESTINO`, `PQRS_REMITENTE` | Opcionales. Por defecto `informacioncomercialdst@gmail.com` y `onboarding@resend.dev`. Sin dominio verificado, Resend solo entrega al titular de la cuenta, así que la constancia a quien radica no se envía. |
 | `PQRS_IP_SALT`, `CRON_SECRET` | Se generan: `node -e "console.log(crypto.randomUUID())"`. |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | Vercel → *Marketplace* → Upstash (plan gratuito). Opcionales. |
 | `EMPLEOS_DESTINO`, `EMPLEOS_REMITENTE` | Opcionales. Buzón y remitente de las postulaciones de empleos; sin ellas se usa el correo de `contactoEmpleo` (`src/data/vacantes.ts`) y el remitente de PQRS. Ver `docs/EMPLEOS-POSTULACION.md`. |
+| `PUBLIC_PQRS_BLOB_ACCESS` | **Ya no existe.** El acceso a los blobs es privado y fijo; si sigue definida en Vercel, borrarla. |
 
 Para desarrollo, Cloudflare publica un par de claves de prueba que **aceptan
 cualquier token**, y por eso no pueden acabar en producción:
@@ -380,6 +404,60 @@ TURNSTILE_SECRET=1x0000000000000000000000000000000AA
 
 El detalle de cada variable está comentado en `.env.example`, y el flujo
 completo de los adjuntos en `docs/PQRS-ADJUNTOS.md`.
+
+## Cabeceras de seguridad
+
+`vercel.json` aplica a **todas las rutas** estas cabeceras, que pidió un escaneo
+con OWASP ZAP sobre dstunja.com:
+
+| Cabecera | Valor |
+| --- | --- |
+| `Content-Security-Policy` | Ver la tabla de abajo |
+| `X-Frame-Options` | `DENY` |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(self)` |
+| `Access-Control-Allow-Origin` | `https://dstunja.com`, en lugar del `*` que pone Vercel a los archivos estáticos |
+
+Qué permite la CSP, además del propio origen:
+
+| Directiva | Fuera del sitio | Para qué |
+| --- | --- | --- |
+| `script-src` | `challenges.cloudflare.com`, `www.googletagmanager.com` | Turnstile y el contenedor de Tag Manager. **Sin `'unsafe-inline'`** |
+| `frame-src` | `challenges.cloudflare.com`, `www.googletagmanager.com` | El iframe de Turnstile y el de respaldo de Tag Manager (sin JavaScript) |
+| `img-src` | `*.tile.openstreetmap.fr`, `placehold.co`, Google Analytics, `data:` | Teselas del mapa, marcadores de imágenes que faltan, píxel de GA |
+| `connect-src` | Google Analytics, `vercel.com`, `*.blob.vercel-storage.com` | Envíos de GA y subida de soportes de PQRS a Vercel Blob |
+| `style-src` | `'unsafe-inline'` | Hay atributos `style` en el HTML (iconos, tarjetas) y Leaflet los usa |
+| `font-src` | ninguno | Las fuentes son propias (Fontsource) |
+| `frame-ancestors` | `'none'` | Nadie puede incrustar el sitio en un iframe |
+
+Tres consecuencias que hay que conocer:
+
+- **No puede haber scripts en línea.** Los tres que había (el interruptor del
+  revelado, el arranque de Tag Manager y el aviso del catálogo) están en
+  `public/js/`, y
+  `astro.config.mjs` pone `vite.build.assetsInlineLimit: 0` para que Astro no
+  incruste los scripts pequeños. Un `<script is:inline>` con código nuevo se
+  bloquearía en producción sin avisar; los de datos (`type="application/json"`)
+  sí valen.
+- **Un servicio externo nuevo** (otro mapa, un chat, una herramienta de GTM) hay
+  que añadirlo a la CSP de `vercel.json`, o el navegador lo bloqueará.
+- **La geolocalización solo la puede pedir el propio sitio** (`geolocation=(self)`):
+  la PQRS la usa para preseleccionar el municipio más cercano, y ningún iframe de
+  terceros puede pedirla. Hubo un momento con `geolocation=()`, que la apagaba
+  del todo y dejaba el municipio sin preselección; no volver a ponerlo sin quitar
+  antes esa función. Cámara y micrófono siguen deshabilitados para todos.
+
+Los comentarios HTML de las plantillas **no se publican**: los quita
+`src/middleware.ts` al generar cada página.
+
+`npm run verificar:navegacion` aplica esas mismas cabeceras en su servidor local y
+comprueba, con la red real, que ninguna página provoca bloqueos de CSP, que los
+mapas cargan teselas, que Turnstile da token y los formularios llegan a su API, y
+que la analítica pide el contenedor de Tag Manager si el build lleva
+`PUBLIC_GTM_CONTAINER_ID`. Con
+`--url https://dstunja.com` revisa además producción: cabeceras, redirección de
+`http://` a `https://` y bloqueos en el navegador.
 
 ## Formularios
 
@@ -412,6 +490,13 @@ salen de `src/data/municipios.ts`. Busca ignorando tildes y mayúsculas, se
 maneja con el teclado, y si la persona concede la ubicación preselecciona el más
 cercano (si la niega, no pasa nada). Se valida también en el servidor: un
 municipio que no esté en la lista devuelve 400.
+
+La **descripción** de la comercial y el **«¿Qué necesitas?»** de la
+administrativa piden 10 caracteres como mínimo, y lo dicen bajo el campo antes de
+escribir («Mínimo 10 caracteres.»). Al escribir, un contador indica cuántos
+faltan y el envío se frena en el navegador hasta llegar
+(`src/components/ContadorCaracteres.astro`). El servidor valida con los mismos
+límites y la misma forma de contar, que viven en `src/lib/pqrs/limites-texto.ts`.
 
 - **Comercial**: pide el tipo (paso 2) y **radica de verdad** contra
   `src/pages/api/pqrs/`. Guarda la solicitud y sus soportes, devuelve un número

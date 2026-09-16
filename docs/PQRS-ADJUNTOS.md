@@ -1,5 +1,109 @@
 # Radicación de PQRS y archivos de soporte
 
+## Estado en producción
+
+Así queda configurado el despliegue de Vercel (<https://paginaweb-beta-coral.vercel.app>),
+con la radicación y los recados enviando correo de verdad. Aquí no va ningún
+valor de clave: solo nombres y dónde vive cada cosa.
+
+| Pieza | Configuración |
+| --- | --- |
+| Antirrobots | Cloudflare Turnstile, widget **«DST web»**, modo **Non-interactive**. Hostnames: `dstunja.com`, `paginaweb-beta-coral.vercel.app`, `vercel.app` y `localhost` |
+| Correo de PQRS | Cuenta de Resend registrada con **informacioncomercialdst@gmail.com**, clave en `PQRS_RESEND_API_KEY`. Remitente `onboarding@resend.dev`, sin dominio verificado |
+| Correo de Empleos | Otra cuenta de Resend, registrada con **ghsantiagodetunja@gmail.com**, clave en `RESEND_API_KEY`. Mismo remitente de pruebas (ver docs/EMPLEOS-POSTULACION.md) |
+| Soportes | Blob store **privado `pqrs-adjuntos`**, conectado al proyecto. El correo al área los enlaza por `/api/pqrs/descarga` |
+| Constancia a quien radica | **No se envía**: con `onboarding@resend.dev` Resend solo entrega al titular de la cuenta. La pantalla pide copiar el número |
+
+### Turnstile «DST web»
+
+- **Non-interactive**: Cloudflare no pide marcar ninguna casilla; con
+  `appearance: 'interaction-only'` el widget ni se ve. El cliente
+  (`src/lib/turnstile-cliente.ts`) sigue preparado por si algún día pidiera
+  interacción: avisa y no corta la espera.
+- **Hostnames autorizados**: `dstunja.com` (listo para cuando el dominio apunte a
+  Vercel), `paginaweb-beta-coral.vercel.app` (producción), `vercel.app` y
+  `localhost` (desarrollo). Un dominio que no esté en la lista hace fallar el
+  widget con el código `110200`, que el cliente deja en la consola.
+- **Ojo con `vercel.app`**: autoriza cualquier subdominio de Vercel, no solo los
+  de este proyecto. Sirve para las vistas previas de cada rama; si no se usan,
+  conviene quitarlo y dejar solo `paginaweb-beta-coral.vercel.app`.
+
+### Variables cargadas en Vercel (Production)
+
+| Variable | Estado | Nota |
+| --- | --- | --- |
+| `BLOB_READ_WRITE_TOKEN` | Cargada | La puso Vercel al conectar `pqrs-adjuntos` |
+| `BLOB_STORE_ID` | Cargada | La puso Vercel; el código no la usa |
+| `BLOB_WEBHOOK_PUBLIC_KEY` | Cargada | La puso Vercel; el código no la usa |
+| `PQRS_RESEND_API_KEY` | Cargada | Cuenta de informacioncomercialdst@gmail.com |
+| `RESEND_API_KEY` | Cargada | Cuenta de ghsantiagodetunja@gmail.com (Empleos) |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Cargada | Site Key de «DST web». Se lee al compilar |
+| `TURNSTILE_SECRET` | Cargada | Secret Key de «DST web» |
+| `CRON_SECRET` | **Falta** | Sin ella el cron de limpieza responde 503 y las subidas abandonadas no se borran |
+| `PQRS_IP_SALT` | **Falta** | Sin ella el hash de la IP va sin sal (`ipHashSalada: false` en cada registro) |
+| `UPSTASH_REDIS_REST_URL` | **Falta** | Sin Upstash el límite por IP vive en la memoria de cada instancia: frena un script torpe, no un ataque |
+| `UPSTASH_REDIS_REST_TOKEN` | **Falta** | Ídem |
+
+`PQRS_DESTINO`, `PQRS_REMITENTE`, `EMPLEOS_DESTINO` y `EMPLEOS_REMITENTE` son
+opcionales: sus valores por defecto ya son los de producción
+(informacioncomercialdst@gmail.com, `onboarding@resend.dev`,
+ghsantiagodetunja@gmail.com y `onboarding@resend.dev`). Si alguna está cargada,
+tiene que valer eso mismo. `PUBLIC_PQRS_BLOB_ACCESS` y `PUBLIC_PQRS_ADMIN_DESTINO`
+ya no existen: si aparecen en Vercel, se borran.
+
+Para cargar las que faltan, las dos primeras se generan con
+`node -e "console.log(crypto.randomUUID())"` y Upstash se añade desde
+**Vercel → Marketplace → Upstash**, que define las dos variables sola. Después hay
+que volver a desplegar.
+
+## Pendiente: verificar dstunja.com en Resend
+
+Hoy los correos salen desde `onboarding@resend.dev`, el remitente de pruebas de
+Resend. Verificar el dominio `dstunja.com` en Resend desbloquea tres cosas:
+
+1. **Remitente propio.** Los correos saldrían de, por ejemplo,
+   `pqrs@dstunja.com` y `empleos@dstunja.com`, en vez de `onboarding@resend.dev`,
+   que parece un correo de prueba y tiene más papeletas de acabar en spam.
+2. **Constancia a quien radica.** Con un remitente de dominio verificado Resend
+   entrega a cualquier destinatario. El código ya lo tiene en cuenta: en cuanto
+   `PQRS_REMITENTE` deja de ser `@resend.dev`, la constancia vuelve a salir sola y
+   la pantalla vuelve a decir «también te lo enviamos por correo».
+3. **Una sola cuenta.** Ya no haría falta que cada formulario tenga la cuenta de
+   su buzón: una cuenta con el dominio verificado puede mandar a
+   informacioncomercialdst@gmail.com y a ghsantiagodetunja@gmail.com. Bastaría con
+   `RESEND_API_KEY` de esa cuenta y borrar `PQRS_RESEND_API_KEY`, porque PQRS cae a
+   `RESEND_API_KEY` cuando no tiene la suya.
+
+### Qué registros DNS pide Resend
+
+Se añade el dominio en **Resend → Domains → Add Domain**. Resend genera los
+registros y los muestra en la pestaña **Records** del dominio; hay que copiarlos
+**exactamente** como salen, porque los valores dependen de la cuenta y de la región
+elegida. Tienen esta forma:
+
+| Tipo | Nombre | Valor (forma) | Prioridad | ¿Obligatorio? |
+| --- | --- | --- | --- | --- |
+| MX | `send` | `feedback-smtp.<región>.amazonses.com` | 10 | Sí (rebotes y quejas) |
+| TXT | `send` | `v=spf1 include:amazonses.com ~all` | — | Sí (SPF) |
+| TXT | `resend._domainkey` | `p=` seguido de la clave pública | — | Sí (DKIM) |
+| TXT | `_dmarc` | por ejemplo `v=DMARC1; p=none;` | — | Recomendado, después de verificar |
+| MX | `inbound` | `inbound-smtp.<región>.amazonaws.com` | 10 | No; solo si se quiere **recibir** correo en Resend |
+
+Tres cosas a tener en cuenta en dstunja.com:
+
+- **No toca la web ni el correo actual.** Los registros van en subdominios
+  (`send`, `resend._domainkey`): no cambian el registro `A` del sitio ni los `MX`
+  de la raíz, que hoy son los del correo del dominio. Si ya hubiera un registro
+  `_dmarc`, se revisa antes de añadir otro.
+- **Verificación.** Suele tardar unos 15 minutos después de añadir los registros,
+  aunque la propagación de DNS puede llevar hasta 72 horas.
+- **Hace falta acceso al DNS de dstunja.com**, que hoy sirve otra web (WordPress).
+  Resend recomienda enviar desde un subdominio para aislar la reputación;
+  `send` ya lo es para el camino de retorno.
+
+Una vez verificado: `PQRS_REMITENTE` y `EMPLEOS_REMITENTE` pasan a una dirección del
+dominio, y se decide si se unifican las cuentas.
+
 ## Qué hace hoy
 
 La página **empieza preguntando la categoría**, y ese primer clic decide todo lo
@@ -18,14 +122,37 @@ y esconde cada tarjeta se declara en `src/pages/pqrs.astro`.
 | --- | --- | --- |
 | Qué enseña al elegirla | Bloque de contacto (`ContactoAdministrativo.astro`) | Paso 2 y formulario de radicación |
 | Cómo sale | `POST /api/pqrs/administrativa` (formulario corto, opcional) | `POST /api/pqrs` |
-| Destino | `PQRS_DESTINO` | `PQRS_DESTINO` |
-| Archivos de soporte | **No** | Sí, en los cinco tipos (opcional) |
+| Destino | `PQRS_DESTINO`, por defecto `informacioncomercialdst@gmail.com` | Ídem |
+| Remitente | `PQRS_REMITENTE`, por defecto `onboarding@resend.dev` | Ídem |
+| Clave de Resend | `PQRS_RESEND_API_KEY`, o `RESEND_API_KEY` si no está | Ídem |
+| Archivos de soporte | **No** | Sí, en los cinco tipos (opcional), en el Blob store **privado** `pqrs-adjuntos` |
 | Antirrobots (Turnstile) | Sí | Sí |
 | Límite de tasa por IP | 5 cada 10 min | 5 cada 10 min |
 | Número de radicado | **No** | Sí |
 | Asunto del correo | `Solicitud administrativa · {nombre}` | `[{radicado}] PQRS Comercial · {tipo} · {municipio}` |
-| Correos que salen | 1 (al área) | 2 (al área y a quien radica) |
+| Correos que salen | 1 (al área) | 1 al área; la constancia a quien radica solo con un remitente de dominio verificado |
+| Si falta Blob o Resend | Avisa y cae a `mailto:` (503) | Avisa y cae a `mailto:` sin radicar (503) |
 | Funciona en GitHub Pages | Cae a `mailto:` | No (no hay funciones) |
+
+### Resend sin dominio verificado
+
+PQRS envía con **su propia cuenta de Resend**, registrada con
+`informacioncomercialdst@gmail.com`, y remitente `onboarding@resend.dev`. Con ese
+remitente Resend **solo entrega al titular de la cuenta**, y eso tiene tres
+consecuencias:
+
+- **`PQRS_DESTINO` tiene que ser el titular de la cuenta** de la clave que se use.
+  Por eso su valor por defecto es `informacioncomercialdst@gmail.com`.
+- **La constancia a quien radica no se envía.** Fallaría siempre, así que ni se
+  intenta. La pantalla de confirmación no dice «también te lo enviamos por
+  correo» y le pide a la persona que copie o anote el número.
+- **Empleos va por otra cuenta** (`RESEND_API_KEY`), registrada con otro correo.
+  Si PQRS usara esa clave, sus correos se rechazarían; por eso existe
+  `PQRS_RESEND_API_KEY`, y PQRS solo cae a `RESEND_API_KEY` si no la tiene.
+
+Cuando haya un dominio verificado en la cuenta de PQRS basta con poner en
+`PQRS_REMITENTE` una dirección de ese dominio: la constancia vuelve a salir sola y
+`PQRS_DESTINO` puede ser cualquier buzón.
 
 ### Por qué la administrativa dejó de radicar
 
@@ -69,18 +196,19 @@ correos. Ya no depende del gestor de correo de quien lo diligencia.
 | Campo de soporte en los cinco tipos de la comercial, siempre opcional | Hecho |
 | Hasta 3 archivos, 5 MB cada uno | Hecho |
 | Validación por contenido real (bytes mágicos), en cliente **y** servidor | Hecho |
-| Subida de los archivos a Vercel Blob privado | Hecho |
+| Subida de los archivos a Vercel Blob **privado** (`access: 'private'` fijo) | Hecho |
 | Número de radicado, fecha y registro guardado | Hecho |
-| Correo al área de PQRS con enlaces firmados | Hecho |
-| Correo de confirmación a quien radica | Hecho |
+| Correo al área de PQRS con enlaces de descarga (`/api/pqrs/descarga`) | Hecho |
+| Correo de confirmación a quien radica | Solo con remitente de dominio verificado |
+| Aviso claro si falta el Blob o la clave de Resend | Hecho (503 `config-incompleta`) |
 | Antirrobots (Turnstile) en los dos endpoints | Hecho |
 | Limpieza automática de subidas abandonadas | Hecho (cron diario) |
 | Tabla `pqrs_adjuntos` en base de datos | **No**: ver «Lo que sigue pendiente» |
 | Panel de administración | **No** |
 
 El sitio sigue siendo estático (`output: 'static'`). Lo único que corre como
-función de Vercel son las rutas de `src/pages/api/pqrs/`, marcadas una a una con
-`export const prerender = false`.
+función de Vercel son las rutas de `src/pages/api/pqrs/` (y la de Empleos),
+marcadas una a una con `export const prerender = false`.
 
 ## Por qué los archivos no pasan por la función
 
@@ -104,8 +232,15 @@ navegador                    función                     Vercel Blob
     |                           | valida bytes mágicos         |
     |                           |-- copy + del (mover) ------->|
     |                           |-- guarda solicitud.json ---->|
-    |                           | manda los dos correos        |
+    |                           | correo al área con enlaces   |
     |<-- { radicado, fecha } ---|                              |
+
+área de PQRS (correo)        función                     Vercel Blob
+    |                           |                              |
+    |-- GET /api/pqrs/descarga ->| firma + caducidad + ruta     |
+    |                           |-- URL firmada de 5 min ----->|
+    |<-- 302 a esa URL ---------|                              |
+    |-- GET el archivo privado --------------------------------->|
 ```
 
 El cuerpo de `POST /api/pqrs` es **JSON**, no multipart: solo lleva texto y las
@@ -154,15 +289,29 @@ Cuerpo JSON:
 
 Respuestas:
 
-- `201` → `{ ok: true, radicado, fecha, avisos? }`. `avisos` aparece solo si la
-  solicitud se guardó pero falló algún correo: la radicación **es válida** igual.
+- `201` → `{ ok: true, radicado, fecha, correoArea, constancia }`. La radicación
+  **es válida** aunque algún correo no saliera:
+  - `correoArea` (`true`/`false`): si el correo al área salió. Con `false` la
+    pantalla confirma el radicado y sugiere escribir por WhatsApp citándolo.
+  - `constancia`: `enviada`, `omitida` (remitente `@resend.dev`, no se intenta) o
+    `fallida` (Resend la rechazó). Si no es `enviada`, la pantalla no promete el
+    correo y pide copiar el número.
 - `400` → `{ ok: false, errores: [...] }`. Campos mal, archivo rechazado, más de
   tres archivos, blob de otra sesión.
 - `403` → Turnstile no pasó.
 - `429` → más de 5 radicaciones en 10 minutos desde la misma IP.
+- `503` → `{ ok: false, codigo: 'config-incompleta', errores: [...] }`. Falta
+  `BLOB_READ_WRITE_TOKEN` o la clave de Resend. Se comprueba **antes de todo**:
+  no se valida, no se gasta Turnstile y **no se radica nada**. El formulario
+  avisa «La radicación en línea no está disponible en este momento» y abre el
+  correo. En el registro de Vercel queda qué variable falta.
 - `500` → no se pudo guardar el registro. Aquí **no hay radicación**.
 
 Los mensajes de `errores` están redactados en español y se muestran tal cual.
+Hasta ahora la radicación correcta devolvía además una lista `avisos` con los
+motivos técnicos de los correos fallidos, y el formulario la pintaba: la persona
+podía leer «Falta RESEND_API_KEY.» o el inglés de Resend. Ya no existe; el detalle
+se queda en el registro de Vercel.
 
 ### `POST /api/pqrs/administrativa`
 
@@ -193,6 +342,9 @@ Respuestas:
   solo el primero.
 - `403` → Turnstile no pasó.
 - `429` → más de 5 envíos en 10 minutos desde la misma IP.
+- `503` → `{ ok: false, codigo: 'config-incompleta', errores: [...] }`. No hay
+  ninguna clave de Resend. Se comprueba antes de todo; el formulario avisa de que
+  el envío desde la página no está disponible y abre el correo.
 - `500` → el correo no salió. El navegador cae entonces al `mailto:`.
 
 Ese `500` es deliberado, y no un `200` con un aviso: aquí **no hay registro en el
@@ -201,6 +353,34 @@ queda nada. Con el `500` la persona acaba escribiendo por su gestor de correo; c
 un `200` se iría convencida de que nos llegó. El motivo técnico (una clave mal
 puesta, el dominio del remitente sin verificar en Resend) se queda en el registro
 de Vercel y nunca viaja en la respuesta.
+
+### `GET /api/pqrs/descarga`
+
+Abre un soporte desde el correo al área. El store es **privado**: la URL de un
+blob a secas no abre nada, así que el correo no puede llevarla. Lleva un enlace a
+esta función:
+
+```
+https://<sitio>/api/pqrs/descarga?ruta=pqrs/PQRS-…/<uuid>.pdf&vence=<ms>&firma=<hex>
+```
+
+- **Firma** HMAC-SHA256 de `ruta` y `vence`, con una clave derivada de
+  `BLOB_READ_WRITE_TOKEN`. No hace falta ninguna variable nueva y nadie sin el
+  token del store puede fabricar un enlace. Si el token se rota, los enlaces ya
+  enviados dejan de valer.
+- **Caduca a los 7 días** (`MINUTOS_ENLACE_DESCARGA`).
+- **Solo soportes radicados**: `pqrs/{radicado}/{uuid}.{pdf|doc|docx|jpg|jpeg|png}`.
+  Ni `solicitud.json`, ni los pendientes, ni rutas con `../`. La forma se
+  comprueba antes que la firma.
+- Si todo cuadra, responde **302** a una URL firmada de Vercel Blob
+  (`issueSignedToken` + `presignUrl`, `access: 'private'`) que dura **5 minutos**.
+  El archivo no pasa por la función, así que su peso no choca con el límite de
+  respuesta de Vercel, y la vida del enlace del correo no depende del máximo que
+  Vercel admita para una URL firmada.
+
+Respuestas, todas en una página corta en español: `400` enlace mal copiado o ruta
+no permitida, `403` firma no válida, `410` caducado, `404` el archivo ya no está,
+`503` falta `BLOB_READ_WRITE_TOKEN`, `502` no se pudo firmar la URL de Blob.
 
 ### `GET /api/pqrs/limpieza`
 
@@ -253,6 +433,34 @@ en UTC: Vercel ejecuta en UTC y una PQRS radicada a las 19:30 de Tunja llevaría
 la fecha del día siguiente. El sufijo usa un alfabeto sin `0`/`O` ni `1`/`I`,
 porque el radicado se dicta por teléfono.
 
+## El mínimo de caracteres se ve antes de enviar
+
+La descripción de la radicación comercial y el «¿Qué necesitas?» del formulario
+administrativo exigen **10 caracteres como mínimo** (y 5000 y 1500 como máximo). Antes
+el mínimo no se decía en ningún sitio y la persona se enteraba al enviar, con un
+«Cuéntanos brevemente qué necesitas» del servidor.
+
+Ahora, bajo cada campo (`src/components/ContadorCaracteres.astro`):
+
+- Antes de escribir: «Mínimo 10 caracteres.»
+- Mientras falten: «Faltan 6 caracteres (mínimo 10).», en color de aviso. El campo
+  queda inválido con un mensaje propio, así que al pulsar enviar el navegador
+  frena y dice cuánto falta, **sin llamar a la API**.
+- Al llegar: «47 de 5000 caracteres.», en verde.
+
+El texto está enlazado al campo con `aria-describedby` y no es una región
+`aria-live`: el lector de pantalla lo lee al entrar en el campo, sin anunciar cada
+tecla. El campo lleva además `maxlength` con el máximo.
+
+**El servidor valida igual que antes**, con los mismos números. Los límites y la
+forma de contar viven en un solo sitio, `src/lib/pqrs/limites-texto.ts`, que usan
+el contador y las dos validaciones. La forma de contar importa: el servidor
+recorta los extremos y quita los caracteres de control, **saltos de línea
+incluidos**, así que «hola↵mundo» cuenta 9. El contador cuenta igual
+(`longitudComoServidor`), no con `value.length`; si no, podría decir «10 de 1500»
+y el servidor rechazarlo. Los errores del servidor ahora dicen el mínimo: «Cuéntanos
+brevemente qué necesitas, en al menos 10 caracteres.».
+
 ## El municipio no es texto libre
 
 El campo es un combobox cerrado a los **87 municipios donde distribuye la
@@ -295,6 +503,13 @@ eligió, manda su elección y no el GPS.
 
 El municipio elegido se guarda en `sessionStorage`, así que sobrevive a cambiar
 de categoría o de tipo y también a recargar la página.
+
+**Depende de la `Permissions-Policy` de `vercel.json`**, que tiene que decir
+`geolocation=(self)`: el propio sitio puede pedir la ubicación y ningún iframe de
+terceros puede. Con `geolocation=()` el navegador la niega sin preguntar y la
+preselección desaparece sin ningún error visible, justo por lo de arriba. Pasó un
+día en producción. `npm run verificar:navegacion` lo comprueba bajo la CSP con
+coordenadas de Samacá.
 
 ## Quién decide si hay campo de soporte
 
@@ -356,9 +571,21 @@ renombrado no cuele).
   de 5 minutos. Antes ese tope cortaba la espera con la casilla en pantalla y el
   formulario caía al correo sin llamar a la API; pasó en producción con Empleos
   (ver docs/EMPLEOS-POSTULACION.md).
-- **Blobs privados** (`access: 'private'`). La URL sola no sirve; el correo al
-  área lleva enlaces firmados con caducidad de 7 días
-  (`issueSignedToken` + `presignUrl`).
+- **Un fallo de Turnstile no abre el correo en el formulario administrativo.**
+  Igual que en Empleos: si Cloudflare pide la casilla sale un aviso; si la
+  verificación falla o caduca, se explica («No pudimos completar la verificación
+  de seguridad… Vuelve a pulsar») y se puede reintentar. Solo si el script de
+  Cloudflare no carga (un bloqueador) se ofrece el correo. Antes cualquier fallo
+  de Turnstile abría el `mailto:` sin llamar nunca a la API. El formulario de
+  radicación comercial todavía cae al correo en ese caso.
+- **Blobs privados, sin opción pública.** Store `pqrs-adjuntos`, privado, y
+  `access: 'private'` fijo en servidor (`ACCESO_BLOB` en `src/lib/pqrs/config.ts`)
+  y navegador (`FormularioPqrs.astro`). La variable `PUBLIC_PQRS_BLOB_ACCESS`,
+  que permitía `public`, se eliminó: un store privado rechaza las subidas
+  públicas. **Si sigue definida en Vercel, hay que borrarla.** La URL de un blob
+  sola no abre nada; el correo al área lleva enlaces a `/api/pqrs/descarga`,
+  firmados y con caducidad de 7 días, que redirigen a una URL firmada de Blob de
+  5 minutos.
 - **Los archivos no se adjuntan al correo**, se enlazan: un correo se reenvía y
   el soporte de una queja no debe esparcirse sin control.
 - **Ruta impuesta por el servidor.** El `pathname` que manda el navegador solo
@@ -454,22 +681,28 @@ más directa en Vercel es Neon Postgres desde el marketplace.
    `npm run build`, salida `.vercel/output`.
 3. La rama de producción es `main`.
 
-### 2. Crear el Blob store
+### 2. El Blob store
 
-En el proyecto: **Storage → Create Database → Blob**. Al crearlo, Vercel define
-`BLOB_READ_WRITE_TOKEN` en el entorno del proyecto; no hay que copiarla a mano.
+Ya existe: **`pqrs-adjuntos`, privado**, conectado al proyecto. Al conectarlo
+Vercel definió tres variables; no hay que copiarlas a mano:
 
-Comprobar que el plan de la cuenta admite blobs **privados**. Si no, poner
-`PUBLIC_PQRS_BLOB_ACCESS=public` para que el sistema funcione, sabiendo que
-entonces la única protección es que la ruta lleva un UUID no adivinable: la
-caducidad del enlace deja de ser una garantía. Volver a `private` en cuanto se
-pueda.
+| Variable | ¿La usa el código? |
+| --- | --- |
+| `BLOB_READ_WRITE_TOKEN` | **Sí.** Guarda y lee los archivos, verifica el aviso de subida completada de `handleUpload` y es la base de la firma de los enlaces de descarga |
+| `BLOB_STORE_ID` | No. El SDK la usa para autenticarse por OIDC, que este proyecto no usa |
+| `BLOB_WEBHOOK_PUBLIC_KEY` | No. El SDK la usa en `handleUploadPresigned`; el endpoint del token usa `handleUpload`, que verifica con el token |
+
+Después de conectar un store hay que **redesplegar**: una función ya desplegada
+no ve variables que no existían cuando se creó.
 
 ### 3. Turnstile
 
-En el panel de Cloudflare: **Turnstile → Add site**, con el dominio
-`dstunja.com`. Da dos claves: la pública va a `PUBLIC_TURNSTILE_SITE_KEY` y la
-privada a `TURNSTILE_SECRET`.
+Ya existe: el widget **«DST web»** de Cloudflare, en modo **Non-interactive**, con
+los hostnames `dstunja.com`, `paginaweb-beta-coral.vercel.app`, `vercel.app` y
+`localhost` (ver «Estado en producción»). Su Site Key va a
+`PUBLIC_TURNSTILE_SITE_KEY` y su Secret Key a `TURNSTILE_SECRET`. Si el sitio se
+publica en otro dominio, hay que añadirlo en **Turnstile → «DST web» → Hostnames**
+o el widget falla con `110200`.
 
 Para desarrollo local, Cloudflare publica claves de prueba que siempre pasan:
 
@@ -480,41 +713,72 @@ TURNSTILE_SECRET=1x0000000000000000000000000000000AA
 
 ### 4. Resend
 
-1. Crear cuenta en [resend.com](https://resend.com) y una API key →
-   `RESEND_API_KEY`.
-2. **Verificar el dominio** `dstunja.com` (Domains → Add Domain) y añadir los
-   registros DNS que indique. Hasta que el dominio esté verificado, Resend solo
-   deja enviar desde `onboarding@resend.dev` **y solo al correo del titular de
-   la cuenta**: el correo de confirmación a quien radica no llegaría.
-3. `PQRS_REMITENTE` tiene que usar el dominio verificado.
+PQRS y Empleos usan **cuentas de Resend distintas**, porque sin dominio verificado
+cada cuenta solo entrega a su titular:
+
+| Formulario | Cuenta registrada con | Variable de la clave | Destino |
+| --- | --- | --- | --- |
+| PQRS | `informacioncomercialdst@gmail.com` | `PQRS_RESEND_API_KEY` | `PQRS_DESTINO` (por defecto ese mismo correo) |
+| Empleos | `ghsantiagodetunja@gmail.com` | `RESEND_API_KEY` | `EMPLEOS_DESTINO` (por defecto ese mismo correo) |
+
+Las dos están creadas y sus claves cargadas en Vercel. El remitente es
+`onboarding@resend.dev` en las dos, sin dominio verificado, así que la constancia
+a quien radica no se envía y la pantalla lo explica. Lo que cambia al verificar
+dstunja.com está en «Pendiente: verificar dstunja.com en Resend», al principio de
+este documento.
+
+Para rotar una clave: iniciar sesión en [resend.com](https://resend.com) con la
+cuenta correspondiente, **API Keys → Create API Key**, sustituirla en Vercel y
+volver a desplegar.
 
 ### 5. Variables de entorno
 
-En **Settings → Environment Variables**, para Production y Preview:
+En **Settings → Environment Variables**, para Production (y Preview si se
+prueba ahí). Ninguna clave va escrita aquí: los valores reales solo viven en
+Vercel. Cuáles están cargadas hoy y cuáles faltan está en «Estado en
+producción», al principio de este documento.
 
-| Variable | Obligatoria | Qué es |
+**Obligatorias para PQRS:**
+
+| Variable | Valor esperado | De dónde sale |
 | --- | --- | --- |
-| `BLOB_READ_WRITE_TOKEN` | sí | La pone Vercel al crear el Blob store |
-| `RESEND_API_KEY` | sí | API key de Resend |
-| `TURNSTILE_SECRET` | sí | Clave privada de Turnstile |
-| `PUBLIC_TURNSTILE_SITE_KEY` | sí | Clave pública de Turnstile (va al navegador) |
-| `PQRS_DESTINO` | sí | Correo que recibe **todo** lo de la página de PQRS: radicaciones comerciales y recados administrativos. Hoy `informacioncomercialdst@gmail.com` |
-| `CRON_SECRET` | sí | Cadena larga y aleatoria; protege el cron de limpieza |
-| `PQRS_IP_SALT` | recomendada | Sal del hash de la IP |
-| `PQRS_REMITENTE` | opcional | Remitente; por defecto `pqrs@dstunja.com` |
-| `PQRS_ADJUNTO_MAX_MB` | opcional | Peso máximo por archivo (5) |
-| `PQRS_MAX_ARCHIVOS` | opcional | Número de archivos (3) |
-| `PUBLIC_PQRS_BLOB_ACCESS` | opcional | `private` (por defecto) o `public` |
-| `PUBLIC_PQRS_ADJUNTO_MAX_MB` | opcional | Lo que aplica y muestra el navegador |
-| `PUBLIC_GA_ID` | opcional | Google Analytics, como antes |
-| `UPSTASH_REDIS_REST_URL` | opcional | Límite de tasa compartido |
-| `UPSTASH_REDIS_REST_TOKEN` | opcional | Ídem |
+| `BLOB_READ_WRITE_TOKEN` | empieza por `vercel_blob_rw_` | La pone Vercel al conectar `pqrs-adjuntos` |
+| `PQRS_RESEND_API_KEY` | empieza por `re_` | Resend, cuenta de `informacioncomercialdst@gmail.com`. Si falta se usa `RESEND_API_KEY` |
+| `TURNSTILE_SECRET` | empieza por `0x` | Cloudflare → Turnstile → el widget → Secret Key |
+| `PUBLIC_TURNSTILE_SITE_KEY` | empieza por `0x` | El mismo widget → Site Key. Se lee al compilar |
 
-**Hay una variable que BORRAR: `PUBLIC_PQRS_ADMIN_DESTINO`.** Existió mientras la
-categoría administrativa salía por un `mailto:` que armaba el navegador. Hoy ese
-envío lo hace el servidor y va al mismo `PQRS_DESTINO`, así que ya no la lee
-nadie. Dejarla puesta no rompe nada, pero es una segunda dirección de destino
-que alguien intentará cambiar algún día creyendo que sirve para algo.
+**Recomendadas:**
+
+| Variable | Valor esperado | Para qué |
+| --- | --- | --- |
+| `CRON_SECRET` | cadena larga aleatoria | Protege el cron de limpieza; sin ella responde 503 y los pendientes no se borran |
+| `PQRS_IP_SALT` | cadena larga aleatoria | Sal del hash de la IP |
+| `UPSTASH_REDIS_REST_URL` | URL de Upstash | Límite de tasa compartido entre instancias |
+| `UPSTASH_REDIS_REST_TOKEN` | token de Upstash | Ídem |
+
+**Opcionales, con valor por defecto:**
+
+| Variable | Por defecto | Cuándo definirla |
+| --- | --- | --- |
+| `PQRS_DESTINO` | `informacioncomercialdst@gmail.com` | Solo si cambia el buzón. Con `onboarding@resend.dev` tiene que ser el titular de la cuenta |
+| `PQRS_REMITENTE` | `onboarding@resend.dev` | Cuando haya un dominio verificado en la cuenta de PQRS |
+| `PQRS_ADJUNTO_MAX_MB` | `5` | Para cambiar el peso máximo por archivo |
+| `PQRS_MAX_ARCHIVOS` | `3` | Para cambiar el número de archivos |
+| `PUBLIC_PQRS_ADJUNTO_MAX_MB` | `5` | Debe coincidir con `PQRS_ADJUNTO_MAX_MB` |
+
+**Las pone Vercel y el código no las usa:** `BLOB_STORE_ID`,
+`BLOB_WEBHOOK_PUBLIC_KEY`. Pueden quedarse.
+
+**Hay dos variables que BORRAR si siguen en Vercel:**
+
+- `PUBLIC_PQRS_BLOB_ACCESS`. Permitía subir con acceso público; el acceso ahora
+  es privado y fijo, y un store privado rechaza las subidas públicas.
+- `PUBLIC_PQRS_ADMIN_DESTINO`. Existió mientras la categoría administrativa salía
+  por un `mailto:` que armaba el navegador. Hoy ese envío va al mismo
+  `PQRS_DESTINO` y ya no la lee nadie.
+
+`RESEND_API_KEY` sigue siendo necesaria para **Empleos**, con la clave de su propia
+cuenta (ver docs/EMPLEOS-POSTULACION.md). `npm run check:env` revisa todas.
 
 Las que empiezan por `PUBLIC_` se leen **en tiempo de compilación** y acaban en
 el JavaScript del navegador: ahí no puede ir ningún secreto. Cambiar una de
@@ -595,8 +859,9 @@ formulario cae al respaldo por correo.
 
 ## Pruebas
 
-`npm test` (Vitest, 90 comprobaciones: 35 de `radicar.ts`, 26 de
-`emitir-token.ts` y 29 de `administrativa.ts`) prueba el servidor con
+`npm test` (Vitest, 144 comprobaciones de PQRS: 53 de `radicar.ts` —que
+incluye la descarga—, 26 de `emitir-token.ts`, 33 de `administrativa.ts` y 32 de
+`limites-texto.ts`; más 42 de Empleos) prueba el servidor con
 Vercel Blob y Resend simulados y bytes de archivo de verdad: los cinco formatos
 válidos, MIME falso, PNG que se hace pasar por PDF, ZIP renombrado a `.docx`,
 doble extensión, exceso de peso mintiendo sobre el tamaño, más de tres archivos,
@@ -609,15 +874,38 @@ municipio fuera de la lista de cobertura (400), municipio escrito sin tildes o
 en minúsculas (se acepta y se guarda con su nombre oficial) y el asunto del
 correo al área con categoría, tipo y municipio.
 
-Las 29 de `administrativa.ts` comprueban: que el recado sale al buzón
+Sobre correo y almacenamiento, `radicar.ts` comprueba además: que con el
+remitente por defecto (`onboarding@resend.dev`) sale solo el correo al área y la
+constancia queda `omitida`, y que con un remitente de dominio propio sale también
+la constancia; que el correo al área enlaza a `/api/pqrs/descarga` y no lleva ni
+la URL del blob ni el archivo; que sin `BLOB_READ_WRITE_TOKEN` o sin clave de
+Resend responde `503 config-incompleta` sin guardar ni mandar nada; que
+`PQRS_RESEND_API_KEY` manda sobre `RESEND_API_KEY`; que sin `PQRS_DESTINO` va a
+`informacioncomercialdst@gmail.com`; y que si Resend rechaza el correo al área la
+radicación vale igual, con `correoArea: false` y sin filtrar el motivo. De la
+descarga: el enlace del correo redirige (302) a una URL firmada; una firma
+alterada, una ruta cambiada u otro token dan 403; un enlace caducado, 410;
+`solicitud.json`, un pendiente o una ruta con `../`, 400 aunque la firma sea
+buena; un archivo borrado, 404; y sin token, 503.
+
+Las 33 de `administrativa.ts` comprueban: que el recado sale al buzón
 de `PQRS_DESTINO` con el asunto «Solicitud administrativa · Nombre» y no con el
 de una radicación, que el correo de quien escribe es opcional de verdad (sin él
 no se pone `replyTo` y el mensaje lo dice) pero se valida si viene, que faltan
 campos devuelve **todos** los errores a la vez, que Turnstile falla cerrado —sin
-`TURNSTILE_SECRET` no sale nada—, que sin `PQRS_DESTINO` o sin `RESEND_API_KEY`
-responde 500 sin filtrar el motivo técnico, y que el límite de tasa cuenta por IP.
+`TURNSTILE_SECRET` no sale nada—, los valores por defecto de destino y remitente,
+que `PQRS_RESEND_API_KEY` manda sobre `RESEND_API_KEY`, que sin ninguna clave
+responde `503 config-incompleta` antes de gastar Turnstile, que un fallo de
+Resend da 500 sin filtrar el motivo técnico, y que el límite de tasa cuenta por IP.
 
-`npm run verificar:pqrs` (Playwright, 176 comprobaciones en móvil y escritorio)
+Las 32 de `limites-texto.ts` comprueban que el **contador del navegador y la
+validación del servidor aceptan y rechazan exactamente los mismos textos**, en la
+descripción y en «¿Qué necesitas?»: vacíos, solo espacios, 9 y 10 caracteres,
+espacios en los extremos, saltos de línea y tabuladores (que el servidor no
+cuenta), emojis y el máximo justo y pasado por uno. También los textos del
+contador en singular y plural, y que los errores del servidor dicen el mínimo.
+
+`npm run verificar:pqrs` (Playwright, 204 comprobaciones en móvil y escritorio)
 cubre lo que se ve:
 
 - **La elección por clic**: que cada una de las dos categorías y cada uno de los
@@ -640,7 +928,11 @@ cubre lo que se ve:
   `/api/pqrs/administrativa` con los cuatro campos y el token, que no radica nada
   por el camino, que la confirmación no promete radicado, que un 403 de
   antirrobots enseña el motivo **sin** caer al `mailto:` y dejando el botón
-  usable, y que si la función no contesta sí se abre el gestor de correo.
+  usable, y que si la función no contesta sí se abre el gestor de correo. Con la
+  clave de prueba inyectada y un doble de Cloudflare: que un error de Turnstile se
+  explica sin abrir el correo ni llamar a la API y al reintentar el recado sale;
+  que si pide la casilla sale el aviso, a los 31 s no se ha rendido y al llegar
+  el token el recado llega; y que con el script bloqueado sí se ofrece el correo.
 - **La radicación comercial** con `POST /api/pqrs`, `POST /api/pqrs/token` y el
   script de Turnstile interceptados, incluido el **camino completo con adjunto**:
   se simulan los dos pasos de `@vercel/blob` (pedir el permiso y subir el archivo
@@ -661,6 +953,19 @@ cubre lo que se ve:
   **no** arrastra el documento, el teléfono ni el correo.
 - Que un error 400 se muestra sin caer al correo y que una API caída sí activa el
   respaldo con el aviso de que así **no** queda radicada.
+- **La configuración incompleta**: que un `503 config-incompleta` avisa «La
+  radicación en línea no está disponible en este momento» y abre el correo, en
+  la comercial y en la administrativa, sin nombrar variables.
+- **La confirmación sin constancia**: con `constancia: 'omitida'` no dice «también
+  te lo enviamos por correo» y pide copiar o anotar el número; con
+  `correoArea: false` confirma el radicado y sugiere WhatsApp; y con todo enviado
+  mantiene la frase del correo y no enseña avisos.
+- **El mínimo de caracteres**, en la descripción y en «¿Qué necesitas?»: que antes
+  de escribir se lee «Mínimo 10 caracteres.» enlazado al campo con
+  `aria-describedby`, que al escribir poco dice cuántos faltan, que así no sale
+  ninguna petición y el navegador explica cuánto falta, que un salto de línea no
+  cuenta, y que al llegar al mínimo pasa a «N de 1500 caracteres.» (o de 5000) y
+  el envío sale.
 
 Las comprobaciones de Turnstile se adaptan al sitio compilado: si el build no
 llevaba `PUBLIC_TURNSTILE_SITE_KEY`, se exige que el token viaje **vacío**, que

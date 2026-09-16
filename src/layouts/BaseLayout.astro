@@ -107,15 +107,11 @@ const jsonLd = {
       movimiento", si el navegador es viejo o si no hay JavaScript, la clase no
       llega, el CSS no aplica y todo el contenido se ve directamente, sin
       fundido ni desplazamiento.
+
+      Es un archivo de public/ y no un script en línea: la Content-Security-Policy
+      de vercel.json no permite 'unsafe-inline' en script-src.
     */}
-    <script is:inline>
-      if (
-        !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
-        'IntersectionObserver' in window
-      ) {
-        document.documentElement.classList.add('js-revelado');
-      }
-    </script>
+    <script is:inline src={publico('js/revelado-temprano.js')}></script>
 
     {/* Google Tag Manager. No se inyecta nada sin PUBLIC_GTM_CONTAINER_ID ni en
         desarrollo. La etiqueta de GA4 vive dentro del contenedor. */}

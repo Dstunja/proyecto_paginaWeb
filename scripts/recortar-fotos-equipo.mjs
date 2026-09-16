@@ -132,7 +132,7 @@ const RECORTES = [
     eje: 450,
   },
   {
-    // Camilo Acero — Líder Comercial.
+    // Camilo Acero — Gerente Comercial.
     original: 'camilo-acero.jpeg',
     salida: 'camilo-acero.webp',
     coronilla: 267,
@@ -141,7 +141,7 @@ const RECORTES = [
     eje: 467,
   },
   {
-    // Erica Abril — Talento Humano. Es la que tiene más pelo por encima de los
+    // Erika Abril — Talento Humano. Es la que tiene más pelo por encima de los
     // ojos, así que es la más justa arriba (~7,8 % de aire a 58 %). La cara
     // está algo girada: la nariz cae en 510 y el contorno se centra en 497.
     original: 'erica-abril.jpeg',

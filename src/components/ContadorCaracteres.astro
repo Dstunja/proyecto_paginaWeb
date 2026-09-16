@@ -1,0 +1,90 @@
+---
+/**
+ * Mínimo de caracteres y contador bajo un campo de texto largo.
+ *
+ * Antes de escribir enseña «Mínimo 10 caracteres.». Al escribir pasa a «Faltan
+ * 6 caracteres (mínimo 10).» y, al llegar, a «10 de 1500 caracteres.». Mientras
+ * falten, el campo queda inválido con un mensaje propio, así que
+ * `reportValidity()` frena el envío diciendo cuánto falta en vez de dejar que el
+ * servidor responda «Cuéntanos brevemente qué necesitas» a ciegas.
+ *
+ * El conteo NO es `value.length`: es `longitudComoServidor`, que recorta los
+ * extremos y quita los caracteres de control (saltos de línea incluidos), igual
+ * que la validación del servidor. Los límites salen de `LIMITES_TEXTO`
+ * (src/lib/pqrs/limites-texto.ts), los mismos que usa el servidor.
+ *
+ * USO. El campo tiene que llevar `aria-describedby={`${id}-ayuda`}` y
+ * `maxlength={max}`; este componente pinta el párrafo con ese id.
+ *
+ * No es una región `aria-live`: anunciar cada tecla sería ruido. El texto está
+ * enlazado al campo con `aria-describedby`, así que el lector de pantalla lo lee
+ * al entrar, y si falta texto el aviso llega con `reportValidity()` al enviar.
+ */
+import { ayudaMinimo, type Limites } from '../lib/pqrs/limites-texto';
+
+interface Props {
+  /** id del campo al que acompaña. */
+  para: string;
+  limites: Limites;
+}
+
+const { para, limites } = Astro.props;
+---
+
+<p
+  id={`${para}-ayuda`}
+  class="mt-2 mb-0 text-[13px] text-muted"
+  data-contador
+  data-para={para}
+  data-min={String(limites.min)}
+  data-max={String(limites.max)}
+>
+  {ayudaMinimo(limites)}
+</p>
+
+<script>
+  import { estadoLongitud, textoContador } from '../lib/pqrs/limites-texto';
+
+  document.querySelectorAll<HTMLElement>('[data-contador]').forEach((salida) => {
+    const campo = document.getElementById(salida.dataset.para ?? '') as
+      | HTMLTextAreaElement
+      | HTMLInputElement
+      | null;
+    if (!campo) return;
+
+    const limites = {
+      min: Number(salida.dataset.min) || 0,
+      max: Number(salida.dataset.max) || Number.POSITIVE_INFINITY,
+    };
+
+    function pintar() {
+      const valor = campo!.value;
+      const estado = estadoLongitud(valor, limites);
+      salida.textContent = textoContador(valor, limites);
+
+      // Sin nada escrito manda `required`, que ya tiene su mensaje. Con algo
+      // escrito (aunque sean solo espacios) el aviso es el nuestro.
+      const escrito = valor !== '';
+      const corto = escrito && estado.faltan > 0;
+      const largo = estado.sobran > 0;
+      campo!.setCustomValidity(
+        corto
+          ? `Escribe al menos ${limites.min} caracteres: te ${estado.faltan === 1 ? 'falta 1' : `faltan ${estado.faltan}`}.`
+          : largo
+            ? `El texto no puede pasar de ${limites.max} caracteres.`
+            : '',
+      );
+
+      salida.dataset.estado = !escrito || estado.longitud === 0 ? 'vacio' : estado.ok ? 'ok' : 'corto';
+      salida.classList.toggle('text-muted', !escrito || estado.longitud === 0);
+      salida.classList.toggle('text-accent-text', escrito && estado.longitud > 0 && !estado.ok);
+      salida.classList.toggle('text-ok', escrito && estado.ok);
+    }
+
+    campo.addEventListener('input', pintar);
+    // Un formulario que se reinicia vuelve a enseñar el mínimo.
+    campo.form?.addEventListener('reset', () => setTimeout(pintar, 0));
+    // El navegador puede haber restaurado el texto al volver atrás.
+    pintar();
+  });
+</script>

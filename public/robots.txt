@@ -1,7 +1,7 @@
 # Archivo ESTATICO: se copia tal cual desde public/ a los dos despliegues, asi
 # que la URL del sitemap no puede depender del entorno. Se deja apuntando al
 # despliegue de Vercel, que es el unico donde este archivo se sirve en la raiz
-# del dominio (https://paginaweb-beta-coral.vercel.app/robots.txt).
+# del dominio (https://dstunja.com/robots.txt).
 #
 # En GitHub Pages el sitio cuelga de /proyecto_paginaWeb, asi que este archivo
 # queda en /proyecto_paginaWeb/robots.txt: los buscadores solo leen el robots.txt
@@ -11,9 +11,10 @@
 # borra este archivo y se genera con un endpoint (src/pages/robots.txt.ts) que
 # tome la URL de `Astro.site`, que ya es condicional en astro.config.mjs.
 #
-# Al mudar el sitio a dstunja.com hay que cambiar la linea Sitemap de abajo.
+# Si el dominio oficial cambia, hay que cambiar a mano la linea Sitemap de abajo
+# ademas de SITIO_VERCEL en astro.config.mjs.
 
 User-agent: *
 Allow: /
 
-Sitemap: https://paginaweb-beta-coral.vercel.app/sitemap-index.xml
+Sitemap: https://dstunja.com/sitemap-index.xml

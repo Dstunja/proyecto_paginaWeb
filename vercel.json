@@ -5,5 +5,30 @@
       "path": "/api/pqrs/limpieza",
       "schedule": "0 4 * * *"
     }
+  ],
+  "redirects": [
+    { "source": "/:viejo(shop|tienda|cart|carrito|checkout|finalizar-compra|wishlist|lista-de-deseos)/:resto*{/}?", "destination": "/pedido/", "statusCode": 301 },
+    { "source": "/:viejo(product|producto)/:resto*{/}?", "destination": "/pedido/", "statusCode": 301 },
+    { "source": "/:viejo(product-category|categoria-producto|product-tag|etiqueta-producto|brand|marca)/:resto*{/}?", "destination": "/catalogo/", "statusCode": 301 },
+    { "source": "/:viejo(about-us|about-us-2|about-factory|quienes-somos|sobre-nosotros)/:resto*{/}?", "destination": "/nosotros/", "statusCode": 301 },
+    { "source": "/:viejo(contact|contact-us|contacto)/:resto*{/}?", "destination": "/contactanos/", "statusCode": 301 },
+    { "source": "/:viejo(my-account|mi-cuenta|blog|portfolio|home-base|sample-page|pagina-ejemplo|feed|comments|category|categoria|tag|etiqueta|author|autor)/:resto*{/}?", "destination": "/", "statusCode": 301 },
+    { "source": "/:anio(\\d{4})/:mes(\\d{2})/:resto*{/}?", "destination": "/", "statusCode": 301 }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.fr https://placehold.co https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://vercel.com https://*.blob.vercel-storage.com; frame-src https://challenges.cloudflare.com https://www.googletagmanager.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+        },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(self)" },
+        { "key": "Access-Control-Allow-Origin", "value": "https://dstunja.com" }
+      ]
+    }
   ]
 }

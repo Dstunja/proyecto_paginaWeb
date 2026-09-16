@@ -101,12 +101,23 @@ vi.mock('@vercel/blob', () => ({
   }),
 }));
 
+/** Clave con la que se creó cada cliente de Resend, en orden. */
+const clavesUsadas: string[] = [];
+/** Lo que responde el doble de Resend. Se cambia para probar el fallo. */
+let respuestaResend: { data: unknown; error: { message: string } | null } = {
+  data: { id: 'correo-de-prueba' },
+  error: null,
+};
+
 vi.mock('resend', () => ({
   Resend: class {
+    constructor(clave: string) {
+      clavesUsadas.push(clave);
+    }
     emails = {
       send: async (mensaje: Record<string, unknown>) => {
         correosEnviados.push(mensaje);
-        return { data: { id: 'correo-de-prueba' }, error: null };
+        return respuestaResend;
       },
     };
   },
@@ -115,6 +126,7 @@ vi.mock('resend', () => ({
 const { radicar } = await import('./radicar');
 const { reiniciarMemoria } = await import('./limite-tasa');
 const { prefijoSesion } = await import('./config');
+const { atenderDescarga, enlaceDescarga } = await import('./descarga');
 
 // --- Archivos de prueba, con sus bytes de verdad -----------------------------
 
@@ -240,11 +252,21 @@ function registroDe(radicado: string) {
   return JSON.parse(new TextDecoder().decode(crudo.bytes));
 }
 
+/** El enlace de descarga del primer adjunto que lleva el correo al área. */
+function enlaceDelCorreo(): string {
+  const html = String(correosEnviados[0]?.html ?? '');
+  const href = /href="([^"]*\/api\/pqrs\/descarga\?[^"]*)"/.exec(html)?.[1] ?? '';
+  return href.replace(/&amp;/g, '&');
+}
+
 beforeEach(() => {
   almacenFalso.clear();
   correosEnviados.length = 0;
+  clavesUsadas.length = 0;
+  respuestaResend = { data: { id: 'correo-de-prueba' }, error: null };
   reiniciarMemoria();
   turnstileResponde(true);
+  vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -287,16 +309,48 @@ describe('radicación con archivo válido', () => {
     expect(registro.ipHashSalada).toBe(true);
   });
 
-  it('manda los dos correos: al área de PQRS y a quien radica', async () => {
+  /*
+   * Con el remitente de pruebas (`onboarding@resend.dev`, el de por defecto)
+   * Resend solo entrega al titular de la cuenta: sale el correo al área y la
+   * constancia a quien radica ni se intenta.
+   */
+  it('con el remitente de pruebas sale SOLO el correo al área y la constancia se omite', async () => {
     const adjunto = sembrar('factura.pdf', PDF);
     const respuesta = await radicar(peticion(solicitudBase({ adjuntos: [adjunto] })), ENTORNO);
 
     expect(respuesta.estado).toBe(201);
-    expect(correosEnviados).toHaveLength(2);
+    expect(correosEnviados).toHaveLength(1);
     expect(correosEnviados[0]!.to).toBe('pqrs@dstunja.com');
+    expect(correosEnviados[0]!.from).toBe('onboarding@resend.dev');
+    expect(correosEnviados[0]!.replyTo).toBe('persona@ejemplo.com');
+    expect(respuesta.cuerpo).toMatchObject({ ok: true, correoArea: true, constancia: 'omitida' });
+  });
+
+  it('con un remitente de dominio propio manda también la constancia a quien radica', async () => {
+    const respuesta = await radicar(peticion(solicitudBase()), {
+      ...ENTORNO,
+      PQRS_REMITENTE: 'PQRS DST <pqrs@dstunja.com>',
+    });
+
+    expect(respuesta.estado).toBe(201);
+    expect(correosEnviados).toHaveLength(2);
     expect(correosEnviados[1]!.to).toBe('persona@ejemplo.com');
-    // El correo al área lleva el enlace firmado, no el archivo adjunto.
-    expect(String(correosEnviados[0]!.html)).toContain('firmado=1');
+    expect(respuesta.cuerpo).toMatchObject({ correoArea: true, constancia: 'enviada' });
+  });
+
+  it('el correo al área enlaza a /api/pqrs/descarga, no al blob ni con el archivo adjunto', async () => {
+    const adjunto = sembrar('factura.pdf', PDF);
+    await radicar(peticion(solicitudBase({ adjuntos: [adjunto] })), ENTORNO);
+
+    const html = String(correosEnviados[0]!.html);
+    const enlace = new URL(enlaceDelCorreo());
+    expect(enlace.origin).toBe('https://dstunja.com');
+    expect(enlace.pathname).toBe('/api/pqrs/descarga');
+    expect(enlace.searchParams.get('ruta')).toMatch(/^pqrs\/PQRS-\d{8}-\w{6}\/[0-9a-f-]{36}\.pdf$/);
+    expect(enlace.searchParams.get('firma')).toMatch(/^[0-9a-f]{64}$/);
+    // Ni la URL del blob ni una URL firmada de Blob viajan en el correo.
+    expect(html).not.toContain('blob.vercel-storage.com');
+    expect(html).not.toContain('firmado=1');
     expect(correosEnviados[0]!.attachments).toBeUndefined();
   });
 
@@ -565,6 +619,160 @@ describe('campos del formulario', () => {
     expect(respuesta.estado).toBe(400);
   });
 });
+
+describe('configuración', () => {
+  it('sin BLOB_READ_WRITE_TOKEN responde 503 config-incompleta sin guardar ni mandar nada', async () => {
+    const { BLOB_READ_WRITE_TOKEN: _sin, ...sinBlob } = ENTORNO;
+    const respuesta = await radicar(peticion(solicitudBase()), sinBlob);
+
+    expect(respuesta.estado).toBe(503);
+    expect(respuesta.cuerpo).toEqual({
+      ok: false,
+      codigo: 'config-incompleta',
+      errores: ['La radicación en línea no está disponible en este momento.'],
+    });
+    expect(JSON.stringify(respuesta.cuerpo)).not.toContain('BLOB');
+    expect(almacenFalso.size).toBe(0);
+    expect(correosEnviados).toHaveLength(0);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('sin ninguna clave de Resend responde 503 config-incompleta sin radicar', async () => {
+    const { RESEND_API_KEY: _sin, ...sinResend } = ENTORNO;
+    const respuesta = await radicar(peticion(solicitudBase()), sinResend);
+
+    expect(respuesta.estado).toBe(503);
+    expect(respuesta.cuerpo).toMatchObject({ ok: false, codigo: 'config-incompleta' });
+    expect(almacenFalso.size).toBe(0);
+  });
+
+  it('usa PQRS_RESEND_API_KEY antes que RESEND_API_KEY', async () => {
+    await radicar(peticion(solicitudBase()), { ...ENTORNO, PQRS_RESEND_API_KEY: 're_de_pqrs' });
+    expect(clavesUsadas).toEqual(['re_de_pqrs']);
+  });
+
+  it('con solo PQRS_RESEND_API_KEY también radica', async () => {
+    const { RESEND_API_KEY: _sin, ...soloPqrs } = ENTORNO;
+    const respuesta = await radicar(peticion(solicitudBase()), {
+      ...soloPqrs,
+      PQRS_RESEND_API_KEY: 're_de_pqrs',
+    });
+    expect(respuesta.estado).toBe(201);
+  });
+
+  it('sin PQRS_DESTINO el correo va a informacioncomercialdst@gmail.com', async () => {
+    const { PQRS_DESTINO: _sin, ...sinDestino } = ENTORNO;
+    await radicar(peticion(solicitudBase()), sinDestino);
+    expect(correosEnviados[0]!.to).toBe('informacioncomercialdst@gmail.com');
+  });
+
+  /*
+   * La radicación ya está guardada: es válida aunque el correo no salga. La
+   * respuesta lo dice con `correoArea: false`, pero el motivo técnico se queda
+   * en el registro del servidor. Antes viajaba en `avisos` y el formulario lo
+   * pintaba tal cual.
+   */
+  it('si Resend rechaza el correo al área, radica igual y no filtra el motivo', async () => {
+    respuestaResend = {
+      data: null,
+      error: { message: 'You can only send testing emails to your own email address' },
+    };
+    const respuesta = await radicar(peticion(solicitudBase()), ENTORNO);
+
+    expect(respuesta.estado).toBe(201);
+    expect(respuesta.cuerpo).toMatchObject({ ok: true, correoArea: false });
+    expect(JSON.stringify(respuesta.cuerpo)).not.toContain('testing emails');
+    expect(respuesta.cuerpo).not.toHaveProperty('avisos');
+  });
+});
+
+describe('descarga desde el correo (/api/pqrs/descarga)', () => {
+  async function radicarConAdjunto() {
+    const adjunto = sembrar('factura.pdf', PDF);
+    const respuesta = await radicar(peticion(solicitudBase({ adjuntos: [adjunto] })), ENTORNO);
+    if (!respuesta.cuerpo.ok) throw new Error('debería haber radicado');
+    return enlaceDelCorreo();
+  }
+
+  it('el enlace del correo redirige (302) a una URL firmada de Blob', async () => {
+    const enlace = await radicarConAdjunto();
+    const respuesta = await atenderDescarga(new Request(enlace), ENTORNO);
+
+    expect(respuesta.status).toBe(302);
+    const destino = respuesta.headers.get('location') ?? '';
+    expect(destino).toContain('firmado=1');
+    expect(destino).toContain(new URL(enlace).searchParams.get('ruta'));
+    expect(respuesta.headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('una firma alterada da 403', async () => {
+    const enlace = new URL(await radicarConAdjunto());
+    const firma = enlace.searchParams.get('firma')!;
+    enlace.searchParams.set('firma', `${firma[0] === 'a' ? 'b' : 'a'}${firma.slice(1)}`);
+    const respuesta = await atenderDescarga(new Request(enlace), ENTORNO);
+    expect(respuesta.status).toBe(403);
+  });
+
+  it('cambiar la ruta de un enlace válido da 403: la firma cubre la ruta', async () => {
+    const enlace = new URL(await radicarConAdjunto());
+    const ruta = enlace.searchParams.get('ruta')!;
+    enlace.searchParams.set('ruta', ruta.replace(/[0-9a-f](?=\.pdf$)/, (c) => (c === '0' ? '1' : '0')));
+    const respuesta = await atenderDescarga(new Request(enlace), ENTORNO);
+    expect(respuesta.status).toBe(403);
+  });
+
+  it('otro token del store no valida la firma', async () => {
+    const enlace = await radicarConAdjunto();
+    const respuesta = await atenderDescarga(new Request(enlace), {
+      ...ENTORNO,
+      BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_otro',
+    });
+    expect(respuesta.status).toBe(403);
+  });
+
+  it('un enlace caducado da 410', async () => {
+    await radicarConAdjunto();
+    const ruta = archivosDe(registroDeUltimo())[0]!;
+    const vencido = Date.now() - 1000;
+    const enlace = await enlaceDescarga('https://dstunja.com', ruta, vencido, ENTORNO);
+    const respuesta = await atenderDescarga(new Request(enlace), ENTORNO);
+    expect(respuesta.status).toBe(410);
+  });
+
+  it.each([
+    ['el registro con los datos personales', (r: string) => `pqrs/${r}/solicitud.json`],
+    ['un pendiente sin radicar', () => `pqrs/pendientes/${SESSION}/11111111-2222-4333-8444-555555555555.pdf`],
+    ['una ruta con ../', (r: string) => `pqrs/${r}/../otra/11111111-2222-4333-8444-555555555555.pdf`],
+  ])('rechaza con 400 %s aunque la firma sea buena', async (_caso, rutaDe) => {
+    await radicarConAdjunto();
+    const ruta = rutaDe(registroDeUltimo());
+    const enlace = await enlaceDescarga('https://dstunja.com', ruta, Date.now() + 60_000, ENTORNO);
+    const respuesta = await atenderDescarga(new Request(enlace), ENTORNO);
+    expect(respuesta.status).toBe(400);
+  });
+
+  it('un archivo que ya no está en el store da 404', async () => {
+    const ruta = 'pqrs/PQRS-20260907-A7K2M9/11111111-2222-4333-8444-555555555555.pdf';
+    const enlace = await enlaceDescarga('https://dstunja.com', ruta, Date.now() + 60_000, ENTORNO);
+    const respuesta = await atenderDescarga(new Request(enlace), ENTORNO);
+    expect(respuesta.status).toBe(404);
+  });
+
+  it('sin BLOB_READ_WRITE_TOKEN da 503 y lo explica', async () => {
+    const enlace = await radicarConAdjunto();
+    const { BLOB_READ_WRITE_TOKEN: _sin, ...sinBlob } = ENTORNO;
+    const respuesta = await atenderDescarga(new Request(enlace), sinBlob);
+    expect(respuesta.status).toBe(503);
+    expect(await respuesta.text()).toContain('no está configurado');
+  });
+});
+
+/** Radicado de la última radicación guardada en el almacén simulado. */
+function registroDeUltimo(): string {
+  const ruta = [...almacenFalso.keys()].find((r) => r.endsWith('/solicitud.json'));
+  if (!ruta) throw new Error('no hay ninguna radicación guardada');
+  return ruta.split('/')[1]!;
+}
 
 describe('límite de tasa', () => {
   it('corta a la sexta radicación desde la misma IP', async () => {

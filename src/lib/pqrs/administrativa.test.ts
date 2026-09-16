@@ -12,6 +12,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const correosEnviados: Array<Record<string, unknown>> = [];
+/** Clave con la que se creó cada cliente de Resend, en orden. */
+const clavesUsadas: string[] = [];
 /** Lo que devuelve el doble de Resend. Se cambia para probar el fallo. */
 let respuestaResend: { data: unknown; error: { message: string } | null } = {
   data: { id: 'correo-de-prueba' },
@@ -20,6 +22,9 @@ let respuestaResend: { data: unknown; error: { message: string } | null } = {
 
 vi.mock('resend', () => ({
   Resend: class {
+    constructor(clave: string) {
+      clavesUsadas.push(clave);
+    }
     emails = {
       send: async (mensaje: Record<string, unknown>) => {
         correosEnviados.push(mensaje);
@@ -75,6 +80,7 @@ function turnstileResponde(exito: boolean) {
 
 beforeEach(() => {
   correosEnviados.length = 0;
+  clavesUsadas.length = 0;
   respuestaResend = { data: { id: 'correo-de-prueba' }, error: null };
   reiniciarMemoria();
   turnstileResponde(true);
@@ -255,27 +261,70 @@ describe('Turnstile', () => {
 
 // --- Configuración incompleta ------------------------------------------------
 
+describe('destino, remitente y clave', () => {
+  it('sin PQRS_DESTINO va a informacioncomercialdst@gmail.com', async () => {
+    const respuesta = await atenderAdministrativa(peticion(solicitudBase()), {
+      ...ENTORNO,
+      PQRS_DESTINO: undefined,
+    });
+    expect(respuesta.estado).toBe(200);
+    expect(correosEnviados[0]!.to).toBe('informacioncomercialdst@gmail.com');
+  });
+
+  it('sin PQRS_REMITENTE sale desde onboarding@resend.dev', async () => {
+    await atenderAdministrativa(peticion(solicitudBase()), ENTORNO);
+    expect(correosEnviados[0]!.from).toBe('onboarding@resend.dev');
+  });
+
+  it('PQRS_DESTINO y PQRS_REMITENTE mandan si están definidas', async () => {
+    await atenderAdministrativa(peticion(solicitudBase()), {
+      ...ENTORNO,
+      PQRS_DESTINO: 'otra@ejemplo.com',
+      PQRS_REMITENTE: 'PQRS DST <pqrs@dstunja.com>',
+    });
+    expect(correosEnviados[0]!.to).toBe('otra@ejemplo.com');
+    expect(correosEnviados[0]!.from).toBe('PQRS DST <pqrs@dstunja.com>');
+  });
+
+  it('usa PQRS_RESEND_API_KEY antes que RESEND_API_KEY', async () => {
+    await atenderAdministrativa(peticion(solicitudBase()), {
+      ...ENTORNO,
+      PQRS_RESEND_API_KEY: 're_de_pqrs',
+    });
+    expect(clavesUsadas).toEqual(['re_de_pqrs']);
+  });
+
+  it('sin PQRS_RESEND_API_KEY cae a RESEND_API_KEY', async () => {
+    await atenderAdministrativa(peticion(solicitudBase()), ENTORNO);
+    expect(clavesUsadas).toEqual(['re_prueba']);
+  });
+});
+
 describe('cuando el correo no puede salir', () => {
+  /*
+   * Sin ninguna clave de Resend: 503 con `codigo: 'config-incompleta'`, antes
+   * de gastar Turnstile. El formulario lo reconoce, avisa y abre el correo.
+   */
+  it('sin ninguna clave de Resend responde 503 config-incompleta y no llama a nada', async () => {
+    const respuesta = await atenderAdministrativa(peticion(solicitudBase()), {
+      TURNSTILE_SECRET: 'secreto-de-prueba',
+    });
+    expect(respuesta.estado).toBe(503);
+    expect(respuesta.cuerpo).toEqual({
+      ok: false,
+      codigo: 'config-incompleta',
+      errores: ['El envío en línea no está disponible en este momento.'],
+    });
+    expect(JSON.stringify(respuesta.cuerpo)).not.toContain('RESEND');
+    expect(fetch).not.toHaveBeenCalled();
+    expect(correosEnviados).toHaveLength(0);
+  });
+
   /*
    * 500 y no 200: aquí no hay registro en el Blob que dé fe de nada, así que si
    * el correo no sale no queda NADA. Con el 500 el navegador cae al `mailto:` y
    * la persona sí consigue escribirnos.
    */
-  it('sin PQRS_DESTINO responde 500', async () => {
-    const respuesta = await atenderAdministrativa(peticion(solicitudBase()), {
-      ...ENTORNO,
-      PQRS_DESTINO: undefined,
-    });
-    expect(respuesta.estado).toBe(500);
-  });
-
-  it('sin RESEND_API_KEY responde 500', async () => {
-    const respuesta = await atenderAdministrativa(peticion(solicitudBase()), {
-      ...ENTORNO,
-      RESEND_API_KEY: undefined,
-    });
-    expect(respuesta.estado).toBe(500);
-  });
 
   it('si Resend devuelve error responde 500', async () => {
     respuestaResend = { data: null, error: { message: 'dominio sin verificar' } };

@@ -2,27 +2,27 @@
 /**
  * Carga de Google Tag Manager. Va una sola vez, dentro del <head> del layout.
  *
- * POR QUE GTM Y NO gtag.js
+ * POR QUÉ GTM Y NO gtag.js
  * ------------------------
- * Hasta ahora este componente cargaba `gtag.js` con el ID de GA4 directamente.
- * Ahora la etiqueta de GA4 vive DENTRO del contenedor de Tag Manager, creada a
- * mano en su interfaz. Cargar las dos cosas a la vez haria que GA4 contara cada
- * pagina vista dos veces, asi que aqui solo se carga el contenedor.
+ * Antes este componente cargaba `gtag.js` con el ID de GA4 directamente. Ahora
+ * la etiqueta de GA4 vive DENTRO del contenedor de Tag Manager, creada a mano
+ * en su interfaz. Cargar las dos cosas a la vez haría que GA4 contara cada
+ * página vista dos veces, así que aquí solo se carga el contenedor.
  *
  * Los eventos del sitio se mandan con `registrarEvento()` de src/lib/analitica.ts,
  * que empuja al `dataLayer` en el formato que GTM sabe leer (`{event: '...'}`).
  * Cada uno se conecta a su etiqueta desde la interfaz de Tag Manager.
  *
- * CUANDO SE CARGA
+ * CUÁNDO SE CARGA
  * ---------------
- * Solo si hay un ID de contenedor en PUBLIC_GTM_CONTAINER_ID y la compilacion
- * es de produccion. En `npm run dev` nunca se inyecta nada: las pruebas locales
- * no ensucian las estadisticas de la empresa.
+ * Solo si hay un ID de contenedor en PUBLIC_GTM_CONTAINER_ID y la compilación
+ * es de producción. En `npm run dev` nunca se inyecta nada: las pruebas locales
+ * no ensucian las estadísticas de la empresa.
  *
- * DONDE VIVE EL ID
+ * DÓNDE VIVE EL ID
  * ----------------
- * En la variable PUBLIC_GTM_CONTAINER_ID del repositorio (GitHub > Settings >
- * Secrets and variables > Actions) y en las variables de entorno de Vercel. El
+ * En la variable PUBLIC_GTM_CONTAINER_ID del repositorio (GitHub → Settings →
+ * Secrets and variables → Actions) y en las variables de entorno de Vercel. El
  * workflow la pasa como variable de entorno al compilar. Ver docs/ANALITICA.md.
  *
  * CONSENTIMIENTO
@@ -31,58 +31,22 @@
  * carga y recibe los eventos, pero sin escribir cookies ni identificar al
  * visitante entre sesiones, hasta que la persona acepta en la franja de
  * AvisoCookies.astro. Es lo que exige la Ley 1581 de 2012 en Colombia.
- *
- * El `gtag` que define el arranque es el envoltorio estandar de Google sobre
- * `dataLayer`: es lo que permite que `guardarConsentimiento()` siga funcionando
- * igual que antes, sin que le importe si detras hay gtag.js o GTM.
  */
+import { ruta } from '../lib/rutas';
+
 const ID = import.meta.env.PUBLIC_GTM_CONTAINER_ID ?? '';
 
 /** Sin ID o en desarrollo no se carga absolutamente nada. */
 const activo = ID.trim() !== '' && import.meta.env.PROD;
 
-/**
- * Consentimiento por defecto. Va ANTES del contenedor, y por eso en un
- * `<script>` aparte: si GTM arrancara primero, sus etiquetas podrian dispararse
- * con el consentimiento sin declarar.
+/*
+ * El arranque (dataLayer, Consent Mode y el fragmento del contenedor) vive en
+ * public/js/analitica-arranque.js y recibe el ID por `data-gtm-id`. Antes iba
+ * como script en línea con el ID dentro; se sacó a un archivo para que la
+ * Content-Security-Policy de vercel.json no tenga que permitir 'unsafe-inline'
+ * en script-src. Es síncrono para declarar el consentimiento antes de que GTM
+ * arranque y antes de cualquier `registrarEvento`.
  */
-const consentimiento = `
-window.dataLayer = window.dataLayer || [];
-function gtag(){ window.dataLayer.push(arguments); }
-window.gtag = gtag;
-
-// Por defecto NADA se almacena: ni cookies de analitica ni publicidad.
-gtag('consent', 'default', {
-  analytics_storage: 'denied',
-  ad_storage: 'denied',
-  ad_user_data: 'denied',
-  ad_personalization: 'denied',
-});
-
-// Si la persona ya acepto en una visita anterior, se restablece su decision
-// antes del primer page_view para no perder esa visita.
-try {
-  if (window.localStorage.getItem('dst_consentimiento') === 'aceptado') {
-    gtag('consent', 'update', { analytics_storage: 'granted' });
-  }
-} catch (e) {}
-`.trim();
-
-/** Fragmento oficial del contenedor, con el ID inyectado desde la variable. */
-const contenedor = `
-(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer',${JSON.stringify(ID)});
-`.trim();
 ---
 
-{
-  activo && (
-    <>
-      <script is:inline set:html={consentimiento} />
-      <script is:inline set:html={contenedor} />
-    </>
-  )
-}
+{activo && <script is:inline src={ruta('/js/analitica-arranque.js')} data-gtm-id={ID} />}

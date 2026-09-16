@@ -19,14 +19,15 @@
  * Resend, que son llamadas de red.
  */
 import { enviarCorreoAdministrativo } from './correo';
-import type { Entorno } from './config';
+import { claveResend, type Entorno } from './config';
+import { LIMITES_TEXTO } from './limites-texto';
 import { limitar } from './limite-tasa';
 import { FORMA_CORREO, ipDePeticion, limpiar, texto } from './solicitud';
 import { verificarTurnstile } from './turnstile';
 
 export interface RespuestaAdministrativa {
   estado: number;
-  cuerpo: { ok: true } | { ok: false; errores: string[] };
+  cuerpo: { ok: true } | { ok: false; errores: string[]; codigo?: 'config-incompleta' };
 }
 
 export interface DatosAdministrativa {
@@ -48,7 +49,8 @@ const LIMITES = {
   nombre: 150,
   telefono: 30,
   correo: 150,
-  mensaje: 1500,
+  // Mínimo y máximo del mensaje: los mismos que enseña el contador del campo.
+  mensaje: LIMITES_TEXTO.mensajeAdministrativo,
 } as const;
 
 /** Cinco recados por IP cada diez minutos, como la radicación. */
@@ -96,9 +98,10 @@ export function validarAdministrativa(cuerpo: unknown): ResultadoAdministrativa 
   }
 
   const mensaje = limpiar(texto(datos.mensaje));
-  if (mensaje.length < 10) errores.push('Cuéntanos brevemente qué necesitas.');
-  else if (mensaje.length > LIMITES.mensaje) {
-    errores.push(`El mensaje no puede pasar de ${LIMITES.mensaje} caracteres.`);
+  if (mensaje.length < LIMITES.mensaje.min) {
+    errores.push(`Cuéntanos brevemente qué necesitas, en al menos ${LIMITES.mensaje.min} caracteres.`);
+  } else if (mensaje.length > LIMITES.mensaje.max) {
+    errores.push(`El mensaje no puede pasar de ${LIMITES.mensaje.max} caracteres.`);
   }
 
   if (errores.length > 0) return { ok: false, errores };
@@ -113,6 +116,21 @@ export async function atenderAdministrativa(
   peticion: Request,
   env: Entorno,
 ): Promise<RespuestaAdministrativa> {
+  // --- 0. Configuración -----------------------------------------------------
+  // Sin clave de Resend el recado no puede salir. Se dice antes de gastar nada:
+  // 503 con un código que el formulario reconoce para avisar y abrir el correo.
+  if (!claveResend(env)) {
+    console.error('[pqrs/administrativa] falta PQRS_RESEND_API_KEY (o RESEND_API_KEY).');
+    return {
+      estado: 503,
+      cuerpo: {
+        ok: false,
+        codigo: 'config-incompleta',
+        errores: ['El envío en línea no está disponible en este momento.'],
+      },
+    };
+  }
+
   // --- 1. Cuerpo ------------------------------------------------------------
   let bruto: unknown;
   try {

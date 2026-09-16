@@ -1,4 +1,4 @@
-# Proyecto: sitio web Distribuciones Santiago de Tunja (dominio futuro: dstunja.com)
+# Proyecto: sitio web Distribuciones Santiago de Tunja (dominio: dstunja.com)
 
 Stack: Astro + Tailwind 4 + TypeScript.
 
@@ -25,9 +25,9 @@ Stack: Astro + Tailwind 4 + TypeScript.
   eso no se puede recuperar. Lo correcto es parar, avisar de qué archivos están
   compartidos y reanudar sobre la base ya commiteada.
 - **Dos destinos de publicación**, y cada uno necesita un `site`/`base` distinto:
-  - **Vercel** (plan Hobby), la publicación principal: <https://paginaweb-beta-coral.vercel.app>.
-    Cuelga de la raíz del dominio, así que va **sin `base`**. Despliega solo, con
-    cada push a `main`.
+  - **Vercel** (plan Hobby), la publicación principal: <https://dstunja.com> (también
+    responde en <https://paginaweb-beta-coral.vercel.app>). Cuelga de la raíz del
+    dominio, así que va **sin `base`**. Despliega solo, con cada push a `main`.
   - **GitHub Pages** (espejo de revisión interna, `.github/workflows/deploy.yml`):
     <https://dstunja.github.io/proyecto_paginaWeb>. Es un *project site*: cuelga de
     `/proyecto_paginaWeb`, así que necesita `base: '/proyecto_paginaWeb'`. Sin él,
@@ -37,16 +37,18 @@ Stack: Astro + Tailwind 4 + TypeScript.
   builds (producción y preview). Las URLs están en constantes al principio del
   archivo: `SITIO_VERCEL`, `SITIO_GITHUB_PAGES` y `BASE_GITHUB_PAGES`. No dejar
   ninguno de los dos fijo: romperías uno de los dos despliegues.
-- **`dstunja.com` NO se usa como `site` todavía.** Hoy ese dominio sirve otra
-  página, una instalación de WordPress ajena a este proyecto. Ponerlo haría que el
-  canonical, el Open Graph y el sitemap del sitio entero apuntaran a una web que no
-  es esta. Se usará cuando el dominio apunte a Vercel, no antes.
-- **Cómo migrar a dstunja.com** el día que el dominio ya apunte a Vercel:
-  1. En `astro.config.mjs`, cambiar `SITIO_VERCEL` a `'https://dstunja.com'`.
-  2. En `public/robots.txt`, cambiar la línea `Sitemap:` a
-     `https://dstunja.com/sitemap-index.xml`. Ese archivo es estático (se copia tal
-     cual desde `public/`), así que no se entera del `site` y hay que tocarlo a mano.
-  No hace falta nada más: canonical, Open Graph y sitemap salen de `site`.
+- **`dstunja.com` es el `site` de Vercel** (`SITIO_VERCEL`): el dominio ya apunta a
+  Vercel y el WordPress anterior dejó de servirse. Canonical, Open Graph y sitemap
+  salen de `site`. La línea `Sitemap:` de `public/robots.txt` es estática (se copia
+  tal cual desde `public/`) y no se entera del `site`: si el dominio cambia, hay que
+  tocar los dos sitios a mano.
+- **Las URLs del WordPress viejo redirigen con 301** desde `redirects` de
+  `vercel.json` (`/shop`, `/carrito`, `/producto/…` → `/pedido/`; categorías →
+  `/catalogo/`; `about-us…` → `/nosotros/`; `contact-us` → `/contactanos/`; el resto
+  sin equivalente → `/`). Dos detalles de Vercel: `permanent: true` responde **308**,
+  así que se usa `"statusCode": 301`; y un `source` no casa con la barra final si no
+  termina en `{/}?`, y WordPress publicaba todo con barra (`/shop/`). No se redirige
+  cualquier 404 al inicio: Google lo trata como *soft 404*.
 - `output: 'static'` y `adapter: vercel()` en los dos builds. Las páginas siguen
   siendo estáticas. Solo `src/pages/api/**` corre como función, y cada ruta lo pide
   a mano con `export const prerender = false`. Esas funciones **solo existen en
@@ -61,6 +63,11 @@ Stack: Astro + Tailwind 4 + TypeScript.
   código sirve con `base` y sin él, sin tocar los componentes uno a uno.
 - La radicación de PQRS necesita variables de entorno (Blob, Resend, Turnstile).
   Están documentadas en `.env.example` y en `docs/PQRS-ADJUNTOS.md`.
+- `vercel.json` aplica una **Content-Security-Policy sin `'unsafe-inline'` en
+  `script-src`**. Nada de `<script is:inline>` con código: va a un archivo de
+  `public/js/` (los de datos `type="application/json"` sí valen). Un servicio
+  externo nuevo hay que añadirlo a la CSP. Tras tocarla, `npm run
+  verificar:navegacion` (y `--url https://dstunja.com` después de desplegar).
 
 ## Marca
 
