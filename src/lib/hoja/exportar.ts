@@ -49,8 +49,11 @@ export interface FotoExportada {
    * la busca con cualquiera de las de imagen, igual que hace el sitio.
    */
   origen: string;
-  /** Nombre de destino, con la extensión del origen ('{ext}' se sustituye). */
-  destino: string;
+  /**
+   * Nombre en la carpeta de Drive SIN extensión ('1051111', 'vendedor-tat'):
+   * el script le pone la del archivo que encuentre, que es la real.
+   */
+  nombre: string;
 }
 
 export interface Exportacion {
@@ -111,14 +114,13 @@ export function exportar(entrada: EntradaExportacion): Exportacion {
   const veces = new Map<string, number>();
   for (const p of entrada.productos) veces.set(p.codigo, (veces.get(p.codigo) ?? 0) + 1);
 
-  const destinosFoto = new Map<string, string>();
+  const nombresFoto = new Map<string, string>();
   const productos = entrada.productos.map((p) => {
     const compartido = (veces.get(p.codigo) ?? 0) > 1;
     const especial = especialPorCodigo.get(p.codigo);
-    const imagen = fotoDeProducto(p, compartido, destinosFoto, fotos);
+    const imagen = fotoDeProducto(p, compartido, nombresFoto, fotos);
     if (especial && especial.imagen && p.imagen && !mismoArchivo(especial.imagen, p.imagen)) {
-      const destino = `${p.codigo}-especial.{ext}`;
-      fotos.push({ origen: origenPublico(especial.imagen), destino });
+      fotos.push({ origen: origenPublico(especial.imagen), nombre: `${p.codigo}-especial` });
     }
 
     const observaciones: string[] = [];
@@ -147,7 +149,7 @@ export function exportar(entrada: EntradaExportacion): Exportacion {
   });
 
   const ofertas = entrada.vacantes.map((v) => {
-    fotos.push({ origen: origenPublico(v.imagen), destino: `${v.slug}.{ext}` });
+    fotos.push({ origen: origenPublico(v.imagen), nombre: v.slug });
     return [
       v.slug,
       v.cargo,
@@ -159,7 +161,8 @@ export function exportar(entrada: EntradaExportacion): Exportacion {
       (v.ofrecemos ?? []).join('\n'),
       '',
       v.whatsappExtra?.texto ?? '',
-      `${v.slug}.{ext}`,
+      // Vacía: la foto se llama como el ID, que es el valor por defecto.
+      '',
       'Sí',
       '',
       '',
@@ -212,31 +215,30 @@ export function pspPublicado(p: Producto, manuales: Record<string, number>): num
 }
 
 /**
- * Decide el nombre de la foto del producto en Drive y anota la copia. Dos
- * filas con el mismo código y fotos distintas no pueden llamarse las dos
- * "<código>.jpg": la segunda lleva el nombre en slug.
+ * Decide el nombre de la foto del producto en Drive, anota la copia y
+ * devuelve lo que va en la columna Imagen.
+ *
+ * Lo normal es que la foto se llame como el código, y entonces la columna
+ * queda VACÍA (es el valor por defecto): menos texto que mantener en la hoja.
+ * Dos filas con el mismo código y fotos distintas no pueden llamarse las dos
+ * "<código>.jpg": la segunda lleva el nombre en slug y ese nombre sí va en la
+ * columna, sin extensión, porque la foto se busca por nombre.
  */
-function fotoDeProducto(p: Producto, compartido: boolean, destinos: Map<string, string>, fotos: FotoExportada[]): string {
+function fotoDeProducto(p: Producto, compartido: boolean, nombres: Map<string, string>, fotos: FotoExportada[]): string {
   if (!p.imagen) return '';
   const origen = p.imagen.startsWith('/') ? origenPublico(p.imagen) : `src/assets/productos/${p.imagen}`;
-  const ext = extension(p.imagen);
-  const base = compartido && destinos.has(p.codigo) && destinos.get(p.codigo) !== origen
+  const nombre = compartido && nombres.has(p.codigo) && nombres.get(p.codigo) !== origen
     ? `${p.codigo}-${slug(p.nombre)}`
     : p.codigo;
-  if (!destinos.has(base)) {
-    destinos.set(base, origen);
-    fotos.push({ origen, destino: `${base}.{ext}` });
+  if (!nombres.has(nombre)) {
+    nombres.set(nombre, origen);
+    fotos.push({ origen, nombre });
   }
-  return `${base}${ext}`;
+  return nombre === p.codigo ? '' : nombre;
 }
 
 function origenPublico(rutaPublica: string): string {
   return `public/${rutaPublica.replace(/^\/+/, '')}`;
-}
-
-function extension(archivo: string): string {
-  const m = archivo.match(/\.[a-z0-9]+$/i);
-  return m ? m[0].toLowerCase() : '';
 }
 
 function mismoArchivo(a: string, b: string): boolean {

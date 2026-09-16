@@ -96,14 +96,28 @@ describe('exportar → cargar (ida y vuelta con los datos reales)', () => {
     }
   });
 
-  it('renombra las fotos por código o ID, sin repetir destinos', () => {
-    const destinos = exportacion.fotos.map((f) => f.destino);
-    expect(new Set(destinos).size).toBe(destinos.length);
-    expect(destinos).toContain('1051111.{ext}'); // era crop_1051111_tosh_cremademani.jpg
-    expect(destinos).toContain('1089478.{ext}'); // era /img/innovacion/jumbo-pistacho-dubai.jpg
-    expect(destinos).toContain('2034008-especial.{ext}'); // el especial de Badia usa otra foto que su ficha
-    expect(destinos).toContain('vendedor-tat.{ext}');
-    expect(exportacion.fotos.find((f) => f.destino === '1051111.{ext}')?.origen).toBe('src/assets/productos/crop_1051111_tosh_cremademani.jpg');
+  it('renombra las fotos por código o ID, sin repetir nombres ni dejar extensión', () => {
+    const nombres = exportacion.fotos.map((f) => f.nombre);
+    expect(new Set(nombres).size).toBe(nombres.length);
+    expect(nombres.every((n) => /^[a-z0-9-]+$/.test(n)), 'solo el nombre base, sin punto').toBe(true);
+    expect(nombres).toContain('1051111'); // era crop_1051111_tosh_cremademani.jpg
+    expect(nombres).toContain('1089478'); // era /img/innovacion/jumbo-pistacho-dubai.jpg
+    expect(nombres).toContain('2034008-especial'); // el especial de Badia usa otra foto que su ficha
+    expect(nombres).toContain('vendedor-tat');
+    expect(exportacion.fotos.find((f) => f.nombre === '1051111')?.origen).toBe('src/assets/productos/crop_1051111_tosh_cremademani.jpg');
+  });
+
+  it('la columna Imagen queda vacía salvo cuando la foto no se llama como el código', () => {
+    const [titulos, , ...filas] = releidas.productos;
+    const iCodigo = titulos!.indexOf('Código SAP');
+    const iImagen = titulos!.indexOf('Imagen');
+    const conImagen = filas.filter((f) => f[iImagen]).map((f) => [f[iCodigo], f[iImagen]]);
+    expect(conImagen.sort()).toEqual([
+      ['1080263', '1080263-monticello-spaghetti-n-5'],
+      ['1082110', '1082110-zenu-trozos-de-atun-en-agua'],
+    ]);
+    const [titulosO, , ...filasO] = releidas.ofertas;
+    expect(filasO.every((f) => f[titulosO!.indexOf('Imagen')] === '')).toBe(true);
   });
 
   it('las filas de ayuda (fila 2) no se cuelan como datos', () => {

@@ -65,11 +65,11 @@ let copiadas = 0;
 for (const foto of resultado.fotos) {
   const origen = localizar(join(RAIZ, foto.origen));
   if (!origen) {
-    informe.push(`Foto no encontrada, no se copió: ${foto.origen} (destino ${foto.destino}).`);
+    informe.push(`Foto no encontrada, no se copió (hoy el sitio muestra un marcador en su lugar): ${foto.origen} → ${foto.nombre}.`);
     continue;
   }
   const ext = origen.slice(origen.lastIndexOf('.')).toLowerCase();
-  await copyFile(origen, join(carpetaFotos, foto.destino.replace('{ext}', ext)));
+  await copyFile(origen, join(carpetaFotos, foto.nombre + ext));
   copiadas++;
 }
 
