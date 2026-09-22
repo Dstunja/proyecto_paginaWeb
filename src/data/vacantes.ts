@@ -11,6 +11,11 @@
  * archivo no existe todavía se muestra un marcador de posición con el nombre
  * del cargo, así que nada se ve roto. La extensión del archivo real puede
  * diferir de la que está escrita aquí: se busca por nombre.
+ *
+ * La ruta se escribe desde la raíz de public/ y NO se le aplica `ruta()` aquí:
+ * de eso se encarga `imagenOMarcador` (src/lib/imagenes.ts), que es quien la
+ * consume en las dos páginas. Así la misma cadena sirve en Vercel (sin `base`)
+ * y en GitHub Pages (con `/proyecto_paginaWeb`).
  */
 
 /** Contacto de selección de personal, común a todas las convocatorias. */
@@ -32,6 +37,14 @@ export interface Vacante {
   /** Párrafos de la descripción larga (página de detalle). */
   descripcion: string[];
   requisitos: string[];
+  /**
+   * Qué hace la persona en el día a día ("Funciones principales" del flyer).
+   * Va aparte de `requisitos` porque son cosas distintas: el requisito filtra
+   * quién puede postularse, la función describe el trabajo.
+   */
+  funciones?: string[];
+  /** "Habilidades deseables": suman, pero sin ellas igual se puede postular. */
+  habilidades?: string[];
   /** Qué ofrece la empresa. */
   ofrecemos?: string[];
   /** Segundo número de WhatsApp, si la convocatoria lo tiene. */
@@ -42,6 +55,10 @@ export interface Vacante {
  * EDITAR AQUÍ: vacantes reales.
  * Si el arreglo queda vacío, /empleos/ muestra el mensaje de "no hay vacantes
  * abiertas" y la persona igual puede dejar su hoja de vida.
+ *
+ * El orden es el que se ve en la página: primero los cargos comerciales, luego
+ * las demás áreas y de último la convocatoria de vehículos, que no es un cargo
+ * sino una invitación a vincular vehículo propio.
  */
 export const vacantes: Vacante[] = [
   {
@@ -50,16 +67,26 @@ export const vacantes: Vacante[] = [
     ciudad: 'Tunja, Boyacá',
     tipo: 'Tiempo completo',
     resumen: 'Lidera y acompaña en calle al equipo de ventas TAT de la zona.',
-    imagen: '/img/empleos/supervisor-ventas-tat.jpg',
+    imagen: '/img/empleos/supervision-de-ventas.jpeg',
     descripcion: [
-      'Buscamos un supervisor de ventas TAT para acompañar al equipo comercial en la zona de Tunja: seguimiento en calle, cumplimiento de metas y relación con los tenderos.',
+      'En Distribuciones Santiago De Tunja buscamos personas con experiencia en liderazgo comercial, que quieran hacer parte de nuestro equipo y aportar al crecimiento del área de ventas.',
+      'También se valora la experiencia en cargos de liderazgo comercial o supervisión de equipos de ventas.',
     ],
     requisitos: [
-      'Técnico o tecnólogo',
-      '1 año de experiencia',
-      'Fluidez verbal',
-      'Moto propia',
-      'Documentos al día',
+      'Formación técnica, tecnológica o profesional en administración de empresas, mercadeo y ventas, gestión comercial o afines',
+      'Mínimo 1 año de experiencia en ventas o cargos similares',
+      'Excelente comunicación y fluidez verbal',
+      'Liderazgo y capacidad para trabajar en equipo',
+      'Preferiblemente con moto propia, para desplazamiento en la zona',
+      'Disponibilidad para viajar dentro de la zona asignada',
+      'Orientación a resultados y actitud proactiva',
+    ],
+    funciones: [
+      'Acompañamiento y seguimiento al equipo de ventas',
+      'Revisión de resultados y cumplimiento de objetivos',
+      'Organización y planeación de rutas',
+      'Seguimiento a clientes y creación de nuevos',
+      'Desarrollo de estrategias para el crecimiento del canal',
     ],
     ofrecemos: [
       'Salario base',
@@ -75,17 +102,148 @@ export const vacantes: Vacante[] = [
     ciudad: 'Tunja, Boyacá',
     tipo: 'Tiempo completo',
     resumen: 'Atiende la ruta de tiendas asignada y toma el pedido en el punto de venta.',
-    imagen: '/img/empleos/vendedor-tat.jpg',
+    imagen: '/img/empleos/perfil-de-ventas.jpeg',
     descripcion: [
-      'Buscamos vendedores TAT para atender la ruta de tiendas de Tunja: visita al punto de venta, toma de pedido y presentación del portafolio.',
+      'En Distribuciones Santiago De Tunja buscamos personas con actitud comercial, orientación al cliente y muchas ganas de crecer en el área de ventas TAT.',
+      'También se valora la experiencia en cargos similares o en el sector de consumo masivo.',
     ],
     requisitos: [
-      'Técnico o tecnólogo',
-      '1 año de experiencia',
-      'Fluidez verbal',
-      'Preferiblemente con moto',
+      'Técnico, tecnólogo o profesional en áreas administrativas, comerciales, de mercadeo o afines',
+      'Mínimo 1 año de experiencia en ventas TAT',
+      'Fluidez verbal y excelente comunicación',
+      'Preferiblemente con moto propia, para desplazamiento en la zona',
+      'Disponibilidad para viajar dentro de la zona asignada',
+      'Actitud proactiva, responsable y con enfoque en resultados',
+    ],
+    funciones: [
+      'Visitar y asesorar clientes en el canal TAT',
+      'Toma de pedidos y seguimiento a clientes',
+      'Realizar la comercialización del portafolio de productos',
+      'Crear y fidelizar nuevos clientes',
+      'Apoyar en el cumplimiento de los objetivos comerciales',
+    ],
+    habilidades: [
+      'Comunicación asertiva',
+      'Orientación al cliente',
+      'Trabajo en equipo',
+      'Proactividad',
+      'Iniciativa',
     ],
     ofrecemos: ['Salario base', 'Comisiones', 'Bonos por cumplimiento'],
+  },
+  {
+    slug: 'facturacion',
+    cargo: 'Facturación',
+    ciudad: 'Tunja, Boyacá',
+    tipo: 'Tiempo completo',
+    resumen: 'Elabora y revisa las facturas de venta y compra, y apoya la gestión documental.',
+    imagen: '/img/empleos/facturacion.jpeg',
+    descripcion: [
+      'En Distribuciones Santiago De Tunja buscamos personas con experiencia en procesos de facturación y gestión documental, que quieran hacer parte de nuestro equipo.',
+    ],
+    requisitos: [
+      'Técnico, tecnólogo o profesional en áreas administrativas, contables, financieras o afines',
+      'Experiencia mínima de 6 meses en procesos de facturación o áreas administrativas',
+      'Se valoran conocimientos en herramientas ofimáticas (Excel, Word) y atención al detalle',
+    ],
+    funciones: [
+      'Elaboración y revisión de facturas de venta y compra',
+      'Manejo y control de documentos contables y tributarios',
+      'Registro y actualización de información en el sistema',
+      'Apoyo en procesos administrativos del área',
+      'Seguimiento a pagos y cartera, según necesidad',
+    ],
+    habilidades: [
+      'Comunicación asertiva',
+      'Organización y responsabilidad',
+      'Manejo de herramientas ofimáticas',
+      'Atención al detalle',
+      'Trabajo en equipo',
+    ],
+  },
+  {
+    slug: 'logistica',
+    cargo: 'Logística',
+    ciudad: 'Tunja, Boyacá',
+    tipo: 'Tiempo completo',
+    resumen: 'Recibe, almacena y despacha la mercancía que sale a las rutas de distribución.',
+    imagen: '/img/empleos/perfil-de-logistica.jpeg',
+    descripcion: [
+      'En Distribuciones Santiago De Tunja buscamos personas con actitud, compromiso y ganas de ser parte de un gran equipo en el área de logística.',
+    ],
+    requisitos: [
+      'Experiencia o formación en logística, distribución, almacenamiento o administración de inventarios',
+      'Se valora la experiencia previa en procesos de distribución y manejo de mercancía',
+    ],
+    funciones: [
+      'Recepción de productos y verificación de pedidos',
+      'Almacenamiento y organización de mercancía',
+      'Control de inventarios',
+      'Alistamiento y despacho de pedidos',
+      'Apoyo en procesos de distribución',
+    ],
+    habilidades: [
+      'Organización y orden',
+      'Responsabilidad y compromiso',
+      'Trabajo en equipo',
+      'Atención al detalle',
+    ],
+  },
+  {
+    slug: 'talento-humano',
+    cargo: 'Talento Humano',
+    ciudad: 'Tunja, Boyacá',
+    tipo: 'Tiempo completo',
+    resumen: 'Apoya los procesos de selección, contratación y bienestar del equipo.',
+    imagen: '/img/empleos/talento-humano.jpeg',
+    descripcion: [
+      'Buscamos perfiles con formación o experiencia en áreas relacionadas con la gestión del talento humano.',
+    ],
+    requisitos: [
+      'Formación técnica, tecnológica o profesional en administración de empresas, gestión del talento humano, administración de recursos humanos o afines',
+      'Se valora la experiencia en procesos de selección, contratación y gestión de personal',
+    ],
+    funciones: [
+      'Apoyo en procesos de selección y contratación',
+      'Manejo y organización de la documentación del personal',
+      'Apoyo en bienestar y clima laboral',
+      'Seguimiento a procesos de talento humano',
+      'Apoyo en actividades administrativas del área',
+    ],
+    habilidades: [
+      'Comunicación asertiva',
+      'Trabajo en equipo',
+      'Organización y responsabilidad',
+      'Proactividad y disposición para aprender',
+    ],
+  },
+  {
+    slug: 'practicante-sistemas',
+    cargo: 'Practicante de Ingeniería de Sistemas',
+    ciudad: 'Tunja, Boyacá',
+    tipo: 'Práctica / pasantía',
+    resumen: 'Pon en práctica tus conocimientos en proyectos reales de tecnología y datos.',
+    imagen: '/img/empleos/practicante-sistemas.jpeg',
+    descripcion: [
+      'Si te apasiona la tecnología, los sistemas y quieres poner en práctica tus conocimientos, esta oportunidad es para ti.',
+    ],
+    requisitos: [
+      'Ser estudiante de Ingeniería de Sistemas o carreras afines',
+      'Contar con disponibilidad para realizar la práctica',
+      'Tener interés en aprender y aportar a proyectos de tecnología y mejora continua',
+    ],
+    habilidades: [
+      'Conocimientos en bases de datos (SQL, MySQL, PostgreSQL, etc.)',
+      'Manejo de lenguajes de programación (Python, Java, C#, entre otros)',
+      'Interés en análisis de datos y automatización de procesos',
+      'Trabajo en equipo, comunicación y proactividad',
+      'Mentalidad de aprendizaje continuo y solución de problemas',
+    ],
+    ofrecemos: [
+      'Un equipo de trabajo que te apoya y te guía',
+      'Experiencia en proyectos reales del sector de consumo masivo',
+      'Excelente ambiente laboral',
+    ],
   },
   {
     slug: 'buscamos-vehiculos',

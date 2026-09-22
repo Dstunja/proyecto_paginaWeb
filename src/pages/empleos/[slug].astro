@@ -101,6 +101,38 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
         </ul>
 
         {
+          vacante.funciones && vacante.funciones.length > 0 && (
+            <>
+              <h2 class="mt-12 text-[24px] tablet:text-[30px]">Funciones principales</h2>
+              <ul class="mt-5 flex list-none flex-col gap-3 p-0">
+                {vacante.funciones.map((funcion) => (
+                  <li class="flex items-start gap-3 text-[15px]">
+                    <Icono nombre="file-text" class="mt-1 h-[18px] w-[18px] shrink-0 text-secondary" interactivo={false} />
+                    {funcion}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )
+        }
+
+        {
+          vacante.habilidades && vacante.habilidades.length > 0 && (
+            <>
+              <h2 class="mt-12 text-[24px] tablet:text-[30px]">Habilidades deseables</h2>
+              <ul class="mt-5 flex list-none flex-col gap-3 p-0">
+                {vacante.habilidades.map((habilidad) => (
+                  <li class="flex items-start gap-3 text-[15px]">
+                    <Icono nombre="star" class="mt-1 h-[18px] w-[18px] shrink-0 text-accent-text" interactivo={false} />
+                    {habilidad}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )
+        }
+
+        {
           vacante.ofrecemos && vacante.ofrecemos.length > 0 && (
             <>
               <h2 class="mt-12 text-[24px] tablet:text-[30px]">Qué ofrecemos</h2>
