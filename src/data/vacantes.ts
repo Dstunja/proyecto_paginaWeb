@@ -163,7 +163,7 @@ export const vacantes: Vacante[] = [
   },
   {
     slug: 'logistica',
-    cargo: 'Logística',
+    cargo: 'Líder Logístico',
     ciudad: 'Tunja, Boyacá',
     tipo: 'Tiempo completo',
     resumen: 'Recibe, almacena y despacha la mercancía que sale a las rutas de distribución.',
