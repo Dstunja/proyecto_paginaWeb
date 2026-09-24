@@ -100,7 +100,10 @@ const ALTURA_OJOS = 0.4;
 const AIRE_MINIMO = 0.05;
 
 /**
- * Medidas de cada cara sobre su original (todas vienen a 960x1280).
+ * Medidas de cada cara sobre su original. Casi todos son verticales de
+ * celular a 960x1280; el de Camilo Acero llegó a 1200x1600. Cada fila se
+ * mide en píxeles de SU propio archivo, así que mezclar tamaños no rompe
+ * nada, pero tampoco se pueden copiar medidas de una fila a otra.
  *
  * El orden es el mismo de las tarjetas, solo para que sea fácil de leer: el
  * que manda en la página es el de src/data/equipo.ts.
@@ -132,13 +135,17 @@ const RECORTES = [
     eje: 450,
   },
   {
-    // Camilo Acero — Gerente Comercial.
-    original: 'camilo-acero.jpeg',
+    // Camilo Acero — Gerente Comercial. Foto nueva (sentado al escritorio),
+    // y la única que NO viene a 960x1280: son 1200x1600, así que sus medidas
+    // están en la escala de ESA foto y no se pueden comparar con las demás.
+    // Se tomó de lejos y la cara queda arriba del encuadre; sin recortar, el
+    // `object-fit: cover` del círculo se quedaba con el pecho y el escritorio.
+    original: 'camilo-acero.webp',
     salida: 'camilo-acero.webp',
-    coronilla: 267,
-    menton: 500,
-    ojos: 392,
-    eje: 467,
+    coronilla: 423,
+    menton: 705,
+    ojos: 572,
+    eje: 576,
   },
   {
     // Erika Abril — Talento Humano. Es la que tiene más pelo por encima de los
