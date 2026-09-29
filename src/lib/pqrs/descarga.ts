@@ -24,6 +24,13 @@
  * QUÉ SE PUEDE DESCARGAR. Solo soportes ya radicados: `pqrs/{radicado}/{uuid}.{ext}`.
  * Ni `solicitud.json` (el registro con todos los datos personales), ni los
  * pendientes, ni nada fuera de `pqrs/`. La forma se comprueba ANTES que la firma.
+ *
+ * ESTE MÓDULO LO COMPARTE EMPLEOS. La máquina de firmar y comprobar es la misma;
+ * lo que cambia es qué rutas se admiten, y por eso `atenderDescarga` recibe el
+ * validador. Cada endpoint pasa el suyo (`esRutaDescargable` para PQRS,
+ * `esRutaEmpleos` para las hojas de vida), así que un enlace firmado para una
+ * hoja de vida no sirve para bajar un soporte de PQRS ni al revés, aunque la
+ * firma sea válida.
  */
 import * as almacen from './almacen';
 import {
@@ -45,6 +52,24 @@ const FORMA_RUTA = new RegExp(
 
 export function esRutaDescargable(ruta: string): boolean {
   return FORMA_RUTA.test(ruta);
+}
+
+/**
+ * Una hoja de vida puesta a salvo: empleos/EMP-20260929-A7K2M9/<uuid>.<ext>.
+ *
+ * Empleos guarda en el Blob solo cuando el correo a Talento Humano no sale, y
+ * entonces el aviso que sí sale lleva el enlace a esta ruta. `registro.json`,
+ * que tiene el nombre, el teléfono y el correo del candidato, NO es descargable:
+ * igual que `solicitud.json` en PQRS, se lee desde el panel de Vercel.
+ */
+const FORMA_RUTA_EMPLEOS = new RegExp(
+  `^empleos/EMP-\\d{8}-[${ALFABETO}]{6}/` +
+    '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' +
+    '\\.(pdf|doc|docx)$',
+);
+
+export function esRutaEmpleos(ruta: string): boolean {
+  return FORMA_RUTA_EMPLEOS.test(ruta);
 }
 
 const codificador = new TextEncoder();
@@ -98,10 +123,11 @@ export async function enlaceDescarga(
   ruta: string,
   vence: number,
   env: Entorno,
+  rutaFuncion: string = RUTA_DESCARGA,
 ): Promise<string> {
   const firma = await firmar(ruta, vence, env);
   const parametros = new URLSearchParams({ ruta, vence: String(vence), firma });
-  return `${origen}${RUTA_DESCARGA}?${parametros.toString()}`;
+  return `${origen}${rutaFuncion}?${parametros.toString()}`;
 }
 
 // --- La función ----------------------------------------------------------------
@@ -130,7 +156,11 @@ function pagina(estado: number, titulo: string, texto: string): Response {
  * GET /api/pqrs/descarga. Devuelve siempre una `Response`: una redirección a
  * la URL firmada de Blob o una página corta que explica por qué no.
  */
-export async function atenderDescarga(peticion: Request, env: Entorno): Promise<Response> {
+export async function atenderDescarga(
+  peticion: Request,
+  env: Entorno,
+  esRutaPermitida: (ruta: string) => boolean = esRutaDescargable,
+): Promise<Response> {
   if (!blobConfigurado(env)) {
     console.error('[pqrs/descarga] falta BLOB_READ_WRITE_TOKEN.');
     return pagina(
@@ -146,7 +176,7 @@ export async function atenderDescarga(peticion: Request, env: Entorno): Promise<
   const firma = parametros.get('firma') ?? '';
   const vence = Number(venceTexto);
 
-  if (!esRutaDescargable(ruta) || !/^\d{13}$/.test(venceTexto) || !/^[0-9a-f]{64}$/.test(firma)) {
+  if (!esRutaPermitida(ruta) || !/^\d{13}$/.test(venceTexto) || !/^[0-9a-f]{64}$/.test(firma)) {
     return pagina(400, 'Enlace no válido', 'El enlace de descarga está incompleto o mal copiado.');
   }
 

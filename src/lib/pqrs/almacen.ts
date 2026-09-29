@@ -76,6 +76,34 @@ export async function mover(desde: string, hasta: string, env: Entorno): Promise
   return copiado.url;
 }
 
+/**
+ * Guarda bytes tal cual: los usa Empleos para poner a salvo la hoja de vida
+ * cuando el correo a Talento Humano no sale.
+ *
+ * PQRS no la necesita porque sus soportes llegan al Blob desde el navegador,
+ * sin pasar por la función; en Empleos el archivo ya está en memoria (viaja
+ * dentro del multipart), así que lo escribe la propia función.
+ *
+ * `addRandomSuffix: false` porque la ruta ya lleva un UUID: dejar que Blob
+ * añada otro sufijo haría que la ruta guardada no fuera la que se firmó para el
+ * enlace de descarga.
+ */
+export async function guardarBytes(
+  pathname: string,
+  bytes: Uint8Array,
+  contentType: string,
+  env: Entorno,
+): Promise<string> {
+  // `Buffer.from` sobre el mismo ArrayBuffer: no copia los bytes, solo los
+  // envuelve en el tipo que pide el SDK de Blob.
+  const resultado = await put(pathname, Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength), {
+    ...opciones(env),
+    contentType,
+    addRandomSuffix: false,
+  });
+  return resultado.url;
+}
+
 /** Guarda el registro de la radicación. */
 export async function guardarJson(
   pathname: string,

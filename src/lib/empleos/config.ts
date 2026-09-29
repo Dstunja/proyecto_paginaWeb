@@ -7,8 +7,7 @@
  *
  * Las dos variables de aquí son opcionales y tienen valor por defecto: el
  * destino sale de `contactoEmpleo` en src/data/vacantes.ts (la misma dirección
- * que se enseña en la página) y el remitente es el de PQRS, que por defecto es
- * `onboarding@resend.dev`.
+ * que se enseña en la página) y el remitente es `onboarding@resend.dev`.
  *
  * LA CLAVE DE RESEND ES RESEND_API_KEY, no la de PQRS. Son cuentas distintas:
  * con el remitente de pruebas cada cuenta solo entrega a su titular, así que
@@ -17,7 +16,11 @@
  * variables de Upstash sí son compartidos.
  */
 import { contactoEmpleo } from '../../data/vacantes';
-import { correoRemitente, type Entorno } from '../pqrs/config';
+import {
+  REMITENTE_POR_DEFECTO,
+  esRemitenteDePrueba,
+  type Entorno,
+} from '../pqrs/config';
 
 export type { Entorno };
 
@@ -41,18 +44,87 @@ export function correoDestinoEmpleos(env: Entorno = entornoActual()): string {
 /**
  * Remitente. Variable: EMPLEOS_REMITENTE (opcional).
  *
- * Sin ella se usa el mismo remitente que PQRS: `PQRS_REMITENTE` o, si tampoco
- * está, `onboarding@resend.dev`. Cuando haya un dominio verificado en la cuenta
- * de Resend de Empleos, definir EMPLEOS_REMITENTE con una dirección de ese
- * dominio.
+ * Por defecto `onboarding@resend.dev`, el remitente de pruebas de Resend.
+ *
+ * YA NO HEREDA `PQRS_REMITENTE`, y eso fue un arreglo, no un descuido: PQRS y
+ * Empleos usan CUENTAS DE RESEND DISTINTAS, y un dominio verificado en la cuenta
+ * de PQRS no está verificado en la de Empleos. Heredarlo significaba que el día
+ * que PQRS estrenara dominio propio, Empleos empezaría a mandar desde una
+ * dirección que su cuenta no puede firmar y TODAS las postulaciones fallarían a
+ * la vez.
+ *
+ * Cuando dstunja.com esté verificado en la cuenta de Resend de Empleos, poner
+ * aquí `empleos@dstunja.com`, y SOLO ENTONCES cambiar EMPLEOS_DESTINO al buzón
+ * de Talento Humano (ver docs/EMPLEOS-POSTULACION.md).
  */
 export function correoRemitenteEmpleos(env: Entorno = entornoActual()): string {
   const valor = env.EMPLEOS_REMITENTE?.trim();
-  return valor || correoRemitente(env);
+  return valor || REMITENTE_POR_DEFECTO;
 }
 
-/** Cinco postulaciones por IP cada diez minutos, como la radicación de PQRS. */
+/**
+ * ¿El remitente y el destino son compatibles con la cuenta de Resend?
+ *
+ * Con el remitente de pruebas (`@resend.dev`) Resend SOLO entrega al titular de
+ * la cuenta. Si alguien cambia EMPLEOS_DESTINO al buzón de Talento Humano sin
+ * haber cambiado antes EMPLEOS_REMITENTE a un dominio verificado, todas las
+ * postulaciones empiezan a fallar. No se puede comprobar desde aquí quién es el
+ * titular, pero sí se puede avisar en el registro de que la combinación es la
+ * peligrosa.
+ */
+export function combinacionArriesgada(env: Entorno = entornoActual()): boolean {
+  return (
+    esRemitenteDePrueba(correoRemitenteEmpleos(env)) &&
+    correoDestinoEmpleos(env) !== contactoEmpleo.email
+  );
+}
+
+/**
+ * Límite de postulaciones VERIFICADAS con Upstash puesto: cinco por IP cada diez
+ * minutos, como la radicación de PQRS. El contador es compartido entre
+ * instancias, así que el tope puede ser ajustado.
+ */
 export const LIMITE_POSTULACIONES = { maximo: 5, ventanaSegundos: 600, prefijo: 'empleos:postular' };
+
+/**
+ * El mismo límite SIN Upstash, que es la situación de hoy en producción.
+ *
+ * Dos cambios, y los dos por lo mismo: el contador en memoria no sirve para
+ * frenar a nadie decidido (se reinicia en cada arranque en frío y se multiplica
+ * por instancia), así que lo único que puede hacer es no estorbar a los
+ * candidatos de verdad.
+ *
+ *  - EL TOPE SUBE A VEINTE. Claro, Tigo y Movistar sacan a muchos clientes por
+ *    una misma IP pública; con cinco, un grupo de WhatsApp donde se comparte una
+ *    vacante deja fuera al sexto que lo intente, y ese error («espera 10
+ *    minutos») es indistinguible para él de que la página esté rota.
+ *  - LA CLAVE LLEVA LA HUELLA DEL ARCHIVO, no solo la IP (ver ./huella.ts). Así
+ *    lo que se cuenta es «esta hoja de vida desde esta IP», que es lo que hace
+ *    una persona insistiendo, y no «alguien desde esta IP», que es lo que hacen
+ *    veinte candidatos del mismo operador.
+ */
+export const LIMITE_POSTULACIONES_MEMORIA = {
+  maximo: 20,
+  ventanaSegundos: 600,
+  prefijo: 'empleos:postular:huella',
+};
+
+/**
+ * Límite de las postulaciones SIN VERIFICAR, mucho más estrecho.
+ *
+ * Una postulación sin token de Turnstile es la que entra cuando el reto no se
+ * pudo resolver en ese navegador (un WebView de WhatsApp, un bloqueador, un
+ * teléfono viejo). Se acepta porque perder a un candidato real es peor que
+ * revisar un correo de más, pero es también la puerta que usaría un robot: le
+ * basta con no mandar token. De ahí el tope de tres cada media hora, contando
+ * por IP y huella del archivo, y de ahí que el correo salga marcado
+ * «[SIN VERIFICAR]» para que Talento Humano lo lea con criterio.
+ */
+export const LIMITE_SIN_VERIFICAR = {
+  maximo: 3,
+  ventanaSegundos: 1800,
+  prefijo: 'empleos:postular:sin-verificar',
+};
 
 /**
  * Nombre del campo trampa (honeypot) del formulario.

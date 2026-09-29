@@ -35,7 +35,7 @@ export function fechaColombia(ahora: Date = new Date()): string {
  * 32 letras salgan con la misma probabilidad; tomar el módulo a secas sesgaría
  * las primeras.
  */
-function sufijoAleatorio(aleatorio: Crypto = globalThis.crypto): string {
+export function sufijoAleatorio(aleatorio: Crypto = globalThis.crypto): string {
   const TOPE = 256 - (256 % ALFABETO.length); // 256 es múltiplo de 32: no descarta nada
   let salida = '';
   while (salida.length < LONGITUD_SUFIJO) {

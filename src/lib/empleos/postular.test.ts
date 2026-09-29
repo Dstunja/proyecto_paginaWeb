@@ -22,6 +22,14 @@ let respuestaResend: { data: unknown; error: { message: string } | null } = {
   data: { id: 'correo-de-prueba' },
   error: null,
 };
+/**
+ * Respuestas encoladas, una por intento, para probar los reintentos.
+ *
+ * Mientras tenga elementos, cada envío consume el primero; cuando se vacía se
+ * vuelve a usar `respuestaResend`. Así se puede describir «el primer intento
+ * falla y el segundo pasa» sin tocar el doble de Resend desde cada prueba.
+ */
+const colaResend: Array<{ data: unknown; error: { message: string } | null }> = [];
 
 vi.mock('resend', () => ({
   Resend: class {
@@ -31,7 +39,7 @@ vi.mock('resend', () => ({
     emails = {
       send: async (mensaje: Record<string, unknown>) => {
         correosEnviados.push(mensaje);
-        return respuestaResend;
+        return colaResend.shift() ?? respuestaResend;
       },
     };
   },
@@ -44,6 +52,13 @@ const ENTORNO = {
   TURNSTILE_SECRET: 'secreto-de-prueba',
   RESEND_API_KEY: 're_prueba',
 };
+
+/**
+ * Se pasa como `dormir` en los casos que prueban un fallo de correo: el envio
+ * se reintenta tres veces con pausas crecientes, y esperarlas de verdad
+ * añadiría dos segundos de reloj a cada una de esas pruebas sin comprobar nada.
+ */
+const SIN_ESPERA = async () => {};
 
 // --- Archivos de prueba -----------------------------------------------------
 
@@ -171,6 +186,7 @@ beforeEach(() => {
   correosEnviados.length = 0;
   clavesUsadas.length = 0;
   respuestaResend = { data: { id: 'correo-de-prueba' }, error: null };
+  colaResend.length = 0;
   reiniciarMemoria();
   turnstileResponde(true);
 });
@@ -291,12 +307,27 @@ describe('destino y remitente', () => {
     expect(correosEnviados[0]!.from).toBe('Empleos DST <empleos@dstunja.com>');
   });
 
-  it('sin EMPLEOS_REMITENTE hereda PQRS_REMITENTE', async () => {
+  /*
+   * Antes SI lo heredaba, y era un error esperando su turno: PQRS y Empleos usan
+   * cuentas de Resend distintas, asi que un dominio verificado en la de PQRS no
+   * lo esta en la de Empleos. El dia que PQRS estrenara dominio propio, Empleos
+   * habria empezado a mandar desde una direccion que su cuenta no puede firmar y
+   * todas las postulaciones habrian fallado a la vez.
+   */
+  it('NO hereda PQRS_REMITENTE: se queda con el remitente de pruebas', async () => {
     await atenderPostulacion(peticion(campos()), {
       ...ENTORNO,
       PQRS_REMITENTE: 'Sitio <hola@dstunja.com>',
     });
-    expect(correosEnviados[0]!.from).toBe('Sitio <hola@dstunja.com>');
+    expect(correosEnviados[0]!.from).toBe('onboarding@resend.dev');
+  });
+
+  it('EMPLEOS_REMITENTE manda sobre el valor por defecto', async () => {
+    await atenderPostulacion(peticion(campos()), {
+      ...ENTORNO,
+      EMPLEOS_REMITENTE: 'Empleos <empleos@dstunja.com>',
+    });
+    expect(correosEnviados[0]!.from).toBe('Empleos <empleos@dstunja.com>');
   });
 });
 
@@ -535,21 +566,139 @@ describe('campo trampa', () => {
 });
 
 describe('límite de tasa', () => {
-  it('la sexta postulación en 10 minutos desde la misma IP → 429', async () => {
-    for (let i = 0; i < 5; i += 1) {
+  /*
+   * Sin Upstash el tope es 20, no 5, y la clave lleva la huella del archivo. El
+   * contador en memoria no frena a nadie decidido -se reinicia en cada arranque
+   * en frio y se multiplica por instancia-, asi que lo unico que puede hacer es
+   * no estorbar a los candidatos de verdad, que detras de un operador movil
+   * comparten IP publica de a muchos.
+   */
+  it('la postulación 21 con la misma hoja de vida y la misma IP → 429', async () => {
+    for (let i = 0; i < 20; i += 1) {
       const respuesta = await atenderPostulacion(peticion(campos()), ENTORNO);
       expect(respuesta.estado).toBe(200);
     }
-    const sexta = await atenderPostulacion(peticion(campos()), ENTORNO);
-    expect(sexta.estado).toBe(429);
-    expect(errores(sexta).join(' ')).toContain('Espera');
-    expect(correosEnviados).toHaveLength(5);
+    const siguiente = await atenderPostulacion(peticion(campos()), ENTORNO);
+    expect(siguiente.estado).toBe(429);
+    expect(errores(siguiente).join(' ')).toContain('Espera');
+    expect(correosEnviados).toHaveLength(20);
   });
 
   it('otra IP tiene su propio contador', async () => {
-    for (let i = 0; i < 5; i += 1) await atenderPostulacion(peticion(campos()), ENTORNO);
+    for (let i = 0; i < 20; i += 1) await atenderPostulacion(peticion(campos()), ENTORNO);
     const otra = await atenderPostulacion(peticion(campos(), HOJA_PDF, '198.51.100.7'), ENTORNO);
     expect(otra.estado).toBe(200);
+  });
+
+  /*
+   * Este es el caso que motivo la huella: veinte candidatos distintos desde la
+   * misma IP de un operador movil no se pueden estorbar entre ellos. Cada hoja
+   * de vida lleva su propio contador.
+   */
+  it('otra hoja de vida desde la misma IP tiene su propio contador', async () => {
+    for (let i = 0; i < 20; i += 1) await atenderPostulacion(peticion(campos()), ENTORNO);
+
+    const otroArchivo = {
+      nombre: 'hoja de vida.pdf',
+      bytes: Buffer.concat([PDF_MINIMO, Buffer.from('otro candidato', 'latin1')]),
+      tipo: 'application/pdf',
+    };
+    const otra = await atenderPostulacion(peticion(campos(), otroArchivo), ENTORNO);
+    expect(otra.estado).toBe(200);
+  });
+});
+
+/*
+ * POSTULACIONES SIN VERIFICAR
+ *
+ * Cuando el navegador del candidato no consigue resolver el reto de Cloudflare
+ * -un WebView de WhatsApp, un bloqueador, un telefono viejo-, el formulario
+ * manda la postulacion igual, sin token y con la marca `sin_verificar`. Es un
+ * intercambio consciente: se acepta porque perder a un candidato real es peor
+ * que revisar un correo de mas, y a cambio entra por un limite mucho mas
+ * estrecho y sale marcada en el asunto.
+ */
+describe('postulaciones sin verificar', () => {
+  function sinVerificar(extra: Record<string, string> = {}) {
+    return campos({ turnstileToken: '', sin_verificar: 'si', ...extra });
+  }
+
+  it('sin token y con la marca → 200 y el correo sale', async () => {
+    const respuesta = await atenderPostulacion(peticion(sinVerificar()), ENTORNO);
+    expect(respuesta.estado).toBe(200);
+    expect(correosEnviados).toHaveLength(1);
+  });
+
+  it('el asunto lleva [SIN VERIFICAR] delante', async () => {
+    await atenderPostulacion(peticion(sinVerificar()), ENTORNO);
+    expect(correosEnviados[0]!.subject).toBe(
+      '[SIN VERIFICAR] Postulación: Vendedor TAT – Cristian Amaya',
+    );
+  });
+
+  it('el cuerpo explica por qué no se verificó', async () => {
+    await atenderPostulacion(peticion(sinVerificar()), ENTORNO);
+    expect(String(correosEnviados[0]!.text)).toContain('no pasó la verificación antirrobots');
+    expect(String(correosEnviados[0]!.html)).toContain('no pasó la verificación antirrobots');
+  });
+
+  it('la hoja de vida sigue yendo adjunta', async () => {
+    await atenderPostulacion(peticion(sinVerificar()), ENTORNO);
+    expect(adjuntos()).toHaveLength(1);
+    expect(adjuntos()[0]!.filename).toBe('hoja_de_vida.pdf');
+  });
+
+  /*
+   * La marca no es una puerta trasera: si viene un token, se verifica. Si no
+   * fuera asi, a un robot le bastaria con mandar la marca junto a cualquier
+   * token para elegir por que puerta entra.
+   */
+  it('con token presente la marca se ignora y el token se verifica', async () => {
+    turnstileResponde(false);
+    const respuesta = await atenderPostulacion(
+      peticion(campos({ sin_verificar: 'si', turnstileToken: 'token-invalido' })),
+      ENTORNO,
+    );
+    expect(respuesta.estado).toBe(403);
+    expect(correosEnviados).toHaveLength(0);
+  });
+
+  it('sin token y SIN la marca sigue siendo un 403', async () => {
+    turnstileResponde(false);
+    const respuesta = await atenderPostulacion(
+      peticion(campos({ turnstileToken: '' })),
+      ENTORNO,
+    );
+    expect(respuesta.estado).toBe(403);
+  });
+
+  /* El limite estrecho es la unica barrera real que queda en este camino. */
+  it('la cuarta sin verificar desde la misma IP y hoja de vida → 429', async () => {
+    for (let i = 0; i < 3; i += 1) {
+      expect((await atenderPostulacion(peticion(sinVerificar()), ENTORNO)).estado).toBe(200);
+    }
+    const cuarta = await atenderPostulacion(peticion(sinVerificar()), ENTORNO);
+    expect(cuarta.estado).toBe(429);
+    expect(correosEnviados).toHaveLength(3);
+  });
+
+  /*
+   * El limite de las verificadas es otro y mucho mas holgado: agotar el de las
+   * sin verificar no puede dejar fuera a quien si pasa el reto.
+   */
+  it('agotar el límite sin verificar no bloquea a quien sí verifica', async () => {
+    for (let i = 0; i < 4; i += 1) await atenderPostulacion(peticion(sinVerificar()), ENTORNO);
+    const verificada = await atenderPostulacion(peticion(campos()), ENTORNO);
+    expect(verificada.estado).toBe(200);
+  });
+
+  it('una marca que no es «si» no cuenta: se exige el token como siempre', async () => {
+    turnstileResponde(false);
+    const respuesta = await atenderPostulacion(
+      peticion(campos({ turnstileToken: '', sin_verificar: 'quizás' })),
+      ENTORNO,
+    );
+    expect(respuesta.estado).toBe(403);
   });
 });
 
@@ -583,19 +732,49 @@ describe('cuando el correo no sale', () => {
     respuestaResend = { data: null, error: { message: 'Domain not verified: dstunja.com' } };
     const silencio = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const respuesta = await atenderPostulacion(peticion(campos()), ENTORNO);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const respuesta = await atenderPostulacion(peticion(campos()), ENTORNO, SIN_ESPERA);
 
+    // Sin BLOB_READ_WRITE_TOKEN no hay donde guardar la hoja de vida: este es el
+    // unico camino que todavia pierde una postulacion.
     expect(respuesta.estado).toBe(500);
-    expect(errores(respuesta)).toEqual(['No pudimos enviar tu postulación en este momento.']);
+    expect(errores(respuesta).join(' ')).toContain('No pudimos enviar tu postulación');
     expect(JSON.stringify(respuesta.cuerpo)).not.toContain('Domain not verified');
     expect(silencio).toHaveBeenCalled();
   });
 
-  it('sin RESEND_API_KEY → 500', async () => {
+  /*
+   * El plan gratuito de Resend responde 429 cuando llegan varias postulaciones
+   * seguidas, y ese error cede esperando un segundo. Antes el primer fallo se
+   * daba por definitivo y la postulacion se perdia.
+   */
+  it('un fallo de correo se reintenta tres veces', async () => {
+    respuestaResend = { data: null, error: { message: 'Too many requests' } };
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    const respuesta = await atenderPostulacion(peticion(campos()), {
-      TURNSTILE_SECRET: 'secreto-de-prueba',
-    });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await atenderPostulacion(peticion(campos()), ENTORNO, SIN_ESPERA);
+
+    expect(correosEnviados).toHaveLength(3);
+  });
+
+  it('si el segundo intento sale bien, la postulación se da por enviada', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    colaResend.push({ data: null, error: { message: 'Too many requests' } });
+
+    const respuesta = await atenderPostulacion(peticion(campos()), ENTORNO, SIN_ESPERA);
+
+    expect(respuesta.estado).toBe(200);
+    expect(correosEnviados).toHaveLength(2);
+  });
+
+  it('sin RESEND_API_KEY → 500 sin gastar tres intentos', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const respuesta = await atenderPostulacion(
+      peticion(campos()),
+      { TURNSTILE_SECRET: 'secreto-de-prueba' },
+      SIN_ESPERA,
+    );
     expect(respuesta.estado).toBe(500);
     expect(correosEnviados).toHaveLength(0);
   });

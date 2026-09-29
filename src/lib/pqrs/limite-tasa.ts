@@ -16,6 +16,21 @@
  */
 import type { Entorno } from './config';
 
+/**
+ * ¿Está Upstash configurado?
+ *
+ * Lo consulta quien necesita elegir la POLÍTICA antes de aplicarla: con un
+ * contador compartido entre instancias se puede apretar el tope, y sin él hay
+ * que aflojarlo, porque el contador en memoria se multiplica por instancia y
+ * además muchos celulares de un mismo operador comparten IP pública.
+ *
+ * Esto dice qué hay configurado, no quién respondió: si Upstash está puesto
+ * pero no contesta, `limitar` cae a memoria y lo cuenta en `veredicto.motor`.
+ */
+export function hayUpstash(env: Entorno): boolean {
+  return Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN);
+}
+
 export interface Veredicto {
   ok: boolean;
   /** Peticiones que quedan en la ventana actual. */

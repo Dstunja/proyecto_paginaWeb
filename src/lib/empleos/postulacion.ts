@@ -24,7 +24,22 @@ export const CAMPOS = {
   autorizacion: 'autorizacion',
   hojaDeVida: 'hoja-de-vida',
   turnstileToken: 'turnstileToken',
+  /*
+   * Marca que el navegador NO pudo resolver el reto de Turnstile y manda la
+   * postulación igual. La pone el formulario solo después de haber reintentado
+   * (ver src/lib/turnstile-cliente.ts); el servidor la acepta, la cuenta con un
+   * límite mucho más estrecho y marca el correo «[SIN VERIFICAR]».
+   */
+  sinVerificar: 'sin_verificar',
+  /** Código de Cloudflare del fallo, para el registro. Nunca se muestra solo. */
+  turnstileCodigo: 'turnstileCodigo',
 } as const;
+
+/** Lo que manda el formulario en `sin_verificar` cuando el reto no se pudo pasar. */
+const VALORES_SIN_VERIFICAR = new Set(['si', 'on', 'true', '1']);
+
+/** Forma admitida de un código de Cloudflare: corto y sin nada raro dentro. */
+const FORMA_CODIGO = /^[A-Za-z0-9_-]{1,24}$/;
 
 export interface HojaDeVidaValidada {
   /** Nombre con tildes y espacios, para mostrar en el correo. */
@@ -47,6 +62,16 @@ export interface PostulacionValidada {
   experiencia: string;
   autorizacion: true;
   turnstileToken: string;
+  /**
+   * Llegó sin token porque el navegador no pudo resolver el reto.
+   *
+   * Solo vale si ADEMÁS el token viene vacío: con las dos cosas a la vez no se
+   * sabría qué creer, y la marca no puede servir para saltarse una verificación
+   * que sí se pudo hacer.
+   */
+  sinVerificar: boolean;
+  /** Código de Cloudflare del fallo, o cadena vacía. Solo para el registro. */
+  codigoTurnstile: string;
   hojaDeVida: HojaDeVidaValidada;
 }
 
@@ -129,6 +154,18 @@ export async function validarPostulacion(formulario: FormData): Promise<Resultad
 
   const turnstileToken = texto(formulario.get(CAMPOS.turnstileToken));
 
+  // La marca solo cuenta si NO vino token: si vino, se verifica y punto. Así
+  // nadie puede mandar un token cualquiera y la marca a la vez para elegir por
+  // qué puerta entra.
+  const marca = texto(formulario.get(CAMPOS.sinVerificar)).toLowerCase();
+  const sinVerificar = turnstileToken === '' && VALORES_SIN_VERIFICAR.has(marca);
+
+  // El código viaja para el registro. Se filtra por forma porque acaba escrito
+  // en el registro de Vercel y en el asunto de un correo: nada que no sea un
+  // código corto entra.
+  const codigoBruto = texto(formulario.get(CAMPOS.turnstileCodigo));
+  const codigoTurnstile = FORMA_CODIGO.test(codigoBruto) ? codigoBruto : '';
+
   const hojaDeVida = await revisarHojaDeVida(formulario.get(CAMPOS.hojaDeVida), errores);
 
   if (errores.length > 0 || !hojaDeVida) {
@@ -145,6 +182,8 @@ export async function validarPostulacion(formulario: FormData): Promise<Resultad
       experiencia,
       autorizacion: true,
       turnstileToken,
+      sinVerificar,
+      codigoTurnstile,
       hojaDeVida,
     },
   };
