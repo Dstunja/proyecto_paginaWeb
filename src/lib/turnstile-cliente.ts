@@ -117,7 +117,7 @@ function rechazarPendiente(fallo: ErrorTurnstile) {
 export function prepararTurnstile(contenedor: HTMLElement, sitekey: string): Promise<void> {
   if (cargado) return cargado;
 
-  cargado = new Promise<void>((resolver, rechazar) => {
+  const intento = new Promise<void>((resolver, rechazar) => {
     const montar = () => {
       if (!window.turnstile) {
         rechazar(new ErrorTurnstile('no-cargo', 'Turnstile no cargó.'));
@@ -174,7 +174,29 @@ export function prepararTurnstile(contenedor: HTMLElement, sitekey: string): Pro
     document.head.append(script);
   });
 
-  return cargado;
+  /*
+   * UN INTENTO FALLIDO NO SE GUARDA EN LA CACHÉ.
+   *
+   * `cargado` existe para no pedir dos veces el script ni montar dos widgets.
+   * Pero si se conservara también la promesa RECHAZADA, cada reintento
+   * devolvería ese mismo rechazo sin volver a intentar nada: el «último
+   * intento» que hacen los formularios justo antes de enviar sería una copia
+   * del primer fallo, y la única salida para la persona sería recargar la
+   * página. Un bloqueo momentáneo (una red que tarda, una conexión que se cae
+   * al cambiar de wifi a datos) condenaba así el resto de la visita al respaldo
+   * por correo, que no puede llevar la hoja de vida adjunta.
+   *
+   * Al fallar se limpia la caché para que la siguiente llamada vuelva a pedir
+   * el script de Cloudflare de verdad. El `catch` deja además la promesa
+   * atendida, así que un fallo de carga no sale por consola como
+   * «unhandled rejection».
+   */
+  intento.catch(() => {
+    if (cargado === intento) cargado = null;
+  });
+
+  cargado = intento;
+  return intento;
 }
 
 /**

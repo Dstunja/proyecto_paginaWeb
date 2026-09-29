@@ -35,6 +35,27 @@ function error(estado: number, ...errores: string[]): RespuestaPostulacion {
   return { estado, cuerpo: { ok: false, errores } };
 }
 
+/**
+ * Una línea por postulación en el registro de Vercel, SIN datos personales.
+ *
+ * El registro es el único rastro que queda de un envío: la hoja de vida no se
+ * guarda en ningún sitio y, si el correo no sale, no queda nada más. Antes solo
+ * se escribía una línea, la del fallo de Resend, así que en los registros no se
+ * podía distinguir un rechazo de seguridad (403) de uno de campos (400), de un
+ * límite por IP (429) o de un envío que salió bien; tampoco se veía cuántas
+ * postulaciones morían en el campo trampa, que responde 200 y no manda nada.
+ * Sin esos números no se puede decir si un fallo intermitente es del antirrobots,
+ * del servidor o del correo, que es justo lo que hay que separar.
+ *
+ * NO SE ESCRIBE NADA QUE IDENTIFIQUE A LA PERSONA: ni nombre, ni correo, ni
+ * teléfono, ni el nombre del archivo, ni la IP. Solo el desenlace, el cargo (que
+ * es una lista cerrada y pública) y unos tamaños, que es lo que hace falta para
+ * contar y para cruzar con los paneles de Cloudflare y de Resend.
+ */
+function registrar(desenlace: string, detalle: Record<string, unknown> = {}): void {
+  console.log(`[empleos/postular] ${desenlace}`, JSON.stringify(detalle));
+}
+
 export async function atenderPostulacion(
   peticion: Request,
   env: Entorno,
@@ -42,6 +63,7 @@ export async function atenderPostulacion(
   // --- 1. Cuerpo ------------------------------------------------------------
   const tipo = (peticion.headers.get('content-type') ?? '').toLowerCase();
   if (!tipo.startsWith('multipart/form-data')) {
+    registrar('rechazo:cuerpo-no-multipart');
     return error(400, 'El formulario debe enviarse como multipart/form-data.');
   }
 
@@ -49,6 +71,7 @@ export async function atenderPostulacion(
   try {
     formulario = await peticion.formData();
   } catch {
+    registrar('rechazo:multipart-ilegible');
     return error(400, 'No pudimos leer el formulario. Recarga la página e inténtalo de nuevo.');
   }
 
@@ -56,12 +79,19 @@ export async function atenderPostulacion(
   // Un robot que rellenó el campo oculto recibe un 200 vacío: no se le dice qué
   // lo delató y no se gasta ni una llamada de red en él.
   if (esRobot(formulario)) {
+    // Se registra porque es el único desenlace que la persona ve como un envío
+    // correcto sin que salga ningún correo: si alguna vez un gestor de
+    // contraseñas rellenara el campo, esta línea sería la única forma de saberlo.
+    registrar('rechazo:campo-trampa');
     return { estado: 200, cuerpo: { ok: true } };
   }
 
   // --- 3. Campos y hoja de vida ---------------------------------------------
   const validacion = await validarPostulacion(formulario);
-  if (!validacion.ok) return error(400, ...validacion.errores);
+  if (!validacion.ok) {
+    registrar('rechazo:campos', { errores: validacion.errores.length });
+    return error(400, ...validacion.errores);
+  }
   const datos = validacion.datos;
 
   const ip = ipDePeticion(peticion.headers);
@@ -69,6 +99,10 @@ export async function atenderPostulacion(
   // --- 4. Límite de tasa ----------------------------------------------------
   const veredicto = await limitar(ip, LIMITE_POSTULACIONES, env);
   if (!veredicto.ok) {
+    registrar('rechazo:limite-por-ip', {
+      motor: veredicto.motor,
+      segundosEspera: veredicto.segundosEspera,
+    });
     const minutos = Math.ceil(veredicto.segundosEspera / 60);
     return error(
       429,
@@ -79,6 +113,10 @@ export async function atenderPostulacion(
   // --- 5. Turnstile ---------------------------------------------------------
   const antirrobots = await verificarTurnstile(datos.turnstileToken, ip, env);
   if (!antirrobots.ok) {
+    // Los códigos son los de Cloudflare (`invalid-input-response`,
+    // `timeout-or-duplicate`…): con ellos la línea se cruza con el panel del
+    // widget sin guardar el token ni la IP.
+    registrar('rechazo:turnstile', { codigos: antirrobots.codigos ?? [] });
     return error(403, antirrobots.error ?? 'La comprobación antirrobots no pasó.');
   }
 
@@ -95,8 +133,15 @@ export async function atenderPostulacion(
      * Resend) se queda en el registro de Vercel y no viaja al navegador.
      */
     console.error('[empleos/postular] no se pudo enviar el correo:', envio.error);
+    registrar('fallo:correo', { cargo: datos.cargo, bytesHojaDeVida: datos.hojaDeVida.tamano });
     return error(500, 'No pudimos enviar tu postulación en este momento.');
   }
 
+  registrar('enviada', {
+    cargo: datos.cargo,
+    bytesHojaDeVida: datos.hojaDeVida.tamano,
+    extension: datos.hojaDeVida.extension,
+    motorLimite: veredicto.motor,
+  });
   return { estado: 200, cuerpo: { ok: true } };
 }
