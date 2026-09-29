@@ -25,22 +25,28 @@
  *   6. Mientras se envía el botón queda deshabilitado y dice "Enviando…".
  *   7. Con 200 sale la confirmación ("Recibimos tu postulación, te
  *      contactaremos al correo indicado") y el formulario desaparece.
- *   8. Un 400 o un 403 se muestran tal cual y NO abren el gestor de correo; el
- *      botón vuelve a quedar usable.
- *   9. Si la función no contesta (5xx, HTML del espejo estático o red caída)
- *      se cae al respaldo por correo, con el aviso de adjuntar la hoja de vida
- *      y el botón de WhatsApp a la vista.
- *  10. El cargo llega preseleccionado desde ?cargo= y desde "Postularme".
+ *   8. Un 400, un 429 o un 500 se muestran con su código visible («Código:
+ *      E-LIMITE»), el formulario sigue ahí y el botón vuelve a quedar usable.
+ *      NO se abre ningún gestor de correo: ese respaldo ya no existe.
+ *   9. Un 403 del servidor (token caducado o ya usado) se reenvía UNA vez con
+ *      la marca `sin_verificar`, en vez de dejar al candidato fuera.
+ *  10. Un doble clic en enviar manda UNA sola postulación.
+ *  11. Si el servidor devuelve una referencia (la postulación quedó guardada
+ *      pero el aviso no salió), la confirmación la enseña para poder citarla.
+ *  12. En el espejo estático sin funciones se explica y se ofrece WhatsApp.
+ *  13. El cargo llega preseleccionado desde ?cargo= y desde "Postularme".
  *
  * C) TURNSTILE, con una clave de prueba inyectada en el HTML y un doble de
  *    Cloudflare:
- *  11. Sin interacción, el token del widget viaja con la postulación.
- *  12. Si Cloudflare pide marcar la casilla, sale un aviso, la espera NO vence a
+ *  14. Sin interacción, el token del widget viaja con la postulación.
+ *  15. Si Cloudflare pide marcar la casilla, sale un aviso, la espera NO vence a
  *      los 30 s y, cuando llega el token, la postulación llega a la función.
  *      Es el fallo que hubo en producción: al vencer ese tope se abría el
  *      `mailto:` sin llamar nunca a la API.
- *  13. Un error de Cloudflare se explica y no cae al correo.
- *  14. Con el script de Cloudflare bloqueado sí se cae al correo.
+ *  16. Un error de Cloudflare NO deja al candidato fuera: tras el reintento
+ *      automático, la postulación sale con `sin_verificar`.
+ *  17. Con el script de Cloudflare bloqueado, lo mismo. Antes los dos casos
+ *      acababan en un `mailto:` que en el celular muchas veces no abría nada.
  *
  * D) OPCIONAL, EL ENVÍO REAL contra una función en marcha:
  *      node scripts/verificar-empleos.mjs --api http://localhost:3000
@@ -125,9 +131,17 @@ function leerCuerpo(peticion) {
  *   'ok' (por defecto)  200 { ok: true }
  *   'error'             400 con un mensaje de campo
  *   'antirrobots'       403
- *   'servidor'          500
+ *   'limite'            429, el límite por IP
+ *   'servidor'          500, que es como sale un fallo de Resend sin Blob
+ *   'guardada'          200 con referencia: el correo no salió pero la
+ *                       postulación quedó guardada en el Blob
  *   'html'              404 en HTML, que es lo que devuelve el espejo estático
  *   'caida'             se corta la conexión sin contestar
+ *
+ * `funcion.plan.secuencia`: lista de respuestas, una por petición, para los
+ * casos en que la segunda tiene que ser distinta de la primera (el reenvío sin
+ * verificar después de un 403). Cuando se agota, manda `respuesta`.
+ *
  * `funcion.plan.demora`: milisegundos antes de contestar, para ver "Enviando…".
  */
 async function atenderFuncion(peticion, respuesta) {
@@ -143,7 +157,10 @@ async function atenderFuncion(peticion, respuesta) {
     respuesta.end(JSON.stringify(datos));
   };
 
-  switch (plan.respuesta ?? 'ok') {
+  // La secuencia manda sobre `respuesta`, y se consume de a una por petición.
+  const cual = plan.secuencia?.shift() ?? plan.respuesta ?? 'ok';
+
+  switch (cual) {
     case 'caida':
       respuesta.socket.destroy();
       return;
@@ -151,16 +168,37 @@ async function atenderFuncion(peticion, respuesta) {
       respuesta.writeHead(404, { 'content-type': 'text/html' }).end('<h1>404</h1>');
       return;
     case 'servidor':
-      json(500, { ok: false, errores: ['No pudimos enviar tu postulación en este momento.'] });
+      json(500, {
+        ok: false,
+        codigo: 'E-CORREO',
+        errores: [
+          'No pudimos enviar tu postulación en este momento. Inténtalo de nuevo en unos minutos o escríbenos por WhatsApp.',
+        ],
+      });
+      return;
+    case 'limite':
+      json(429, {
+        ok: false,
+        codigo: 'E-LIMITE',
+        errores: ['Has enviado varias postulaciones seguidas. Espera 10 minutos e inténtalo de nuevo.'],
+      });
+      return;
+    case 'guardada':
+      json(200, { ok: true, referencia: 'EMP-20260929-A7K2M9' });
       return;
     case 'antirrobots':
       json(403, {
         ok: false,
+        codigo: 'T-invalid-input-response',
         errores: ['La comprobación antirrobots no pasó. Recarga la página e inténtalo de nuevo.'],
       });
       return;
     case 'error':
-      json(400, { ok: false, errores: ['El teléfono debe tener entre 7 y 15 dígitos.'] });
+      json(400, {
+        ok: false,
+        codigo: 'E-DATOS',
+        errores: ['El teléfono debe tener entre 7 y 15 dígitos.'],
+      });
       return;
     default:
       json(200, { ok: true });
@@ -332,14 +370,24 @@ const TURNSTILE_FALSO = `
       //   'ok'          token a los 10 ms, sin interacción
       //   'interaccion' pide la casilla y el token llega a los
       //                 window.__esperaInteraccionMs (más de 30 s: el tope viejo)
-      //   'error'       Cloudflare responde con el error 110200
+      //   'error'       Cloudflare responde con el error 110200 en cada intento
+      //   'un-fallo'    falla la PRIMERA ejecucion y resuelve la segunda, que es
+      //                 lo que hace un 600010 esporadico: sirve para comprobar
+      //                 que el reintento automatico de la libreria lo rescata
       execute: function (id) {
         var o = callbacks[id];
         if (!o) return;
-        window.__ejecucionesTurnstile = (window.__ejecucionesTurnstile || 0) + 1;
+        var intento = (window.__ejecucionesTurnstile || 0) + 1;
+        window.__ejecucionesTurnstile = intento;
         var modo = window.__modoTurnstile || 'ok';
         var token = function () { o.callback('token-de-prueba-' + Date.now()); };
-        if (modo === 'interaccion') {
+        if (modo === 'un-fallo') {
+          if (intento === 1) {
+            setTimeout(function () { o['error-callback'] && o['error-callback']('600010'); }, 50);
+          } else {
+            setTimeout(token, 10);
+          }
+        } else if (modo === 'interaccion') {
           setTimeout(function () { o['before-interactive-callback'] && o['before-interactive-callback'](); }, 50);
           setTimeout(token, window.__esperaInteraccionMs || 33000);
         } else if (modo === 'error') {
@@ -395,7 +443,7 @@ function leerMultipart(cuerpo, contentType) {
  * vacía lo registrado por la página anterior.
  */
 async function instalarDobles(pagina, plan = {}) {
-  funcion.plan = plan;
+  funcion.plan = { ...plan, secuencia: plan.secuencia ? [...plan.secuencia] : undefined };
   funcion.envios = [];
 
   if (plan.turnstile === 'bloqueado') {
@@ -580,7 +628,35 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   );
   comprobar(
     `${etiqueta}: el campo trampa queda fuera del orden de tabulación`,
-    (await trampa.getAttribute('tabindex')) === '-1' && (await trampa.getAttribute('autocomplete')) === 'off',
+    (await trampa.getAttribute('tabindex')) === '-1',
+    String(await trampa.getAttribute('tabindex')),
+  );
+  /*
+   * Que un AUTOCOMPLETADO no lo pueda llenar es lo que de verdad importa: si un
+   * gestor de contraseñas lo rellena, esa postulación se descarta en silencio y
+   * la persona ve «Postulación enviada». `autocomplete="off"` no basta -Chrome
+   * lo ignora a menudo en formularios de contacto-, así que va un valor que no
+   * existe en el estándar, y con él las señales que respetan 1Password y
+   * LastPass.
+   */
+  comprobar(
+    `${etiqueta}: el campo trampa no lo puede rellenar un autocompletado`,
+    (await trampa.getAttribute('autocomplete')) === 'nope' &&
+      (await trampa.getAttribute('data-lpignore')) === 'true' &&
+      (await trampa.getAttribute('data-1p-ignore')) !== null,
+    `autocomplete=${await trampa.getAttribute('autocomplete')} lpignore=${await trampa.getAttribute('data-lpignore')}`,
+  );
+  /*
+   * Y que no lo pueda llenar un LECTOR DE PANTALLA: `aria-hidden` en el campo
+   * además del contenedor, y ninguna <label> que lo nombre. Antes había una que
+   * decía «Sitio web», que es justo la pista que un gestor de contraseñas
+   * necesita para rellenarlo.
+   */
+  comprobar(
+    `${etiqueta}: el campo trampa no lo anuncia ningún lector de pantalla`,
+    (await trampa.getAttribute('aria-hidden')) === 'true' &&
+      (await pagina.locator('label[for="sitio-web-empleo"]').count()) === 0,
+    `aria-hidden=${await trampa.getAttribute('aria-hidden')} labels=${await pagina.locator('label[for="sitio-web-empleo"]').count()}`,
   );
 
   const casilla = pagina.locator('#autorizacion-empleo');
@@ -623,9 +699,9 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
 
 // --- B) El envío -------------------------------------------------------------
 
-async function revisarEnvio(navegador, archivos) {
-  console.log('\n=== B) Envío ===\n');
-  const contexto = await navegador.newContext({ viewport: { width: 1280, height: 900 } });
+async function revisarEnvio(navegador, archivos, etiqueta, viewport) {
+  console.log(`\n=== B) Envío (${etiqueta}) ===\n`);
+  const contexto = await navegador.newContext({ viewport });
 
   // ---- 1. Camino feliz, con demora para ver el estado intermedio ---------
   {
@@ -638,7 +714,7 @@ async function revisarEnvio(navegador, archivos) {
     await boton.click();
     await pagina.waitForTimeout(350);
     comprobar(
-      'Envío: mientras se envía, el botón está deshabilitado y dice "Enviando…"',
+      `${etiqueta} · Envío: mientras se envía, el botón está deshabilitado y dice "Enviando…"`,
       (await boton.isDisabled()) && (await textoDe(boton)) === 'Enviando…',
       await textoDe(boton),
     );
@@ -646,24 +722,28 @@ async function revisarEnvio(navegador, archivos) {
     await pagina.waitForTimeout(1500);
     const confirmacion = pagina.locator('[data-confirmacion-empleo]');
     comprobar(
-      'Envío: con 200 sale la confirmación y el formulario desaparece',
+      `${etiqueta} · Envío: con 200 sale la confirmación y el formulario desaparece`,
       (await confirmacion.isVisible()) && !(await pagina.locator('[data-form-empleo]').isVisible()),
     );
     comprobar(
-      'Envío: la confirmación dice "Recibimos tu postulación, te contactaremos al correo indicado"',
+      `${etiqueta} · Envío: la confirmación dice "Recibimos tu postulación…"`,
       (await textoDe(confirmacion)).includes(
         'Recibimos tu postulación, te contactaremos al correo indicado',
       ),
     );
     comprobar(
-      'Envío: no se cayó al gestor de correo',
-      (await pagina.locator('[data-form-empleo][data-respaldo]').count()) === 0,
+      `${etiqueta} · Envío: en el camino normal no se enseña ninguna referencia`,
+      !(await pagina.locator('[data-referencia-empleo]').isVisible()),
     );
-    comprobar('Envío: salió UNA sola petición', registro.envios.length === 1, String(registro.envios.length));
+    comprobar(
+      `${etiqueta} · Envío: salió UNA sola petición`,
+      registro.envios.length === 1,
+      String(registro.envios.length),
+    );
 
     const envio = registro.envios[0];
     comprobar(
-      'Envío: es un POST multipart/form-data',
+      `${etiqueta} · Envío: es un POST multipart/form-data`,
       envio?.metodo === 'POST' && envio.tipo.startsWith('multipart/form-data'),
       `${envio?.metodo} ${envio?.tipo}`,
     );
@@ -672,12 +752,12 @@ async function revisarEnvio(navegador, archivos) {
     const parte = (nombre) => partes.find((p) => p.nombre === nombre);
     const valor = (nombre) => parte(nombre)?.datos.toString('utf8');
     comprobar(
-      'Envío: el navegador dejó ver el cuerpo (postDataBuffer)',
+      `${etiqueta} · Envío: el navegador dejó ver el cuerpo (postDataBuffer)`,
       partes.length > 0,
       partes.length === 0 ? 'Playwright no entregó el cuerpo del multipart' : `${partes.length} partes`,
     );
     comprobar(
-      'Envío: van los campos de texto con lo escrito',
+      `${etiqueta} · Envío: van los campos de texto con lo escrito`,
       valor('nombre') === 'Cristian Amaya (prueba automática)' &&
         valor('correo') === 'practicaspasantiasdst@gmail.com' &&
         valor('telefono') === '3106232429' &&
@@ -685,18 +765,29 @@ async function revisarEnvio(navegador, archivos) {
         valor('experiencia') === 'Dos años en ventas TAT en Tunja.',
       partes.map((p) => `${p.nombre}=${p.archivo ?? p.datos.toString('utf8').slice(0, 40)}`).join(' | '),
     );
-    comprobar('Envío: va la casilla de autorización', valor('autorizacion') === 'si', String(valor('autorizacion')));
-    comprobar('Envío: el campo trampa viaja vacío', parte('sitio-web') !== undefined && valor('sitio-web') === '');
+    comprobar(
+      `${etiqueta} · Envío: va la casilla de autorización`,
+      valor('autorizacion') === 'si',
+      String(valor('autorizacion')),
+    );
+    comprobar(
+      `${etiqueta} · Envío: el campo trampa viaja vacío`,
+      parte('sitio-web') !== undefined && valor('sitio-web') === '',
+    );
+    comprobar(
+      `${etiqueta} · Envío: una postulación verificada NO lleva la marca sin_verificar`,
+      parte('sin_verificar') === undefined,
+    );
     comprobar(
       conTurnstile
-        ? 'Envío: va el token de Turnstile del widget'
-        : 'Envío: sin clave de Turnstile en el build, el token viaja vacío',
+        ? `${etiqueta} · Envío: va el token de Turnstile del widget`
+        : `${etiqueta} · Envío: sin clave de Turnstile en el build, el token viaja vacío`,
       conTurnstile ? (valor('turnstileToken') ?? '').startsWith('token-de-prueba-') : valor('turnstileToken') === '',
       String(valor('turnstileToken')),
     );
     const hoja = parte('hoja-de-vida');
     comprobar(
-      'Envío: la hoja de vida va con su nombre, su tipo y SUS bytes',
+      `${etiqueta} · Envío: la hoja de vida va con su nombre, su tipo y SUS bytes`,
       hoja?.archivo === 'hoja de vida.pdf' &&
         (hoja.tipo ?? '').startsWith('application/pdf') &&
         Buffer.compare(hoja.datos, PDF_MINIMO) === 0,
@@ -716,70 +807,224 @@ async function revisarEnvio(navegador, archivos) {
 
     const errores = pagina.locator('[data-errores-empleo]');
     comprobar(
-      'Error 400: se muestra el motivo que mandó el servidor',
+      `${etiqueta} · Error 400: se muestra el motivo que mandó el servidor`,
       (await errores.isVisible()) && (await textoDe(errores)).includes('entre 7 y 15 dígitos'),
       await textoDe(errores),
     );
     comprobar(
-      'Error 400: NO cae al gestor de correo y el formulario sigue ahí',
-      (await pagina.locator('[data-form-empleo][data-respaldo]').count()) === 0 &&
-        (await pagina.locator('[data-form-empleo]').isVisible()),
+      `${etiqueta} · Error 400: sale el código visible para la captura de pantalla`,
+      (await textoDe(pagina.locator('[data-codigo-error]'))).includes('E-DATOS'),
+      await textoDe(pagina.locator('[data-codigo-error]')),
+    );
+    comprobar(
+      `${etiqueta} · Error 400: el formulario sigue ahí y WhatsApp aparece como último recurso`,
+      (await pagina.locator('[data-form-empleo]').isVisible()) &&
+        (await pagina.locator('[data-whatsapp-empleo]').isVisible()),
     );
     const boton = pagina.locator('[data-enviar-empleo]');
     comprobar(
-      'Error 400: el botón vuelve a quedar usable con su texto',
+      `${etiqueta} · Error 400: el botón vuelve a quedar usable con su texto`,
       !(await boton.isDisabled()) && (await textoDe(boton)) === 'Enviar postulación',
     );
-    comprobar('Error 400: se intentó una sola vez', registro.envios.length === 1, String(registro.envios.length));
+    comprobar(
+      `${etiqueta} · Error 400: se intentó una sola vez`,
+      registro.envios.length === 1,
+      String(registro.envios.length),
+    );
     await pagina.close();
   }
 
-  // ---- 3. Un 403 de antirrobots, igual --------------------------------------
+  // ---- 2 bis. Un 429: el límite por IP ------------------------------------
   {
-    const { pagina } = await abrir(contexto, { respuesta: 'antirrobots' });
+    const { pagina } = await abrir(contexto, { respuesta: 'limite' });
     await rellenar(pagina, archivos.pdfValido);
     await pagina.waitForTimeout(300);
     await pagina.click('[data-enviar-empleo]');
     await pagina.waitForTimeout(900);
+
     const errores = pagina.locator('[data-errores-empleo]');
     comprobar(
-      'Antirrobots (403): enseña el motivo sin caer al correo',
+      `${etiqueta} · Límite (429): dice cuánto esperar, con su código`,
       (await errores.isVisible()) &&
-        (await textoDe(errores)).includes('antirrobots') &&
-        (await pagina.locator('[data-form-empleo][data-respaldo]').count()) === 0,
+        (await textoDe(errores)).includes('Espera 10 minutos') &&
+        (await textoDe(pagina.locator('[data-codigo-error]'))).includes('E-LIMITE'),
       await textoDe(errores),
     );
     await pagina.close();
   }
 
-  // ---- 4. Sin función: respaldo por correo, por los tres caminos -----------
-  for (const [caso, plan] of [
-    ['Un 500 del servidor', { respuesta: 'servidor' }],
-    ['El HTML del espejo estático (GitHub Pages)', { respuesta: 'html' }],
-    ['La red caída', { respuesta: 'caida' }],
+  // ---- 2 ter. Un 500: el correo no salió y no había dónde guardar ---------
+  {
+    const { pagina, registro } = await abrir(contexto, { respuesta: 'servidor' });
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+    await pagina.click('[data-enviar-empleo]');
+    await pagina.waitForTimeout(900);
+
+    const errores = pagina.locator('[data-errores-empleo]');
+    comprobar(
+      `${etiqueta} · Fallo de correo (500): se explica, con código, sin abrir ningún gestor de correo`,
+      (await errores.isVisible()) &&
+        (await textoDe(pagina.locator('[data-codigo-error]'))).includes('E-CORREO') &&
+        (await pagina.locator('[data-form-empleo]').isVisible()),
+      await textoDe(errores),
+    );
+    comprobar(
+      `${etiqueta} · Fallo de correo (500): ofrece WhatsApp como último recurso`,
+      await pagina.locator('[data-whatsapp-empleo]').isVisible(),
+    );
+    comprobar(
+      `${etiqueta} · Fallo de correo (500): se intentó una sola vez`,
+      registro.envios.length === 1,
+      String(registro.envios.length),
+    );
+    await pagina.close();
+  }
+
+  // ---- 2 quater. La postulación quedó guardada: sale la referencia --------
+  {
+    const { pagina } = await abrir(contexto, { respuesta: 'guardada' });
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+    await pagina.click('[data-enviar-empleo]');
+    await pagina.waitForTimeout(900);
+
+    comprobar(
+      `${etiqueta} · Guardada: sale la confirmación, no un error`,
+      await pagina.locator('[data-confirmacion-empleo]').isVisible(),
+    );
+    comprobar(
+      `${etiqueta} · Guardada: se enseña la referencia para poder citarla`,
+      (await textoDe(pagina.locator('[data-referencia-empleo]'))).includes('EMP-20260929-A7K2M9'),
+      await textoDe(pagina.locator('[data-referencia-empleo]')),
+    );
+    await pagina.close();
+  }
+
+  // ---- 2 quinquies. Doble clic en enviar ----------------------------------
+  {
+    const { pagina, registro } = await abrir(contexto, { respuesta: 'ok', demora: 700 });
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+
+    // Dos clics seguidos, como los da un dedo impaciente en un celular.
+    const boton = pagina.locator('[data-enviar-empleo]');
+    await boton.click();
+    await boton.click({ force: true, timeout: 2000 }).catch(() => {});
+    await pagina.waitForTimeout(1600);
+
+    comprobar(
+      `${etiqueta} · Doble clic: sale UNA sola postulación, no dos`,
+      registro.envios.length === 1,
+      `${registro.envios.length} envíos`,
+    );
+    comprobar(
+      `${etiqueta} · Doble clic: la confirmación sale una vez`,
+      await pagina.locator('[data-confirmacion-empleo]').isVisible(),
+    );
+    await pagina.close();
+  }
+
+  /*
+   * ---- 3. Un 403 del servidor -------------------------------------------
+   *
+   * Un token que el servidor rechaza (caducado, ya usado, dominio sin
+   * autorizar) es indistinguible para el candidato de que la página esté rota.
+   * En vez de dejarlo fuera, se reenvía UNA vez con la marca `sin_verificar`.
+   */
+  {
+    const { pagina, registro } = await abrir(contexto, {
+      secuencia: ['antirrobots', 'ok'],
+    });
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+    await pagina.click('[data-enviar-empleo]');
+    await pagina.waitForTimeout(1200);
+
+    comprobar(
+      `${etiqueta} · 403: se reenvía una vez, y solo una`,
+      registro.envios.length === 2,
+      `${registro.envios.length} envíos`,
+    );
+    const segundo = registro.envios[1]?.partes ?? [];
+    const valorDe2 = (nombre) => segundo.find((p) => p.nombre === nombre)?.datos.toString('utf8');
+    comprobar(
+      `${etiqueta} · 403: el reenvío lleva sin_verificar y el token vacío`,
+      valorDe2('sin_verificar') === 'si' && valorDe2('turnstileToken') === '',
+      `sin_verificar=${valorDe2('sin_verificar')} token=${JSON.stringify(valorDe2('turnstileToken'))}`,
+    );
+    comprobar(
+      `${etiqueta} · 403: el reenvío lleva la hoja de vida otra vez`,
+      segundo.find((p) => p.nombre === 'hoja-de-vida')?.datos.length > 0,
+    );
+    comprobar(
+      `${etiqueta} · 403: el candidato acaba viendo la confirmación`,
+      await pagina.locator('[data-confirmacion-empleo]').isVisible(),
+    );
+    await pagina.close();
+  }
+
+  // ---- 3 bis. Si el reenvío también falla, se explica ---------------------
+  {
+    const { pagina, registro } = await abrir(contexto, { respuesta: 'antirrobots' });
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+    await pagina.click('[data-enviar-empleo]');
+    await pagina.waitForTimeout(1200);
+
+    comprobar(
+      `${etiqueta} · 403 persistente: no se reintenta sin parar`,
+      registro.envios.length === 2,
+      `${registro.envios.length} envíos`,
+    );
+    comprobar(
+      `${etiqueta} · 403 persistente: se enseña el motivo con su código`,
+      (await pagina.locator('[data-errores-empleo]').isVisible()) &&
+        (await textoDe(pagina.locator('[data-codigo-error]'))).includes('T-invalid-input-response'),
+      await textoDe(pagina.locator('[data-codigo-error]')),
+    );
+    await pagina.close();
+  }
+
+  /*
+   * ---- 4. Cuando no hay función que conteste ----------------------------
+   *
+   * Los dos casos que antes abrían el gestor de correo. Ahora se explica qué
+   * pasa, se da un código y se ofrece WhatsApp, que SÍ puede llevar el archivo.
+   * Lo que no puede volver a pasar es que la página diga «abrimos tu gestor de
+   * correo» sin que se abra nada, que es lo que ocurría en el celular.
+   */
+  for (const [caso, plan, codigo, trozo] of [
+    [
+      'El HTML del espejo estático (GitHub Pages)',
+      { respuesta: 'html' },
+      'E-SIN-API',
+      'no está disponible en esta dirección',
+    ],
+    ['La red caída', { respuesta: 'caida' }, 'E-RED', 'Revisa tu conexión'],
   ]) {
     const { pagina } = await abrir(contexto, plan);
     await rellenar(pagina, archivos.pdfValido);
     await pagina.waitForTimeout(300);
     await pagina.click('[data-enviar-empleo]');
-    await pagina.waitForTimeout(900);
+    await pagina.waitForTimeout(1200);
 
-    // Chromium no emite ningún evento al abrir un mailto:, así que el
-    // componente marca `data-respaldo="correo"` antes de navegar.
-    const respaldo = pagina.locator('[data-form-empleo][data-respaldo="correo"]');
-    const aviso = pagina.locator('[data-aviso-respaldo]');
+    const errores = pagina.locator('[data-errores-empleo]');
     comprobar(
-      `${caso}: se cae al gestor de correo`,
-      (await respaldo.count()) === 1,
+      `${etiqueta} · ${caso}: se explica con su código, sin gestor de correo`,
+      (await errores.isVisible()) &&
+        (await textoDe(errores)).includes(trozo) &&
+        (await textoDe(pagina.locator('[data-codigo-error]'))).includes(codigo),
+      `${await textoDe(errores)} | ${await textoDe(pagina.locator('[data-codigo-error]'))}`,
     );
     comprobar(
-      `${caso}: el aviso pide adjuntar la hoja de vida a ese correo`,
-      (await aviso.isVisible()) && (await textoDe(aviso)).includes('adjunta ahí tu hoja de vida'),
-      await textoDe(aviso),
-    );
-    comprobar(
-      `${caso}: el botón "Prefiero WhatsApp" sigue a la vista`,
+      `${etiqueta} · ${caso}: WhatsApp queda a la vista como último recurso`,
       await pagina.locator('[data-whatsapp-empleo]').isVisible(),
+    );
+    comprobar(
+      `${etiqueta} · ${caso}: el formulario sigue ahí, con los datos escritos`,
+      (await pagina.locator('[data-form-empleo]').isVisible()) &&
+        (await pagina.locator('#nombre-empleo').inputValue()) !== '',
     );
     await pagina.close();
   }
@@ -829,9 +1074,9 @@ async function revisarCargo(navegador) {
  * `mailto:` sin haber llamado nunca a la función. Aquí se prueba con la clave
  * de prueba inyectada y el doble de Turnstile en cada modo.
  */
-async function revisarTurnstile(navegador, archivos) {
-  console.log('\n=== D) Turnstile ===\n');
-  const contexto = await navegador.newContext({ viewport: { width: 1280, height: 900 } });
+async function revisarTurnstile(navegador, archivos, etiqueta, viewport) {
+  console.log(`\n=== D) Turnstile (${etiqueta}) ===\n`);
+  const contexto = await navegador.newContext({ viewport });
 
   // ---- 1. Sin interacción: el token viaja en el multipart ------------------
   {
@@ -904,44 +1149,101 @@ async function revisarTurnstile(navegador, archivos) {
     await pagina.close();
   }
 
-  // ---- 3. Cloudflare responde con error ------------------------------------
+  /*
+   * ---- 3. Cloudflare responde con error ---------------------------------
+   *
+   * Este es el caso que reportaron los candidatos: «[turnstile] error 600010» y
+   * un mensaje que les pedía volver a pulsar Enviar. Ahora la librería reintenta
+   * sola una vez y, si el reto sigue sin pasar, la postulación SALE marcada
+   * `sin_verificar` en vez de quedarse en la página.
+   */
   {
     const { pagina, registro } = await abrir(contexto, { turnstile: 'error' });
     await rellenar(pagina, archivos.pdfValido);
     await pagina.waitForTimeout(300);
     await pagina.click('[data-enviar-empleo]');
-    await pagina.waitForTimeout(1000);
+    // Dos intentos del reto, con su pausa de 600 ms entre medias.
+    await pagina.waitForTimeout(3000);
 
-    const errores = pagina.locator('[data-errores-empleo]');
     comprobar(
-      'Error de Turnstile: se explica y se invita a reintentar',
-      (await errores.isVisible()) && (await textoDe(errores)).includes('verificación de seguridad'),
-      await textoDe(errores),
+      `${etiqueta} · Error de Turnstile: la postulación SÍ llega a la función`,
+      registro.envios.length === 1,
+      `${registro.envios.length} envíos`,
+    );
+    const partes = registro.envios[0]?.partes ?? [];
+    const valor = (nombre) => partes.find((p) => p.nombre === nombre)?.datos.toString('utf8');
+    comprobar(
+      `${etiqueta} · Error de Turnstile: va marcada sin_verificar, con el código de Cloudflare`,
+      valor('sin_verificar') === 'si' && (valor('turnstileCodigo') ?? '').startsWith('T-'),
+      `sin_verificar=${valor('sin_verificar')} codigo=${valor('turnstileCodigo')}`,
     );
     comprobar(
-      'Error de Turnstile: NO cae al correo y no llama a la función',
-      (await pagina.locator('[data-form-empleo][data-respaldo]').count()) === 0 &&
-        registro.envios.length === 0,
+      `${etiqueta} · Error de Turnstile: la hoja de vida va con SUS bytes`,
+      (partes.find((p) => p.nombre === 'hoja-de-vida')?.datos.length ?? 0) > 0,
     );
     comprobar(
-      'Error de Turnstile: el botón vuelve a quedar usable y WhatsApp a la vista',
-      !(await pagina.locator('[data-enviar-empleo]').isDisabled()) &&
-        (await pagina.locator('[data-whatsapp-empleo]').isVisible()),
+      `${etiqueta} · Error de Turnstile: el candidato ve la confirmación, no un error`,
+      (await pagina.locator('[data-confirmacion-empleo]').isVisible()) &&
+        !(await pagina.locator('[data-errores-empleo]').isVisible()),
     );
     await pagina.close();
   }
 
-  // ---- 4. El script de Cloudflare no carga ---------------------------------
+  /*
+   * ---- 4. El script de Cloudflare no carga ------------------------------
+   *
+   * Un bloqueador, una red corporativa, el WebView de WhatsApp. Antes se abría
+   * el `mailto:` sin llamar nunca a la función, y en el celular muchas veces no
+   * se abría nada: la postulación se perdía sin dejar rastro.
+   */
   {
     const { pagina, registro } = await abrir(contexto, { turnstile: 'bloqueado' });
     await rellenar(pagina, archivos.pdfValido);
     await pagina.waitForTimeout(300);
     await pagina.click('[data-enviar-empleo]');
-    await pagina.waitForTimeout(1200);
+    await pagina.waitForTimeout(2000);
+
     comprobar(
-      'Turnstile bloqueado: no hay forma de verificar y se cae al correo, sin llamar a la función',
-      (await pagina.locator('[data-form-empleo][data-respaldo="correo"]').count()) === 1 &&
-        registro.envios.length === 0,
+      `${etiqueta} · Turnstile bloqueado: la postulación llega a la función igual`,
+      registro.envios.length === 1,
+      `${registro.envios.length} envíos`,
+    );
+    const partes = registro.envios[0]?.partes ?? [];
+    const valor = (nombre) => partes.find((p) => p.nombre === nombre)?.datos.toString('utf8');
+    comprobar(
+      `${etiqueta} · Turnstile bloqueado: va marcada sin_verificar y con el token vacío`,
+      valor('sin_verificar') === 'si' && valor('turnstileToken') === '',
+      `sin_verificar=${valor('sin_verificar')} token=${JSON.stringify(valor('turnstileToken'))}`,
+    );
+    comprobar(
+      `${etiqueta} · Turnstile bloqueado: sale la confirmación`,
+      await pagina.locator('[data-confirmacion-empleo]').isVisible(),
+    );
+    await pagina.close();
+  }
+
+  /*
+   * ---- 5. El reintento automático rescata un fallo pasajero -------------
+   *
+   * El doble de Turnstile en modo `un-fallo` falla la primera ejecución y
+   * resuelve la segunda. Es lo que hace un 600010 esporádico, y la postulación
+   * tiene que salir VERIFICADA, no marcada.
+   */
+  {
+    const { pagina, registro } = await abrir(contexto, { turnstile: 'un-fallo' });
+    await rellenar(pagina, archivos.pdfValido);
+    await pagina.waitForTimeout(300);
+    await pagina.click('[data-enviar-empleo]');
+    await pagina.waitForTimeout(3000);
+
+    const partes = registro.envios[0]?.partes ?? [];
+    const valor = (nombre) => partes.find((p) => p.nombre === nombre)?.datos.toString('utf8');
+    comprobar(
+      `${etiqueta} · Un fallo pasajero: el reintento consigue el token y va VERIFICADA`,
+      registro.envios.length === 1 &&
+        (valor('turnstileToken') ?? '').startsWith('token-de-prueba-') &&
+        valor('sin_verificar') === undefined,
+      `token=${valor('turnstileToken')} sin_verificar=${valor('sin_verificar')}`,
     );
     await pagina.close();
   }
@@ -1009,9 +1311,14 @@ if (!process.argv.includes('--solo-api')) {
   try {
     await revisarCampo(navegador, archivos, 'Móvil', { width: 375, height: 720 });
     await revisarCampo(navegador, archivos, 'Escritorio', { width: 1280, height: 800 });
-    await revisarEnvio(navegador, archivos);
+    // El envío se prueba en los dos tamaños: los fallos que reportaron los
+    // candidatos venían del celular, y el respaldo por correo que se quitó era
+    // justo lo que peor se portaba ahí.
+    await revisarEnvio(navegador, archivos, 'Móvil', { width: 375, height: 720 });
+    await revisarEnvio(navegador, archivos, 'Escritorio', { width: 1280, height: 900 });
     await revisarCargo(navegador);
-    await revisarTurnstile(navegador, archivos);
+    // Turnstile, en móvil: es donde vive el WebView de WhatsApp.
+    await revisarTurnstile(navegador, archivos, 'Móvil', { width: 375, height: 720 });
   } finally {
     await navegador.close();
     servidor.close();

@@ -23,18 +23,27 @@
  * del servidor y Turnstile en modo `interaction-only`, que normalmente no se
  * ve.
  *
- * SI LA FUNCIÓN NO CONTESTA (el espejo de GitHub Pages no tiene backend, o
- * Vercel devuelve un 5xx) se cae al `mailto:` con los datos en el cuerpo y un
- * aviso claro de que la hoja de vida hay que adjuntarla a ese correo, porque
- * un `mailto:` no puede llevar archivos. Un 400, 403 o 429 NO cae al correo:
- * ahí el servidor sí contestó y lo que toca es enseñar el motivo. El botón de
- * WhatsApp está siempre, como alternativa.
+ * YA NO HAY RESPALDO POR `mailto:`, y quitarlo fue el objetivo de todo esto. La
+ * página abría el gestor de correo del candidato con sus datos y le pedía que
+ * adjuntara la hoja de vida OTRA VEZ, a mano, porque un `mailto:` no puede
+ * llevar archivos. En el celular, y sobre todo dentro del navegador de WhatsApp,
+ * muchas veces no se abría nada: la persona se quedaba mirando un aviso que
+ * hablaba de un correo que nunca existió, y su postulación no llegaba ni quedaba
+ * registrada en ningún sitio. Ahora el envío es el único camino, y cuando falla
+ * lo arregla el servidor: reintenta el correo y, si no sale, guarda la hoja de
+ * vida (ver src/lib/empleos/postular.ts).
  *
- * UN FALLO DE TURNSTILE TAMPOCO CAE AL CORREO, salvo que el script de
- * Cloudflare no cargue. Si tras pulsar Enviar Cloudflare pide marcar la
- * casilla, sale un aviso y la espera no vence mientras la persona la marca; si
- * la verificación falla o caduca, se explica y se puede reintentar. Antes todo
- * eso abría el `mailto:` sin haber llamado nunca a la función.
+ * TURNSTILE NO PUEDE DEJAR A NADIE FUERA. El reto se reintenta solo una vez
+ * (src/lib/turnstile-cliente.ts) y, si aun así no se consigue el token, la
+ * postulación SE MANDA IGUAL con la marca `sin_verificar`: el servidor la acepta
+ * por una puerta más estrecha y le pone «[SIN VERIFICAR]» al asunto del correo.
+ * Un navegador que no puede resolver un reto de Cloudflare —el WebView de
+ * WhatsApp o de Instagram, un teléfono viejo, un bloqueador— no es motivo para
+ * perder a un candidato.
+ *
+ * CADA ERROR QUE SE ENSEÑA LLEVA UN CÓDIGO CORTO («Código: T-110200»). Sirve
+ * para que quien manda una captura de pantalla nos diga la causa sin abrir la
+ * consola. WhatsApp aparece solo ahí, con el error, como último recurso.
  */
 import { contactoEmpleo } from '../data/vacantes';
 import { cargosAdmitidos } from '../lib/empleos/cargos';
@@ -44,7 +53,14 @@ import { ruta } from '../lib/rutas';
 import Icono from './Icono.astro';
 import LoaderDST from './LoaderDST.astro';
 
-const SALUDO_WHATSAPP = 'Hola, quiero postularme a una vacante de Distribuciones Santiago de Tunja.';
+/*
+ * WhatsApp ya no es una alternativa que se ofrece de entrada, sino el último
+ * recurso cuando el envío falló: por eso el mensaje dice que YA lo intentó. Con
+ * eso, quien atiende el número no empieza la conversación desde cero ni le pide
+ * al candidato que vuelva a la página que acaba de fallarle.
+ */
+const SALUDO_WHATSAPP =
+  'Hola, intenté postularme a una vacante desde la página de Distribuciones Santiago de Tunja y no pude enviar mi hoja de vida. ¿Me ayudan?';
 const enlaceWhatsapp = `https://wa.me/${contactoEmpleo.whatsapp.numero}?text=${encodeURIComponent(SALUDO_WHATSAPP)}`;
 const enlaceCorreo = `mailto:${contactoEmpleo.email}`;
 
@@ -154,19 +170,36 @@ const cargos = cargosAdmitidos();
   </div>
 
   {/*
-    Campo trampa. Fuera de la pantalla y del orden de tabulación, y oculto a los
-    lectores de pantalla: una persona nunca lo ve ni lo rellena. Un robot que
-    llena todos los campos sí, y el servidor descarta el envío sin decir por
-    qué. `autocomplete="off"` evita que el navegador lo rellene por su cuenta.
+    CAMPO TRAMPA. Un robot que rellena todos los campos lo llena; el servidor
+    responde 200 y no manda nada, sin decirle qué lo delató.
+
+    LO QUE NINGUNA PERSONA DEBE PODER HACER ES LLENARLO SIN QUERER, porque
+    entonces su postulación se perdería en silencio y ella vería «Postulación
+    enviada». De ahí cada una de estas defensas, que son cuatro y no una:
+
+      - Fuera de la pantalla y `aria-hidden` en el contenedor Y en el campo: no
+        se ve, y un lector de pantalla no lo anuncia ni lo alcanza.
+      - `tabindex="-1"`: no se llega a él tabulando.
+      - SIN <label>. Antes había uno que decía «Sitio web», y un gestor de
+        contraseñas que lee etiquetas tenía ahí justo la pista para rellenarlo.
+        Sin etiqueta y con `aria-hidden` no hay nada que leer.
+      - `autocomplete="nope"`: un valor que no existe en el estándar. Los
+        navegadores tratan lo que no reconocen como «off», y a diferencia de
+        `off` -que Chrome ignora a menudo en formularios de contacto- no hay
+        ninguna heurística que lo asocie a un campo conocido. Los `data-…` son
+        las señales que respetan 1Password y LastPass.
   */}
   <div class="absolute top-0 -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
-    <label for="sitio-web-empleo">Sitio web</label>
     <input
       id="sitio-web-empleo"
       name={CAMPO_HONEYPOT}
       type="text"
       tabindex="-1"
-      autocomplete="off"
+      aria-hidden="true"
+      autocomplete="nope"
+      data-1p-ignore
+      data-lpignore="true"
+      data-form-type="other"
       data-honeypot
     />
   </div>
@@ -207,17 +240,15 @@ const cargos = cargosAdmitidos();
     de enviar tu postulación.
   </p>
 
+  {/*
+    Solo el botón de enviar. El de WhatsApp estaba aquí, al lado, y competía con
+    el envío de verdad: la hoja de vida llega por WhatsApp como un archivo
+    suelto, sin cargo ni autorización de datos, y alguien tiene que transcribirlo
+    a mano. Ahora aparece abajo, dentro del aviso de error, cuando de verdad hace
+    falta.
+  */}
   <div class="flex flex-wrap items-center gap-4">
     <button type="submit" class="btn btn-primary" data-enviar-empleo>Enviar postulación</button>
-    <a
-      class="btn btn-secondary"
-      href={enlaceWhatsapp}
-      target="_blank"
-      rel="noopener"
-      data-whatsapp-empleo
-    >
-      Prefiero WhatsApp
-    </a>
     <div data-espera-empleo class="hidden" role="status" aria-live="polite">
       <LoaderDST tamano={28} anuncia={false} />
       <span class="sr-only">Enviando…</span>
@@ -233,18 +264,36 @@ const cargos = cargosAdmitidos();
       No pudimos enviar tu postulación
     </p>
     <ul data-lista-errores-empleo class="m-0 list-disc space-y-1 pl-5 text-[14px] text-ink"></ul>
-  </div>
 
-  <p
-    data-aviso-respaldo
-    class="m-0 hidden rounded-xl border border-line bg-fondo px-4 py-3 text-[14px] text-ink"
-    role="status"
-    aria-live="polite"
-  >
-    No pudimos enviar la postulación desde la página. Abrimos tu gestor de correo con tus
-    datos: <strong>adjunta ahí tu hoja de vida</strong> antes de enviarlo. Si no se abrió,
-    escríbenos por WhatsApp.
-  </p>
+    {/*
+      CÓDIGO CORTO Y VISIBLE. No es para el candidato, que no puede hacer nada
+      con él: es para nosotros. Quien manda una captura de pantalla por WhatsApp
+      nos está diciendo con ese código si el problema fue el dominio sin
+      autorizar en Cloudflare (T-110200), el reto que no corre en su navegador
+      (T-600010) o el correo (E-CORREO), sin pedirle que abra ninguna consola.
+    */}
+    <p class="m-0 mt-2 hidden font-mono text-[12.5px] text-muted" data-codigo-error>
+      Código: <span data-codigo-valor></span>
+    </p>
+
+    {/*
+      Último recurso. Solo aparece con el error, nunca antes: por aquí la hoja de
+      vida llega como un archivo suelto que alguien tiene que procesar a mano.
+    */}
+    <p class="m-0 mt-3 text-[14px] text-ink">
+      Si vuelve a fallar, mándanos tu hoja de vida por{' '}
+      <a
+        class="font-semibold text-secondary-dark underline"
+        href={enlaceWhatsapp}
+        target="_blank"
+        rel="noopener"
+        data-whatsapp-empleo
+      >
+        WhatsApp
+      </a>{' '}
+      y te ayudamos a completar la postulación.
+    </p>
+  </div>
 </form>
 
 <!-- Confirmación. Reemplaza al formulario, no se añade debajo. -->
@@ -254,6 +303,20 @@ const cargos = cargosAdmitidos();
   </span>
   <h3 class="mb-2 text-[22px]">Postulación enviada</h3>
   <p class="m-0 text-muted">Recibimos tu postulación, te contactaremos al correo indicado.</p>
+
+  {/*
+    Solo se enseña cuando el servidor devolvió una referencia, y eso pasa
+    únicamente si la postulación quedó guardada pero el aviso a Talento Humano
+    todavía no salió. En el camino normal no aparece: no hay nada que citar,
+    porque el correo ya está en la bandeja.
+  */}
+  <p
+    class="mt-3 mb-0 hidden rounded-xl border border-line bg-fondo px-4 py-3 text-[14px] text-ink"
+    data-referencia-empleo
+  >
+    Guarda esta referencia por si necesitas preguntar por tu postulación:{' '}
+    <strong class="font-mono" data-referencia-valor></strong>
+  </p>
   <p class="mt-3 mb-0 text-[14.5px] text-muted">
     Si quieres agregar algo, escríbenos a{' '}
     <a class="font-semibold text-secondary-dark underline" href={enlaceCorreo}>
@@ -276,7 +339,12 @@ const cargos = cargosAdmitidos();
   import { registrarEvento } from '../lib/analitica';
   import { validarFileHojaDeVida } from '../lib/empleos/hoja-de-vida';
   import { ruta } from '../lib/rutas';
-  import { ErrorTurnstile, prepararTurnstile, tokenTurnstile } from '../lib/turnstile-cliente';
+  import {
+    ErrorTurnstile,
+    codigoVisible,
+    prepararTurnstile,
+    tokenTurnstile,
+  } from '../lib/turnstile-cliente';
 
   /**
    * La ruta pasa por `ruta()` como todas las del sitio. Escrita a mano
@@ -294,13 +362,17 @@ const cargos = cargosAdmitidos();
     const cajaTurnstile = form.querySelector<HTMLElement>('[data-turnstile-empleo]');
     const cajaErrores = form.querySelector<HTMLElement>('[data-errores-empleo]');
     const listaErrores = form.querySelector<HTMLUListElement>('[data-lista-errores-empleo]');
-    const avisoRespaldo = form.querySelector<HTMLElement>('[data-aviso-respaldo]');
+    const cajaCodigo = form.querySelector<HTMLElement>('[data-codigo-error]');
+    const valorCodigo = form.querySelector<HTMLElement>('[data-codigo-valor]');
     const avisoVerificacion = form.querySelector<HTMLElement>('[data-aviso-verificacion]');
     const boton = form.querySelector<HTMLButtonElement>('[data-enviar-empleo]');
     const espera = form.querySelector<HTMLElement>('[data-espera-empleo]');
     const confirmacion = form.parentElement?.querySelector<HTMLElement>(
       '[data-confirmacion-empleo]',
     );
+    // Viven dentro de la confirmación, no del formulario.
+    const cajaReferencia = confirmacion?.querySelector<HTMLElement>('[data-referencia-empleo]');
+    const valorReferencia = confirmacion?.querySelector<HTMLElement>('[data-referencia-valor]');
     if (
       !entrada ||
       !cajaArchivo ||
@@ -310,7 +382,8 @@ const cargos = cargosAdmitidos();
       !cajaTurnstile ||
       !cajaErrores ||
       !listaErrores ||
-      !avisoRespaldo ||
+      !cajaCodigo ||
+      !valorCodigo ||
       !avisoVerificacion ||
       !boton ||
       !confirmacion
@@ -319,7 +392,6 @@ const cargos = cargosAdmitidos();
     }
 
     const claveTurnstile = form.dataset.turnstileKey ?? '';
-    const destino = form.dataset.destino ?? '';
 
     function valorDe(nombre: string): string {
       const campo = form.elements.namedItem(nombre) as
@@ -409,19 +481,42 @@ const cargos = cargosAdmitidos();
     }
 
     /**
-     * Token para el envío. Si Cloudflare pide marcar la casilla, se enseña el
-     * aviso y se lleva la casilla a la vista; la espera ya no vence mientras
-     * la persona la marca (ver src/lib/turnstile-cliente.ts).
+     * Consigue el token, y si no puede lo dice en vez de reventar.
+     *
+     * NUNCA LANZA. Ese es el cambio importante: antes un fallo de Turnstile
+     * cortaba el envío y la postulación no llegaba a salir de la página. Ahora
+     * devuelve `sinVerificar: true` con el código del fallo, y quien llama
+     * decide qué hacer con eso; lo que hace es mandarla igual.
+     *
+     * Si Cloudflare pide marcar la casilla, se enseña el aviso y se lleva la
+     * casilla a la vista; la espera no vence mientras la persona la marca (ver
+     * src/lib/turnstile-cliente.ts).
      */
-    async function token(): Promise<string> {
-      if (!claveTurnstile) return '';
-      return tokenTurnstile({
-        alPedirInteraccion: () => {
-          form.dataset.verificacion = 'pendiente';
-          avisoVerificacion!.classList.remove('hidden');
-          cajaTurnstile!.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        },
-      });
+    async function token(): Promise<{ valor: string; sinVerificar: boolean; codigo: string }> {
+      if (!claveTurnstile) return { valor: '', sinVerificar: false, codigo: '' };
+
+      try {
+        if (!turnstileListo) {
+          // Ahora sí es un reintento de verdad: la promesa fallida ya no se
+          // queda cacheada (ver src/lib/turnstile-cliente.ts).
+          await prepararTurnstile(cajaTurnstile!, claveTurnstile);
+          turnstileListo = true;
+        }
+        const valor = await tokenTurnstile({
+          alPedirInteraccion: () => {
+            form.dataset.verificacion = 'pendiente';
+            avisoVerificacion!.classList.remove('hidden');
+            cajaTurnstile!.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          },
+        });
+        return { valor, sinVerificar: false, codigo: '' };
+      } catch (fallo) {
+        if (!(fallo instanceof ErrorTurnstile)) throw fallo;
+        const codigo = codigoVisible(fallo);
+        console.warn('[empleos] sin verificación de seguridad:', fallo.motivo, codigo);
+        form.dataset.verificacion = 'omitida';
+        return { valor: '', sinVerificar: true, codigo };
+      }
     }
 
     function ocultarAvisoVerificacion() {
@@ -431,13 +526,19 @@ const cargos = cargosAdmitidos();
 
     // --- Mensajes -----------------------------------------------------------
 
-    function mostrarErrores(mensajes: string[]) {
+    function mostrarErrores(mensajes: string[], codigo = '') {
       listaErrores!.textContent = '';
       for (const mensaje of mensajes) {
         const item = document.createElement('li');
         item.textContent = mensaje;
         listaErrores!.append(item);
       }
+
+      // textContent, nunca innerHTML: el código viene de una respuesta del
+      // servidor, y lo que llega de fuera no se pinta como HTML.
+      valorCodigo!.textContent = codigo;
+      cajaCodigo!.classList.toggle('hidden', codigo === '');
+
       cajaErrores!.classList.toggle('hidden', mensajes.length === 0);
       if (mensajes.length > 0) {
         cajaErrores!.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -455,42 +556,19 @@ const cargos = cargosAdmitidos();
     }
 
     /**
-     * Respaldo: abre el gestor de correo con lo escrito.
+     * Confirma en pantalla.
      *
-     * Solo se usa cuando la función NO contestó (no hay backend, o dio 5xx). Un
-     * `mailto:` no puede llevar archivos, así que el cuerpo y el aviso en
-     * pantalla piden adjuntar la hoja de vida a mano.
+     * `referencia` solo llega cuando la postulación quedó GUARDADA pero el aviso
+     * a Talento Humano todavía no salió (ver src/lib/empleos/postular.ts). En el
+     * camino normal no existe, y entonces no se enseña nada: no hay ningún
+     * código que el candidato necesite apuntar.
      */
-    function caerAlCorreo() {
-      const archivo = entrada!.files?.[0];
-      const cargo = valorDe('cargo');
-      const nombre = valorDe('nombre');
-      const asunto = cargo && nombre ? `Postulación: ${cargo} – ${nombre}` : 'Postulación de empleo';
-      const lineas = [
-        `Nombre: ${nombre}`,
-        `Correo: ${valorDe('correo')}`,
-        `Teléfono: ${valorDe('telefono')}`,
-        `Cargo: ${cargo}`,
-        '',
-        'Sobre mi experiencia:',
-        valorDe('experiencia') || '(está todo en la hoja de vida)',
-        '',
-        `Hoja de vida: ${archivo ? nombreParaMostrar(archivo.name) : '(pendiente)'} — ADJUNTARLA A ESTE CORREO antes de enviarlo.`,
-        '',
-        'Autorizo el tratamiento de mis datos personales para fines de selección de personal (Ley 1581 de 2012).',
-        '',
-        '---',
-        'Enviado desde dstunja.com',
-      ];
-      form.dataset.respaldo = 'correo';
-      avisoRespaldo!.classList.remove('hidden');
-      window.location.href =
-        `mailto:${destino}?subject=${encodeURIComponent(asunto)}` +
-        `&body=${encodeURIComponent(lineas.join('\n'))}`;
-    }
-
-    function confirmar() {
+    function confirmar(referencia?: string) {
       form.dataset.enviado = 'api';
+      if (referencia && cajaReferencia && valorReferencia) {
+        valorReferencia.textContent = referencia;
+        cajaReferencia.classList.remove('hidden');
+      }
       form.classList.add('hidden');
       confirmacion!.classList.remove('hidden');
       confirmacion!.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -500,74 +578,127 @@ const cargos = cargosAdmitidos();
 
     // --- Envío ----------------------------------------------------------------
 
+    type RespuestaApi =
+      | { ok: true; referencia?: string }
+      | { ok: false; errores: string[]; codigo?: string };
+
+    /** Lo que el navegador necesita saber de una respuesta del servidor. */
+    interface Desenlace {
+      estado: number;
+      datos: RespuestaApi | null;
+    }
+
+    /**
+     * Manda el multipart. Devuelve `datos: null` si la respuesta no es JSON, que
+     * es lo que pasa en el espejo de GitHub Pages, donde no hay funciones.
+     */
+    async function enviar(
+      turnstileToken: string,
+      sinVerificar: boolean,
+      codigo: string,
+    ): Promise<Desenlace> {
+      // El multipart sale del propio formulario: campos, casilla, campo trampa
+      // y archivo. Sin cabecera content-type: la pone el navegador, con el
+      // boundary.
+      const cuerpo = new FormData(form);
+      cuerpo.set('turnstileToken', turnstileToken);
+      if (sinVerificar) {
+        cuerpo.set('sin_verificar', 'si');
+        if (codigo) cuerpo.set('turnstileCodigo', codigo);
+      }
+
+      const respuesta = await fetch(RUTA_ENVIO, { method: 'POST', body: cuerpo });
+
+      const tipoRespuesta = respuesta.headers.get('content-type') ?? '';
+      if (!tipoRespuesta.includes('application/json')) {
+        return { estado: respuesta.status, datos: null };
+      }
+      return { estado: respuesta.status, datos: (await respuesta.json()) as RespuestaApi };
+    }
+
     form.addEventListener('submit', async (evento) => {
       evento.preventDefault();
       if (!form.reportValidity()) return;
 
       mostrarErrores([]);
-      avisoRespaldo!.classList.add('hidden');
       boton!.disabled = true;
       const textoBoton = boton!.textContent;
       boton!.textContent = 'Enviando…';
       mostrarEspera();
 
       try {
-        if (claveTurnstile && !turnstileListo) {
-          // Un último intento: puede que el script tardara más que la persona.
-          await prepararTurnstile(cajaTurnstile!, claveTurnstile);
-          turnstileListo = true;
-        }
-
-        // El multipart sale del propio formulario: campos, casilla, campo
-        // trampa y archivo. Solo se añade el token. Sin cabecera content-type:
-        // la pone el navegador, con el boundary.
-        const cuerpo = new FormData(form);
-        cuerpo.set('turnstileToken', await token());
+        /*
+         * 1. El token. `token()` no lanza: si el reto no se pudo resolver ni al
+         *    segundo intento, devuelve `sinVerificar` y el código del fallo, y
+         *    la postulación sale igual. Un navegador que no puede con un reto de
+         *    Cloudflare no es motivo para perder a un candidato.
+         */
+        const verificacion = await token();
         ocultarAvisoVerificacion();
 
-        const respuesta = await fetch(RUTA_ENVIO, { method: 'POST', body: cuerpo });
+        // 2. El envío.
+        let desenlace = await enviar(
+          verificacion.valor,
+          verificacion.sinVerificar,
+          verificacion.codigo,
+        );
 
-        // Un espejo estático sin funciones devuelve HTML, no JSON.
-        const tipoRespuesta = respuesta.headers.get('content-type') ?? '';
-        if (!tipoRespuesta.includes('application/json')) {
-          caerAlCorreo();
+        /*
+         * 3. Un 403 con token es un token que el SERVIDOR rechazó: caducado,
+         *    ya usado, o de un dominio que el widget no tiene autorizado. Para
+         *    la persona es indistinguible de que el reto no funcione, así que se
+         *    reenvía una vez como «sin verificar» en vez de dejarla fuera. Si ya
+         *    iba sin verificar, no hay nada que reintentar.
+         */
+        if (desenlace.estado === 403 && !verificacion.sinVerificar) {
+          const codigo =
+            desenlace.datos && !desenlace.datos.ok ? (desenlace.datos.codigo ?? '') : '';
+          console.warn('[empleos] el servidor rechazó el token; se reenvía sin verificar:', codigo);
+          form.dataset.verificacion = 'omitida';
+          desenlace = await enviar('', true, '');
+        }
+
+        const { estado, datos } = desenlace;
+
+        if (datos === null) {
+          /*
+           * No hay función que conteste. Es el espejo de GitHub Pages, que no
+           * tiene backend. NO se abre ningún gestor de correo: se dice qué pasa
+           * y se ofrece WhatsApp, que sí puede llevar el archivo.
+           */
+          mostrarErrores(
+            [
+              'El envío de postulaciones no está disponible en esta dirección. Entra a dstunja.com/empleos o mándanos tu hoja de vida por WhatsApp.',
+            ],
+            'E-SIN-API',
+          );
           return;
         }
 
-        const datos = (await respuesta.json()) as { ok: true } | { ok: false; errores: string[] };
-
-        if (respuesta.ok && datos.ok) {
-          confirmar();
+        if (estado >= 200 && estado < 300 && datos.ok) {
+          confirmar(datos.referencia);
           return;
         }
 
-        if (respuesta.status >= 500) {
-          caerAlCorreo();
-          return;
-        }
-
-        // 400, 403, 429: el servidor contestó y explicó por qué. No hay respaldo
-        // que valga; hay que corregir lo que dice y volver a enviar.
-        mostrarErrores(datos.ok ? ['Error desconocido.'] : datos.errores);
+        // 400, 403, 429, 500: el servidor contestó y explicó por qué. El código
+        // va debajo, para que una captura de pantalla nos diga la causa.
+        mostrarErrores(
+          datos.ok ? ['No pudimos enviar tu postulación.'] : datos.errores,
+          datos.ok ? '' : (datos.codigo ?? ''),
+        );
       } catch (fallo) {
         /*
-         * Un fallo de la verificación de seguridad NO es "no hay función": el
-         * servidor ni siquiera se ha llamado. Antes caía aquí al `mailto:` y la
-         * postulación no llegaba nunca a /api/empleos/postular. Solo el script
-         * de Cloudflare bloqueado (`no-cargo`) justifica el respaldo por correo,
-         * porque desde esta página no hay forma de pasar la comprobación; si
-         * falló o caducó, se explica y se puede volver a intentar.
+         * Aquí solo se llega por un fallo de RED: el `fetch` no salió o se cortó
+         * a mitad. Los fallos de Turnstile ya no pasan por aquí, los absorbe
+         * `token()`.
          */
-        if (fallo instanceof ErrorTurnstile && fallo.motivo !== 'no-cargo') {
-          console.warn('[empleos] verificación de seguridad:', fallo.motivo, fallo.codigo ?? '');
-          form.dataset.verificacion = 'fallida';
-          mostrarErrores([
-            'No pudimos completar la verificación de seguridad. Vuelve a pulsar «Enviar postulación» y, si aparece la casilla, márcala. Si sigue fallando, escríbenos por WhatsApp.',
-          ]);
-          avisoVerificacion!.classList.add('hidden');
-          return;
-        }
-        caerAlCorreo();
+        console.warn('[empleos] no se pudo enviar:', fallo);
+        mostrarErrores(
+          [
+            'No pudimos conectar con el servidor. Revisa tu conexión y vuelve a pulsar «Enviar postulación».',
+          ],
+          'E-RED',
+        );
       } finally {
         if (form.dataset.verificacion === 'pendiente') ocultarAvisoVerificacion();
         ocultarEspera();
