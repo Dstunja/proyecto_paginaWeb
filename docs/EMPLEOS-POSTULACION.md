@@ -313,11 +313,64 @@ El **único camino que todavía pierde una postulación** es que falte
 `BLOB_READ_WRITE_TOKEN`: sin store no hay dónde guardar nada. Por eso esa
 variable pasa a ser obligatoria también para Empleos, y no solo para PQRS.
 
-> **Pendiente, y es una obligación legal, no una mejora.** Nada borra
-> automáticamente lo que se escribe en `empleos/`. El cron `/api/pqrs/limpieza`
-> solo toca `pqrs/pendientes/`. Hay que fijar cuánto tiempo se conservan esas
-> hojas de vida y programar su borrado: la Ley 1581 de 2012 pide una finalidad y
-> un plazo, y «para siempre» no es un plazo.
+## Conservación de las hojas de vida (Ley 1581): seis meses
+
+La Ley 1581 de 2012 pide una finalidad y un plazo, y «para siempre» no es un
+plazo: el dato deja de poder conservarse cuando ya no sirve a la finalidad que la
+persona autorizó, que aquí es un proceso de selección concreto.
+
+**Plazo propuesto: seis meses.** Es lo habitual para hojas de vida de selección.
+Cubre el proceso que motivó la postulación y deja margen para volver sobre un
+candidato cuando se abre una vacante parecida, que es justo la razón por la que
+una empresa guarda hojas de vida. Más allá, lo que queda no es una postulación
+viva sino un archivo de datos personales sin uso.
+
+El borrado **está escrito y probado, pero no está encendido**, y tiene dos
+cerrojos independientes:
+
+1. **El cron no está declarado en `vercel.json`.** La ruta
+   `GET /api/empleos/limpieza` existe y funciona, pero nadie la llama.
+2. **Aunque se llame, por defecto hace un simulacro.** Mientras
+   `EMPLEOS_RETENCION_ACTIVA` no valga exactamente `'1'`, mira qué borraría y no
+   borra nada. Se exige ese valor exacto: ni `true`, ni `si`, ni una cadena que
+   alguien dejó a medias al copiar variables.
+
+### Cómo ver qué se borraría, sin borrar nada
+
+Con `CRON_SECRET` puesta, y sin tocar ninguna otra variable:
+
+```bash
+curl -s -H "Authorization: Bearer $CRON_SECRET" \
+  https://<despliegue>/api/empleos/limpieza | jq
+```
+
+Devuelve `simulacro: true`, cuántas postulaciones hay en el store, cuántas
+pasaron del plazo y los identificadores `EMP-…` de esas. Un identificador no
+dice nada de nadie: no lleva nombre, ni correo, ni teléfono.
+
+### Cómo encenderlo, cuando se apruebe
+
+1. Definir en Vercel `EMPLEOS_RETENCION_ACTIVA=1` (y `EMPLEOS_RETENCION_MESES`
+   si el plazo acordado no son seis meses).
+2. Añadir el cron a `vercel.json`, junto al de PQRS. El bloque `crons` quedaría:
+
+   ```json
+   "crons": [
+     { "path": "/api/pqrs/limpieza", "schedule": "0 4 * * *" },
+     { "path": "/api/empleos/limpieza", "schedule": "30 4 * * 0" }
+   ]
+   ```
+
+   Una vez por semana basta: el plazo es de meses, no de horas, y a las 4:30
+   para no solaparse con la limpieza de PQRS. **Ojo con el plan Hobby de
+   Vercel**, que limita el número de crons; si no admite el segundo, la
+   alternativa es una sola ruta que haga las dos limpiezas.
+3. Redesplegar y mirar el registro: `[empleos/limpieza] borrado` con cuántas
+   revisó y cuántas borró. Si sigue diciendo `SIMULACRO`, la variable no llegó.
+
+> Antes de encenderlo conviene correr el simulacro una vez y mirar el número de
+> `caducadas`: es lo que se llevaría por delante la primera pasada, y no se
+> puede deshacer.
 
 ## Cómo saber, en los registros de Vercel, que una postulación llegó
 
@@ -353,6 +406,8 @@ Comparte con PQRS `TURNSTILE_SECRET`, `PUBLIC_TURNSTILE_SITE_KEY` y, si están,
 | `BLOB_READ_WRITE_TOKEN` | **sí** | La pone Vercel al conectar el store `pqrs-adjuntos`. Sin ella, una postulación cuyo correo falle **se pierde**: no hay dónde guardar la hoja de vida |
 | `EMPLEOS_DESTINO` | no | Buzón de Talento Humano. Sin ella, `contactoEmpleo.email` de `src/data/vacantes.ts` (ghsantiagodetunja@gmail.com). Con `onboarding@resend.dev` tiene que ser el **titular de la cuenta** de `RESEND_API_KEY` |
 | `EMPLEOS_REMITENTE` | no | Remitente. Sin ella, `onboarding@resend.dev`. **Ya no hereda `PQRS_REMITENTE`** |
+| `EMPLEOS_RETENCION_ACTIVA` | no | Solo el valor exacto `1` enciende el borrado de las hojas de vida guardadas. Sin ella, simulacro |
+| `EMPLEOS_RETENCION_MESES` | no | Plazo de conservación. Sin ella, **6** |
 
 ### El orden importa: primero el remitente, después el destino
 
@@ -416,6 +471,8 @@ src/lib/empleos/respaldo.test.ts   pruebas de la red de seguridad, con el Blob s
 src/lib/turnstile-cliente.ts       el reto en el navegador: reintento y códigos visibles
 src/pages/api/empleos/postular.ts  la función de Vercel (solo el envoltorio HTTP)
 src/pages/api/empleos/descarga.ts  abre una hoja de vida guardada, desde el correo de aviso
+src/lib/empleos/retencion.ts       el plazo de conservacion y el borrado (nace desactivado)
+src/pages/api/empleos/limpieza.ts  el cron del borrado, TODAVIA no declarado en vercel.json
 src/components/FormularioEmpleo.astro  el formulario y la revisión del archivo
 scripts/verificar-empleos.mjs      la prueba de navegador (móvil y escritorio)
 ```

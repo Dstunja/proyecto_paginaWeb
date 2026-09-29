@@ -240,6 +240,17 @@ export async function atenderPostulacion(
       sinVerificar: datos.sinVerificar,
       intentos: envio.intentos,
       motorLimite: veredicto.motor,
+      /*
+       * Si la red de seguridad está en pie, en el envío que SÍ funciona.
+       *
+       * El token del Blob no se toca ni se enseña: esto solo dice si la función
+       * lo encontró. Se escribe justo aquí, en el camino bueno, porque el otro
+       * sitio donde se sabría es el del correo fallido, y ese es el momento en
+       * que ya es tarde para enterarse. Con esta línea se puede comprobar en
+       * una vista previa que la variable llega, sin tener que provocar un fallo
+       * de Resend.
+       */
+      respaldo: blobConfigurado(env) ? 'listo' : 'SIN-CONFIGURAR',
     });
     return { estado: 200, cuerpo: { ok: true } };
   }
