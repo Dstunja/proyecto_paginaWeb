@@ -22,8 +22,20 @@
  *
  * LOS FALLOS LLEVAN MOTIVO (`ErrorTurnstile.motivo`), porque no todos piden lo
  * mismo: si el script de Cloudflare no cargó (un adblock, una red corporativa)
- * no hay forma de pasar la comprobación y lo razonable es el respaldo por
- * correo; si la comprobación falló o caducó, basta con volver a intentarlo.
+ * no hay forma de pasar la comprobación desde esta página; si la comprobación
+ * falló o caducó, basta con volver a intentarlo.
+ *
+ * Y VOLVER A INTENTARLO LO HACE LA LIBRERÍA, no la persona. Un reto que falla
+ * una vez (el 600010 y los demás códigos de la familia 600xxx son fallos de
+ * ejecución del reto en el navegador) suele pasar al segundo intento con el
+ * widget reiniciado. Antes eso se le pedía al candidato —«vuelve a pulsar
+ * Enviar»— y muchos no volvían. Ahora `tokenTurnstile()` reinicia el widget y
+ * reintenta una vez sola antes de rendirse. Lo heredan los tres formularios
+ * que usan este módulo: Empleos, PQRS y Contacto administrativo.
+ *
+ * CADA FALLO TIENE UN CÓDIGO CORTO Y VISIBLE (`codigoVisible`), del estilo
+ * «T-110200». No es para depurar: es para que un candidato que manda una
+ * captura de pantalla nos diga la causa sin tener que abrir la consola.
  */
 
 interface ApiTurnstile {
@@ -78,6 +90,57 @@ const ESPERA_MAXIMA_MS = 30_000;
  * llegara ninguna respuesta.
  */
 const ESPERA_INTERACCION_MS = 5 * 60_000;
+
+/**
+ * Cuántas veces se pide el token antes de rendirse. Dos: el original y un
+ * reintento con el widget reiniciado.
+ *
+ * No más: cada intento que falla cuesta segundos de espera con el botón en
+ * «Enviando…», y si el segundo tampoco pasa es que el problema no es pasajero
+ * (el dominio no está autorizado, el WebView no soporta el reto). A partir de
+ * ahí lo que sirve es seguir sin token, no insistir.
+ */
+const INTENTOS_TOKEN = 2;
+
+/** Pausa entre el fallo y el reintento, para no repetir dentro del mismo hipo. */
+const PAUSA_REINTENTO_MS = 600;
+
+/**
+ * Motivos que merecen un segundo intento.
+ *
+ * `no-cargo` no está: sin widget montado no hay nada que reiniciar. Tampoco
+ * `reemplazado`, que significa que otro envío pidió un token después de este y
+ * reintentar sería pelearse con él.
+ */
+const MOTIVOS_REINTENTABLES = new Set<MotivoTurnstile>(['fallo', 'caducado', 'tiempo']);
+
+/** Abreviaturas para el código visible cuando Cloudflare no dio uno suyo. */
+const ABREVIATURA: Record<MotivoTurnstile, string> = {
+  'no-cargo': 'CARGA',
+  fallo: 'FALLO',
+  caducado: 'CADUCO',
+  tiempo: 'ESPERA',
+  reemplazado: 'REPETIDO',
+};
+
+/**
+ * Código corto para enseñar en pantalla: «T-110200», «T-CARGA».
+ *
+ * Cuando Cloudflare da su propio número se usa ese, que es el que permite mirar
+ * su tabla de códigos (110200 = el dominio no está autorizado en el widget,
+ * 600010 = el reto no se pudo ejecutar en ese navegador). Si no, va la
+ * abreviatura del motivo, que al menos distingue «no cargó el script» de «el
+ * reto caducó».
+ */
+export function codigoVisible(fallo: ErrorTurnstile): string {
+  const codigo = fallo.codigo?.trim();
+  if (codigo && /^[A-Za-z0-9_-]{1,20}$/.test(codigo)) return `T-${codigo}`;
+  return `T-${ABREVIATURA[fallo.motivo]}`;
+}
+
+function esperar(ms: number): Promise<void> {
+  return new Promise((listo) => setTimeout(listo, ms));
+}
 
 export interface OpcionesToken {
   /** Se llama cuando Cloudflare enseña la casilla y hay que marcarla. */
@@ -200,13 +263,39 @@ export function prepararTurnstile(contenedor: HTMLElement, sitekey: string): Pro
 }
 
 /**
- * Pide un token nuevo. Cada llamada devuelve uno distinto, de un solo uso.
+ * Pide un token nuevo, reintentando UNA vez si el reto falla.
+ *
+ * Cada intento reinicia el widget (`reset`) antes de ejecutarlo, que es lo que
+ * saca a Turnstile de un estado de error: con `retry: 'never'` no se recupera
+ * solo. Los motivos que no se arreglan reintentando (`no-cargo`, `reemplazado`)
+ * salen a la primera.
  *
  * Si Cloudflare pide interacción, se llama a `alPedirInteraccion` y la espera
  * pasa del tope corto al largo: el tiempo que tarda la persona en marcar la
- * casilla no cuenta como un fallo.
+ * casilla no cuenta como un fallo. Eso ocurre dentro de cada intento, así que
+ * una casilla marcada a destiempo puede consumir el primero y resolverse en el
+ * segundo.
  */
-export function tokenTurnstile(opciones: OpcionesToken = {}): Promise<string> {
+export async function tokenTurnstile(opciones: OpcionesToken = {}): Promise<string> {
+  let ultimo: ErrorTurnstile | null = null;
+
+  for (let intento = 1; intento <= INTENTOS_TOKEN; intento += 1) {
+    try {
+      return await ejecutarTurnstile(opciones);
+    } catch (fallo) {
+      if (!(fallo instanceof ErrorTurnstile)) throw fallo;
+      ultimo = fallo;
+      if (!MOTIVOS_REINTENTABLES.has(fallo.motivo) || intento === INTENTOS_TOKEN) break;
+      console.warn('[turnstile] reintento tras', fallo.motivo, fallo.codigo ?? '');
+      await esperar(PAUSA_REINTENTO_MS);
+    }
+  }
+
+  throw ultimo ?? new ErrorTurnstile('fallo', 'La comprobación antirrobots falló.');
+}
+
+/** Un intento suelto: reinicia el widget, lo ejecuta y espera el token. */
+function ejecutarTurnstile(opciones: OpcionesToken): Promise<string> {
   if (!window.turnstile || idWidget === null) {
     return Promise.reject(new ErrorTurnstile('no-cargo', 'Turnstile no está listo.'));
   }
