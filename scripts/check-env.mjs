@@ -80,7 +80,9 @@ const VARIABLES = [
     nivel: 'radicacion',
     para:
       'Guardar los soportes y el registro de cada radicación en el store PRIVADO ' +
-      'pqrs-adjuntos, y firmar los enlaces de descarga del correo.',
+      'pqrs-adjuntos, y firmar los enlaces de descarga del correo. La necesita ' +
+      'TAMBIÉN Empleos: es la red de seguridad que guarda la hoja de vida cuando ' +
+      'el correo a Talento Humano no sale, y sin ella esa postulación se pierde.',
     donde:
       'Vercel > tu proyecto > Storage > pqrs-adjuntos > Connect. Al conectar el store, Vercel\n' +
       '      define la variable sola (con BLOB_STORE_ID y BLOB_WEBHOOK_PUBLIC_KEY, que el código\n' +

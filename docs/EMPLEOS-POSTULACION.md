@@ -20,7 +20,8 @@ Variables que usa Empleos y su estado en Vercel (Production):
 | `RESEND_API_KEY` | Cargada (cuenta de ghsantiagodetunja@gmail.com) |
 | `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET` | Cargadas (widget «DST web») |
 | `EMPLEOS_DESTINO`, `EMPLEOS_REMITENTE` | Opcionales. Sus valores por defecto son los de producción (ghsantiagodetunja@gmail.com y `onboarding@resend.dev`); si están cargadas, tienen que valer eso |
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | **Faltan**. Sin ellas el límite de 5 postulaciones cada 10 minutos por IP vive en la memoria de cada instancia |
+| `BLOB_READ_WRITE_TOKEN` | La pone Vercel al conectar el store `pqrs-adjuntos`. **Ahora es obligatoria también para Empleos**: es la red de seguridad que guarda la hoja de vida si el correo no sale |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | **Faltan**. Sin ellas el límite vive en la memoria de cada instancia, y por eso en ese modo es más tolerante: 20 cada 10 minutos, contando por IP y huella del archivo |
 
 Al candidato no le llega ningún correo, y eso no depende del dominio: la
 confirmación es la pantalla. Lo que desbloquea verificar dstunja.com en Resend
@@ -50,7 +51,7 @@ Humano con los datos en el cuerpo y el archivo adjunto.
 | Autorización Ley 1581 | Casilla obligatoria, validada también en el servidor |
 | Correos que salen | 1 (a Talento Humano). Al candidato no: la confirmación es la pantalla |
 | Número de radicado | No |
-| Funciona en GitHub Pages | Cae a `mailto:`, pidiendo adjuntar la hoja de vida a mano |
+| Funciona en GitHub Pages | No. Se explica en pantalla, con el código `E-SIN-API`, y se ofrece WhatsApp |
 
 Reutiliza la infraestructura de PQRS: el mismo proveedor (Resend), el mismo
 Turnstile, el mismo limitador por IP (`src/lib/pqrs/limite-tasa.ts`, con Upstash
@@ -117,16 +118,24 @@ Respuestas:
   se le dice qué lo delató y no se manda nada.
 - `400` → `{ ok: false, errores: [...] }`. Devuelve **todos** los errores, no solo
   el primero: campos mal, archivo rechazado, cuerpo que no es multipart.
-- `403` → Turnstile no pasó (o no hay `TURNSTILE_SECRET`: falla cerrado).
-- `429` → más de 5 postulaciones en 10 minutos desde la misma IP.
-- `500` → el correo no salió. El navegador cae entonces al `mailto:`.
+- `200` → `{ ok: true, referencia: 'EMP-…' }` cuando el correo **no** salió pero la
+  postulación quedó guardada en el Blob. La referencia se le enseña al candidato.
+- `403` → Turnstile no pasó (o no hay `TURNSTILE_SECRET`: falla cerrado). El
+  navegador reenvía una vez con `sin_verificar` antes de rendirse.
+- `429` → se pasó del límite. Cuál es depende de si la postulación venía
+  verificada y de si hay Upstash (ver «Variables de entorno»).
+- `500` → el correo no salió **y no se pudo guardar nada**. Es el único desenlace
+  que pierde una postulación, y solo ocurre si falta `BLOB_READ_WRITE_TOKEN` o si
+  el store falla al escribir.
 
-Ese `500` es deliberado, y no un `200` con un aviso: aquí no queda registro en
-ningún sitio, así que si el correo no sale no queda **nada**. Con el `500` la
-persona acaba mandando su hoja de vida por su gestor de correo; con un `200` se
-iría convencida de que nos llegó. El motivo técnico (una clave mal puesta, el
-dominio del remitente sin verificar en Resend) se queda en el registro de Vercel
-y nunca viaja en la respuesta.
+Todos los errores llevan además un `codigo` corto (`E-DATOS`, `E-LIMITE`,
+`E-CORREO`, `T-…`) que el formulario enseña en pantalla. El motivo técnico (una
+clave mal puesta, el dominio del remitente sin verificar en Resend) se queda en
+el registro de Vercel y nunca viaja en la respuesta.
+
+Ese `500` dejó de ser el caso común: antes cualquier fallo de Resend acababa
+ahí, y el navegador abría el gestor de correo. Ahora el correo se reintenta tres
+veces y, si no sale, la hoja de vida se guarda (ver «La red de seguridad»).
 
 ## El correo que llega a Talento Humano
 
@@ -194,12 +203,39 @@ puede decidir, **después de pulsar Enviar**, que hace falta marcar la casilla
   casilla; antes de eso suele avisar el propio Cloudflare con `timeout-callback`.
 - Al marcarla llega el token y la postulación sale hacia la función.
 
-Si la verificación **falla o caduca**, se muestra «No pudimos completar la
-verificación de seguridad…» y se puede volver a pulsar Enviar. **No** se abre el
-correo: la función ni siquiera se ha llamado, así que no es un caso de «no hay
-backend». Solo si el script de Cloudflare **no carga** (un bloqueador, una red
-corporativa) se cae al `mailto:`, porque desde la página no hay forma de pasar la
-comprobación.
+Si la verificación **falla o caduca**, la librería reintenta sola una vez con el
+widget reiniciado. Si el segundo intento tampoco pasa —o si el script de
+Cloudflare ni siquiera carga, por un bloqueador o una red corporativa— la
+postulación **sale igual**, marcada `sin_verificar`. Lo que ya no pasa, en
+ninguno de esos casos, es que el candidato se quede sin postular.
+
+### Y si el reto no se puede resolver, la postulación sale igual
+
+Hay navegadores en los que el reto de Cloudflare **no corre**: el WebView de
+WhatsApp o de Instagram, un teléfono viejo, una red corporativa, un bloqueador.
+Ahí no hay nada que la persona pueda hacer, y dejarla fuera es perder a un
+candidato real. Por eso:
+
+1. `tokenTurnstile()` **reintenta una vez sola**, reiniciando el widget. Un
+   600010 esporádico —son fallos de ejecución del reto en el navegador— suele
+   pasar al segundo intento.
+2. Si tampoco pasa, el formulario manda la postulación **sin token y con la
+   marca `sin_verificar`**, más el código del fallo en `turnstileCodigo`.
+3. El servidor la acepta por una puerta más estrecha: `LIMITE_SIN_VERIFICAR`,
+   tres cada treinta minutos por IP y huella del archivo.
+4. El correo llega con **`[SIN VERIFICAR]` delante del asunto** y un aviso en el
+   cuerpo, para que Talento Humano lo lea con criterio.
+
+Un `403` del servidor (token caducado, ya usado, o dominio sin autorizar) se
+reenvía **una vez** de la misma manera. Para la persona, un token que el servidor
+rechaza es indistinguible de una página rota.
+
+**Esto es un intercambio consciente, y conviene tenerlo presente:** esa puerta
+también la puede usar un robot, porque le basta con no mandar token. Lo que
+queda filtrando es el campo trampa, la validación de los campos, la firma real
+del archivo y ese límite. Si un día empieza a entrar basura, el número que hay
+que mirar es el de `aceptada:sin-verificar` en el registro de Vercel, y la
+decisión a tomar es si se cierra esa puerta o se aprieta el límite.
 
 ### El fallo que hubo en producción
 
@@ -221,19 +257,90 @@ Cloudflare. Hoy «DST web» autoriza `dstunja.com`, `paginaweb-beta-coral.vercel
 Hostnames**. `vercel.app` cubre cualquier subdominio de Vercel, también ajenos:
 si no se usan las vistas previas de rama, conviene quitarlo.
 
-## GitHub Pages: el respaldo por correo
+## Ya no hay respaldo por `mailto:`
 
-La función **solo existe en Vercel**. En el espejo estático de GitHub Pages la
-ruta devuelve el HTML del 404, el navegador lo detecta (la respuesta no es JSON)
-y cae al `mailto:` con los datos en el cuerpo, exactamente como hace PQRS. Como
-un `mailto:` no puede llevar archivos, el aviso en pantalla y el cuerpo del
-correo piden **adjuntar la hoja de vida a mano**. Lo mismo ocurre si Vercel
-devuelve un 5xx o la red falla.
+**Se quitó, y quitarlo fue el objetivo de todo este trabajo.** La página abría el
+gestor de correo del candidato con sus datos en el cuerpo y le pedía adjuntar la
+hoja de vida **otra vez, a mano**, porque un `mailto:` no puede llevar archivos.
+En el celular, y sobre todo dentro del navegador de WhatsApp, muchas veces no se
+abría nada: la persona se quedaba mirando un aviso que hablaba de un correo que
+nunca existió, su postulación no llegaba y **no quedaba registrada en ningún
+sitio**. Ni un log en Vercel, ni una línea en Resend.
 
-Un `400`, `403` o `429` **no** activan el respaldo: ahí el servidor sí contestó y
-lo que toca es enseñar el motivo. En el DOM el respaldo queda marcado con
-`data-respaldo="correo"`. El botón «Prefiero WhatsApp» está siempre, como
-alternativa.
+Hoy, cuando algo falla:
+
+| Qué pasó | Qué ve el candidato | Código |
+| --- | --- | --- |
+| Campos mal (`400`) | El motivo, campo por campo | `E-DATOS` |
+| Límite por IP (`429`) | Cuánto esperar | `E-LIMITE` |
+| Turnstile rechazado dos veces (`403`) | El motivo | `T-<código de Cloudflare>` |
+| El correo no salió y no había Blob (`500`) | «Inténtalo de nuevo en unos minutos» | `E-CORREO` |
+| El espejo estático sin funciones | «No está disponible en esta dirección» | `E-SIN-API` |
+| La red caída | «Revisa tu conexión» | `E-RED` |
+| El correo no salió pero **se guardó** (`200`) | «Postulación enviada» + una referencia `EMP-…` | — |
+
+El **código corto** no es para el candidato, que no puede hacer nada con él: es
+para nosotros. Quien manda una captura de pantalla por WhatsApp nos está diciendo
+con ese código si el problema fue el dominio sin autorizar en Cloudflare
+(`T-110200`), el reto que no corre en su navegador (`T-600010`) o el correo
+(`E-CORREO`), sin tener que pedirle que abra ninguna consola.
+
+**WhatsApp aparece solo dentro del aviso de error**, con un mensaje prellenado que
+dice que ya intentó postularse. Antes estaba siempre al lado del botón de enviar
+y competía con el envío de verdad: por WhatsApp la hoja de vida llega como un
+archivo suelto, sin cargo ni autorización de datos, y alguien tiene que
+transcribirlo a mano.
+
+## La red de seguridad: si el correo no sale, la hoja de vida se guarda
+
+El orden completo cuando llega una postulación válida:
+
+1. **El correo se intenta tres veces**, con pausas de 500 ms y 1500 ms. El `429`
+   del plan gratuito de Resend —el fallo más probable cuando llegan varias
+   postulaciones seguidas— cede esperando un segundo. Antes el primer fallo se
+   daba por definitivo.
+2. Si los tres fallan, **la hoja de vida se sube a Vercel Blob** bajo
+   `empleos/EMP-AAAAMMDD-XXXXXX/<uuid>.<ext>`, junto a un `registro.json` con los
+   datos del formulario.
+3. Con el archivo ya a salvo, sale **un último correo sin adjunto** y con un
+   enlace firmado a `/api/empleos/descarga` (siete días). Si lo que hacía fallar
+   el envío era el peso del adjunto, este sí sale.
+4. Al candidato se le dice «Postulación enviada» **solo si el correo salió o la
+   postulación quedó guardada**. Si quedó guardada sin aviso, se le enseña además
+   la referencia `EMP-…` para que pueda citarla.
+
+El **único camino que todavía pierde una postulación** es que falte
+`BLOB_READ_WRITE_TOKEN`: sin store no hay dónde guardar nada. Por eso esa
+variable pasa a ser obligatoria también para Empleos, y no solo para PQRS.
+
+> **Pendiente, y es una obligación legal, no una mejora.** Nada borra
+> automáticamente lo que se escribe en `empleos/`. El cron `/api/pqrs/limpieza`
+> solo toca `pqrs/pendientes/`. Hay que fijar cuánto tiempo se conservan esas
+> hojas de vida y programar su borrado: la Ley 1581 de 2012 pide una finalidad y
+> un plazo, y «para siempre» no es un plazo.
+
+## Cómo saber, en los registros de Vercel, que una postulación llegó
+
+Cada desenlace escribe **una línea sin ningún dato personal** (ni nombre, ni
+correo, ni teléfono, ni nombre de archivo, ni IP, ni la huella). En Vercel →
+Logs, filtrando por `[empleos/postular]`:
+
+| Línea | Qué significa | Qué hacer |
+| --- | --- | --- |
+| `enviada` | El correo salió con el adjunto. **Esta es la buena.** | Nada |
+| `enviada:con-enlace` | El adjunto falló; salió el correo con el enlace al Blob | Revisar por qué falla el adjunto |
+| `guardada:sin-correo` | Está en el Blob y **nadie se ha enterado**. Lleva el `id` | Entrar al store y buscar ese `EMP-…` |
+| `aceptada:sin-verificar` | Entró sin pasar el reto. Lleva el código de Cloudflare | Vigilar el volumen |
+| `rechazo:turnstile` | Token rechazado. Lleva los códigos de Cloudflare | Cruzar con el panel del widget |
+| `rechazo:limite-por-ip` | Límite. Lleva `politica` y `motor` | Si `motor` es `memoria`, falta Upstash |
+| `rechazo:campos` | Validación. Lleva cuántos errores | Nada |
+| `rechazo:campo-trampa` | Un envío que se descartó en silencio | Si sube, algo rellena el campo trampa |
+| `fallo:correo-sin-respaldo` | No salió y **no había Blob**: postulación perdida | Poner `BLOB_READ_WRITE_TOKEN` |
+
+Para comprobar que **una postulación concreta** llegó: busca `enviada` con el
+`cargo` y la marca de tiempo, y contrástalo con el correo en el buzón de Talento
+Humano. Si no hay **ninguna** línea a esa hora, la petición nunca llegó a la
+función y el problema está en el navegador, antes del `fetch`.
 
 ## Variables de entorno
 
@@ -243,21 +350,74 @@ Comparte con PQRS `TURNSTILE_SECRET`, `PUBLIC_TURNSTILE_SITE_KEY` y, si están,
 | Variable | Obligatoria | Qué es |
 | --- | --- | --- |
 | `RESEND_API_KEY` | sí | Clave de la cuenta de Resend de Empleos, registrada con ghsantiagodetunja@gmail.com. PQRS tiene la suya (`PQRS_RESEND_API_KEY`) y solo usa esta si no la tiene |
+| `BLOB_READ_WRITE_TOKEN` | **sí** | La pone Vercel al conectar el store `pqrs-adjuntos`. Sin ella, una postulación cuyo correo falle **se pierde**: no hay dónde guardar la hoja de vida |
 | `EMPLEOS_DESTINO` | no | Buzón de Talento Humano. Sin ella, `contactoEmpleo.email` de `src/data/vacantes.ts` (ghsantiagodetunja@gmail.com). Con `onboarding@resend.dev` tiene que ser el **titular de la cuenta** de `RESEND_API_KEY` |
-| `EMPLEOS_REMITENTE` | no | Remitente. Sin ella, `PQRS_REMITENTE` o `onboarding@resend.dev`. Cuando haya un dominio verificado en la cuenta de Empleos, una dirección de ese dominio |
+| `EMPLEOS_REMITENTE` | no | Remitente. Sin ella, `onboarding@resend.dev`. **Ya no hereda `PQRS_REMITENTE`** |
+
+### El orden importa: primero el remitente, después el destino
+
+Mientras el remitente sea `onboarding@resend.dev`, Resend **solo entrega al
+titular de la cuenta**. Hoy funciona porque `EMPLEOS_DESTINO` no está puesta y su
+valor por defecto es justo ese titular. Cambiarla al buzón de Talento Humano sin
+más haría fallar **todas** las postulaciones, y ese fallo es silencioso desde
+fuera: el candidato vería «Postulación enviada» (la hoja de vida se guardaría en
+el Blob) y nadie recibiría nada.
+
+El orden correcto, cuando dstunja.com esté verificado **en la cuenta de Resend de
+Empleos**, que no es la de PQRS:
+
+1. Verificar el dominio en Resend (los registros DNS están en
+   `docs/PQRS-ADJUNTOS.md`, en «Pendiente: verificar dstunja.com en Resend»).
+2. Poner `EMPLEOS_REMITENTE=empleos@dstunja.com` y comprobar que sigue llegando
+   al buzón por defecto.
+3. **Solo entonces**, cambiar `EMPLEOS_DESTINO` al buzón de Talento Humano.
+
+`correoRemitenteEmpleos()` dejó de heredar `PQRS_REMITENTE` justamente por esto:
+son cuentas de Resend distintas, y un dominio verificado en la de PQRS no lo está
+en la de Empleos. Heredarlo significaba que el día que PQRS estrenara dominio
+propio, Empleos empezaría a mandar desde una dirección que su cuenta no puede
+firmar y todas las postulaciones fallarían a la vez. Cuando la combinación es la
+peligrosa (remitente de pruebas y destino cambiado), la función lo avisa en el
+registro de Vercel antes de intentar el envío.
+
+### Si faltan las variables de Upstash
+
+Sin `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN` el contador del límite
+por IP vive en la memoria de cada instancia: se reinicia en cada arranque en frío
+y se multiplica por instancia, así que **no frena a nadie decidido**. Lo único
+que puede hacer entonces es no estorbar a los candidatos de verdad, y por eso en
+ese modo el límite es distinto:
+
+| | Con Upstash | Sin Upstash (hoy) |
+| --- | --- | --- |
+| Tope | 5 cada 10 min | **20** cada 10 min |
+| Clave | la IP | la IP **más la huella del archivo** |
+
+La huella (`src/lib/empleos/huella.ts`) es un hash corto del nombre saneado, el
+tamaño y los primeros 4 KB de la hoja de vida. Con ella, lo que se cuenta es
+«esta hoja de vida desde esta IP» y no «alguien desde esta IP»: Claro, Tigo y
+Movistar sacan a muchos clientes por una misma IP pública, y con el tope de 5 el
+sexto candidato de un grupo de WhatsApp se quedaba fuera con un mensaje
+(«espera 10 minutos») indistinguible para él de que la página estuviera rota. La
+huella no se guarda en ningún sitio ni viaja al navegador o al correo.
 
 ## Dónde vive cada cosa
 
 ```
 src/lib/empleos/cargos.ts          lista de cargos admitidos (vacantes + espontánea)
 src/lib/empleos/hoja-de-vida.ts    formatos, tope de 4 MB y validación (navegador y servidor)
-src/lib/empleos/config.ts          destino, remitente, límite por IP y nombre del campo trampa
+src/lib/empleos/config.ts          destino, remitente, los tres límites y el campo trampa
 src/lib/empleos/postulacion.ts     validación del multipart, con todos los errores a la vez
-src/lib/empleos/correo.ts          el correo a Talento Humano, con tel:, mailto: y adjunto
+src/lib/empleos/correo.ts          el correo, con reintentos, [SIN VERIFICAR] y variante con enlace
+src/lib/empleos/huella.ts          hash corto de la hoja de vida, para contar sin contar personas
+src/lib/empleos/almacen.ts         la red de seguridad: guardar en Blob cuando el correo no sale
 src/lib/empleos/postular.ts        la orquestación, con pruebas en postular.test.ts
+src/lib/empleos/respaldo.test.ts   pruebas de la red de seguridad, con el Blob simulado
+src/lib/turnstile-cliente.ts       el reto en el navegador: reintento y códigos visibles
 src/pages/api/empleos/postular.ts  la función de Vercel (solo el envoltorio HTTP)
-src/components/FormularioEmpleo.astro  el formulario, la revisión del archivo y el respaldo
-scripts/verificar-empleos.mjs      la prueba de navegador
+src/pages/api/empleos/descarga.ts  abre una hoja de vida guardada, desde el correo de aviso
+src/components/FormularioEmpleo.astro  el formulario y la revisión del archivo
+scripts/verificar-empleos.mjs      la prueba de navegador (móvil y escritorio)
 ```
 
 ## Comandos
@@ -305,13 +465,24 @@ archivo de verdad) comprueba: que sale un correo al buzón por defecto con el
 asunto, el `replyTo` y el adjunto correctos (nombre saneado, MIME real, los
 mismos bytes); que el teléfono va como `tel:` y el correo como `mailto:`; que lo
 escrito llega escapado; que `EMPLEOS_DESTINO` y `EMPLEOS_REMITENTE` mandan si
-están y que sin ellas se hereda el remitente de PQRS; que se aceptan `.pdf`,
+están, y que `EMPLEOS_REMITENTE` **ya no** hereda el de PQRS; que se aceptan `.pdf`,
 `.doc` y `.docx` mirando los bytes y no el MIME declarado; que se rechazan el
 archivo ausente o vacío, un `.txt`, una imagen o texto plano disfrazados de PDF,
 un ZIP renombrado a `.docx`, la doble extensión y más de 4 MB; que los campos
 devuelven **todos** los errores a la vez sin gastar token; que el campo trampa
-relleno da `200` sin correo ni red; el límite por IP; que Turnstile falla
-cerrado; y que un fallo de Resend da `500` sin filtrar el motivo.
+relleno da `200` sin correo ni red; los tres límites por IP (con y sin Upstash, y
+el estrecho de las no verificadas); que dos hojas de vida distintas desde la misma
+IP no se estorban; que Turnstile falla cerrado; que la marca `sin_verificar` se
+ignora si viene un token; que un fallo de Resend se reintenta tres veces y que el
+segundo intento, si sale, basta.
+
+`src/lib/empleos/respaldo.test.ts` cubre la red de seguridad con el Blob
+simulado: que un fallo de correo acaba en `200` y no en `500`, que la hoja de
+vida se guarda con sus bytes, que el `registro.json` lleva los datos del
+formulario y **no** la IP ni la huella, que sale un segundo correo sin adjunto
+con el enlace firmado a `/api/empleos/descarga`, que la referencia solo se le da
+al candidato cuando nadie se ha enterado todavía, y que sin
+`BLOB_READ_WRITE_TOKEN` se responde `500` sin filtrar el motivo técnico.
 
 `npm run verificar:empleos` (Playwright, en móvil y escritorio) cubre lo que se
 ve: el campo con su `accept`, su ayuda y su obligatoriedad; que cada formato
@@ -320,14 +491,25 @@ input con un mensaje claro y dejan el campo inválido; el campo trampa presente
 pero invisible; la casilla obligatoria; que sin casilla o sin archivo no sale
 ninguna petición; que el envío es **un** POST multipart con todos los campos, el
 campo trampa vacío, el token y el archivo con sus bytes; el botón deshabilitado
-con «Enviando…»; la confirmación; que un 400 o un 403 se muestran sin caer al
-correo; que un 500, el HTML del espejo o la red caída sí abren el gestor de
-correo con el aviso de adjuntar la hoja de vida y el botón de WhatsApp a la
-vista; y el cargo preseleccionado desde `?cargo=` y desde «Postularme».
+con «Enviando…»; la confirmación; que un **doble clic** manda una sola
+postulación; que un 400, un 429 y un 500 se muestran con su código visible y sin
+abrir ningún gestor de correo; que un 403 se reenvía una vez con `sin_verificar`
+y la hoja de vida completa; que una respuesta con referencia la enseña en la
+confirmación; que el espejo estático y la red caída se explican con `E-SIN-API` y
+`E-RED`; que WhatsApp aparece como último recurso; y el cargo preseleccionado
+desde `?cargo=` y desde «Postularme».
 
-La sección de Turnstile inyecta una clave de prueba en el HTML (el build local
-no lleva ninguna) y un doble de Cloudflare con cuatro modos: sin interacción, el
-token viaja en el multipart; **pidiendo la casilla con el token a los 33 s**, sale
-el aviso, a los 31 s no se ha caído al correo y al llegar el token la postulación
-llega a la función; con error, se explica sin caer al correo ni llamar a la
-función; y con el script bloqueado, sí se cae al correo.
+**El envío se prueba en móvil (375×720) y en escritorio (1280×900)**, porque los
+fallos que reportaron los candidatos venían del celular y el respaldo por correo
+que se quitó era justo lo que peor se portaba ahí.
+
+La sección de Turnstile corre en móvil, inyecta una clave de prueba en el HTML
+(el build local no lleva ninguna) y usa un doble de Cloudflare con cinco modos:
+sin interacción, el token viaja en el multipart; **pidiendo la casilla con el
+token a los 33 s**, sale el aviso, a los 31 s no se ha rendido y al llegar el
+token la postulación llega a la función; con error en cada intento, la
+postulación sale marcada `sin_verificar` con el código de Cloudflare y el
+candidato ve la confirmación; con el script bloqueado, lo mismo; y con
+**`un-fallo`** —falla la primera ejecución y resuelve la segunda, que es lo que
+hace un 600010 esporádico— el reintento automático consigue el token y la
+postulación sale **verificada**.
