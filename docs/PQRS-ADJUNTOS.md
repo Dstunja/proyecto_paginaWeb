@@ -35,7 +35,7 @@ valor de clave: solo nombres y dónde vive cada cosa.
 | `BLOB_READ_WRITE_TOKEN` | Cargada | La puso Vercel al conectar `pqrs-adjuntos` |
 | `BLOB_STORE_ID` | Cargada | La puso Vercel; el código no la usa |
 | `BLOB_WEBHOOK_PUBLIC_KEY` | Cargada | La puso Vercel; el código no la usa |
-| `PQRS_RESEND_API_KEY` | Cargada | Cuenta de informacioncomercialdst@gmail.com |
+| `PQRS_RESEND_API_KEY` | Cargada, **y en vías de desaparecer** | Cuenta de informacioncomercialdst@gmail.com. Se borra cuando `PQRS_REMITENTE` sea del dominio verificado; ver «Una sola cuenta de Resend» |
 | `RESEND_API_KEY` | Cargada | Cuenta de ghsantiagodetunja@gmail.com (Empleos) |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Cargada | Site Key de «DST web». Se lee al compilar |
 | `TURNSTILE_SECRET` | Cargada | Secret Key de «DST web» |
@@ -72,7 +72,8 @@ Resend. Verificar el dominio `dstunja.com` en Resend desbloquea tres cosas:
    su buzón: una cuenta con el dominio verificado puede mandar a
    informacioncomercialdst@gmail.com y a ghsantiagodetunja@gmail.com. Bastaría con
    `RESEND_API_KEY` de esa cuenta y borrar `PQRS_RESEND_API_KEY`, porque PQRS cae a
-   `RESEND_API_KEY` cuando no tiene la suya.
+   `RESEND_API_KEY` cuando no tiene la suya. **Ya está decidido que se hace así**:
+   ver «Una sola cuenta de Resend», más abajo.
 
 ### Qué registros DNS pide Resend
 
@@ -114,6 +115,57 @@ Tres cosas a tener en cuenta en dstunja.com:
 
 Una vez verificado: `PQRS_REMITENTE` y `EMPLEOS_REMITENTE` pasan a una dirección del
 dominio, y se decide si se unifican las cuentas.
+
+## Una sola cuenta de Resend
+
+Hoy hay **dos** cuentas: PQRS usa `PQRS_RESEND_API_KEY`
+(informacioncomercialdst@gmail.com) y Empleos usa `RESEND_API_KEY`
+(ghsantiagodetunja@gmail.com). Se hizo así porque, con el remitente de pruebas,
+Resend solo entrega al titular de la cuenta, y los dos buzones son de titulares
+distintos.
+
+**Decisión tomada (30/09/2026): se consolida en la cuenta de `RESEND_API_KEY` y
+`PQRS_RESEND_API_KEY` se borra.** El motivo no es la comodidad: **las dos cuentas
+no pueden verificar dstunja.com a la vez.** Cada cuenta de Resend genera su
+propia clave DKIM y la publica en el mismo nombre,
+`resend._domainkey.dstunja.com`; dos valores distintos ahí dejan la firma
+ambigua. Las únicas salidas son una cuenta con el dominio, o un subdominio por
+cuenta (`empleos.dstunja.com`, `pqrs.dstunja.com`) con su propio DKIM cada uno.
+Se eligió lo primero: un solo juego de registros DNS que mantener.
+
+### El orden, que es lo único peligroso
+
+Borrar la variable **hoy** rompería PQRS. `claveResend()` caería a
+`RESEND_API_KEY`, cuya titular es ghsantiagodetunja@gmail.com; con
+`PQRS_REMITENTE` todavía en `onboarding@resend.dev`, Resend rechazaría todo envío
+a `PQRS_DESTINO` (informacioncomercialdst@gmail.com), que no es esa titular. Y el
+fallo sería **silencioso hacia fuera**: el radicado se guarda en el Blob antes de
+enviar, así que quien radica seguiría viendo su número, pero **nadie en el área se
+enteraría de que existe**. La respuesta trae `correoArea: false`, y eso solo se ve
+mirando.
+
+El orden correcto:
+
+1. **Verificar dstunja.com en la cuenta de `RESEND_API_KEY`** (la de Empleos, no la
+   de PQRS). Los registros están arriba; `npm run verificar:correo` dice cuáles
+   faltan sin necesidad de credenciales.
+2. **`EMPLEOS_REMITENTE=empleos@dstunja.com`**, redespliega y comprueba que una
+   postulación de prueba sigue llegando (línea `enviada`, `intentos:1`).
+3. **`PQRS_REMITENTE=pqrs@dstunja.com`**, redespliega y radica una PQRS de prueba.
+   Aquí pasan dos cosas a la vez, y las dos se comprueban en la respuesta de
+   `POST /api/pqrs`: `correoArea: true` (el aviso al área salió) y
+   `constancia: "enviada"` en vez de `"omitida"` — **la constancia al ciudadano
+   vuelve a salir sola**, sin tocar código.
+4. **Solo entonces, borrar `PQRS_RESEND_API_KEY`** de Vercel y redesplegar. A
+   partir de ahí PQRS firma con la cuenta única. Radica otra PQRS de prueba y
+   vuelve a comprobar `correoArea` y `constancia`.
+
+No hay que tocar código en ningún paso: `claveResend()` ya cae a `RESEND_API_KEY`
+cuando la de PQRS no está. Y para no tener que acordarse del paso 4,
+`yaSePuedeBorrarLaClaveDePqrs()` (en `src/lib/pqrs/config.ts`) escribe un aviso en
+el registro de Vercel en cuanto se cumplen las dos condiciones —la variable sigue
+ahí y el remitente ya no es el de pruebas—, y **no antes**: un recordatorio que
+aparece cuando obedecerlo todavía rompe el envío es peor que no tenerlo.
 
 ## Qué hace hoy
 

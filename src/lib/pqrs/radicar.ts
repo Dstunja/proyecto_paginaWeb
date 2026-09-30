@@ -20,6 +20,7 @@ import {
   prefijoSesion,
   rutaRadicada,
   rutaSolicitud,
+  yaSePuedeBorrarLaClaveDePqrs,
   type Entorno,
 } from './config';
 import { enviarCorreos, type AdjuntoParaCorreo, type EstadoConstancia } from './correo';
@@ -189,6 +190,18 @@ export async function radicar(peticion: Request, env: Entorno): Promise<Respuest
       tamano: adjunto.tamano,
       enlace: await enlaceDescarga(origen, adjunto.ruta, vence, env),
     });
+  }
+
+  /*
+   * Recordatorio de la consolidación en una sola cuenta de Resend. Sale solo
+   * cuando ya es seguro (ver `yaSePuedeBorrarLaClaveDePqrs`), así que si esta
+   * línea aparece en el registro, el paso pendiente es entrar a Vercel y borrar
+   * la variable; y si no aparece, no hay nada que hacer.
+   */
+  if (yaSePuedeBorrarLaClaveDePqrs(env)) {
+    console.warn(
+      '[pqrs] PQRS_RESEND_API_KEY sigue definida y PQRS_REMITENTE ya no es el remitente de pruebas: ya se puede borrar esa variable y dejar que PQRS use RESEND_API_KEY, la cuenta única.',
+    );
   }
 
   const correo = await enviarCorreos(registro, paraCorreo, fechaLegible(new Date(vence)), env);

@@ -98,15 +98,50 @@ export function esRemitenteDePrueba(remitente: string): boolean {
  * Clave de Resend de PQRS. Variables: PQRS_RESEND_API_KEY, y si no está,
  * RESEND_API_KEY.
  *
- * Son dos porque PQRS y Empleos usan CUENTAS DE RESEND DISTINTAS: con el
- * remitente de pruebas cada cuenta solo entrega a su titular, y los buzones de
- * PQRS y de Talento Humano son de titulares distintos. Empleos usa
- * RESEND_API_KEY; PQRS usa la suya y solo cae a la otra si no la tiene.
+ * EL PLAN ES QUEDARSE CON UNA SOLA CUENTA, la de `RESEND_API_KEY`
+ * (ghsantiagodetunja@gmail.com), y BORRAR `PQRS_RESEND_API_KEY`. El motivo es
+ * que las dos cuentas no pueden verificar dstunja.com a la vez: cada una
+ * genera su propia clave DKIM y las dos la publicarían en el mismo nombre,
+ * `resend._domainkey.dstunja.com`, con valores distintos. Con el dominio
+ * verificado en una sola cuenta ya no hace falta que cada formulario tenga la
+ * cuenta de su buzón: un remitente del dominio entrega a cualquier destino.
+ *
+ * NO SE PUEDE BORRAR TODAVÍA, Y EL ORDEN IMPORTA. Mientras `PQRS_REMITENTE` sea
+ * el remitente de pruebas (`@resend.dev`), Resend solo entrega al titular de la
+ * cuenta que firma, y el titular de `RESEND_API_KEY` NO es el buzón de PQRS.
+ * Borrar la variable hoy haría que PQRS empezara a mandar con la cuenta de
+ * Empleos hacia un destino que esa cuenta no puede alcanzar, y **todos** los
+ * avisos al área fallarían. El radicado no se perdería (se guarda en el Blob
+ * antes de enviar) pero nadie se enteraría de que existe.
+ *
+ * El orden correcto está en docs/PQRS-ADJUNTOS.md: primero se verifica
+ * dstunja.com en la cuenta de `RESEND_API_KEY`, después `PQRS_REMITENTE` pasa a
+ * una dirección del dominio, y SOLO ENTONCES se borra `PQRS_RESEND_API_KEY`.
+ * `yaSePuedeBorrarLaClaveDePqrs()` avisa en el registro cuando llega ese
+ * momento, para no tener que acordarse.
  */
 export function claveResend(env: Entorno = entornoActual()): string {
   return env.PQRS_RESEND_API_KEY?.trim() || env.RESEND_API_KEY?.trim() || '';
 }
 
+/**
+ * ¿Ya es seguro borrar `PQRS_RESEND_API_KEY` de Vercel?
+ *
+ * Lo es cuando se cumplen las dos condiciones a la vez: la variable todavía
+ * existe (si no, no hay nada que borrar) y `PQRS_REMITENTE` ya NO es el
+ * remitente de pruebas, es decir el dominio está verificado y la cuenta que
+ * firme podrá entregar a cualquier destino.
+ *
+ * Se usa solo para escribir un aviso en el registro. Es a propósito que no
+ * cambie ningún comportamiento: quitar una variable de entorno es una decisión
+ * de quien administra el proyecto, no algo que la función deba hacer sola.
+ * Y es a propósito que el aviso NO salga antes de tiempo: un recordatorio que
+ * aparece cuando todavía es peligroso obedecerlo es peor que no tenerlo.
+ */
+export function yaSePuedeBorrarLaClaveDePqrs(env: Entorno = entornoActual()): boolean {
+  const tieneLaSuya = Boolean(env.PQRS_RESEND_API_KEY?.trim());
+  return tieneLaSuya && !esRemitenteDePrueba(correoRemitente(env));
+}
 /** ¿Hay token del Blob store? Lo pone Vercel al conectar el store. */
 export function blobConfigurado(env: Entorno = entornoActual()): boolean {
   return Boolean(env.BLOB_READ_WRITE_TOKEN?.trim());
