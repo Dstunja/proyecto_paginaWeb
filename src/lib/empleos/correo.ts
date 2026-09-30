@@ -249,6 +249,20 @@ export interface ResultadoCorreo {
   error?: string;
   /** Cuántos intentos se gastaron. Va al registro, para ver si Resend flaquea. */
   intentos?: number;
+  /**
+   * Identificador que devuelve Resend cuando ACEPTA el envío (un UUID).
+   *
+   * OJO CON LO QUE SIGNIFICA: que Resend aceptó la petición, NO que el correo
+   * llegara a ninguna bandeja. La entrega ocurre después, y puede acabar en
+   * `delivered`, `bounced`, `complained` o `suppressed` sin que esta función se
+   * entere de nada, porque la respuesta del envío se da antes.
+   *
+   * Por eso se devuelve y se escribe en el registro: es el ÚNICO dato con el
+   * que un envío concreto se puede buscar luego en Resend (`GET /emails/{id}`
+   * devuelve `last_event`). Sin él, una postulación registrada como «enviada»
+   * que nadie recibió no se puede cruzar con ninguna fila del panel de Resend.
+   */
+  id?: string;
 }
 
 /** UN intento de envío. Quien quiera reintentos usa `enviarConReintentos`. */
@@ -265,7 +279,7 @@ export async function enviarCorreoPostulacion(
   const fecha = fechaLegible(ahora);
 
   try {
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: correoRemitenteEmpleos(env),
       to: correoDestinoEmpleos(env),
       replyTo: datos.correo,
@@ -283,7 +297,7 @@ export async function enviarCorreoPostulacion(
           ],
     });
     if (error) return { ok: false, error: error.message };
-    return { ok: true };
+    return { ok: true, id: data?.id };
   } catch (fallo) {
     return { ok: false, error: (fallo as Error).message };
   }

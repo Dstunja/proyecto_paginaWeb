@@ -234,6 +234,18 @@ export async function atenderPostulacion(
   const envio = await enviarConReintentos(datos, env, {}, new Date(), dormir);
   if (envio.ok) {
     registrar('enviada', {
+      /*
+       * EL ID QUE DEVOLVIÓ RESEND, y lo único con lo que se rastrea el envío.
+       *
+       * «enviada» significa que Resend ACEPTÓ la petición, no que el correo
+       * llegara: la entrega pasa después y puede acabar en rebote, en queja o
+       * en la lista de supresión sin que esta función lo sepa. Con el id la
+       * duda se resuelve en un paso (`GET /emails/{id}` de Resend devuelve
+       * `last_event`); sin él, un correo registrado como enviado y no recibido
+       * no se puede cruzar con ninguna fila del panel de Resend, que es justo
+       * el agujero que dejaba esta línea.
+       */
+      idResend: envio.id ?? 'sin-id',
       cargo: datos.cargo,
       bytesHojaDeVida: datos.hojaDeVida.tamano,
       extension: datos.hojaDeVida.extension,
@@ -325,6 +337,7 @@ async function ponerASalvo(
 
   if (aviso.ok) {
     registrar('enviada:con-enlace', {
+      idResend: aviso.id ?? 'sin-id',
       cargo: datos.cargo,
       bytesHojaDeVida: datos.hojaDeVida.tamano,
       sinVerificar: datos.sinVerificar,
