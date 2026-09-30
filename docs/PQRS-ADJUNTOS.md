@@ -91,13 +91,24 @@ elegida. Tienen esta forma:
 
 Tres cosas a tener en cuenta en dstunja.com:
 
-- **No toca la web ni el correo actual.** Los registros van en subdominios
-  (`send`, `resend._domainkey`): no cambian el registro `A` del sitio ni los `MX`
-  de la raíz, que hoy son los del correo del dominio. Si ya hubiera un registro
-  `_dmarc`, se revisa antes de añadir otro.
+- **No toca la web.** Los registros van en subdominios (`send`,
+  `resend._domainkey`) y no cambian el registro `A` del sitio, que apunta a
+  Vercel (`216.198.79.1`, comprobado el 30/09/2026). Tampoco hay correo actual
+  al que estorbar: **la raíz de dstunja.com no tiene ni un MX**, así que hoy el
+  dominio no puede recibir nada, y no hay `_dmarc` ni ningún TXT que revisar.
+  Ojo con la consecuencia: verificar el dominio en Resend habilita **enviar**
+  desde `empleos@dstunja.com` o `pqrs@dstunja.com`, no **recibir** en esas
+  direcciones. Un buzón `@dstunja.com` para Talento Humano es otra contratación
+  (Google Workspace, el correo de Hostinger…) y sus propios MX en la raíz.
 - **Verificación.** Suele tardar unos 15 minutos después de añadir los registros,
-  aunque la propagación de DNS puede llevar hasta 72 horas.
-- **Hace falta acceso al DNS de dstunja.com**, que hoy sirve otra web (WordPress).
+  aunque la propagación de DNS puede llevar hasta 72 horas. Para saber si ya se ven
+  desde fuera, sin entrar a ningún panel y sin ninguna credencial:
+  `npm run verificar:correo` (script `scripts/verificar-correo.mjs`, que los consulta
+  al DNS público de Google y Cloudflare y dice cuáles faltan).
+- **Hace falta acceso al DNS de dstunja.com**, que lo sirve **Hostinger**
+  (`nova.dns-parking.com`, `cosmos.dns-parking.com`): hPanel → Dominios →
+  dstunja.com → DNS / Nameservers → Administrar registros DNS. El WordPress
+  anterior ya no se sirve; el dominio apunta a Vercel.
   Resend recomienda enviar desde un subdominio para aislar la reputación;
   `send` ya lo es para el camino de retorno.
 

@@ -8,7 +8,7 @@ clave: solo nombres y dónde vive cada cosa.
 
 | Pieza | Configuración |
 | --- | --- |
-| Correo | Cuenta de Resend registrada con **ghsantiagodetunja@gmail.com**, clave en `RESEND_API_KEY`. Remitente `onboarding@resend.dev`, sin dominio verificado. Destino: ghsantiagodetunja@gmail.com, el titular de la cuenta y el valor por defecto de `EMPLEOS_DESTINO` |
+| Correo | Cuenta de Resend registrada con **ghsantiagodetunja@gmail.com**, clave en `RESEND_API_KEY`. Remitente `onboarding@resend.dev`: **dstunja.com NO está verificado** (comprobado por DNS el 30/09/2026 con `npm run verificar:correo`: no hay SPF, ni DKIM, ni DMARC, ni MX). `EMPLEOS_DESTINO` y `EMPLEOS_REMITENTE` **sí están cargadas** en Production y sus valores no se han leído; lo comprobado es que Resend **acepta** el envío hacia ese destino (ver «El orden importa: primero el remitente, después el destino») |
 | Antirrobots | Cloudflare Turnstile, widget **«DST web»**, modo **Non-interactive**, compartido con PQRS. Hostnames: `dstunja.com`, `paginaweb-beta-coral.vercel.app`, `vercel.app` y `localhost` |
 | Hoja de vida | Adjunta al correo; no se guarda en ningún sitio (tampoco en el Blob store de PQRS) |
 | Cuenta de PQRS | Es otra: informacioncomercialdst@gmail.com, con `PQRS_RESEND_API_KEY`. No se mezclan, porque con el remitente de pruebas cada cuenta solo entrega a su titular |
@@ -19,7 +19,7 @@ Variables que usa Empleos y su estado en Vercel (Production):
 | --- | --- |
 | `RESEND_API_KEY` | Cargada (cuenta de ghsantiagodetunja@gmail.com) |
 | `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET` | Cargadas (widget «DST web») |
-| `EMPLEOS_DESTINO`, `EMPLEOS_REMITENTE` | Opcionales. Sus valores por defecto son los de producción (ghsantiagodetunja@gmail.com y `onboarding@resend.dev`); si están cargadas, tienen que valer eso |
+| `EMPLEOS_DESTINO`, `EMPLEOS_REMITENTE` | **Cargadas las dos** en Production desde el 14/09/2026 (`vercel env ls production`). Son opcionales en el código, pero no están ausentes: no se puede razonar como si valieran sus valores por defecto. Para leerlas: `vercel env pull`. Lo comprobado es que la combinación funciona, no cuál es |
 | `BLOB_READ_WRITE_TOKEN` | La pone Vercel al conectar el store `pqrs-adjuntos`. **Ahora es obligatoria también para Empleos**: es la red de seguridad que guarda la hoja de vida si el correo no sale |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | **Faltan**. Sin ellas el límite vive en la memoria de cada instancia, y por eso en ese modo es más tolerante: 20 cada 10 minutos, contando por IP y huella del archivo |
 
@@ -390,6 +390,33 @@ Logs, filtrando por `[empleos/postular]`:
 | `rechazo:campo-trampa` | Un envío que se descartó en silencio | Si sube, algo rellena el campo trampa |
 | `fallo:correo-sin-respaldo` | No salió y **no había Blob**: postulación perdida | Poner `BLOB_READ_WRITE_TOKEN` |
 
+**Las líneas `enviada` y `enviada:con-enlace` llevan `idResend`**, el
+identificador que devolvió Resend al aceptar el envío. Es la pieza que permite
+seguir un correo más allá de la función, y conviene tener claro qué NO
+significa: que Resend aceptó la petición, no que el correo llegara a ninguna
+bandeja. La entrega pasa después y puede acabar en rebote, en queja o en la
+lista de supresión sin que la función se entere. Con el id eso se resuelve en
+un paso:
+
+```
+GET https://api.resend.com/emails/<idResend>     (Authorization: Bearer <RESEND_API_KEY>)
+```
+
+El campo `last_event` de la respuesta dice qué pasó de verdad: `delivered`,
+`bounced`, `complained`, `suppressed`, `queued`… Antes del 30/09/2026 ese id se
+descartaba al enviar, así que una postulación registrada como «enviada» y no
+recibida era irrastreable; ese fue exactamente el agujero que hubo que tapar
+cuando un correo de prueba no apareció en ningún buzón.
+
+OJO CON LA RETENCIÓN: en el plan Hobby los registros de ejecución duran **una
+hora**. Pasado ese rato no queda rastro en Vercel, y la única memoria del envío
+es el `idResend` si alguien lo copió, o el panel de Resend. Para una prueba,
+mirar los registros **en el momento**:
+
+```
+npx vercel logs --environment production --since 10m --search "empleos/postular"
+```
+
 Para comprobar que **una postulación concreta** llegó: busca `enviada` con el
 `cargo` y la marca de tiempo, y contrástalo con el correo en el buzón de Talento
 Humano. Si no hay **ninguna** línea a esa hora, la petición nunca llegó a la
@@ -412,17 +439,26 @@ Comparte con PQRS `TURNSTILE_SECRET`, `PUBLIC_TURNSTILE_SITE_KEY` y, si están,
 ### El orden importa: primero el remitente, después el destino
 
 Mientras el remitente sea `onboarding@resend.dev`, Resend **solo entrega al
-titular de la cuenta**. Hoy funciona porque `EMPLEOS_DESTINO` no está puesta y su
-valor por defecto es justo ese titular. Cambiarla al buzón de Talento Humano sin
-más haría fallar **todas** las postulaciones, y ese fallo es silencioso desde
-fuera: el candidato vería «Postulación enviada» (la hoja de vida se guardaría en
-el Blob) y nadie recibiría nada.
+titular de la cuenta**. Cambiar `EMPLEOS_DESTINO` a un buzón que no sea ese
+titular, sin haber cambiado antes el remitente, hace fallar **todas** las
+postulaciones, y el fallo es silencioso desde fuera: el candidato ve
+«Postulación enviada» (la hoja de vida se guarda en el Blob) y nadie recibe
+nada.
+
+Esto **no** es una hipótesis sobre el estado actual. Las dos variables están
+cargadas en Production, y lo que se comprobó el 30/09/2026 es que la
+combinación que hay puesta **funciona**: una postulación real contra
+producción salió con `enviada`, `intentos:1` y su `idResend`, es decir Resend
+la aceptó al primer intento. Si el destino no fuera entregable desde esa
+cuenta, la respuesta habría traído una `referencia` del Blob y no la trajo.
 
 El orden correcto, cuando dstunja.com esté verificado **en la cuenta de Resend de
 Empleos**, que no es la de PQRS:
 
 1. Verificar el dominio en Resend (los registros DNS están en
    `docs/PQRS-ADJUNTOS.md`, en «Pendiente: verificar dstunja.com en Resend»).
+   Para saber cuáles faltan sin entrar a ningún panel: `npm run verificar:correo`,
+   que los consulta al DNS público y no necesita credenciales.
 2. Poner `EMPLEOS_REMITENTE=empleos@dstunja.com` y comprobar que sigue llegando
    al buzón por defecto.
 3. **Solo entonces**, cambiar `EMPLEOS_DESTINO` al buzón de Talento Humano.

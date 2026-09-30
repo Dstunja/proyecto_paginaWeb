@@ -24,6 +24,7 @@
     "test:watch": "vitest",
     "verificar:pqrs": "node scripts/verificar-pqrs.mjs",
     "verificar:empleos": "node scripts/verificar-empleos.mjs",
+    "verificar:correo": "node scripts/verificar-correo.mjs",
     "verificar:cobertura": "node scripts/verificar-cobertura.mjs",
     "verificar:navegacion": "node scripts/verificar-navegacion.mjs"
   },
