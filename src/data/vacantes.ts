@@ -162,6 +162,37 @@ export const vacantes: Vacante[] = [
     ],
   },
   {
+    slug: 'auxiliar-administrativo',
+    cargo: 'Auxiliar Administrativo',
+    ciudad: 'Tunja, Boyacá',
+    tipo: 'Tiempo completo',
+    resumen:
+      'Apoya la operación diaria de la oficina: inventarios, control de caja y manejo de información.',
+    imagen: '/img/empleos/auxiliar-administrativo.jpeg',
+    descripcion: [
+      'Si te gusta el trabajo en equipo, la organización y los retos, esta oportunidad es para ti.',
+      'En Distribuciones Santiago De Tunja buscamos un auxiliar administrativo con experiencia en el cargo, que quiera hacer parte de una empresa sólida y en constante evolución.',
+    ],
+    requisitos: [
+      'Experiencia de 1 año en el cargo',
+      'Tecnólogo o profesional',
+      'Conocimiento en inventarios y control de caja',
+      'Manejo de Excel y herramientas informáticas',
+      'Manejo de bases de datos',
+    ],
+    habilidades: [
+      'Trabajo en equipo',
+      'Organización y atención al detalle',
+      'Responsabilidad y compromiso',
+      'Proactividad frente a los retos del día a día',
+    ],
+    ofrecemos: [
+      'Buen ambiente laboral',
+      'Oportunidades de crecimiento',
+      'Formar parte de una empresa sólida y en constante evolución',
+    ],
+  },
+  {
     slug: 'logistica',
     cargo: 'Líder Logístico',
     ciudad: 'Tunja, Boyacá',
