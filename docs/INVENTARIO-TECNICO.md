@@ -50,9 +50,12 @@ Datos del proyecto, tomados de `.vercel/project.json` del repositorio:
 
 - Nombre del proyecto en Vercel: **`paginaweb`**
 - Equipo / organización: **`practicaspasantiasdst-6024`**
-- Plan: **Hobby** (gratuito). Esto importa para tres cosas concretas:
-  los registros de ejecución duran **una hora**, los crons tienen cupo limitado,
-  y no hay soporte comercial.
+- Plan: **Hobby** (gratuito). Esto importa para cuatro cosas concretas: los
+  registros de ejecución duran **una hora**; los crons admiten **como máximo una
+  ejecución al día** y se disparan con una precisión de ±59 minutos (el *número*
+  de crons no es el problema: el plan permite 100 por proyecto); **no hay
+  direcciones IP de salida fijas**, lo que importa si algún sistema externo
+  filtra por IP de origen; y no hay soporte comercial.
 
 Existe además un `wrangler.jsonc` en la raíz, que es configuración de Cloudflare
 Workers. **No está en uso:** no hay despliegue en Cloudflare y el sitio no se
@@ -723,15 +726,27 @@ npm run verificar:correo        # ¿están los registros DNS de Resend? (solo DN
 npm run verificar:navegacion    # ¿funcionan todos los enlaces y la CSP?
 npm run verificar:empleos       # el formulario de empleos, de punta a punta
 npm run verificar:pqrs          # la radicación de PQRS
-npm run verificar:analitica     # ¿se está cargando Tag Manager?
+npm run verificar:analitica     # el aviso de cookies y el dataLayer (ver el aviso de abajo)
 npm run verificar:cobertura     # cobertura de municipios del mapa
 npm run check:env               # ¿falta alguna variable de entorno?
 npm test                        # pruebas unitarias (vitest)
 npm run check                   # tipos de TypeScript
 ```
 
-Varios aceptan `-- --url https://dstunja.com` para correr contra producción en vez
-de contra el build local.
+**Solo `verificar:navegacion` acepta `-- --url https://dstunja.com`** para correr
+contra producción; los demás trabajan sobre el build local de `dist/client/`.
+
+**`verificar:analitica` está desactualizado.** Su guion sigue hablando de
+`PUBLIC_GA_ID` y de `gtag.js`, que es como se cargaba la analítica *antes* de
+pasar a Tag Manager, y necesita `npm run build` previo y Playwright. Sirve para el
+aviso de cookies y el `dataLayer`, pero **no es la forma de comprobar si Tag
+Manager está cargando en producción**. Para eso, directo contra el sitio:
+
+```
+curl -s https://dstunja.com/ | grep -c googletagmanager
+```
+
+Cero significa que no se está cargando nada (es el estado de hoy, ver 7.6).
 
 **Atención con `verificar:pqrs`:** una PQRS de prueba **hay que radicarla desde un
 navegador normal**. Turnstile no entrega token a un navegador automatizado, así
