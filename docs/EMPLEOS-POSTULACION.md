@@ -153,6 +153,31 @@ veces y, si no sale, la hoja de vida se guarda (ver «La red de seguridad»).
 No hay correo de confirmación al candidato: sin radicado ni plazo legal, un
 segundo correo solo llenaría su bandeja. La confirmación es la pantalla.
 
+## La postulación también entra a Control360
+
+Desde `14399ae`, cada postulación aceptada se envía además a la bandeja de
+Talento Humano de Control360 (`src/lib/empleos/control360.ts`), firmada con
+HMAC-SHA256. Dos cosas que conviene no perder de vista:
+
+- **Nace apagado.** Sin `C360_POSTULACIONES_URL` y `C360_POSTULACIONES_SECRET`
+  no se envía nada y la página se comporta exactamente como antes.
+- **Va en paralelo al correo, nunca en su lugar.** Si Control360 falla o tarda,
+  el correo a Gestión Humana llega igual y el candidato no se entera.
+
+**El contrato no se documenta aquí.** Lo especifica Control360, que es quien lo
+impone, y vive en su repositorio —que es **privado**:
+
+```
+repo:  SamuelArias06/control360-practica-dst
+ruta:  docs/practicantes/ESPEC-firma-postulaciones.md
+```
+
+Ahí están el cálculo exacto de la firma, el formato del cuerpo, los códigos de
+respuesta y un vector de prueba para validar la implementación. **No lo copies a
+este repositorio**: `proyecto_paginaWeb` es público, y ese documento describe en
+detalle las defensas del endpoint en producción. Si cambia el contrato, se
+corrige allá y aquí solo se ajusta `control360.ts`.
+
 ## La hoja de vida se revisa dos veces
 
 `src/lib/empleos/hoja-de-vida.ts` no toca el DOM ni el entorno, y lo importan el
@@ -503,6 +528,8 @@ src/lib/empleos/correo.ts          el correo, con reintentos, [SIN VERIFICAR] y 
 src/lib/empleos/huella.ts          hash corto de la hoja de vida, para contar sin contar personas
 src/lib/empleos/almacen.ts         la red de seguridad: guardar en Blob cuando el correo no sale
 src/lib/empleos/postular.ts        la orquestación, con pruebas en postular.test.ts
+src/lib/empleos/control360.ts      el envío firmado a Control360 (apagado si faltan sus variables)
+src/lib/empleos/autorizacion.ts    el texto de la autorización de datos y su versión publicada
 src/lib/empleos/respaldo.test.ts   pruebas de la red de seguridad, con el Blob simulado
 src/lib/turnstile-cliente.ts       el reto en el navegador: reintento y códigos visibles
 src/pages/api/empleos/postular.ts  la función de Vercel (solo el envoltorio HTTP)
