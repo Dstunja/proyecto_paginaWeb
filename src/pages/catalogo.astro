@@ -5,7 +5,7 @@ import { ruta } from '../lib/rutas';
 import { altoSeguroLogo, logoLlevaFondoPropio, logoMarcaImagen } from '../lib/imagenes';
 import PageHero from '../components/PageHero.astro';
 import Icono from '../components/Icono.astro';
-import EnlaceTeleventas from '../components/EnlaceTeleventas.astro';
+import { enlacePedido } from '../lib/whatsapp-pedido';
 import { productos } from '../data/productos';
 
 /**
@@ -80,9 +80,8 @@ const categoriasConLogos = categorias.map((cat) => ({
   }),
 }));
 
-/** Sin saludo: "Hola {nombre}, " lo pone el reparto de Televentas. */
 const mensajeWhatsapp =
-  'quiero recibir el catálogo de productos y hablar con un asesor comercial.';
+  'Hola, quiero recibir el catálogo de productos y hablar con un asesor comercial.';
 ---
 
 <BaseLayout
@@ -172,10 +171,15 @@ const mensajeWhatsapp =
             Arma tu pedido
             <Icono nombre="shopping-cart" class="h-[18px] w-[18px]" />
           </a>
-          <EnlaceTeleventas class="btn btn-secondary" mensaje={mensajeWhatsapp}>
+          <a
+            class="btn btn-secondary"
+            href={enlacePedido(mensajeWhatsapp)}
+            target="_blank"
+            rel="noopener"
+          >
             Pedir catálogo
             <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
-          </EnlaceTeleventas>
+          </a>
         </div>
       </div>
     </div>

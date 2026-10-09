@@ -7,9 +7,8 @@
  * empresa ya usa. Por eso aquí no hay precios ni inventario: solo referencias
  * y cantidades.
  *
- * A quién llega el pedido no se configura aquí: va a la asesora de Televentas
- * de cada navegador (`televentas` en src/data/site.ts, reparto en
- * src/lib/televentas.ts).
+ * A quién llega el pedido no se configura aquí: va al WhatsApp de pedidos,
+ * uno solo para todo el sitio (src/lib/whatsapp-pedido.ts).
  */
 
 /**

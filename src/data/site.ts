@@ -32,9 +32,9 @@ export const empresa = {
   descripcion:
     'Distribuidores líderes del departamento de Boyacá, Cundinamarca y Santander. Calidad y cumplimiento en cada entrega.',
   /**
-   * Línea de la OFICINA: la del pie, los enlaces `tel:` generales y el
-   * `telephone` de los datos estructurados. Los pedidos no van aquí sino a las
-   * asesoras de `televentas`, más abajo.
+   * La única línea de la empresa: el pie, los enlaces `tel:` generales, el
+   * `telephone` de los datos estructurados y —desde que Televentas dejó de
+   * existir— también los pedidos por WhatsApp (src/lib/whatsapp-pedido.ts).
    */
   telefono: '310 623 2429',
   telefonoE164: '+573106232429',
@@ -59,41 +59,6 @@ export const empresa = {
    */
   escribirResenaUrl: `https://search.google.com/local/writereview?placeid=${googlePlaceId}`,
 } as const;
-
-/**
- * Asesoras de TELEVENTAS: las que toman pedidos y dan atención comercial.
- *
- * QUÉ USA ESTA LISTA. Todo lo que sea "haz tu pedido" o "habla con un asesor":
- * el botón flotante, los CTA de la portada, "Pedir catálogo", el armador de
- * pedido y la tarjeta de Televentas de Contáctanos. Los canales de contacto
- * general, PQRS y empleos siguen con `empresa.whatsapp`, porque ahí no se
- * está pidiendo mercancía.
- *
- * CÓMO SE REPARTEN. La primera vez que un cliente toca uno de esos enlaces se
- * le sortea una asesora, y su navegador la recuerda: desde ahí todos los
- * enlaces y el pedido armado van a la misma persona. El sorteo, lo guardado y
- * el saludo por nombre viven en src/lib/televentas.ts.
- *
- * EDITAR AQUÍ al cambiar de asesoras. `nombre` es también la clave con la que
- * el navegador recuerda la asignación: si cambia el número de una asesora,
- * sus clientes la siguen teniendo; si una sale de la lista, a sus clientes se
- * les sortea otra. `whatsapp` debe llevar los mismos dígitos que
- * `telefonoE164` (scripts/verificar-pedido.mjs lo comprueba).
- */
-export const televentas = [
-  {
-    nombre: 'Gabriela',
-    telefono: '310 621 8289',
-    telefonoE164: '+573106218289',
-    whatsapp: 'https://wa.me/573106218289',
-  },
-  {
-    nombre: 'Sara',
-    telefono: '350 746 1127',
-    telefonoE164: '+573507461127',
-    whatsapp: 'https://wa.me/573507461127',
-  },
-] as const;
 
 /**
  * Redes sociales de la empresa, en el orden en que salen en el pie.
@@ -355,8 +320,8 @@ export const HERO_IMAGEN_ALT =
  *   01 Distribución eficiente  -> "Entregas confiables" (87 municipios, 3
  *                                 departamentos, entrega semanal)
  *   02 Portafolio variado      -> "Productos de calidad" (aliados de Nutresa)
- *   03 Atención masiva         -> "Asesoría personalizada" (asesor de zona,
- *                                 televenta y pedido en línea)
+ *   03 Atención masiva         -> "Asesoría personalizada" (asesor de zona
+ *                                 y pedido por WhatsApp)
  */
 export const beneficios = [
   {
@@ -378,7 +343,7 @@ export const beneficios = [
     icono: 'user-check',
     titulo: 'Asesoría personalizada',
     texto:
-      'Un asesor de tu zona que conoce tu tienda, con televenta y pedido en línea para que rotes el inventario sin esperas.',
+      'Un asesor de tu zona que conoce tu tienda, y pedido por WhatsApp para que rotes el inventario sin esperas.',
     enlace: '/contactanos/',
     enlaceTexto: 'Hablar con un asesor',
   },

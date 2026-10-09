@@ -14,11 +14,10 @@ import PageHero from '../components/PageHero.astro';
 import CatalogoPedido from '../components/pedido/CatalogoPedido.astro';
 import PanelPedido from '../components/pedido/PanelPedido.astro';
 import Icono from '../components/Icono.astro';
-import EnlaceTeleventas from '../components/EnlaceTeleventas.astro';
+import { enlacePedido } from '../lib/whatsapp-pedido';
 import { productos, MARCAS } from '../data/productos';
 
-/** Sin saludo: "Hola {nombre}, " lo pone el reparto de Televentas. */
-const mensajeDirecto = 'quiero hacer un pedido y necesito que me acompañes.';
+const mensajeDirecto = 'Hola, quiero hacer un pedido y necesito que me acompañes.';
 ---
 
 <BaseLayout
@@ -39,14 +38,16 @@ const mensajeDirecto = 'quiero hacer un pedido y necesito que me acompañes.';
       {/* Salida rápida para quien prefiere que se lo tomen por chat. */}
       <p class="mb-8 text-[14.5px] text-muted">
         ¿Prefieres hablar con una persona?
-        <EnlaceTeleventas
+        <a
           class="ml-1 inline-flex items-center gap-1.5 font-semibold text-secondary-dark underline"
-          mensaje={mensajeDirecto}
+          href={enlacePedido(mensajeDirecto)}
+          target="_blank"
+          rel="noopener"
           data-escribir-directo
         >
           Escríbenos directo por WhatsApp
           <Icono nombre="whatsapp" class="h-4 w-4" interactivo={false} />
-        </EnlaceTeleventas>
+        </a>
         y un asesor te toma el pedido.
       </p>
 

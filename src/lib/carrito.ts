@@ -19,7 +19,6 @@ import {
   LIMITE_TEXTO_URL,
 } from '../data/pedido';
 import { empresa } from '../data/site';
-import { saludar, type Asesora } from './televentas';
 import {
   formatearPesos,
   resumirPrecios,
@@ -380,8 +379,8 @@ function largoCodificado(valor: string): number {
 }
 
 /**
- * Arma el mensaje que cabe en la URL de WhatsApp, saludando a la asesora por
- * su nombre ("Hola Gabriela, te envío mi pedido.").
+ * Arma el mensaje que cabe en la URL de WhatsApp, con el saludo delante
+ * ("Hola, te envío mi pedido.").
  *
  * El saludo va solo aquí y no en `mensajePedido`: ese texto es también el de
  * "Copiar pedido" y el que se pega como segundo mensaje cuando el pedido no
@@ -392,15 +391,12 @@ function largoCodificado(valor: string): number {
  * portapapeles para pegarlo enseguida como segundo mensaje. El tope se mide
  * con el saludo incluido.
  */
-export function mensajeParaUrl(
-  pedido: Pedido,
-  asesora: Asesora,
-): {
+export function mensajeParaUrl(pedido: Pedido): {
   texto: string;
   recortado: boolean;
   omitidas: number;
 } {
-  const saludo = saludar(asesora, 'te envío mi pedido.\n\n');
+  const saludo = 'Hola, te envío mi pedido.\n\n';
   const completo = `${saludo}${mensajePedido(pedido)}`;
   if (largoCodificado(completo) <= LIMITE_TEXTO_URL) {
     return { texto: completo, recortado: false, omitidas: 0 };
