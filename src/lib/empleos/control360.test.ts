@@ -107,4 +107,20 @@ describe('el texto de autorización', () => {
   it('sigue siendo el que Control360 tiene registrado con su versión', () => {
     expect(createHash('sha256').update(AUTORIZACION_TEXTO, 'utf8').digest('hex')).toBe(AUTORIZACION_SHA256);
   });
+
+  it('es la v2 de octubre de 2026, con la huella que Control360 publicó para ella', () => {
+    // La huella va CLAVADA aquí también: si alguien cambia la constante y el texto a la vez,
+    // la prueba de arriba seguiría pasando y esta no.
+    expect(AUTORIZACION_VERSION).toBe('v2-2026-10');
+    expect(AUTORIZACION_SHA256).toBe('e493c79fcca4eca6d0bc60d597016b400ac24241a41a4489cb562f4efdb387da');
+  });
+
+  it('cubre lo que la v1 no decía', () => {
+    expect(AUTORIZACION_TEXTO).toContain('DISTRIBUCIONES SANTIAGO DE TUNJA S.A.S, NIT 900.417.808-1');
+    expect(AUTORIZACION_TEXTO).toContain('proveedores tecnológicos ubicados fuera de Colombia');
+    expect(AUTORIZACION_TEXTO).toContain('La decisión final siempre la toma una persona de Talento Humano.');
+    expect(AUTORIZACION_TEXTO).toContain('ghsantiagodetunja@gmail.com');
+    expect(AUTORIZACION_TEXTO).toContain('dos (2) años');
+    expect(AUTORIZACION_TEXTO).toContain('dstunja.com/privacidad');
+  });
 });
