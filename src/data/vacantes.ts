@@ -97,6 +97,46 @@ export const vacantes: Vacante[] = [
     ],
   },
   {
+    /*
+     * El cargo lleva la zona en el nombre a propósito. El `<select>` del
+     * formulario usa `cargo` como valor de la opción (src/lib/empleos/cargos.ts),
+     * así que dos vacantes de supervisión con el mismo texto saldrían como dos
+     * opciones idénticas y quien recibe la postulación no sabría a cuál de las
+     * dos se presentó la persona. Por eso la de Tunja es "TAT" y esta, "Barbosa".
+     */
+    slug: 'supervisor-ventas-barbosa',
+    cargo: 'Supervisor de Ventas Barbosa',
+    ciudad: 'Barbosa, Santander',
+    tipo: 'Tiempo completo',
+    resumen: 'Lidera el equipo de ventas de la zona de Barbosa. Requiere moto propia.',
+    imagen: '/img/empleos/supervisor-de-ventas-barbosa.jpeg',
+    descripcion: [
+      'En Distribuciones Santiago De Tunja buscamos personas con experiencia en liderazgo comercial, que quieran hacer parte de nuestro equipo y aportar al crecimiento del área de ventas.',
+      'La convocatoria es para la zona de Barbosa, Santander, preferiblemente para quien ya resida allí.',
+    ],
+    requisitos: [
+      'Formación tecnológica o profesional en administración de empresas, mercadeo y ventas, gestión comercial o afines',
+      'Mínimo 1 año de experiencia en ventas o cargos similares',
+      'Moto propia: es indispensable para el cargo',
+      'Preferiblemente residir en Barbosa, Santander',
+    ],
+    funciones: [
+      'Acompañamiento y seguimiento al equipo de ventas',
+      'Revisión de resultados y cumplimiento de objetivos',
+      'Organización y planeación de rutas',
+      'Seguimiento a clientes y creación de nuevos',
+      'Desarrollo de estrategias para el crecimiento del canal',
+    ],
+    habilidades: [
+      'Comunicación asertiva',
+      'Liderazgo',
+      'Pensamiento estratégico',
+      'Organización y disciplina',
+      'Trabajo en equipo',
+      'Proactividad',
+    ],
+  },
+  {
     slug: 'vendedor-tat',
     cargo: 'Vendedor TAT',
     ciudad: 'Tunja, Boyacá',
