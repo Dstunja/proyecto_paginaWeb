@@ -13,11 +13,14 @@
  * adjuntos.ts; aquí solo se restringe la lista de extensiones antes de
  * llamarla, para que un .png no reciba un mensaje que hable de JPG y PNG.
  *
- * TOPE DE 4 MB, Y NO 5. El archivo viaja dentro del cuerpo de la petición a la
- * función de Vercel, y Vercel rechaza cuerpos de más de 4,5 MB con un 413 antes
- * de que nuestro código vea nada. Con 4 MB de archivo más los campos de texto
- * queda margen. El formulario de PQRS admite 5 MB porque sus archivos no pasan
- * por la función: van del navegador a Vercel Blob (ver docs/PQRS-ADJUNTOS.md).
+ * TOPE DE 3 MB. El archivo viaja dentro del cuerpo de la petición a la función
+ * de Vercel, y Vercel rechaza cuerpos de más de 4,5 MB con un 413 antes de que
+ * nuestro código vea nada. Hasta octubre de 2026 el tope era 4 MB, pero desde
+ * entonces la postulación sigue además a Control360 (control360.ts) con la hoja
+ * de vida en base64, que engorda un 33 %: 4 MB serían 5,3 MB y Control360 la
+ * rechazaría. Con 3 MB viajan 4,0 MB, y es el mismo tope que tiene Control360.
+ * El formulario de PQRS admite 5 MB porque sus archivos no pasan por la función:
+ * van del navegador a Vercel Blob (ver docs/PQRS-ADJUNTOS.md).
  */
 import {
   EXTENSION_A_MIME,
@@ -31,7 +34,7 @@ import {
 } from '../adjuntos';
 
 /** Peso máximo de la hoja de vida, en MB. Ver la cabecera para el porqué. */
-export const MAX_MB_HOJA_DE_VIDA = 4;
+export const MAX_MB_HOJA_DE_VIDA = 3;
 
 /** Extensiones admitidas, con el punto y en minúsculas. */
 export const EXTENSIONES_HOJA_DE_VIDA: readonly string[] = ['.pdf', '.doc', '.docx'];

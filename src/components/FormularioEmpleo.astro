@@ -9,7 +9,7 @@
  *
  * QUÉ LLEVA. Nombre, correo, teléfono, cargo (las vacantes abiertas más la
  * opción espontánea, de src/lib/empleos/cargos.ts), un texto opcional sobre la
- * experiencia, la hoja de vida (PDF, DOC o DOCX, máximo 4 MB) y la casilla de
+ * experiencia, la hoja de vida (PDF, DOC o DOCX, máximo 3 MB) y la casilla de
  * autorización de tratamiento de datos, obligatoria.
  *
  * LA HOJA DE VIDA SE REVISA ANTES DE ENVIAR con `validarFileHojaDeVida`, las
@@ -48,6 +48,7 @@
 import { contactoEmpleo } from '../data/vacantes';
 import { cargosAdmitidos } from '../lib/empleos/cargos';
 import { CAMPO_HONEYPOT } from '../lib/empleos/config';
+import { AUTORIZACION_PARRAFOS } from '../lib/empleos/autorizacion';
 import { ACEPTA_HOJA_DE_VIDA, AYUDA_HOJA_DE_VIDA } from '../lib/empleos/hoja-de-vida';
 import { ruta } from '../lib/rutas';
 import Icono from './Icono.astro';
@@ -204,6 +205,20 @@ const cargos = cargosAdmitidos();
     />
   </div>
 
+  <!--
+    EL TEXTO COMPLETO, y no un resumen: Control360 guarda con cada postulación la
+    versión y la huella del texto aceptado (src/lib/empleos/autorizacion.ts). Eso
+    solo prueba algo si la persona vio exactamente ese texto.
+  -->
+  <div
+    id="texto-autorizacion-empleo"
+    class="max-h-40 overflow-y-auto rounded-xl border border-black/10 bg-black/[0.02] p-3 text-[13px] leading-relaxed text-muted"
+    tabindex="0"
+    aria-label="Autorización de tratamiento de datos personales"
+  >
+    {AUTORIZACION_PARRAFOS.map((parrafo) => <p class="mb-2 last:mb-0">{parrafo}</p>)}
+  </div>
+
   <label class="flex items-start gap-3 text-[14.5px] text-muted">
     <input
       type="checkbox"
@@ -211,11 +226,12 @@ const cargos = cargosAdmitidos();
       name="autorizacion"
       value="si"
       required
+      aria-describedby="texto-autorizacion-empleo"
       class="mt-1 h-4 w-4 shrink-0 accent-[var(--color-primary)]"
     />
     <span>
-      Autorizo el tratamiento de mis datos personales y de mi hoja de vida para fines de
-      selección de personal, conforme a la Ley 1581 de 2012 y a la{' '}
+      He leído y acepto la autorización de tratamiento de datos de arriba, conforme a la
+      Ley 1581 de 2012 y a la{' '}
       <a class="underline hover:text-primary" href={ruta('/privacidad/')}>
         política de privacidad
       </a>. *
