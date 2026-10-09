@@ -98,6 +98,32 @@ describe('leerVacantesRemotas', () => {
     expect(r.ok && r.vacantes.map((v) => v.cargo)).toEqual(['Bueno']);
   });
 
+  it('trae las preguntas de filtro de Control360 (sin la regla) y no inventa ninguna', () => {
+    const r = leerVacantesRemotas(
+      {
+        version: 1,
+        vacantes: [
+          {
+            slug: 'vendedor-tat',
+            cargo: 'Vendedor TAT',
+            preguntas: [
+              { id: 'moto', texto: '¿Tienes moto propia?', tipo: 'SI_NO', obligatoria: true, regla: { descarta_si: 'NO' } },
+              { id: 'ciudad', texto: '¿Dónde vives?', tipo: 'OPCION', opciones: ['Tunja', 'Duitama'], obligatoria: false },
+            ],
+          },
+          { slug: 'sin-preguntas', cargo: 'Sin preguntas' },
+        ],
+      },
+      ESTATICAS,
+    );
+    if (!r.ok) throw new Error(r.motivo);
+    expect(r.vacantes[0].preguntas).toEqual([
+      { id: 'moto', texto: '¿Tienes moto propia?', tipo: 'SI_NO', obligatoria: true },
+      { id: 'ciudad', texto: '¿Dónde vives?', tipo: 'OPCION', opciones: ['Tunja', 'Duitama'], obligatoria: false },
+    ]);
+    expect(r.vacantes[1]).not.toHaveProperty('preguntas');
+  });
+
   it('rechaza lo que no tiene la forma esperada', () => {
     expect(leerVacantesRemotas(null, ESTATICAS).ok).toBe(false);
     expect(leerVacantesRemotas({ version: 2, vacantes: [] }, ESTATICAS).ok).toBe(false);

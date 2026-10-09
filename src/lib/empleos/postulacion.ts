@@ -10,9 +10,10 @@
  * qué es un correo válido o de qué caracteres se quitan.
  */
 import { FORMA_CORREO, limpiar, texto } from '../pqrs/solicitud';
-import { esCargoValido } from './cargos';
+import { esCargoValido, vacanteDelCargo, type VacanteDelCargo } from './cargos';
 import { CAMPO_HONEYPOT } from './config';
 import { validarHojaDeVida } from './hoja-de-vida';
+import { validarRespuestas, type RespuestaPregunta } from './preguntas';
 
 /** Nombres de los campos del multipart. Son los `name` del formulario. */
 export const CAMPOS = {
@@ -73,6 +74,19 @@ export interface PostulacionValidada {
   /** Código de Cloudflare del fallo, o cadena vacía. Solo para el registro. */
   codigoTurnstile: string;
   hojaDeVida: HojaDeVidaValidada;
+  /**
+   * El filtro de Control360 (src/lib/empleos/preguntas.ts). `vacanteSlug` es la
+   * vacante elegida (null si es espontánea o el cargo ya no está); `respuestas`
+   * son las preguntas respondidas, o null cuando la vacante no tiene preguntas:
+   * entonces no se manda nada y Control360 la deja SIN FILTRO.
+   */
+  vacanteSlug?: string | null;
+  respuestas?: RespuestaPregunta[] | null;
+}
+
+/** Inyectable en las pruebas: de dónde salen las preguntas de un cargo. */
+export interface OpcionesValidacion {
+  vacanteDe?: (cargo: string) => Promise<VacanteDelCargo | null>;
 }
 
 export type ResultadoPostulacion =
@@ -107,7 +121,10 @@ function esArchivo(valor: unknown): valor is File {
   );
 }
 
-export async function validarPostulacion(formulario: FormData): Promise<ResultadoPostulacion> {
+export async function validarPostulacion(
+  formulario: FormData,
+  opciones: OpcionesValidacion = {},
+): Promise<ResultadoPostulacion> {
   const errores: string[] = [];
 
   const nombre = limpiar(texto(formulario.get(CAMPOS.nombre)));
@@ -134,6 +151,17 @@ export async function validarPostulacion(formulario: FormData): Promise<Resultad
     errores.push(
       'El cargo no es uno de los que ofrece el formulario. Recarga la página e inténtalo de nuevo.',
     );
+  }
+
+  // Las preguntas de filtro de la vacante elegida. Se exigen aquí y no solo en
+  // el navegador: un multipart armado a mano no puede saltarse una obligatoria.
+  // Sin vacante (espontánea) o sin preguntas no hay nada que validar ni mandar.
+  const vacante = cargo ? await (opciones.vacanteDe ?? vacanteDelCargo)(cargo) : null;
+  let respuestas: RespuestaPregunta[] | null = null;
+  if (vacante && vacante.preguntas.length > 0) {
+    const r = validarRespuestas(vacante.preguntas, (nombre) => texto(formulario.get(nombre)));
+    errores.push(...r.errores);
+    respuestas = r.respuestas;
   }
 
   // Opcional: con la hoja de vida adjunta, el relato es un complemento.
@@ -185,6 +213,8 @@ export async function validarPostulacion(formulario: FormData): Promise<Resultad
       sinVerificar,
       codigoTurnstile,
       hojaDeVida,
+      vacanteSlug: vacante?.slug ?? null,
+      respuestas,
     },
   };
 }

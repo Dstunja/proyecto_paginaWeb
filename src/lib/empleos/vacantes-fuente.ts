@@ -25,6 +25,7 @@
  */
 import { vacantes as vacantesEstaticas, type Vacante } from '../../data/vacantes';
 import type { Entorno } from '../pqrs/config';
+import { leerPreguntas } from './preguntas';
 
 /** Variable de entorno con la URL pública de Control360. */
 export const VARIABLE_URL = 'C360_VACANTES_URL';
@@ -73,6 +74,9 @@ export function leerVacantesRemotas(
     if (!FORMA_SLUG.test(slug) || !cargo || vistos.has(slug)) continue;
     vistos.add(slug);
     const base = porSlug.get(slug);
+    // Las preguntas de filtro vienen SOLO de Control360 (sin la regla que
+    // descarta); si no trae, el formulario no las pinta.
+    const preguntas = leerPreguntas(o.preguntas);
     salida.push({
       slug,
       cargo,
@@ -83,6 +87,7 @@ export function leerVacantesRemotas(
       descripcion: textos(o.descripcion),
       requisitos: textos(o.requisitos),
       funciones: textos(o.funciones),
+      ...(preguntas.length ? { preguntas } : {}),
       ...(base?.habilidades ? { habilidades: [...base.habilidades] } : {}),
       ...(base?.ofrecemos ? { ofrecemos: [...base.ofrecemos] } : {}),
       ...(base?.whatsappExtra ? { whatsappExtra: { ...base.whatsappExtra } } : {}),

@@ -12,6 +12,7 @@
  * (una vez por proceso) y por eso son asíncronas.
  */
 import { vacantes as vacantesEstaticas, type Vacante } from '../../data/vacantes';
+import type { PreguntaVacante } from './preguntas';
 import { cargarVacantes } from './vacantes-fuente';
 
 /** Opción para quien no se postula a una vacante concreta. */
@@ -35,4 +36,20 @@ export async function cargosAdmitidos(): Promise<string[]> {
  */
 export async function esCargoValido(cargo: string): Promise<boolean> {
   return (await cargosAdmitidos()).includes(cargo) || cargosDe(vacantesEstaticas).includes(cargo);
+}
+
+/** Lo que el filtro de Control360 necesita de la vacante elegida. */
+export interface VacanteDelCargo {
+  slug: string;
+  preguntas: PreguntaVacante[];
+}
+
+/**
+ * La vacante a la que corresponde un cargo, o null (espontánea, o un cargo que
+ * ya no está). Con ella van el slug y las preguntas de filtro que el servidor
+ * valida y manda a Control360.
+ */
+export async function vacanteDelCargo(cargo: string): Promise<VacanteDelCargo | null> {
+  const v = (await cargarVacantes()).vacantes.find((x) => x.cargo === cargo);
+  return v ? { slug: v.slug, preguntas: v.preguntas ?? [] } : null;
 }
