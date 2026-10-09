@@ -23,7 +23,7 @@ import { ruta } from '../lib/rutas';
 import { empresa } from '../data/site';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
-const actualizado = '15 de septiembre de 2026';
+const actualizado = '9 de octubre de 2026';
 
 /** Eventos y datos que recoge la analítica, para poder listarlos sin repetir. */
 const queSeRecoge = [
@@ -95,6 +95,15 @@ const queNoSeRecoge = [
         pedido ni se cruza con la analítica del sitio.
       </p>
       <p class="mt-4 text-muted">
+        <strong class="text-ink">Proveedores tecnológicos fuera de Colombia.</strong> Para evaluar
+        las hojas de vida que recibimos podemos apoyarnos en herramientas de análisis automatizado
+        de proveedores tecnológicos ubicados fuera de Colombia (por ejemplo, en Estados Unidos).
+        Esos proveedores tratan los datos únicamente para ese fin, bajo obligaciones de
+        confidencialidad y seguridad, y no los usan para otros propósitos. La decisión final sobre
+        una postulación siempre la toma una persona de Talento Humano. La autorización que aceptas
+        al postularte lo dice de forma expresa.
+      </p>
+      <p class="mt-4 text-muted">
         <strong class="text-ink">Estadísticas de uso.</strong> Usamos Google Analytics 4, cargado a
         través de Google Tag Manager, para entender cómo se navega el sitio. Las cifras que vemos
         son siempre agregadas: cuánta gente hace algo, no quién lo hace. Esa herramienta recoge:
@@ -148,8 +157,11 @@ const queNoSeRecoge = [
       <p class="mt-4 text-muted">
         {/* EDITAR AQUÍ: plazos reales acordados con la empresa. */}
         Conservamos los datos el tiempo necesario para cumplir la finalidad que motivó su
-        recolección y las obligaciones legales aplicables. Los informes de Google Analytics se
-        conservan según la configuración de retención de la propiedad.
+        recolección y las obligaciones legales aplicables. Las hojas de vida y los datos de una
+        postulación se conservan mientras dura el proceso de selección y, si la persona no es
+        contratada, hasta por dos (2) años más para considerarla en vacantes futuras, salvo que
+        pida su supresión antes. Los informes de Google Analytics se conservan según la
+        configuración de retención de la propiedad.
       </p>
 
       <h2 class="mt-12 text-[24px] tablet:text-[28px]">7. Cambios</h2>
