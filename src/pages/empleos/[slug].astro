@@ -3,7 +3,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Icono from '../../components/Icono.astro';
 import { ruta } from '../../lib/rutas';
 import { imagenOMarcador } from '../../lib/imagenes';
-import { vacantes, contactoEmpleo } from '../../data/vacantes';
+import { contactoEmpleo } from '../../data/vacantes';
+import { cargarVacantes } from '../../lib/empleos/vacantes-fuente';
 
 /**
  * Página de detalle de cada vacante: /empleos/<slug>/
@@ -13,7 +14,9 @@ import { vacantes, contactoEmpleo } from '../../data/vacantes';
  * también en texto y no solo dentro de la imagen. La imagen se muestra sin
  * recortar (`object-contain`), así que sirve tanto horizontal como vertical.
  */
-export function getStaticPaths() {
+export async function getStaticPaths() {
+  // Una página por vacante: las de Control360 o, si no se leyeron, las estáticas.
+  const { vacantes } = await cargarVacantes();
   return vacantes.map((vacante) => ({
     params: { slug: vacante.slug },
     props: { vacante },
@@ -21,6 +24,8 @@ export function getStaticPaths() {
 }
 
 const { vacante } = Astro.props;
+// La misma lista que armó las rutas (una lectura por build), para "Otras convocatorias".
+const { vacantes } = await cargarVacantes();
 
 // EDITAR AQUÍ: reemplazar con imagen real de la vacante
 // -> public/img/empleos/<slug>.jpg   (ver src/data/vacantes.ts)

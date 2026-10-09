@@ -66,7 +66,9 @@ const enlaceWhatsapp = `https://wa.me/${contactoEmpleo.whatsapp.numero}?text=${e
 const enlaceCorreo = `mailto:${contactoEmpleo.email}`;
 
 const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
-const cargos = cargosAdmitidos();
+// Las vacantes de Control360 (o la lista estática si no se pudieron leer):
+// se resuelven en el build, una sola vez por proceso.
+const cargos = await cargosAdmitidos();
 ---
 
 <form

@@ -130,7 +130,7 @@ export async function validarPostulacion(formulario: FormData): Promise<Resultad
 
   const cargo = limpiar(texto(formulario.get(CAMPOS.cargo)));
   if (cargo.length === 0) errores.push('Elige el cargo al que te postulas.');
-  else if (cargo.length > LIMITES.cargo || !esCargoValido(cargo)) {
+  else if (cargo.length > LIMITES.cargo || !(await esCargoValido(cargo))) {
     errores.push(
       'El cargo no es uno de los que ofrece el formulario. Recarga la página e inténtalo de nuevo.',
     );
