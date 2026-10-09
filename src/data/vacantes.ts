@@ -33,7 +33,10 @@ export interface Vacante {
   tipo: string;
   /** Frase corta para la tarjeta del listado. */
   resumen: string;
-  /** Ruta dentro de public/. Vacío = marcador de posición. */
+  /**
+   * Ruta dentro de public/ (lista estática) o URL absoluta del flyer que
+   * Talento Humano subió en Control360. Vacío = marcador de posición.
+   */
   imagen: string;
   /** Párrafos de la descripción larga (página de detalle). */
   descripcion: string[];
@@ -50,6 +53,13 @@ export interface Vacante {
   ofrecemos?: string[];
   /** Segundo número de WhatsApp, si la convocatoria lo tiene. */
   whatsappExtra?: { numero: string; texto: string };
+  /**
+   * Salario tal como lo escribió Talento Humano en Control360 ("$1.600.000 +
+   * comisiones" o un rango). Solo llega si allá lo marcaron para mostrar.
+   */
+  salario?: string;
+  /** Jornada u horario ("Lunes a sábado, 7 a.m. – 4 p.m."), desde Control360. */
+  jornada?: string;
   /**
    * Preguntas de filtro que Talento Humano escribió en Control360 para esta
    * vacante (src/lib/empleos/preguntas.ts). Solo llegan de Control360: la lista

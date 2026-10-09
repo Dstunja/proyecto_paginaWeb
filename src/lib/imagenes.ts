@@ -66,6 +66,9 @@ export function imagenOMarcador(
   ancho = 800,
   alto = 600,
 ): { src: string; esMarcador: boolean } {
+  // Una URL absoluta (el flyer que Talento Humano subió en Control360) se usa
+  // tal cual: no vive en public/ y no lleva `base`.
+  if (rutaPublica && esUrlAbsoluta(rutaPublica)) return { src: rutaPublica, esMarcador: false };
   const encontrada = rutaPublica ? buscarConCualquierExtension(rutaPublica) : null;
   if (encontrada) return { src: ruta(encontrada), esMarcador: false };
   return { src: marcador(textoAlterno, ancho, alto), esMarcador: true };
@@ -84,8 +87,14 @@ export function imagenOMarcador(
  * enseñar una imagen rota.
  */
 export function imagenSiExiste(rutaPublica: string | undefined): string | null {
+  if (rutaPublica && esUrlAbsoluta(rutaPublica)) return rutaPublica;
   const encontrada = rutaPublica ? buscarConCualquierExtension(rutaPublica) : null;
   return encontrada ? ruta(encontrada) : null;
+}
+
+/** ¿Es una dirección completa (http/https) y no una ruta dentro de public/? */
+export function esUrlAbsoluta(valor: string): boolean {
+  return /^https?:\/\//i.test(valor);
 }
 
 /**

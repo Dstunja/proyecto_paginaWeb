@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Vacante } from '../../data/vacantes';
 import { cargosDe, CARGO_ESPONTANEO } from './cargos';
-import { leerVacantesRemotas, resolverVacantes, urlVacantes, VARIABLE_URL } from './vacantes-fuente';
+import { leerVacantesRemotas, resolverVacantes, urlVacantes, VARIABLE_URL, whatsappDesdeDigitos } from './vacantes-fuente';
 
 const ESTATICA: Vacante = {
   slug: 'vendedor-tat',
@@ -80,6 +80,67 @@ describe('leerVacantesRemotas', () => {
     expect(bodega.ofrecemos).toBeUndefined();
   });
 
+  it('lo que Control360 trae manda sobre la lista estática: imagen, ofrecemos, habilidades, WhatsApp, salario y jornada', () => {
+    const r = leerVacantesRemotas(
+      {
+        version: 1,
+        vacantes: [
+          {
+            slug: 'vendedor-tat',
+            cargo: 'Vendedor TAT',
+            imagen: 'https://x.supabase.co/storage/v1/object/public/talento-vacantes/a/b/1760000000000.jpg',
+            ofrecemos: ['Salario base', 'Comisiones'],
+            habilidades: ['Liderazgo'],
+            whatsappExtra: '573108788754',
+            salario: '$1.600.000 + comisiones',
+            jornada: 'Lunes a sábado',
+          },
+        ],
+      },
+      ESTATICAS,
+    );
+    if (!r.ok) throw new Error(r.motivo);
+    const [v] = r.vacantes;
+    expect(v.imagen).toBe('https://x.supabase.co/storage/v1/object/public/talento-vacantes/a/b/1760000000000.jpg');
+    expect(v.ofrecemos).toEqual(['Salario base', 'Comisiones']);
+    expect(v.habilidades).toEqual(['Liderazgo']);
+    expect(v.whatsappExtra).toEqual({ numero: '573108788754', texto: '310 878 8754' });
+    expect(v.salario).toBe('$1.600.000 + comisiones');
+    expect(v.jornada).toBe('Lunes a sábado');
+  });
+
+  it('solo hereda de la lista estática lo que Control360 NO trae (campo por campo)', () => {
+    const r = leerVacantesRemotas(
+      {
+        version: 1,
+        vacantes: [
+          // Trae ofrecemos pero no imagen ni habilidades ni WhatsApp: esos tres se heredan.
+          { slug: 'vendedor-tat', cargo: 'Vendedor TAT', ofrecemos: ['Bonos'], habilidades: [], imagen: '', salario: '' },
+        ],
+      },
+      ESTATICAS,
+    );
+    if (!r.ok) throw new Error(r.motivo);
+    const [v] = r.vacantes;
+    expect(v.ofrecemos).toEqual(['Bonos']);
+    expect(v.habilidades).toEqual(['Comunicación']);
+    expect(v.imagen).toBe(ESTATICA.imagen);
+    expect(v.whatsappExtra).toEqual(ESTATICA.whatsappExtra);
+    expect(v).not.toHaveProperty('salario');
+    expect(v).not.toHaveProperty('jornada');
+  });
+
+  it('una imagen que no es URL absoluta no se usa (la página no puede buscarla en public/ por ese nombre)', () => {
+    const r = leerVacantesRemotas(
+      { version: 1, vacantes: [{ slug: 'nueva', cargo: 'Nueva', imagen: '../../etc/passwd' }, { slug: 'otra', cargo: 'Otra', imagen: 'x/y.jpg' }] },
+      ESTATICAS,
+    );
+    if (!r.ok) throw new Error(r.motivo);
+    expect(r.vacantes[0].imagen).toBe('');
+    expect(r.vacantes[1].imagen).toBe('');
+    expect(r.vacantes[0]).not.toHaveProperty('whatsappExtra');
+  });
+
   it('descarta entradas sin slug válido, sin cargo o repetidas', () => {
     const r = leerVacantesRemotas(
       {
@@ -132,6 +193,21 @@ describe('leerVacantesRemotas', () => {
       ok: false,
       motivo: 'Control360 no tiene vacantes publicadas',
     });
+  });
+});
+
+describe('whatsappDesdeDigitos', () => {
+  it('10 dígitos → le pone el 57; 12 ya con indicativo → tal cual; texto legible 3-3-4', () => {
+    expect(whatsappDesdeDigitos('3108788754')).toEqual({ numero: '573108788754', texto: '310 878 8754' });
+    expect(whatsappDesdeDigitos('573108788754')).toEqual({ numero: '573108788754', texto: '310 878 8754' });
+    expect(whatsappDesdeDigitos('+57 310 878 8754')).toEqual({ numero: '573108788754', texto: '310 878 8754' });
+  });
+
+  it('lo que no tiene entre 10 y 13 dígitos no es un WhatsApp', () => {
+    expect(whatsappDesdeDigitos('310 878')).toBeNull();
+    expect(whatsappDesdeDigitos('')).toBeNull();
+    expect(whatsappDesdeDigitos(null)).toBeNull();
+    expect(whatsappDesdeDigitos('12345678901234')).toBeNull();
   });
 });
 
