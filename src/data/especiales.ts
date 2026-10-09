@@ -182,29 +182,6 @@ const especialesCurados: ProductoEspecial[] = [
   },
 
   /* ------------------------------------------------------------------------
-     Colaboraciones todavía sin foto: se muestran con marcador de posición.
-     ------------------------------------------------------------------------ */
-  {
-    // Antes decía "Bombie": es Blondie, como lo llaman el deck ("Jumbo Ryan
-    // Castro 2.0 Blondie"), el maestro de SAP ("RyaCast Blan") y el empaque
-    // ("EDICIÓN BLONDIE").
-    nombre: 'Chocolatina Jumbo Blondie',
-    marca: 'Jumbo',
-    descripcion: 'Edición especial de la colaboración con Ryan Castro.',
-    etiqueta: 'Nuevo',
-    // EDITAR AQUÍ: reemplazar con imagen real del producto (la barra suelta,
-    // sin precio ni texto de oferta)
-    // -> public/img/temporada/jumbo-blondie-ryan-castro.jpg
-    imagen: '/img/temporada/jumbo-blondie-ryan-castro.jpg',
-    // Hay dos presentaciones de la misma barra de 170 g: 1092005 (caja x 6) y
-    // 1092006 (caja x 3). Va la de 3 porque el deck la asigna a los segmentos
-    // TD, CL, MM y CE —la de 6 va a S, CR, MY y SU— y porque es la única de
-    // las dos que está en el maestro de precios de SAP de la distribuidora.
-    // El PSP de las dos es el mismo y es POR BARRA, no por caja.
-    codigo: '1092006',
-  },
-
-  /* ------------------------------------------------------------------------
      PENDIENTES: no se publican (ver «Pendientes» en la cabecera).
      ------------------------------------------------------------------------ */
   {

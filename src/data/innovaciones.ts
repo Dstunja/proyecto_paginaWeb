@@ -29,41 +29,7 @@ export interface Innovacion {
  * Si el arreglo queda vacío, la página muestra un mensaje de "pronto" en vez
  * de una rejilla vacía.
  */
-export const innovaciones: Innovacion[] = [
-  {
-    fecha: 'Marzo 2026',
-    orden: '2026-03',
-    etiqueta: 'Tecnología',
-    titulo: 'Pedidos en línea con Pideky',
-    descripcion:
-      'Los tenderos de Tunja y alrededores ya pueden hacer su pedido desde el celular, ver el catálogo de su zona y pagar en línea sin registro previo.',
-    // EDITAR AQUÍ: reemplazar con imagen real de Pedidos en línea con Pideky
-    // -> public/img/innovacion/pideky.jpg
-    imagen: '/img/innovacion/pideky.jpg',
-  },
-  {
-    fecha: 'Febrero 2026',
-    orden: '2026-02',
-    etiqueta: 'Logística',
-    titulo: 'Renovación de la flota de reparto',
-    descripcion:
-      'Incorporamos nuevos vehículos a las rutas de Boyacá y Santander para acortar los tiempos de entrega y mejorar el cuidado del producto en ruta.',
-    // EDITAR AQUÍ: reemplazar con imagen real de Renovación de la flota
-    // -> public/img/innovacion/flota.jpg
-    imagen: '/img/innovacion/flota.jpg',
-  },
-  {
-    fecha: 'Enero 2026',
-    orden: '2026-01',
-    etiqueta: 'Equipo',
-    titulo: 'Formación comercial para asesores',
-    descripcion:
-      'Arrancó el plan de formación del equipo comercial, enfocado en asesoría al tendero, manejo de inventario y uso de las herramientas digitales.',
-    // EDITAR AQUÍ: reemplazar con imagen real de Formación comercial
-    // -> public/img/innovacion/formacion.jpg
-    imagen: '/img/innovacion/formacion.jpg',
-  },
-];
+export const innovaciones: Innovacion[] = [];
 
 /** Novedades de la más reciente a la más antigua. */
 export const innovacionesOrdenadas = [...innovaciones].sort((a, b) =>
