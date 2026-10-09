@@ -112,7 +112,7 @@ describe('el texto de autorización', () => {
     // La huella va CLAVADA aquí también: si alguien cambia la constante y el texto a la vez,
     // la prueba de arriba seguiría pasando y esta no.
     expect(AUTORIZACION_VERSION).toBe('v2-2026-10');
-    expect(AUTORIZACION_SHA256).toBe('e493c79fcca4eca6d0bc60d597016b400ac24241a41a4489cb562f4efdb387da');
+    expect(AUTORIZACION_SHA256).toBe('e1e950999901f0bb848f4594da01289f372f6985078fb9c5373f5dd7d79e62d8');
   });
 
   it('cubre lo que la v1 no decía', () => {

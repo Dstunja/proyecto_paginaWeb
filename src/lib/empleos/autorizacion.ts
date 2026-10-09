@@ -23,9 +23,9 @@ export const AUTORIZACION_TEXTO = [
   'suprimir mis datos personales y los documentos que adjunto (incluida mi hoja de vida), con la ',
   'finalidad de evaluar mi postulación, contactarme, gestionar el proceso de selección y, si soy ',
   'contratado, adelantar mi vinculación.\n\n',
-  'Para evaluar tu perfil podemos apoyarnos en herramientas de análisis automatizado de ',
-  'proveedores tecnológicos ubicados fuera de Colombia (por ejemplo, en Estados Unidos), que ',
-  'tratan tus datos solo para ese fin y no los usan para otros propósitos. La decisión final ',
+  'Para evaluar mi perfil, la empresa puede apoyarse en herramientas de análisis automatizado ',
+  'de proveedores tecnológicos ubicados fuera de Colombia (por ejemplo, en Estados Unidos), que ',
+  'tratan mis datos solo para ese fin y no los usan para otros propósitos. La decisión final ',
   'siempre la toma una persona de Talento Humano.\n\n',
   'Declaro que los datos que entrego son veraces y que los entrego de forma voluntaria. ',
   'Conozco que no estoy obligado a autorizar el tratamiento de datos sensibles.\n\n',
@@ -39,7 +39,7 @@ export const AUTORIZACION_TEXTO = [
 ].join('');
 
 /** La huella que Control360 calcula de ese mismo texto (sha256 en hexadecimal, sobre UTF-8). */
-export const AUTORIZACION_SHA256 = 'e493c79fcca4eca6d0bc60d597016b400ac24241a41a4489cb562f4efdb387da';
+export const AUTORIZACION_SHA256 = 'e1e950999901f0bb848f4594da01289f372f6985078fb9c5373f5dd7d79e62d8';
 
 /**
  * La versión anterior, solo como registro: Control360 la sigue aceptando durante la transición,
