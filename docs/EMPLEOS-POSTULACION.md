@@ -96,7 +96,7 @@ Cuerpo `multipart/form-data`:
 | `nombre` | texto | obligatorio, 3-150 |
 | `correo` | texto | obligatorio, formato de correo, hasta 150 |
 | `telefono` | texto | obligatorio, 7-15 dígitos (el `57` inicial no cuenta), hasta 30 |
-| `cargo` | texto | obligatorio; una de las vacantes de `src/data/vacantes.ts` o `Otro / hoja de vida espontánea` |
+| `cargo` | texto | obligatorio; una de las vacantes abiertas (las de Control360 vía `C360_VACANTES_URL`, o las de `src/data/vacantes.ts` si no se leyeron) o `Otro / hoja de vida espontánea` |
 | `experiencia` | texto | **opcional**, hasta 3000 |
 | `autorizacion` | `si` / `on` / `true` | obligatoria (Ley 1581 de 2012) |
 | `hoja-de-vida` | archivo | obligatoria; `.pdf`, `.doc` o `.docx`; hasta 4 MB; el contenido debe corresponder a la extensión |
@@ -105,7 +105,11 @@ Cuerpo `multipart/form-data`:
 
 La lista de cargos está en `src/lib/empleos/cargos.ts` y la leen **el `<select>` y
 el servidor**: un cargo que se cierre desaparece de los dos a la vez, y nadie puede
-postularse a uno inventado mandando el multipart a mano.
+postularse a uno inventado mandando el multipart a mano. Las vacantes salen de
+`src/lib/empleos/vacantes-fuente.ts`: Control360 (`C360_VACANTES_URL`, leída en
+el build) y, si falla o no está, `src/data/vacantes.ts`. El servidor acepta además
+los cargos de la lista estática, por si Control360 cambió entre el build y la
+postulación.
 
 Orden de las comprobaciones (`src/lib/empleos/postular.ts`): forma del cuerpo →
 campo trampa → campos y bytes del archivo → límite por IP → Turnstile → correo.
@@ -434,6 +438,7 @@ Comparte con PQRS `TURNSTILE_SECRET`, `PUBLIC_TURNSTILE_SITE_KEY` y, si están,
 | `EMPLEOS_DESTINO` | no | Buzón de Talento Humano. Sin ella, `contactoEmpleo.email` de `src/data/vacantes.ts` (ghsantiagodetunja@gmail.com). Con `onboarding@resend.dev` tiene que ser el **titular de la cuenta** de `RESEND_API_KEY` |
 | `EMPLEOS_REMITENTE` | no | Remitente. Sin ella, `onboarding@resend.dev`. **Ya no hereda `PQRS_REMITENTE`** |
 | `EMPLEOS_RETENCION_ACTIVA` | no | Solo el valor exacto `1` enciende el borrado de las hojas de vida guardadas. Sin ella, simulacro |
+| `C360_VACANTES_URL` | no | Ruta pública de Control360 con las vacantes publicadas por Talento Humano (`https://control360app.com/api/talento/vacantes/dst`). Se lee **en el build**; sin ella o si falla, `src/data/vacantes.ts` |
 | `EMPLEOS_RETENCION_MESES` | no | Plazo de conservación. Sin ella, **6** |
 
 ### El orden importa: primero el remitente, después el destino
@@ -495,6 +500,7 @@ huella no se guarda en ningún sitio ni viaja al navegador o al correo.
 ## Dónde vive cada cosa
 
 ```
+src/lib/empleos/vacantes-fuente.ts vacantes: Control360 en el build, src/data/vacantes.ts si falla
 src/lib/empleos/cargos.ts          lista de cargos admitidos (vacantes + espontánea)
 src/lib/empleos/hoja-de-vida.ts    formatos, tope de 4 MB y validación (navegador y servidor)
 src/lib/empleos/config.ts          destino, remitente, los tres límites y el campo trampa

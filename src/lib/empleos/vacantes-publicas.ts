@@ -3,8 +3,8 @@
  *
  * El módulo Talento de Control360 lee ese JSON para darle a RRHH una sugerencia
  * con IA: si el candidato encaja en el cargo al que se postuló o en otra vacante
- * abierta. La única fuente de verdad de las vacantes es este sitio
- * (src/data/vacantes.ts); Control360 no guarda una copia propia.
+ * abierta (hoy solo como respaldo: Control360 ya tiene las vacantes propias y
+ * este sitio las lee de allá en el build, ver vacantes-fuente.ts).
  *
  * Aquí solo se ELIGEN campos, no se inventan ni se transforman: todo lo que sale
  * ya se ve en /empleos/. Quedan fuera la imagen del flyer, lo que ofrece la

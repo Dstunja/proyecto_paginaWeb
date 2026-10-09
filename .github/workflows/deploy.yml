@@ -63,8 +63,12 @@ jobs:
         #
         # La etiqueta de GA4 vive dentro del contenedor, asi que PUBLIC_GA_ID ya
         # no hace falta: definirla ademas haria que GA4 contara doble.
+        #
+        # C360_VACANTES_URL: de donde se leen las vacantes en el build (la ruta
+        # publica de Control360). Si falta o falla, salen de src/data/vacantes.ts.
         env:
           PUBLIC_GTM_CONTAINER_ID: ${{ vars.PUBLIC_GTM_CONTAINER_ID }}
+          C360_VACANTES_URL: ${{ vars.C360_VACANTES_URL }}
         with:
           node-version: 22
           package-manager: npm

@@ -5,16 +5,20 @@ import FormularioEmpleo from '../components/FormularioEmpleo.astro';
 import Icono from '../components/Icono.astro';
 import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
-import { vacantes, contactoEmpleo } from '../data/vacantes';
+import { contactoEmpleo } from '../data/vacantes';
+import { cargarVacantes } from '../lib/empleos/vacantes-fuente';
 
 /**
- * Las vacantes viven en src/data/vacantes.ts, porque las comparten esta página
- * y la de detalle (/empleos/<slug>/).
+ * Las vacantes las publica Talento Humano en Control360 y se leen en el build
+ * (C360_VACANTES_URL); si no se pueden leer, salen de src/data/vacantes.ts.
+ * Ver src/lib/empleos/vacantes-fuente.ts. La misma lista la usan la página de
+ * detalle (/empleos/<slug>/), el formulario y /api/empleos/vacantes.json.
  *
  * Cada tarjeta lleva la foto de la vacante; mientras no exista el archivo en
  * public/img/empleos/, `imagenOMarcador` devuelve un marcador de posición con
  * el nombre del cargo para que la rejilla no se vea rota.
  */
+const { vacantes } = await cargarVacantes();
 const tarjetas = vacantes.map((vacante) => ({
   ...vacante,
   ...imagenOMarcador(vacante.imagen, vacante.cargo, 800, 600),
