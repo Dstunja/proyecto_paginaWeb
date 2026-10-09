@@ -380,6 +380,7 @@ npx vercel env pull .env.local
 | `PQRS_IP_SALT`, `CRON_SECRET` | Se generan: `node -e "console.log(crypto.randomUUID())"`. |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | Vercel → *Marketplace* → Upstash (plan gratuito). Opcionales. |
 | `EMPLEOS_DESTINO`, `EMPLEOS_REMITENTE` | Opcionales. Buzón y remitente de las postulaciones de empleos; sin ellas se usa el correo de `contactoEmpleo` (`src/data/vacantes.ts`) y el remitente de PQRS. Ver `docs/EMPLEOS-POSTULACION.md`. |
+| `C360_VACANTES_URL` | Opcional. URL pública de Control360 con las vacantes publicadas por Talento Humano (`https://control360app.com/api/talento/vacantes/dst`). Se lee **en el build**; sin ella, o si falla, la página usa `src/data/vacantes.ts`. En GitHub Pages va como *Variable* de Actions. |
 | `PUBLIC_PQRS_BLOB_ACCESS` | **Ya no existe.** El acceso a los blobs es privado y fijo; si sigue definida en Vercel, borrarla. |
 
 Para desarrollo, Cloudflare publica un par de claves de prueba que **aceptan
