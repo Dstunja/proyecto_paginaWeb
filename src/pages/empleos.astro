@@ -200,7 +200,11 @@ const proceso = [
     const campo = select();
     if (!campo) return;
     const existe = Array.from(campo.options).some((o) => o.value === cargo);
-    if (existe) campo.value = cargo;
+    if (!existe) return;
+    campo.value = cargo;
+    // Cambiar `value` por código no dispara `change`, y el formulario escucha
+    // ese evento para pintar las preguntas de filtro de la vacante elegida.
+    campo.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
   // Al pulsar "Postularme a esta vacante" el formulario queda con ese cargo elegido.

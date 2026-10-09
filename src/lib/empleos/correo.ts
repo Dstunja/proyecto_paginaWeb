@@ -46,6 +46,13 @@ function escapar(valor: string): string {
     .replace(/'/g, '&#39;');
 }
 
+/** "SI"/"NO" del filtro se leen como Sí / No; lo demás, tal cual. */
+function legible(respuesta: string): string {
+  if (respuesta === 'SI') return 'Sí';
+  if (respuesta === 'NO') return 'No';
+  return respuesta;
+}
+
 function tamanoLegible(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
@@ -156,6 +163,15 @@ function cuerpoHtml(datos: PostulacionValidada, fecha: string, opciones: Opcione
     <p style="margin:0;white-space:pre-wrap">${escapar(datos.experiencia)}</p>`
     : `<p style="margin:24px 0 0;color:#5f6b73">No escribió nada sobre su experiencia: está todo en la hoja de vida.</p>`;
 
+  // Las preguntas de filtro de la vacante (Control360), si las respondió. Van
+  // tal cual: el CUMPLE / NO CUMPLE lo calcula Control360 con sus reglas.
+  const respuestas = datos.respuestas?.length
+    ? `<h3 style="margin:24px 0 8px;color:#0d2c84;font-size:16px">Preguntas de la vacante</h3>
+    <table style="border-collapse:collapse;width:100%">
+      ${datos.respuestas.map((r) => fila(r.texto_pregunta, escapar(legible(r.respuesta)))).join('')}
+    </table>`
+    : '';
+
   return `<div style="${ESTILO_CUERPO}">
     <h2 style="margin:0 0 4px;color:#0d2c84">Nueva postulación</h2>
     <p style="margin:0 0 20px;font-size:20px;font-weight:600">${escapar(datos.cargo)}</p>
@@ -175,6 +191,7 @@ function cuerpoHtml(datos: PostulacionValidada, fecha: string, opciones: Opcione
       ${opciones.id ? fila('Identificador', escapar(opciones.id)) : ''}
     </table>
     ${experiencia}
+    ${respuestas}
     <h3 style="margin:24px 0 8px;color:#0d2c84;font-size:16px">Hoja de vida</h3>
     ${bloqueHojaDeVida(datos, opciones)}
     <p style="margin:24px 0 0;color:#5f6b73;font-size:13px">
@@ -214,6 +231,12 @@ function cuerpoTexto(datos: PostulacionValidada, fecha: string, opciones: Opcion
     datos.experiencia || '(no escribió nada: está todo en la hoja de vida)',
     '',
   );
+
+  if (datos.respuestas?.length) {
+    lineas.push('Preguntas de la vacante:');
+    for (const r of datos.respuestas) lineas.push(`- ${r.texto_pregunta} ${legible(r.respuesta)}`);
+    lineas.push('');
+  }
 
   if (opciones.sinAdjunto) {
     lineas.push(

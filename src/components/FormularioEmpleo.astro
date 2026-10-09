@@ -44,12 +44,23 @@
  * CADA ERROR QUE SE ENSEÑA LLEVA UN CÓDIGO CORTO («Código: T-110200»). Sirve
  * para que quien manda una captura de pantalla nos diga la causa sin abrir la
  * consola. WhatsApp aparece solo ahí, con el error, como último recurso.
+ *
+ * PREGUNTAS DE FILTRO DE LA VACANTE (src/lib/empleos/preguntas.ts). Talento
+ * Humano escribe en Control360 hasta 8 preguntas básicas por vacante (moto,
+ * licencia, años de experiencia, ciudad, disponibilidad…). Llegan con las
+ * vacantes en el build y viajan al navegador en un JSON incrustado; al elegir
+ * un cargo se pintan debajo del select (Sí/No → radios, opción → select,
+ * número → input numérico, texto → input corto; las obligatorias con * y
+ * `required`). Si la vacante no tiene preguntas, no aparece nada y el
+ * formulario queda como siempre. El servidor las vuelve a exigir
+ * (src/lib/empleos/postulacion.ts) y las manda a Control360 como `respuestas`.
  */
 import { contactoEmpleo } from '../data/vacantes';
 import { cargosAdmitidos } from '../lib/empleos/cargos';
 import { CAMPO_HONEYPOT } from '../lib/empleos/config';
 import { AUTORIZACION_PARRAFOS } from '../lib/empleos/autorizacion';
 import { ACEPTA_HOJA_DE_VIDA, AYUDA_HOJA_DE_VIDA } from '../lib/empleos/hoja-de-vida';
+import { cargarVacantes } from '../lib/empleos/vacantes-fuente';
 import { ruta } from '../lib/rutas';
 import Icono from './Icono.astro';
 import LoaderDST from './LoaderDST.astro';
@@ -69,6 +80,15 @@ const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 // Las vacantes de Control360 (o la lista estática si no se pudieron leer):
 // se resuelven en el build, una sola vez por proceso.
 const cargos = await cargosAdmitidos();
+
+// Las preguntas de filtro, por cargo, para el navegador. Solo las vacantes que
+// traen alguna; el JSON va incrustado en un <script type="application/json">
+// y se escapa `<` para que ningún texto pueda cerrar la etiqueta.
+const { vacantes } = await cargarVacantes();
+const preguntasPorCargo = Object.fromEntries(
+  vacantes.filter((v) => v.preguntas?.length).map((v) => [v.cargo, v.preguntas]),
+);
+const jsonPreguntas = JSON.stringify(preguntasPorCargo).replace(/</g, '\\u003c');
 ---
 
 <form
@@ -125,6 +145,26 @@ const cargos = await cargosAdmitidos();
       {cargos.map((cargo) => <option value={cargo}>{cargo}</option>)}
     </select>
   </div>
+
+  {/*
+    PREGUNTAS DE FILTRO. Vacío hasta que se elige un cargo con preguntas; las
+    pinta el script de abajo a partir del JSON. `hidden` mientras no hay nada,
+    para que no quede un hueco en el formulario.
+  */}
+  <script type="application/json" is:inline data-preguntas-por-cargo set:html={jsonPreguntas}></script>
+  <fieldset
+    class="m-0 hidden grid-cols-1 gap-5 rounded-xl border border-line bg-fondo p-5"
+    data-preguntas-empleo
+    aria-live="polite"
+  >
+    <legend class="px-2 font-display text-[14px] font-semibold text-ink">
+      Unas preguntas rápidas sobre esta vacante
+    </legend>
+    <p class="m-0 text-[13.5px] text-muted" data-preguntas-ayuda>
+      Nos ayudan a revisar tu postulación más rápido. Las marcadas con * son obligatorias.
+    </p>
+    <div class="grid grid-cols-1 gap-5" data-preguntas-campos></div>
+  </fieldset>
 
   <div>
     <label class="field-label" for="experiencia-empleo">
@@ -356,6 +396,7 @@ const cargos = await cargosAdmitidos();
   import { formatearTamano, nombreParaMostrar } from '../lib/adjuntos';
   import { registrarEvento } from '../lib/analitica';
   import { validarFileHojaDeVida } from '../lib/empleos/hoja-de-vida';
+  import { LIMITES, nombreCampo, type PreguntaVacante } from '../lib/empleos/preguntas';
   import { ruta } from '../lib/rutas';
   import {
     ErrorTurnstile,
@@ -410,6 +451,114 @@ const cargos = await cargosAdmitidos();
     }
 
     const claveTurnstile = form.dataset.turnstileKey ?? '';
+
+    // --- Preguntas de filtro de la vacante ----------------------------------
+    //
+    // Se pintan con createElement, nunca con innerHTML: los textos vienen de
+    // Control360 (los escribe Talento Humano) y lo que llega de fuera no se
+    // pinta como HTML. Cada campo se llama `pregunta__<id>`, que es lo que el
+    // servidor lee (src/lib/empleos/postulacion.ts).
+    const selectCargo = form.querySelector<HTMLSelectElement>('#cargo-empleo');
+    const cajaPreguntas = form.querySelector<HTMLFieldSetElement>('[data-preguntas-empleo]');
+    const camposPreguntas = form.querySelector<HTMLElement>('[data-preguntas-campos]');
+    const jsonPreguntas = form.querySelector<HTMLScriptElement>('[data-preguntas-por-cargo]');
+    let preguntasPorCargo: Record<string, PreguntaVacante[]> = {};
+    try {
+      preguntasPorCargo = JSON.parse(jsonPreguntas?.textContent || '{}') as Record<string, PreguntaVacante[]>;
+    } catch {
+      preguntasPorCargo = {};
+    }
+
+    function etiqueta(p: PreguntaVacante, para?: string): HTMLLabelElement {
+      const label = document.createElement('label');
+      label.className = 'field-label';
+      if (para) label.htmlFor = para;
+      label.textContent = p.obligatoria ? `${p.texto} *` : p.texto;
+      return label;
+    }
+
+    function campoPregunta(p: PreguntaVacante): HTMLElement {
+      const caja = document.createElement('div');
+      const nombre = nombreCampo(p.id);
+      const idHtml = `${nombre}-empleo`;
+
+      if (p.tipo === 'SI_NO') {
+        // Un grupo de radios: la etiqueta va como leyenda del grupo, no de un input.
+        const grupo = document.createElement('div');
+        grupo.setAttribute('role', 'radiogroup');
+        const leyenda = etiqueta(p);
+        leyenda.id = `${idHtml}-leyenda`;
+        grupo.setAttribute('aria-labelledby', leyenda.id);
+        caja.append(leyenda);
+        const opciones = document.createElement('div');
+        opciones.className = 'flex flex-wrap gap-x-6 gap-y-2';
+        for (const [valor, texto] of [['SI', 'Sí'], ['NO', 'No']] as const) {
+          const l = document.createElement('label');
+          l.className = 'inline-flex cursor-pointer items-center gap-2 text-[15px] text-ink';
+          const r = document.createElement('input');
+          r.type = 'radio';
+          r.name = nombre;
+          r.value = valor;
+          r.required = p.obligatoria;
+          r.className = 'h-4 w-4 accent-[var(--color-primary)]';
+          l.append(r, document.createTextNode(texto));
+          opciones.append(l);
+        }
+        grupo.append(opciones);
+        caja.append(grupo);
+        return caja;
+      }
+
+      caja.append(etiqueta(p, idHtml));
+      if (p.tipo === 'OPCION') {
+        const s = document.createElement('select');
+        s.className = 'field';
+        s.id = idHtml;
+        s.name = nombre;
+        s.required = p.obligatoria;
+        const vacia = document.createElement('option');
+        vacia.value = '';
+        vacia.textContent = 'Elige una opción';
+        s.append(vacia);
+        for (const o of p.opciones ?? []) {
+          const op = document.createElement('option');
+          op.value = o;
+          op.textContent = o;
+          s.append(op);
+        }
+        caja.append(s);
+        return caja;
+      }
+
+      const i = document.createElement('input');
+      i.className = 'field';
+      i.id = idHtml;
+      i.name = nombre;
+      i.required = p.obligatoria;
+      if (p.tipo === 'NUMERO') {
+        i.type = 'number';
+        i.inputMode = 'decimal';
+        i.min = '0';
+        i.step = 'any';
+      } else {
+        i.type = 'text';
+        i.maxLength = LIMITES.respuesta;
+      }
+      caja.append(i);
+      return caja;
+    }
+
+    function pintarPreguntas() {
+      if (!cajaPreguntas || !camposPreguntas) return;
+      const lista = preguntasPorCargo[selectCargo?.value ?? ''] ?? [];
+      camposPreguntas.textContent = '';
+      for (const p of lista) camposPreguntas.append(campoPregunta(p));
+      cajaPreguntas.classList.toggle('hidden', lista.length === 0);
+      cajaPreguntas.classList.toggle('grid', lista.length > 0);
+    }
+
+    selectCargo?.addEventListener('change', pintarPreguntas);
+    pintarPreguntas();
 
     function valorDe(nombre: string): string {
       const campo = form.elements.namedItem(nombre) as

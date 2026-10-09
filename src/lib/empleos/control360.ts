@@ -42,8 +42,21 @@ export function configControl360(env: Entorno): ConfigControl360 | null {
  *
  * Teléfono y experiencia vacíos van como null: Control360 los valida solo si vienen.
  * La autorización va como booleano de verdad; la cadena "true" se rechaza allá.
+ * `vacanteSlug` y `respuestas` (el filtro de la vacante) van SOLO cuando la vacante
+ * tiene preguntas: sin ellos Control360 deja la postulación SIN FILTRO, que es lo
+ * que corresponde a una espontánea o a una vacante sin preguntas.
  */
 export function cuerpoParaControl360(datos: PostulacionValidada, envioId: string): string {
+  const filtro = datos.respuestas
+    ? {
+        vacanteSlug: datos.vacanteSlug ?? null,
+        respuestas: datos.respuestas.map((r) => ({
+          id: r.id,
+          texto_pregunta: r.texto_pregunta,
+          respuesta: r.respuesta,
+        })),
+      }
+    : {};
   return JSON.stringify({
     envioId,
     nombre: datos.nombre,
@@ -53,6 +66,7 @@ export function cuerpoParaControl360(datos: PostulacionValidada, envioId: string
     experiencia: datos.experiencia.trim() || null,
     autorizacion: true,
     autorizacionVersion: AUTORIZACION_VERSION,
+    ...filtro,
     archivo: {
       nombre: datos.hojaDeVida.nombreOriginal,
       base64: Buffer.from(datos.hojaDeVida.bytes).toString('base64'),

@@ -17,6 +17,7 @@
  * consume en las dos páginas. Así la misma cadena sirve en Vercel (sin `base`)
  * y en GitHub Pages (con `/proyecto_paginaWeb`).
  */
+import type { PreguntaVacante } from '../lib/empleos/preguntas';
 
 /** Contacto de selección de personal, común a todas las convocatorias. */
 export const contactoEmpleo = {
@@ -49,6 +50,12 @@ export interface Vacante {
   ofrecemos?: string[];
   /** Segundo número de WhatsApp, si la convocatoria lo tiene. */
   whatsappExtra?: { numero: string; texto: string };
+  /**
+   * Preguntas de filtro que Talento Humano escribió en Control360 para esta
+   * vacante (src/lib/empleos/preguntas.ts). Solo llegan de Control360: la lista
+   * estática no las tiene, y sin ellas el formulario queda como siempre.
+   */
+  preguntas?: PreguntaVacante[];
 }
 
 /**
