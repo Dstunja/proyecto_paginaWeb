@@ -18,10 +18,13 @@
  * se usa `src/data/vacantes.ts` tal cual estaba. Nunca se lanza: el build no
  * se cae por Control360.
  *
- * QUÉ SE ENRIQUECE. Control360 solo manda texto. El flyer (`imagen`), lo que
- * ofrece la empresa, las habilidades deseables y el WhatsApp extra siguen
- * viviendo en `src/data/vacantes.ts`: si una vacante de Control360 tiene el
- * mismo `slug` que una de la lista estática, hereda esos campos de ahí.
+ * QUÉ SE ENRIQUECE. Desde 10·09 Control360 también manda el flyer (`imagen`,
+ * como URL pública de su bucket), el `salario` (solo si RRHH lo marcó para
+ * mostrar), la `jornada`, lo que ofrece la empresa, las habilidades deseables
+ * y el WhatsApp extra. Lo que venga de Control360 manda; SOLO lo que falte se
+ * hereda de `src/data/vacantes.ts` cuando el `slug` coincide con una de la
+ * lista estática. Así la lista estática es respaldo puro: el día que todas las
+ * vacantes tengan su flyer en Control360, aquí no queda nada que mantener.
  */
 import { vacantes as vacantesEstaticas, type Vacante } from '../../data/vacantes';
 import type { Entorno } from '../pqrs/config';
@@ -48,6 +51,25 @@ const FORMA_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const textos = (x: unknown): string[] =>
   Array.isArray(x) ? x.map((s) => String(s ?? '').trim()).filter(Boolean) : [];
 const texto = (x: unknown): string => String(x ?? '').trim();
+
+/** El flyer de Control360 llega como URL absoluta (su bucket); cualquier otra cosa no se usa. */
+const urlImagen = (x: unknown): string => {
+  const v = texto(x);
+  return /^https?:\/\/\S+$/.test(v) ? v : '';
+};
+
+/**
+ * Control360 manda el WhatsApp extra como dígitos (10 sin indicativo o 12-13
+ * con él). Aquí toma la forma que usan las páginas: `numero` con el indicativo
+ * de Colombia para wa.me / tel:, y `texto` legible ("310 878 8754").
+ */
+export function whatsappDesdeDigitos(x: unknown): { numero: string; texto: string } | null {
+  const d = texto(x).replace(/\D+/g, '');
+  if (d.length < 10 || d.length > 13) return null;
+  const numero = d.length === 10 ? `57${d}` : d;
+  const local = d.slice(-10);
+  return { numero, texto: `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}` };
+}
 
 /**
  * Convierte el JSON de Control360 en vacantes del sitio, o explica por qué no.
@@ -77,20 +99,30 @@ export function leerVacantesRemotas(
     // Las preguntas de filtro vienen SOLO de Control360 (sin la regla que
     // descarta); si no trae, el formulario no las pinta.
     const preguntas = leerPreguntas(o.preguntas);
+    // Lo que Control360 trae manda; lo que no trae se hereda de la lista
+    // estática (mismo slug), y si tampoco está ahí, simplemente no se pinta.
+    const imagen = urlImagen(o.imagen) || base?.imagen || '';
+    const habilidades = textos(o.habilidades);
+    const ofrecemos = textos(o.ofrecemos);
+    const whatsappExtra = whatsappDesdeDigitos(o.whatsappExtra) ?? (base?.whatsappExtra ? { ...base.whatsappExtra } : null);
+    const salario = texto(o.salario) || base?.salario || '';
+    const jornada = texto(o.jornada) || base?.jornada || '';
     salida.push({
       slug,
       cargo,
       ciudad: texto(o.ciudad),
       tipo: texto(o.tipo),
       resumen: texto(o.resumen),
-      imagen: base?.imagen ?? '',
+      imagen,
       descripcion: textos(o.descripcion),
       requisitos: textos(o.requisitos),
       funciones: textos(o.funciones),
       ...(preguntas.length ? { preguntas } : {}),
-      ...(base?.habilidades ? { habilidades: [...base.habilidades] } : {}),
-      ...(base?.ofrecemos ? { ofrecemos: [...base.ofrecemos] } : {}),
-      ...(base?.whatsappExtra ? { whatsappExtra: { ...base.whatsappExtra } } : {}),
+      ...(habilidades.length ? { habilidades } : base?.habilidades ? { habilidades: [...base.habilidades] } : {}),
+      ...(ofrecemos.length ? { ofrecemos } : base?.ofrecemos ? { ofrecemos: [...base.ofrecemos] } : {}),
+      ...(whatsappExtra ? { whatsappExtra } : {}),
+      ...(salario ? { salario } : {}),
+      ...(jornada ? { jornada } : {}),
     });
   }
   if (salida.length === 0) return { ok: false, motivo: 'Control360 no tiene vacantes publicadas' };

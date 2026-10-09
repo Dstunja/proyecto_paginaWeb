@@ -27,8 +27,9 @@ const { vacante } = Astro.props;
 // La misma lista que armó las rutas (una lectura por build), para "Otras convocatorias".
 const { vacantes } = await cargarVacantes();
 
-// EDITAR AQUÍ: reemplazar con imagen real de la vacante
-// -> public/img/empleos/<slug>.jpg   (ver src/data/vacantes.ts)
+// El flyer lo sube Talento Humano en Control360 (llega como URL); si la
+// vacante no tiene, se busca en public/img/empleos/ (lista estática) y, si
+// tampoco, sale el marcador de posición.
 const { src: imagen, esMarcador } = imagenOMarcador(vacante.imagen, vacante.cargo, 900, 1200);
 
 const mensajeWhatsapp = encodeURIComponent(
@@ -65,6 +66,22 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
           <Icono nombre="briefcase" class="h-4 w-4" interactivo={false} />
           {vacante.tipo}
         </span>
+        {
+          vacante.jornada && (
+            <span class="inline-flex items-center gap-2">
+              <Icono nombre="clock" class="h-4 w-4" interactivo={false} />
+              {vacante.jornada}
+            </span>
+          )
+        }
+        {
+          vacante.salario && (
+            <span class="inline-flex items-center gap-2 font-semibold text-ink">
+              <Icono nombre="tag" class="h-4 w-4 text-secondary" interactivo={false} />
+              {vacante.salario}
+            </span>
+          )
+        }
       </p>
     </div>
   </section>
@@ -82,8 +99,8 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
         {
           esMarcador && (
             <figcaption class="px-2 pt-3 pb-1 text-[12.5px] text-muted">
-              Imagen de ejemplo. Sube el flyer real a{' '}
-              <code class="font-mono">public{vacante.imagen}</code>.
+              Imagen de ejemplo. Talento Humano puede subir el flyer real desde Control360
+              (Postulaciones › Vacantes).
             </figcaption>
           )
         }
