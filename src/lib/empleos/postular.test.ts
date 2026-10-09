@@ -434,14 +434,14 @@ describe('hoja de vida rechazada', () => {
     expect(errores(respuesta).join(' ')).toContain('doble extensión');
   });
 
-  it('más de 4 MB → 400 y el mensaje dice el tope', async () => {
-    const pesado = Buffer.concat([PDF_MINIMO, Buffer.alloc(4 * 1024 * 1024 + 1)]);
+  it('más de 3 MB → 400 y el mensaje dice el tope', async () => {
+    const pesado = Buffer.concat([PDF_MINIMO, Buffer.alloc(3 * 1024 * 1024 + 1)]);
     const respuesta = await atenderPostulacion(
       peticion(campos(), { nombre: 'cv.pdf', bytes: pesado }),
       ENTORNO,
     );
     expect(respuesta.estado).toBe(400);
-    expect(errores(respuesta).join(' ')).toContain('el máximo es 4 MB');
+    expect(errores(respuesta).join(' ')).toContain('el máximo es 3 MB');
     expect(correosEnviados).toHaveLength(0);
   });
 });

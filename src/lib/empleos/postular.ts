@@ -41,7 +41,13 @@
  * el camino normal no hay que conservarlo, así que subirlo para bajarlo,
  * adjuntarlo y borrarlo sería dar tres pasos para no guardar nada. El precio es
  * el tope de 4,5 MB de cuerpo de una función de Vercel, y por eso la hoja de
- * vida se limita a 4 MB (src/lib/empleos/hoja-de-vida.ts).
+ * vida se limita a 3 MB (src/lib/empleos/hoja-de-vida.ts): además de llegar
+ * aquí, la hoja de vida viaja en base64 a Control360, que engorda un 33 %.
+ *
+ * CONTROL360, EN PARALELO AL CORREO (src/lib/empleos/control360.ts). Con sus
+ * dos variables configuradas, cada postulación aceptada se envía también a la
+ * bandeja de Talento Humano de Control360, firmada. No reemplaza al correo ni
+ * lo retrasa: corren a la vez, y un fallo de Control360 solo queda registrado.
  */
 import { MINUTOS_ENLACE_DESCARGA, blobConfigurado } from '../pqrs/config';
 import { enlaceDescarga } from '../pqrs/descarga';
@@ -56,6 +62,7 @@ import {
   combinacionArriesgada,
   type Entorno,
 } from './config';
+import { enviarAControl360 } from './control360';
 import { enviarConReintentos } from './correo';
 import { huellaHojaDeVida } from './huella';
 import { esRobot, validarPostulacion, type PostulacionValidada } from './postulacion';
@@ -230,8 +237,19 @@ export async function atenderPostulacion(
     );
   }
 
-  // --- 6. Correo, con reintentos --------------------------------------------
-  const envio = await enviarConReintentos(datos, env, {}, new Date(), dormir);
+  // --- 6. Correo, con reintentos, y Control360 a la vez ---------------------
+  // Control360 nunca lanza y tiene su propio reloj: no puede tumbar ni demorar
+  // el correo. Se espera aquí porque una función de Vercel se corta al responder.
+  const [envio, aControl360] = await Promise.all([
+    enviarConReintentos(datos, env, {}, new Date(), dormir),
+    enviarAControl360(datos, env),
+  ]);
+  if (aControl360.resultado !== 'apagado') {
+    registrar(`control360:${aControl360.resultado}`, {
+      estado: 'estado' in aControl360 ? aControl360.estado : undefined,
+      detalle: 'detalle' in aControl360 ? aControl360.detalle : undefined,
+    });
+  }
   if (envio.ok) {
     registrar('enviada', {
       /*
