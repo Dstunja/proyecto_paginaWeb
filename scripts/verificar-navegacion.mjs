@@ -361,7 +361,7 @@ function revisarCsp(csp, etiqueta) {
     fuentes('frame-src').join(' ') === 'https://challenges.cloudflare.com https://www.googletagmanager.com',
     fuentes('frame-src').join(' '),
   );
-  comprobar(`${etiqueta}: CSP img-src con las teselas del mapa`, tiene('img-src', "'self'", 'https://*.tile.openstreetmap.fr'));
+  comprobar(`${etiqueta}: CSP img-src con las teselas del mapa y los flyers de Control360`, tiene('img-src', "'self'", 'https://*.tile.openstreetmap.fr', 'https://txefdbdnaactqjaxygzb.supabase.co'));
   comprobar(`${etiqueta}: CSP font-src solo fuentes propias`, fuentes('font-src').join(' ') === "'self'", fuentes('font-src').join(' '));
   comprobar(
     `${etiqueta}: CSP connect-src con la API propia, Control360, Google Analytics y Vercel Blob`,
