@@ -475,6 +475,10 @@ async function contextoVigilado(navegador, viewport = { width: 1280, height: 900
   });
   const consola = [];
   contexto.on('console', (m) => {
+    // El script de Vercel Web Analytics (/_vercel/insights/script.js) solo
+    // existe en Vercel con Analytics activado: en local responde 404 y Chrome
+    // se niega a ejecutarlo por el tipo MIME. No es un bloqueo de la CSP.
+    if (/\/_vercel\/insights\/.*MIME type/i.test(m.text())) return;
     if (/Content Security Policy|Refused to (load|execute|connect|frame|apply)/i.test(m.text())) {
       consola.push(m.text().slice(0, 200));
     }

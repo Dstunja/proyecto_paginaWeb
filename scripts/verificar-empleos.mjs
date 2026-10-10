@@ -6,7 +6,7 @@
  *
  * A) EL CAMPO DE HOJA DE VIDA, que no toca la red:
  *   1. Existe, es obligatorio, acepta solo .pdf/.doc/.docx y dice el tope
- *      ("PDF, DOC o DOCX, máximo 4 MB.") antes de elegir nada.
+ *      ("PDF, DOC o DOCX, máximo 3 MB.") antes de elegir nada.
  *   2. Un archivo válido de cada formato se acepta y se enseña con su nombre y
  *      su peso.
  *   3. Se rechazan el formato no permitido, el contenido que no corresponde a
@@ -524,12 +524,12 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   );
   comprobar(
     `${etiqueta}: dice los formatos y el tope antes de elegir nada`,
-    (await textoDe(pagina.locator('[data-ayuda-hv]'))) === 'PDF, DOC o DOCX, máximo 4 MB.',
+    (await textoDe(pagina.locator('[data-ayuda-hv]'))) === 'PDF, DOC o DOCX, máximo 3 MB.',
     await textoDe(pagina.locator('[data-ayuda-hv]')),
   );
   comprobar(
     `${etiqueta}: la ayuda está enlazada al campo (aria-describedby)`,
-    (await entrada.getAttribute('aria-describedby')) === 'hoja-de-vida-empleo-ayuda',
+    (await entrada.getAttribute('aria-describedby'))?.split(' ').includes('hoja-de-vida-empleo-ayuda') && (await entrada.getAttribute('aria-describedby'))?.split(' ').includes('hoja-de-vida-empleo-error'),
   );
 
   // ---- Válidos --------------------------------------------------------------
@@ -598,8 +598,8 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   await entrada.setInputFiles(archivos.pesado);
   await pagina.waitForTimeout(600);
   comprobar(
-    `${etiqueta}: más de 4 MB se rechaza diciendo el tope`,
-    (await error.isVisible()) && (await textoDe(error)).includes('el máximo es 4 MB') && (await cuantos()) === 0,
+    `${etiqueta}: más de 3 MB se rechaza diciendo el tope`,
+    (await error.isVisible()) && (await textoDe(error)).includes('el máximo es 3 MB') && (await cuantos()) === 0,
     await textoDe(error),
   );
 

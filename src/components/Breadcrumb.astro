@@ -82,7 +82,8 @@ const datosMigas =
           {nombre}
         </li>
       </ol>
-      <script type="application/ld+json" set:html={datosMigas} is:inline />
     </nav>
   )
 }
+{/* Fuera del <nav>: dentro, su texto se sumaba al de las migas. */}
+{datosMigas && <script type="application/ld+json" set:html={datosMigas} is:inline />}
