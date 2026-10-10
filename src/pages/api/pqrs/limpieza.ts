@@ -14,6 +14,7 @@
  * están radicando en ese momento.
  */
 import type { APIRoute } from 'astro';
+import { rechazoCron } from '../../../lib/cron';
 import * as almacen from '../../../lib/pqrs/almacen';
 import { HORAS_RETENCION_PENDIENTES, PREFIJO_PENDIENTES, type Entorno } from '../../../lib/pqrs/config';
 
@@ -28,14 +29,8 @@ function json(estado: number, cuerpo: unknown): Response {
 
 export const GET: APIRoute = async ({ request }) => {
   const env = process.env as Entorno;
-  const secreto = env.CRON_SECRET;
-
-  if (!secreto) {
-    return json(503, { ok: false, errores: ['CRON_SECRET no está configurada.'] });
-  }
-  if (request.headers.get('authorization') !== `Bearer ${secreto}`) {
-    return json(401, { ok: false, errores: ['No autorizado.'] });
-  }
+  const rechazo = rechazoCron(request, env);
+  if (rechazo) return rechazo;
 
   const limite = Date.now() - HORAS_RETENCION_PENDIENTES * 60 * 60 * 1000;
   const pendientes = await almacen.listar(PREFIJO_PENDIENTES, env);

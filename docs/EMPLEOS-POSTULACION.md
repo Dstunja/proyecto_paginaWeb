@@ -329,12 +329,12 @@ candidato cuando se abre una vacante parecida, que es justo la razón por la que
 una empresa guarda hojas de vida. Más allá, lo que queda no es una postulación
 viva sino un archivo de datos personales sin uso.
 
-El borrado **está escrito y probado, pero no está encendido**, y tiene dos
-cerrojos independientes:
+El borrado **está escrito y probado, pero no está encendido**:
 
-1. **El cron no está declarado en `vercel.json`.** La ruta
-   `GET /api/empleos/limpieza` existe y funciona, pero nadie la llama.
-2. **Aunque se llame, por defecto hace un simulacro.** Mientras
+1. **El cron está declarado en `vercel.json`** (desde el 10/10/2026, a diario a
+   las 08:00 UTC) y exige `CRON_SECRET`, comparado en tiempo constante
+   (src/lib/cron.ts). Sin esa variable responde 503.
+2. **Pero por defecto hace un simulacro.** Mientras
    `EMPLEOS_RETENCION_ACTIVA` no valga exactamente `'1'`, mira qué borraría y no
    borra nada. Se exige ese valor exacto: ni `true`, ni `si`, ni una cadena que
    alguien dejó a medias al copiar variables.
@@ -356,19 +356,7 @@ dice nada de nadie: no lleva nombre, ni correo, ni teléfono.
 
 1. Definir en Vercel `EMPLEOS_RETENCION_ACTIVA=1` (y `EMPLEOS_RETENCION_MESES`
    si el plazo acordado no son seis meses).
-2. Añadir el cron a `vercel.json`, junto al de PQRS. El bloque `crons` quedaría:
-
-   ```json
-   "crons": [
-     { "path": "/api/pqrs/limpieza", "schedule": "0 4 * * *" },
-     { "path": "/api/empleos/limpieza", "schedule": "30 4 * * 0" }
-   ]
-   ```
-
-   Una vez por semana basta: el plazo es de meses, no de horas, y a las 4:30
-   para no solaparse con la limpieza de PQRS. **Ojo con el plan Hobby de
-   Vercel**, que limita el número de crons; si no admite el segundo, la
-   alternativa es una sola ruta que haga las dos limpiezas.
+2. El cron ya corre a diario (`vercel.json`); no hay que tocarlo.
 3. Redesplegar y mirar el registro: `[empleos/limpieza] borrado` con cuántas
    revisó y cuántas borró. Si sigue diciendo `SIMULACRO`, la variable no llegó.
 
@@ -514,7 +502,7 @@ src/lib/turnstile-cliente.ts       el reto en el navegador: reintento y códigos
 src/pages/api/empleos/postular.ts  la función de Vercel (solo el envoltorio HTTP)
 src/pages/api/empleos/descarga.ts  abre una hoja de vida guardada, desde el correo de aviso
 src/lib/empleos/retencion.ts       el plazo de conservacion y el borrado (nace desactivado)
-src/pages/api/empleos/limpieza.ts  el cron del borrado, TODAVIA no declarado en vercel.json
+src/pages/api/empleos/limpieza.ts  el cron del borrado (diario; simulacro sin EMPLEOS_RETENCION_ACTIVA=1)
 src/components/FormularioEmpleo.astro  el formulario y la revisión del archivo
 scripts/verificar-empleos.mjs      la prueba de navegador (móvil y escritorio)
 ```
