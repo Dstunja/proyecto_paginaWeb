@@ -5,7 +5,7 @@ import { ruta } from '../lib/rutas';
 import PageHero from '../components/PageHero.astro';
 import MisionVision from '../components/MisionVision.astro';
 import Icono from '../components/Icono.astro';
-import { cifras, cobertura } from '../data/site';
+import { cifras, cobertura, ANIOS_EXPERIENCIA } from '../data/site';
 import { equipo } from '../data/equipo';
 import { imagenOMarcador } from '../lib/imagenes';
 import cumplimiento from '../assets/valores/cumplimiento.jpg';
@@ -73,11 +73,11 @@ const valores = [
 
 <BaseLayout
   title="Nosotros — Distribuciones Santiago de Tunja"
-  description="21 años distribuyendo las marcas de Grupo Nutresa en Boyacá, Santander y Cundinamarca. Conoce nuestra historia, misión, visión y valores."
+  description={`${ANIOS_EXPERIENCIA} años distribuyendo las marcas de Grupo Nutresa en Boyacá, Santander y Cundinamarca. Conoce nuestra historia, misión, visión y valores.`}
 >
   <PageHero
     kicker="Quiénes somos"
-    titulo="21 años conectando marcas con el comercio de la región"
+    titulo={`${ANIOS_EXPERIENCIA} años conectando marcas con el comercio de la región`}
     texto="Somos una distribuidora y aliada comercial del portafolio de Grupo Nutresa, enfocada en conectar grandes marcas con nuestros clientes y contribuir al crecimiento del mercado en nuestra región."
   />
 

@@ -137,9 +137,26 @@ export const titulosDePagina: Record<string, string> = {
  */
 export const CLIENTES_TEXTO = '+7.000';
 
+/**
+ * Año en que se fundó la empresa (confirmado por el dueño el 10/10/2026).
+ * Los «años de experiencia» de todo el sitio se calculan desde aquí, así que
+ * nadie tiene que acordarse de cambiar «21» por «22» en 2027.
+ */
+export const ANIO_FUNDACION = 2005;
+
+/**
+ * Años de experiencia al momento de compilar, con el año de Colombia (no el
+ * del servidor de build, que corre en UTC). El sitio se recompila con cada
+ * publicación, así que el número se actualiza solo con el primer despliegue
+ * de cada año.
+ */
+export const ANIOS_EXPERIENCIA =
+  Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Bogota', year: 'numeric' }).format(new Date())) -
+  ANIO_FUNDACION;
+
 /** Barra de cifras del hero: cada una con su ícono. */
 export const cifras = [
-  { valor: '21', etiqueta: 'años de experiencia', icono: 'award' },
+  { valor: String(ANIOS_EXPERIENCIA), etiqueta: 'años de experiencia', icono: 'award' },
   { valor: CLIENTES_TEXTO, etiqueta: 'clientes atendidos', icono: 'users' },
   { valor: '87', etiqueta: 'municipios', icono: 'map-pin' },
   { valor: '3', etiqueta: 'departamentos', icono: 'map' },

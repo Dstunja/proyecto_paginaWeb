@@ -1,5 +1,5 @@
 ---
-import { empresa, redes, navegacion, PIDEKY_URL } from '../data/site';
+import { empresa, redes, navegacion, PIDEKY_URL, ANIOS_EXPERIENCIA } from '../data/site';
 import Logo from './Logo.astro';
 import Icono from './Icono.astro';
 import EnlaceUbicacion from './EnlaceUbicacion.astro';
@@ -36,7 +36,7 @@ const canales = [
       <div>
         <Logo variante="claro" />
         <p class="mt-6 max-w-[38ch] text-[14.5px] text-muted">
-          21 años llevando productos de calidad a miles de negocios en Boyacá, Santander y
+          {ANIOS_EXPERIENCIA} años llevando productos de calidad a miles de negocios en Boyacá, Santander y
           Cundinamarca.
         </p>
 

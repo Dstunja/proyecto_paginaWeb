@@ -2,10 +2,9 @@
  * Texto de la misión y la visión, que se muestra en las pestañas de
  * /nosotros/ (ver src/components/MisionVision.astro).
  *
- * EDITAR AQUÍ: pendiente texto real de misión y visión aprobado por la
- * empresa. Lo que sigue es un texto de ejemplo: reemplazar `texto` y `puntos`
- * de cada panel cuando llegue la versión oficial. No hace falta tocar el
- * componente: las pestañas se arman a partir de esta lista.
+ * Es el texto OFICIAL de la empresa (confirmado por el dueño el 10/10/2026):
+ * no se reescribe sin su aprobación. Si cambia, basta con editar `texto` y
+ * `puntos` de cada panel; las pestañas se arman a partir de esta lista.
  *
  * `puntos` son las tres o cuatro ideas cortas que aparecen como píldoras
  * debajo del párrafo; conviene que salgan del mismo texto aprobado.

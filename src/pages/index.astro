@@ -20,6 +20,7 @@ import {
   HERO_IMAGEN,
   HERO_IMAGEN_ALT,
   resumenCobertura,
+  ANIOS_EXPERIENCIA,
 } from '../data/site';
 // De municipios.ts sale el dato real (cuántos municipios cubre cada
 // departamento y su color); las cifras de clientes que se muestran son las
@@ -73,7 +74,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
 
 <BaseLayout
   title="Distribuciones Santiago de Tunja — Distribuidor Nutresa en Boyacá, Santander y Cundinamarca"
-  description="Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. 21 años de experiencia, 87 municipios cubiertos y más de 7.000 clientes atendidos."
+  description={`Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. ${ANIOS_EXPERIENCIA} años de experiencia, 87 municipios cubiertos y más de 7.000 clientes atendidos.`}
 >
   <!-- HERO -->
   <section class="relative overflow-hidden pt-14 pb-0 tablet:pt-24" data-seccion="hero">
@@ -85,7 +86,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
               <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-verde opacity-75"></span>
               <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-verde"></span>
             </span>
-            Aliado comercial de Grupo Nutresa
+            Distribuidor oficial de Grupo Nutresa
           </p>
           <h1 class="text-[38px] mob:text-[46px] tablet:text-[60px]">
             Las marcas que mueven tu negocio,{' '}
