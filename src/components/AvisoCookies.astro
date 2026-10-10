@@ -14,9 +14,14 @@ import { ruta } from '../lib/rutas';
 ---
 
 {/* `tablet:pr-24` deja libre la esquina del boton flotante de WhatsApp, que
-    vive en el mismo rincon y quedaria medio tapado. */}
+    vive en el mismo rincon y quedaria medio tapado.
+
+    En movil es una franja pegada al borde, sin margen ni esquinas, con texto
+    de 13 px y los dos botones en una sola fila: a 360 px de ancho ocupa menos
+    de una cuarta parte de la pantalla (antes, mas de la mitad). El texto y
+    cuando se muestra no cambian. */}
 <div
-  class="aviso-cookies fixed inset-x-0 bottom-0 z-[180] px-4 pb-4 tablet:pr-24"
+  class="aviso-cookies fixed inset-x-0 bottom-0 z-[180] mob:px-4 mob:pb-4 tablet:pr-24"
   data-aviso-cookies
   role="region"
   aria-label="Aviso sobre cookies"
@@ -24,10 +29,11 @@ import { ruta } from '../lib/rutas';
 >
   <div
     class="aviso-cookies-panel mx-auto flex w-full max-w-[var(--container-site)] flex-col
-           gap-4 rounded-card border border-line px-6 py-5 shadow-[0_18px_44px_rgba(13,44,132,.18)]
+           gap-2.5 border-t border-line px-4 pt-3 shadow-[0_-8px_24px_rgba(13,44,132,.14)]
+           mob:gap-4 mob:rounded-card mob:border mob:px-6 mob:py-5 mob:shadow-[0_18px_44px_rgba(13,44,132,.18)]
            tablet:flex-row tablet:items-center tablet:gap-8"
   >
-    <p class="m-0 flex-1 text-[14px] text-muted">
+    <p class="m-0 flex-1 text-[13px] leading-snug text-muted mob:text-[14px] mob:leading-normal">
       Usamos cookies propias y de Google Analytics para saber qué secciones consultan más nuestros
       visitantes y mejorar el sitio. No vendemos ni compartimos tus datos. Puedes consultar la{' '}
       <a class="font-semibold text-secondary-dark underline" href={ruta('/privacidad/')}>
@@ -35,13 +41,17 @@ import { ruta } from '../lib/rutas';
       >.
     </p>
 
-    <div class="flex shrink-0 flex-wrap gap-3">
-      <button type="button" class="btn btn-primary !px-6 !py-2.5 !text-[14px]" data-aceptar-cookies>
+    <div class="grid shrink-0 grid-cols-2 gap-2 mob:flex mob:flex-wrap mob:gap-3">
+      <button
+        type="button"
+        class="btn btn-primary !px-4 !py-2 !text-[14px] mob:!px-6 mob:!py-2.5"
+        data-aceptar-cookies
+      >
         Aceptar
       </button>
       <button
         type="button"
-        class="btn btn-secondary !px-6 !py-2.5 !text-[14px]"
+        class="btn btn-secondary !px-4 !py-2 !text-[14px] mob:!px-6 mob:!py-2.5"
         data-rechazar-cookies
       >
         Solo lo necesario
@@ -57,6 +67,15 @@ import { ruta } from '../lib/rutas';
      persona tiene que poder leer para decidir. */
   .aviso-cookies-panel {
     background-color: var(--color-surface);
+    /* En movil va pegada al borde: deja aire para la franja inferior de los
+       telefonos sin boton de inicio. */
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (min-width: 520px) {
+    .aviso-cookies-panel {
+      padding-bottom: 1.25rem;
+    }
   }
 
   /* Entra deslizándose desde abajo, una sola vez. */

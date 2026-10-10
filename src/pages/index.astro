@@ -99,8 +99,10 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
           {/* `data-magnetico`: los dos CTA de la portada se estiran unos
               píxeles hacia el cursor cuando pasa cerca. Solo con ratón y solo
               si el sistema no pide menos movimiento; lo gobierna
-              src/lib/interacciones.ts. */}
-          <div class="mt-10 flex flex-wrap gap-4">
+              src/lib/interacciones.ts.
+              `max-mob:pr-14` deja libre en móvil la columna del botón
+              flotante de WhatsApp, que si no tapaba el segundo botón. */}
+          <div class="mt-10 flex flex-wrap gap-4 max-mob:pr-14">
             <a
               class="btn btn-whatsapp"
               href={enlacePedido(MENSAJE_PEDIDO)}
