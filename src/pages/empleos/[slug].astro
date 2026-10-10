@@ -1,18 +1,20 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Icono from '../../components/Icono.astro';
-import { ruta } from '../../lib/rutas';
-import { imagenOMarcador } from '../../lib/imagenes';
-import { contactoEmpleo } from '../../data/vacantes';
+import VacanteDetalle from '../../components/VacanteDetalle.astro';
+import VacanteCerrada from '../../components/VacanteCerrada.astro';
+import type { Vacante } from '../../data/vacantes';
 import { cargarVacantes } from '../../lib/empleos/vacantes-fuente';
 
 /**
- * Página de detalle de cada vacante: /empleos/<slug>/
+ * /empleos/<slug>/ — el detalle de una vacante, o "ya se cerró".
  *
- * Está pensada para mostrar el flyer completo (por ejemplo "Buscamos
- * vehículos") junto al texto, de modo que los requisitos se puedan leer
- * también en texto y no solo dentro de la imagen. La imagen se muestra sin
- * recortar (`object-contain`), así que sirve tanto horizontal como vertical.
+ * DOS MODOS, MISMO ARCHIVO (ver src/lib/empleos/isr.mjs):
+ *   - En Vercel se renderiza bajo demanda con ISR: el slug sale de la URL y se
+ *     busca entre las vacantes que Control360 tiene abiertas EN ESE MOMENTO. Si
+ *     ya no está (RRHH la cerró, venció o el enlace es viejo), sale la página
+ *     amable de VacanteCerrada.astro con 404, nunca un 500.
+ *     `getStaticPaths` no se usa en este modo.
+ *   - En GitHub Pages se prerenderiza: `getStaticPaths` arma una página por
+ *     vacante abierta en el build, como siempre.
  */
 export async function getStaticPaths() {
   // Una página por vacante: las de Control360 o, si no se leyeron, las estáticas.
@@ -23,281 +25,13 @@ export async function getStaticPaths() {
   }));
 }
 
-const { vacante } = Astro.props;
-// La misma lista que armó las rutas (una lectura por build), para "Otras convocatorias".
+// La misma lista que armó las rutas, para "Otras convocatorias".
 const { vacantes } = await cargarVacantes();
+const slug = String(Astro.params.slug ?? '');
+const vacante: Vacante | undefined =
+  (Astro.props as { vacante?: Vacante }).vacante ?? vacantes.find((v) => v.slug === slug);
 
-// El flyer lo sube Talento Humano en Control360 (llega como URL); si la
-// vacante no tiene, se busca en public/img/empleos/ (lista estática) y, si
-// tampoco, sale el marcador de posición.
-const { src: imagen, esMarcador } = imagenOMarcador(vacante.imagen, vacante.cargo, 900, 1200);
-
-const mensajeWhatsapp = encodeURIComponent(
-  `Hola, vi la convocatoria de "${vacante.cargo}" en la página y me interesa postularme.`,
-);
-
-const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
+if (!vacante) Astro.response.status = 404;
 ---
 
-<BaseLayout
-  title={`${vacante.cargo} — Empleos en Distribuciones Santiago de Tunja`}
-  description={vacante.resumen}
->
-  <!-- ENCABEZADO -->
-  <section class="border-b border-line bg-fondo pt-14 pb-12" data-vacante={vacante.cargo}>
-    <div class="wrap">
-      <a
-        class="group mb-6 inline-flex items-center gap-2 text-[14.5px] font-semibold text-secondary-dark"
-        href={ruta('/empleos/')}
-      >
-        <Icono nombre="arrow-right" class="h-4 w-4 rotate-180" />
-        Volver a empleos
-      </a>
-
-      <span class="kicker">{vacante.tipo}</span>
-      <h1 class="max-w-[24ch] text-[32px] tablet:text-[46px]">{vacante.cargo}</h1>
-
-      <p class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[14.5px] text-muted">
-        <span class="inline-flex items-center gap-2">
-          <Icono nombre="map-pin" class="h-4 w-4" interactivo={false} />
-          {vacante.ciudad}
-        </span>
-        <span class="inline-flex items-center gap-2">
-          <Icono nombre="briefcase" class="h-4 w-4" interactivo={false} />
-          {vacante.tipo}
-        </span>
-        {
-          vacante.jornada && (
-            <span class="inline-flex items-center gap-2">
-              <Icono nombre="clock" class="h-4 w-4" interactivo={false} />
-              {vacante.jornada}
-            </span>
-          )
-        }
-        {
-          vacante.salario && (
-            <span class="inline-flex items-center gap-2 font-semibold text-ink">
-              <Icono nombre="tag" class="h-4 w-4 text-secondary" interactivo={false} />
-              {vacante.salario}
-            </span>
-          )
-        }
-      </p>
-    </div>
-  </section>
-
-  <!-- FLYER + DESCRIPCIÓN -->
-  <section class="section">
-    <div class="wrap grid grid-cols-1 items-start gap-12 tablet:grid-cols-[.95fr_1.05fr]">
-      <figure class="glass-card m-0 overflow-hidden p-3">
-        <img
-          src={imagen}
-          alt={`Convocatoria: ${vacante.cargo}`}
-          loading="eager"
-          class="w-full rounded-[12px] bg-primary-soft object-contain"
-        />
-        {
-          esMarcador && (
-            <figcaption class="px-2 pt-3 pb-1 text-[12.5px] text-muted">
-              Imagen de ejemplo. Talento Humano puede subir el flyer real desde Control360
-              (Postulaciones › Vacantes).
-            </figcaption>
-          )
-        }
-      </figure>
-
-      <div>
-        <h2 class="text-[24px] tablet:text-[30px]">Sobre la convocatoria</h2>
-        {vacante.descripcion.map((parrafo) => <p class="mt-4 text-muted">{parrafo}</p>)}
-
-        <h2 class="mt-12 text-[24px] tablet:text-[30px]">Requisitos</h2>
-        <ul class="mt-5 flex list-none flex-col gap-3 p-0">
-          {
-            vacante.requisitos.map((requisito) => (
-              <li class="flex items-start gap-3 text-[15px]">
-                <Icono nombre="circle-check" class="mt-1 h-[18px] w-[18px] shrink-0 text-verde" interactivo={false} />
-                {requisito}
-              </li>
-            ))
-          }
-        </ul>
-
-        {
-          vacante.funciones && vacante.funciones.length > 0 && (
-            <>
-              <h2 class="mt-12 text-[24px] tablet:text-[30px]">Funciones principales</h2>
-              <ul class="mt-5 flex list-none flex-col gap-3 p-0">
-                {vacante.funciones.map((funcion) => (
-                  <li class="flex items-start gap-3 text-[15px]">
-                    <Icono nombre="file-text" class="mt-1 h-[18px] w-[18px] shrink-0 text-secondary" interactivo={false} />
-                    {funcion}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )
-        }
-
-        {
-          vacante.habilidades && vacante.habilidades.length > 0 && (
-            <>
-              <h2 class="mt-12 text-[24px] tablet:text-[30px]">Habilidades deseables</h2>
-              <ul class="mt-5 flex list-none flex-col gap-3 p-0">
-                {vacante.habilidades.map((habilidad) => (
-                  <li class="flex items-start gap-3 text-[15px]">
-                    <Icono nombre="star" class="mt-1 h-[18px] w-[18px] shrink-0 text-accent-text" interactivo={false} />
-                    {habilidad}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )
-        }
-
-        {
-          vacante.ofrecemos && vacante.ofrecemos.length > 0 && (
-            <>
-              <h2 class="mt-12 text-[24px] tablet:text-[30px]">Qué ofrecemos</h2>
-              <ul class="mt-5 flex list-none flex-col gap-3 p-0">
-                {vacante.ofrecemos.map((item) => (
-                  <li class="flex items-start gap-3 text-[15px]">
-                    <Icono nombre="circle-check" class="mt-1 h-[18px] w-[18px] shrink-0 text-verde" interactivo={false} />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )
-        }
-
-        <div class="mt-12 rounded-card border border-line bg-fondo p-7">
-          <h2 class="text-[20px]">Contacto</h2>
-          <ul class="mt-4 flex list-none flex-col gap-3 p-0">
-            <li>
-              <a
-                class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
-                href={`mailto:${contactoEmpleo.email}?subject=${asuntoCorreo}`}
-              >
-                <Icono nombre="mail" class="h-[18px] w-[18px] text-secondary" />
-                {contactoEmpleo.email}
-              </a>
-            </li>
-            <li>
-              <a
-                class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
-                href={`tel:+${contactoEmpleo.whatsapp.numero}`}
-              >
-                <Icono nombre="phone" class="h-[18px] w-[18px] text-secondary" />
-                {contactoEmpleo.whatsapp.texto}
-              </a>
-            </li>
-            {
-              vacante.whatsappExtra && (
-                <li>
-                  <a
-                    class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
-                    href={`tel:+${vacante.whatsappExtra.numero}`}
-                  >
-                    <Icono nombre="phone" class="h-[18px] w-[18px] text-secondary" />
-                    {vacante.whatsappExtra.texto}
-                  </a>
-                </li>
-              )
-            }
-          </ul>
-
-          <div class="mt-7 flex flex-wrap gap-4">
-            <a
-              class="btn btn-whatsapp"
-              href={`https://wa.me/${contactoEmpleo.whatsapp.numero}?text=${mensajeWhatsapp}`}
-              data-whatsapp-vacante="general"
-              target="_blank"
-              rel="noopener"
-            >
-              Escribir al {contactoEmpleo.whatsapp.texto}
-              <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
-            </a>
-            {
-              vacante.whatsappExtra && (
-                <a
-                  class="btn btn-secondary"
-                  href={`https://wa.me/${vacante.whatsappExtra.numero}?text=${mensajeWhatsapp}`}
-                  data-whatsapp-vacante="extra"
-                  target="_blank"
-                  rel="noopener"
-                >
-                  Escribir al {vacante.whatsappExtra.texto}
-                  <Icono nombre="whatsapp" class="h-[18px] w-[18px]" />
-                </a>
-              )
-            }
-            <a
-              class="btn btn-primary"
-              href={ruta(`/empleos/?cargo=${encodeURIComponent(vacante.cargo)}#postular`)}
-              data-postular-vacante
-            >
-              Postularme a esta vacante
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- OTRAS VACANTES -->
-  {
-    vacantes.length > 1 && (
-      <section class="section border-t border-line bg-fondo">
-        <div class="wrap">
-          <h2 class="mb-8 text-[24px] tablet:text-[30px]">Otras convocatorias abiertas</h2>
-          <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-3">
-            {vacantes
-              .filter((v) => v.slug !== vacante.slug)
-              .map((otra) => (
-                <a class="group glass-card block p-7" href={ruta(`/empleos/${otra.slug}/`)}>
-                  <p class="m-0 text-[12.5px] font-semibold tracking-[0.08em] text-accent-text uppercase">
-                    {otra.ciudad}
-                  </p>
-                  <h3 class="mt-2 mb-0 text-lg group-hover:text-secondary-dark">{otra.cargo}</h3>
-                  <p class="mt-3 mb-0 text-[14.5px] text-muted">{otra.resumen}</p>
-                </a>
-              ))}
-          </div>
-        </div>
-      </section>
-    )
-  }
-</BaseLayout>
-
-{/* Que convocatorias se leen y desde cuales se da el paso de postularse.
-    El nombre del cargo se toma del marcado (data-vacante), que es lo unico
-    que este script comparte con la pagina. */}
-<script>
-  import { registrarEvento } from '../../lib/analitica';
-
-  const vacante = document.querySelector<HTMLElement>('[data-vacante]')?.dataset.vacante ?? '';
-
-  if (vacante) {
-    registrarEvento('vacante_ver', { vacante });
-
-    document.querySelector('[data-postular-vacante]')?.addEventListener('click', () => {
-      registrarEvento('vacante_postular', { vacante });
-    });
-
-    /*
-     * Evento `contacto_vacante`: escribir por WhatsApp preguntando por esta
-     * convocatoria. Es un camino distinto al de `vacante_postular`, que lleva
-     * al formulario con la hoja de vida: aqui la persona prefiere preguntar
-     * antes. `linea` separa el numero general del propio de la vacante, cuando
-     * la convocatoria trae uno aparte.
-     */
-    document.querySelectorAll<HTMLElement>('[data-whatsapp-vacante]').forEach((boton) => {
-      boton.addEventListener('click', () => {
-        registrarEvento('contacto_vacante', {
-          vacante,
-          linea: boton.dataset.whatsappVacante ?? 'general',
-        });
-      });
-    });
-  }
-</script>
+{vacante ? <VacanteDetalle vacante={vacante} vacantes={vacantes} /> : <VacanteCerrada />}

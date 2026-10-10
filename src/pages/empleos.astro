@@ -6,11 +6,14 @@ import Icono from '../components/Icono.astro';
 import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
 import { contactoEmpleo } from '../data/vacantes';
-import { cargarVacantes } from '../lib/empleos/vacantes-fuente';
+import { cargarVacantes, urlVacantes } from '../lib/empleos/vacantes-fuente';
 
 /**
- * Las vacantes las publica Talento Humano en Control360 y se leen en el build
- * (C360_VACANTES_URL); si no se pueden leer, salen de src/data/vacantes.ts.
+ * Las vacantes las publica Talento Humano en Control360 (C360_VACANTES_URL); si
+ * no se pueden leer, salen de src/data/vacantes.ts. En Vercel esta página va
+ * con ISR y se regenera en segundos cuando Control360 avisa (o a los 5 minutos,
+ * si el aviso se pierde); en GitHub Pages se arma en el build. Ver
+ * src/lib/empleos/isr.mjs.
  * Ver src/lib/empleos/vacantes-fuente.ts. La misma lista la usan la página de
  * detalle (/empleos/<slug>/), el formulario y /api/empleos/vacantes.json.
  *
@@ -19,6 +22,10 @@ import { cargarVacantes } from '../lib/empleos/vacantes-fuente';
  * el nombre del cargo para que la rejilla no se vea rota.
  */
 const { vacantes } = await cargarVacantes();
+// Respaldo en el navegador: la URL PÚBLICA de Control360 (sin secreto), para
+// que src/lib/empleos/vacantes-vivas.ts esconda una tarjeta que se cerró
+// después de generar esta copia. Sin la variable no hay respaldo.
+const urlVivas = urlVacantes() ?? undefined;
 const tarjetas = vacantes.map((vacante) => ({
   ...vacante,
   ...imagenOMarcador(vacante.imagen, vacante.cargo, 800, 600),
@@ -69,9 +76,13 @@ const proceso = [
             formulario de abajo y te contactamos cuando se abra un proceso.
           </p>
         ) : (
-          <div class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-3" data-revelar-grupo>
+          <div
+            class="grid grid-cols-1 gap-6 mob:grid-cols-2 tablet:grid-cols-3"
+            data-revelar-grupo
+            data-vacantes-vivas={urlVivas}
+          >
             {tarjetas.map((vacante) => (
-              <article class="group glass-card flex flex-col overflow-hidden">
+              <article class="group glass-card flex flex-col overflow-hidden" data-vacante-slug={vacante.slug}>
                 <a
                   href={ruta(`/empleos/${vacante.slug}/`)}
                   class="block overflow-hidden bg-primary-soft"
@@ -210,6 +221,11 @@ const proceso = [
 
 <script>
   import { registrarEvento } from '../lib/analitica';
+  import { esconderVacantesCerradas } from '../lib/empleos/vacantes-vivas';
+
+  // Defensa en profundidad: si esta copia de la página quedó vieja (el aviso de
+  // Control360 no llegó), se esconden las tarjetas que ya se cerraron.
+  void esconderVacantesCerradas();
 
   const select = () => document.getElementById('cargo-empleo') as HTMLSelectElement | null;
 

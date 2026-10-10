@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ruta } from '../lib/rutas';
+
+/**
+ * Lo que ve quien abre /empleos/<slug>/ de una vacante que ya no está abierta:
+ * un enlace viejo de WhatsApp, de Facebook o de Google. En vez de un error, le
+ * decimos que la convocatoria se cerró, lo llevamos a las que siguen abiertas y
+ * lo invitamos a dejar su hoja de vida (el formulario admite la opción
+ * espontánea). La página responde 404 para que los buscadores la olviden.
+ */
+---
+
+<BaseLayout
+  title="Esta vacante ya se cerró — Empleos en Distribuciones Santiago de Tunja"
+  description="Esta convocatoria ya no está abierta. Mira las vacantes vigentes o déjanos tu hoja de vida."
+>
+  <section class="py-24">
+    <div class="wrap">
+      <div class="max-w-[60ch]" data-vacante-cerrada>
+        <span class="kicker">Empleos</span>
+        <h1 class="text-[34px] mob:text-[44px]">Esta vacante ya se cerró</h1>
+        <p class="mt-4 text-lg text-muted">
+          Gracias por tu interés. Esta convocatoria ya no recibe postulaciones, pero puede que
+          tengamos otras abiertas que te sirvan.
+        </p>
+        <p class="mt-4 text-muted">
+          Si no ves una a tu medida, déjanos tu hoja de vida en el formulario de la página de
+          empleos: la guardamos y te contactamos cuando se abra un proceso que encaje contigo.
+        </p>
+
+        <div class="mt-10 flex flex-wrap gap-4">
+          <a class="btn btn-primary" href={ruta('/empleos/')}>Ver vacantes abiertas</a>
+          <a class="btn btn-secondary" href={ruta('/empleos/#postular')}>Dejar mi hoja de vida</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import vercel from '@astrojs/vercel';
+import { configIsr, prerenderDe, tokenIsr, VARIABLE_TOKEN_ISR } from './src/lib/empleos/isr.mjs';
 
 // ---------------------------------------------------------------------------
 // DOS DESTINOS DE PUBLICACION, DOS `site`/`base` DISTINTOS
@@ -26,8 +27,16 @@ import vercel from '@astrojs/vercel';
 // todas las paginas a HTML en el build. Lo unico que corre como funcion son
 // las rutas que se marcan a mano con `export const prerender = false`, que hoy
 // son las de src/pages/api/pqrs/ (radicacion de PQRS, tokens de subida y
-// limpieza). Esas funciones solo existen en Vercel; en GitHub Pages no hay
-// backend y el formulario de PQRS no radica.
+// limpieza) y las de src/pages/api/empleos/. Esas funciones solo existen en
+// Vercel; en GitHub Pages no hay backend y el formulario de PQRS no radica.
+//
+// EXCEPCION: LAS PAGINAS DE EMPLEOS EN VERCEL VAN CON ISR. /empleos/,
+// /empleos/<slug>/ y /api/empleos/vacantes.json leen las vacantes de
+// Control360, y Talento Humano las cambia cuando quiere. En Vercel se sirven
+// desde la cache como si fueran estaticas, pero se regeneran en segundos cuando
+// Control360 avisa (POST /api/empleos/revalidar) y, si el aviso se pierde, a
+// los 5 minutos. Fuera de Vercel se siguen prerenderizando. Detalle y razones
+// en src/lib/empleos/isr.mjs.
 //
 // Ninguna ruta interna se escribe a mano: todas pasan por ruta() de
 // src/lib/rutas.ts o por import.meta.env.BASE_URL, que Astro recalcula a
@@ -48,12 +57,58 @@ const BASE_GITHUB_PAGES = '/proyecto_paginaWeb';
 /** Vercel define VERCEL='1' en todos sus builds (produccion y preview). */
 const enVercel = Boolean(process.env.VERCEL);
 
+/**
+ * Decide `prerender` de las paginas de empleos segun el destino: bajo demanda
+ * (ISR) en Vercel, estaticas en GitHub Pages. El resto de rutas no se toca.
+ * Tambien marca el proceso de build para que las vacantes se lean UNA vez por
+ * compilacion (ver cargarVacantes en src/lib/empleos/vacantes-fuente.ts).
+ * @type {import('astro').AstroIntegration}
+ */
+const empleosIsr = {
+  name: 'dstunja-empleos-isr',
+  hooks: {
+    'astro:route:setup': ({ route }) => {
+      // Astro ya entrega `component` con `/` en todos los sistemas operativos.
+      const prerender = prerenderDe(route.component, enVercel);
+      if (prerender !== undefined) route.prerender = prerender;
+    },
+    'astro:build:start': ({ logger }) => {
+      process.env.EMPLEOS_LECTURA_UNICA = '1';
+      if (enVercel && !tokenIsr(process.env)) {
+        logger.warn(
+          `${VARIABLE_TOKEN_ISR} no esta definida (o tiene menos de 32 caracteres): las paginas de empleos se ` +
+            'actualizan solo cada 5 minutos y /api/empleos/revalidar responde 503.',
+        );
+      }
+    },
+  },
+};
+
 export default defineConfig({
   site: enVercel ? SITIO_VERCEL : SITIO_GITHUB_PAGES,
   base: enVercel ? undefined : BASE_GITHUB_PAGES,
   output: 'static',
-  adapter: vercel(),
-  integrations: [sitemap()],
+  // `isr` solo tiene efecto sobre las rutas bajo demanda; las prerenderizadas
+  // siguen siendo archivos. Fuera de Vercel no hay rutas de empleos bajo
+  // demanda, asi que da igual, pero se deja apagado para que quede claro.
+  adapter: vercel({ isr: enVercel ? configIsr(process.env) : false }),
+  // El sitemap solo ve las paginas prerenderizadas. En Vercel las de empleos van
+  // con ISR, asi que tienen su propio sitemap, tambien con ISR
+  // (src/pages/sitemap-empleos.xml.ts): /empleos/ y cada vacante abierta, al dia
+  // con Control360. sitemap-index.xml lo incluye con `customSitemaps`. En GitHub
+  // Pages las paginas de empleos son estaticas y ya entran en sitemap-0.xml.
+  integrations: [
+    empleosIsr,
+    sitemap(
+      enVercel
+        ? {
+            customSitemaps: [`${SITIO_VERCEL}/sitemap-empleos.xml`],
+            // /empleos/ ya va en sitemap-empleos.xml: aqui no se repite.
+            filter: (pagina) => pagina !== `${SITIO_VERCEL}/empleos/`,
+          }
+        : {},
+    ),
+  ],
   // Los comentarios HTML de las plantillas NO se publican: los quita
   // src/middleware.ts al generar cada pagina. Astro no tiene opcion para eso.
   vite: {
