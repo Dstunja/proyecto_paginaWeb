@@ -1,5 +1,5 @@
 // Generado a partir del deck "MASIVO 1.0 – 18/08/2026" (Nutresa).
-// Los PSP provienen del mismo deck; ver productos_revision.csv. Los combos promocionales
+// Los PSP provienen del mismo deck; ver productos_revision.csv en el historial de git. Los combos promocionales
 // (referencias "CMU") quedaron fuera a propósito: son mecánicas internas con vigencia.
 //
 // PENDIENTE DE CONFIRMAR CON EL ASESOR COMERCIAL — Gomas Bénet.
@@ -89,7 +89,7 @@ export interface Producto {
    * Solo lo tienen las referencias cuya página declara un PSP explícito. Las
    * demás quedan sin el campo y la tarjeta no muestra precio: el deck trae
    * para ellas precios de lista, que son información interna y no se guardan
-   * en el repositorio (ver productos_revision.csv para el detalle por
+   * en el repositorio (ver productos_revision.csv en el historial de git para el detalle por
    * referencia).
    */
   precio?: number;
