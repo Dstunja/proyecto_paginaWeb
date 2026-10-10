@@ -111,7 +111,7 @@ const proceso = [
                     {vacante.ciudad} · {vacante.tipo}
                   </p>
                   <h3 class="mt-2 mb-0 text-lg">
-                    <a class="hover:text-secondary-dark" href={ruta(`/empleos/${vacante.slug}/`)}>
+                    <a class="inline-flex min-h-11 items-center hover:text-secondary-dark" href={ruta(`/empleos/${vacante.slug}/`)}>
                       {vacante.cargo}
                     </a>
                   </h3>
@@ -135,16 +135,17 @@ const proceso = [
                     )
                   }
 
-                  <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 pt-1">
+                  {/* `min-h-11`: 44 px de zona táctil en cada enlace (D6). */}
+                  <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-1 pt-1">
                     <a
-                      class="group/enlace inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-secondary-dark"
+                      class="group/enlace inline-flex min-h-11 items-center gap-1.5 text-[14.5px] font-semibold text-secondary-dark"
                       href={ruta(`/empleos/${vacante.slug}/`)}
                     >
                       Ver detalle
                       <Icono nombre="arrow-right" class="h-4 w-4" />
                     </a>
                     <a
-                      class="text-[14.5px] font-semibold text-muted underline transition-colors duration-200 hover:text-primary"
+                      class="inline-flex min-h-11 items-center text-[14.5px] font-semibold text-muted underline transition-colors duration-200 hover:text-primary"
                       href="#postular"
                       data-postular={vacante.cargo}
                     >

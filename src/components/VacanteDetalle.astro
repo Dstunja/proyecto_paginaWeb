@@ -81,7 +81,7 @@ const ogFlyer = esMarcador ? undefined : new URL(imagenOriginal, sitio).href;
   <section class="border-b border-line bg-fondo pt-14 pb-12" data-vacante={vacante.cargo}>
     <div class="wrap">
       <a
-        class="group mb-6 inline-flex items-center gap-2 text-[14.5px] font-semibold text-secondary-dark"
+        class="group mb-6 inline-flex min-h-11 items-center gap-2 text-[14.5px] font-semibold text-secondary-dark"
         href={ruta('/empleos/')}
       >
         <Icono nombre="arrow-right" class="h-4 w-4 rotate-180" />
@@ -215,10 +215,10 @@ const ogFlyer = esMarcador ? undefined : new URL(imagenOriginal, sitio).href;
 
         <div class="mt-12 rounded-card border border-line bg-fondo p-7">
           <h2 class="text-[20px]">Contacto</h2>
-          <ul class="mt-4 flex list-none flex-col gap-3 p-0">
+          <ul class="mt-4 flex list-none flex-col gap-1 p-0">
             <li>
               <a
-                class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
+                class="group inline-flex min-h-11 items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
                 href={`mailto:${contactoEmpleo.email}?subject=${asuntoCorreo}`}
               >
                 <Icono nombre="mail" class="h-[18px] w-[18px] text-secondary" />
@@ -227,7 +227,7 @@ const ogFlyer = esMarcador ? undefined : new URL(imagenOriginal, sitio).href;
             </li>
             <li>
               <a
-                class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
+                class="group inline-flex min-h-11 items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
                 href={`tel:+${contactoEmpleo.whatsapp.numero}`}
               >
                 <Icono nombre="phone" class="h-[18px] w-[18px] text-secondary" />
@@ -238,7 +238,7 @@ const ogFlyer = esMarcador ? undefined : new URL(imagenOriginal, sitio).href;
               vacante.whatsappExtra && (
                 <li>
                   <a
-                    class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
+                    class="group inline-flex min-h-11 items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
                     href={`tel:+${vacante.whatsappExtra.numero}`}
                   >
                     <Icono nombre="phone" class="h-[18px] w-[18px] text-secondary" />
