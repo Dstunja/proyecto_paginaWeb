@@ -1,7 +1,26 @@
 /**
  * Reseñas de clientes que se muestran en el inicio (componente Resenas.astro).
  *
- * Hoy los datos son LOCALES: se editan a mano en este archivo. La forma de
+ * HOY NO HAY RESEÑAS CARGADAS, y a propósito: hasta octubre de 2026 aquí
+ * había cuatro testimonios con nombres inventados y una calificación de
+ * ejemplo (4,8 · 34) presentados como "Reseñas reales en Google". Eso es
+ * publicidad engañosa y se retiró (auditoría, hallazgo D2). Mientras
+ * `resenas` esté vacío y `resumenResenas` no traiga promedio ni total, el
+ * inicio muestra solo un botón "Ver nuestras reseñas en Google" que lleva a la
+ * ficha real del negocio (por su Place ID, src/data/site.ts).
+ *
+ * NUNCA cargar aquí reseñas de ejemplo ni cifras aproximadas. Solo opiniones
+ * reales, copiadas tal cual de la ficha de Google (o traídas por la API), con
+ * su autor, y el promedio y total exactos que muestra Google ese día.
+ *
+ * Cómo cargar reseñas reales A MANO, sin API: abrir la ficha de Google Maps,
+ * copiar en `resenas` el nombre del autor, las estrellas, el texto sin editar
+ * y la antigüedad ("hace 2 meses"); poner en `url` el enlace a la reseña; y
+ * llenar `promedio` y `total` en `resumenResenas`. Hay que refrescarlas con
+ * cada publicación (las reglas de Google no permiten guardarlas más de 30
+ * días), así que lo recomendable es la API (pasos de abajo).
+ *
+ * La forma de
  * cada reseña imita la que devuelve la API de Google Places, para que el día
  * que se conecte la cuenta de Google Cloud no haya que tocar el componente:
  * basta con reemplazar de dónde salen `resenas` y `resumenResenas`.
@@ -69,6 +88,8 @@
  *    un archivo hay que refrescarlo con cada publicación.
  */
 
+import { googlePlaceId } from './site';
+
 export interface Resena {
   /** Nombre del autor tal como lo publica Google (authorAttribution.displayName). */
   autor: string;
@@ -85,76 +106,32 @@ export interface Resena {
 }
 
 export interface ResumenResenas {
-  /** Promedio del negocio (rating). */
-  promedio: number;
-  /** Cuántas calificaciones hay en total (userRatingCount). */
-  total: number;
+  /** Promedio del negocio (rating). Sin dato real, se deja sin definir. */
+  promedio?: number;
+  /** Cuántas calificaciones hay en total (userRatingCount). Sin dato real, sin definir. */
+  total?: number;
   /** Ficha del negocio en Google Maps (googleMapsUri). */
   url: string;
 }
 
 /**
- * EDITAR AQUÍ: mientras no esté conectada la API, estas son reseñas de EJEMPLO
- * (no son opiniones reales de clientes). Reemplazarlas por reseñas reales con
- * autorización, o dejar que la API las sobrescriba.
+ * EDITAR AQUÍ: reseñas REALES de la ficha de Google, copiadas sin editar.
+ * Vacío = el inicio no muestra tarjetas de reseñas, solo el botón a la ficha.
  */
-export const resenas: Resena[] = [
-  {
-    autor: 'Luis Alberto Pineda',
-    foto: '',
-    url: '',
-    estrellas: 5,
-    texto:
-      'Llevo tres años pidiéndoles para la tienda y el camión nunca me ha fallado. El asesor pasa puntual cada semana y siempre resuelve.',
-    fecha: 'hace 2 meses',
-  },
-  {
-    autor: 'Yenny Rodríguez',
-    foto: '',
-    url: '',
-    estrellas: 5,
-    texto:
-      'Excelente surtido de Nutresa y precios que sí dejan margen. Me ayudaron a organizar la exhibición del negocio y se notó en las ventas.',
-    fecha: 'hace 4 meses',
-  },
-  {
-    autor: 'Carlos Fonseca',
-    foto: '',
-    url: '',
-    estrellas: 4,
-    texto:
-      'Muy buen servicio y entregas cumplidas en Duitama. A veces se agota algún producto de promoción, pero avisan a tiempo y lo reponen al pedido siguiente.',
-    fecha: 'hace 6 meses',
-  },
-  {
-    autor: 'Marisol Vargas',
-    foto: '',
-    url: '',
-    estrellas: 5,
-    texto:
-      'Pedí por WhatsApp y me despacharon el mismo día. Gente seria y muy amable, se nota la experiencia que tienen en la región.',
-    fecha: 'hace 8 meses',
-  },
-];
+export const resenas: Resena[] = [];
 
 /**
- * EDITAR AQUÍ: promedio y total de calificaciones del negocio en Google.
+ * EDITAR AQUÍ: promedio y total EXACTOS de la ficha de Google Maps.
  *
- * LOS DOS NÚMEROS DE ABAJO SON DE EJEMPLO Y HAY QUE REEMPLAZARLOS por el dato
- * real de la ficha de Google Maps del negocio. Desde que se quitó el testimonio
- * inventado del inicio, esta sección es el ÚNICO testimonio del sitio, y su
- * valor está justamente en que se puede ir a comprobar: una calificación que no
- * coincida con la ficha de Google la convierte en lo contrario.
+ * Mientras no se copien de la ficha (o lleguen de la API en `rating` y
+ * `userRatingCount`), van sin definir y el inicio no muestra ninguna cifra:
+ * una calificación que no coincida con la ficha de Google es peor que ninguna.
  *
- * Cómo obtenerlos a mano, sin API: abrir la ficha del negocio en Google Maps y
- * copiar la calificación (`promedio`) y el número de opiniones (`total`) tal
- * como aparecen ahí. Conviene revisarlos cada pocos meses.
- *
- * Cuando se conecte la API estos dos números llegan solos en `rating` y
- * `userRatingCount`; el enlace es el de la ficha en Google Maps.
+ * El enlace abre la ficha real del negocio por su Place ID (formato
+ * documentado de las "Maps URLs" de Google).
  */
 export const resumenResenas: ResumenResenas = {
-  promedio: 4.8,
-  total: 34,
-  url: 'https://www.google.com/maps/search/?api=1&query=Distribuciones%20Santiago%20de%20Tunja%2C%20Tunja%2C%20Boyac%C3%A1',
+  url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    'Distribuciones Santiago de Tunja',
+  )}&query_place_id=${googlePlaceId}`,
 };
