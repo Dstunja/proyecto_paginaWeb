@@ -23,6 +23,7 @@
  */
 import { titulosDePagina } from '../data/site';
 import { ruta } from '../lib/rutas';
+import { jsonLd, listaMigas } from '../lib/datos-estructurados';
 
 interface Props {
   /** Nombre legible de la página actual. Gana sobre `titulosDePagina`. */
@@ -44,6 +45,21 @@ if (!limpia.endsWith('/')) limpia = `${limpia}/`;
 
 const esInicio = limpia === '/';
 const nombre = titulo ?? titulosDePagina[limpia];
+
+// Las mismas migas como BreadcrumbList (schema.org), para que Google las
+// muestre en el resultado en vez de la URL.
+const datosMigas =
+  !esInicio && nombre
+    ? jsonLd(
+        listaMigas(
+          [
+            { nombre: 'Inicio', ruta: ruta('/') },
+            { nombre, ruta: ruta(limpia) },
+          ],
+          Astro.site ?? 'https://dstunja.com',
+        ),
+      )
+    : '';
 ---
 
 {
@@ -66,6 +82,7 @@ const nombre = titulo ?? titulosDePagina[limpia];
           {nombre}
         </li>
       </ol>
+      <script type="application/ld+json" set:html={datosMigas} is:inline />
     </nav>
   )
 }

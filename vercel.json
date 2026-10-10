@@ -18,6 +18,8 @@
     { "source": "/:viejo(contact|contact-us|contacto)/:resto*{/}?", "destination": "/contactanos/", "statusCode": 301 },
     { "source": "/:viejo(my-account|mi-cuenta|blog|portfolio|home-base|sample-page|pagina-ejemplo|feed|comments|category|categoria|tag|etiqueta|author|autor)/:resto*{/}?", "destination": "/", "statusCode": 301 },
     { "source": "/:anio(\\d{4})/:mes(\\d{2})/:resto*{/}?", "destination": "/", "statusCode": 301 },
+    { "source": "/:viejo(sitemap|sitemap_index|wp-sitemap)\\.xml", "destination": "/sitemap-index.xml", "statusCode": 301 },
+    { "source": "/:viejo([a-z_]+-sitemap\\d*|wp-sitemap-[a-z0-9_-]+)\\.xml", "destination": "/sitemap-index.xml", "statusCode": 301 },
     { "source": "/empleos", "destination": "/empleos/", "statusCode": 301 },
     { "source": "/empleos/:slug([a-z0-9-]+)", "destination": "/empleos/:slug/", "statusCode": 301 }
   ],

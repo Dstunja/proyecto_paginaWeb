@@ -16,7 +16,7 @@ import coordenadas from './coordenadas.json';
  * El respaldo repite el de src/data/municipios.ts: si la entrada desaparece,
  * el enlace sigue apuntando al centro de Tunja en vez de romperse.
  */
-const SEDE = coordenadas.__sede__ ?? { lat: 5.5353, lng: -73.3678 };
+export const SEDE = coordenadas.__sede__ ?? { lat: 5.5353, lng: -73.3678 };
 
 /**
  * Place ID de la ficha de la empresa en Google Maps. Es un identificador
@@ -29,6 +29,8 @@ export const empresa = {
   nombre: 'Distribuciones Santiago de Tunja',
   razonSocial: 'Distribuciones Santiago de Tunja S.A.S.',
   sigla: 'DST',
+  /** NIT con dígito de verificación (el mismo de la autorización de datos). */
+  nit: '900417808-1',
   descripcion:
     'Distribuidores líderes del departamento de Boyacá, Cundinamarca y Santander. Calidad y cumplimiento en cada entrega.',
   /**
@@ -59,6 +61,32 @@ export const empresa = {
    */
   escribirResenaUrl: `https://search.google.com/local/writereview?placeid=${googlePlaceId}`,
 } as const;
+
+/**
+ * Horario de atención de la sede. Lo muestra Contáctanos y lo declaran los
+ * datos estructurados de la empresa (BaseLayout.astro), así que se escribe una
+ * sola vez. `dias`, `abre` y `cierra` son para schema.org (días en inglés y
+ * horas de 24 h); una fila sin ellos (cerrado) no se declara.
+ *
+ * EDITAR AQUÍ: horario real de atención.
+ */
+export const horario: readonly {
+  dia: string;
+  horas: string;
+  dias?: readonly string[];
+  abre?: string;
+  cierra?: string;
+}[] = [
+  {
+    dia: 'Lunes a viernes',
+    horas: '7:30 a. m. – 5:30 p. m.',
+    dias: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    abre: '07:30',
+    cierra: '17:30',
+  },
+  { dia: 'Sábados', horas: '8:00 a. m. – 12:00 m.', dias: ['Saturday'], abre: '08:00', cierra: '12:00' },
+  { dia: 'Domingos y festivos', horas: 'Cerrado' },
+];
 
 /**
  * Redes sociales de la empresa, en el orden en que salen en el pie.

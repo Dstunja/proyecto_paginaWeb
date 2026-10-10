@@ -27,42 +27,35 @@ import AnaliticaEnlaces from '../components/AnaliticaEnlaces.astro';
 // el mismo dominio (/_vercel/insights/script.js), así que la CSP no cambia.
 // Ver docs/ANALITICA.md.
 import Analytics from '@vercel/analytics/astro';
-import { empresa, redes } from '../data/site';
+import { empresa } from '../data/site';
+import { jsonLd, organizacion } from '../lib/datos-estructurados';
 
 interface Props {
   title: string;
   description: string;
-  /** Imagen Open Graph relativa a la raíz del sitio. */
+  /**
+   * Imagen Open Graph: relativa a la raíz del sitio (archivo de public/) o una
+   * URL absoluta (el flyer de una vacante, que vive en Control360).
+   */
   ogImage?: string;
+  /** Texto alternativo de la imagen Open Graph, si no es la genérica. */
+  ogImageAlt?: string;
 }
 
-const { title, description, ogImage = '/og.png' } = Astro.props;
+const { title, description, ogImage = '/og.png', ogImageAlt } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const base = import.meta.env.BASE_URL;
 const publico = (archivo: string) => `${base}${base.endsWith('/') ? '' : '/'}${archivo}`;
-const ogUrl = new URL(publico(ogImage.replace(/^\//, '')), Astro.site).href;
+const ogExterna = /^https?:\/\//i.test(ogImage);
+const ogUrl = ogExterna ? ogImage : new URL(publico(ogImage.replace(/^\//, '')), Astro.site).href;
+// Las medidas solo se declaran para la imagen genérica (og.png, 1200×630):
+// de un flyer externo no se conocen.
+const ogGenerica = ogImage === '/og.png';
 
-// Datos estructurados: ayudan a que Google muestre la ficha del negocio.
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'LocalBusiness',
-  name: empresa.razonSocial,
-  alternateName: empresa.nombre,
-  description: empresa.descripcion,
-  url: new URL(base, Astro.site).href,
-  telephone: empresa.telefonoE164,
-  email: empresa.email,
-  address: {
-    '@type': 'PostalAddress',
-    streetAddress: empresa.direccion,
-    addressLocality: empresa.ciudad,
-    addressRegion: empresa.departamento,
-    addressCountry: empresa.pais,
-  },
-  areaServed: ['Boyacá', 'Santander', 'Cundinamarca'],
-  sameAs: redes.map((r) => r.url),
-};
+// Datos estructurados de la empresa (LocalBusiness): dirección, coordenadas,
+// horario, NIT, fundación, logo. Ver src/lib/datos-estructurados.ts.
+const datosEmpresa = jsonLd(organizacion(Astro.site ?? 'https://dstunja.com', base));
 ---
 
 <!doctype html>
@@ -78,6 +71,7 @@ const jsonLd = {
 
     <link rel="icon" href={publico('favicon.ico')} sizes="any" />
     <link rel="apple-touch-icon" href={publico('apple-touch-icon.png')} />
+    <link rel="manifest" href={publico('site.webmanifest')} />
     <link rel="sitemap" href={publico('sitemap-index.xml')} />
 
     <meta property="og:type" content="website" />
@@ -87,14 +81,17 @@ const jsonLd = {
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogUrl} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    {ogGenerica && <meta property="og:image:width" content="1200" />}
+    {ogGenerica && <meta property="og:image:height" content="630" />}
+    {ogImageAlt && <meta property="og:image:alt" content={ogImageAlt} />}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogUrl} />
 
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+    <script type="application/ld+json" set:html={datosEmpresa} is:inline />
+    {/* Datos estructurados propios de la página (migas, JobPosting…). */}
+    <slot name="head" />
 
     {/*
       Interruptor del revelado al hacer scroll (ver src/lib/revelado.ts).

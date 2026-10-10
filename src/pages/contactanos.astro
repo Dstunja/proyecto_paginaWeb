@@ -5,16 +5,12 @@ import PageHero from '../components/PageHero.astro';
 import MapaCobertura from '../components/MapaCobertura.astro';
 import FormularioMailto from '../components/FormularioMailto.astro';
 import Icono from '../components/Icono.astro';
-import { empresa } from '../data/site';
+import { empresa, horario } from '../data/site';
 import { MENSAJE_PEDIDO, enlacePedido } from '../lib/whatsapp-pedido';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
-// EDITAR AQUÍ: horario real de atención.
-const horario = [
-  { dia: 'Lunes a viernes', horas: '7:30 a. m. – 5:30 p. m.' },
-  { dia: 'Sábados', horas: '8:00 a. m. – 12:00 m.' },
-  { dia: 'Domingos y festivos', horas: 'Cerrado' },
-];
+// El horario de atención vive en src/data/site.ts (`horario`): lo usan esta
+// página y los datos estructurados de la empresa.
 
 // Antes había una tarjeta aparte de Televentas, con una fila por asesora.
 // Televentas dejó de existir como área, así que WhatsApp es ahora un canal más

@@ -71,6 +71,13 @@ export interface Vacante {
    * Solo la usa el sitemap de empleos como `lastmod`; sin ella no se inventa.
    */
   actualizada?: string;
+  /**
+   * Cuándo se publicó (fecha ISO), si Control360 la manda. Es el `datePosted`
+   * de Google Empleos (src/lib/empleos/job-posting.ts).
+   */
+  publicada?: string;
+  /** Hasta cuándo recibe postulaciones (fecha ISO), si Control360 la manda. */
+  vence?: string;
 }
 
 /**
