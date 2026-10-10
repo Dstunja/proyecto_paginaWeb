@@ -16,5 +16,7 @@
 
 User-agent: *
 Allow: /
+# Las funciones (PQRS, postulaciones, crons, JSON de vacantes) no son páginas.
+Disallow: /api/
 
 Sitemap: https://dstunja.com/sitemap-index.xml

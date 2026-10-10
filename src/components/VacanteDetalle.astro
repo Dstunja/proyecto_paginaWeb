@@ -3,6 +3,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Icono from './Icono.astro';
 import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
+import { atributosFlyer } from '../lib/empleos/flyer.mjs';
+import { jobPosting } from '../lib/empleos/job-posting';
+import { jsonLd, listaMigas } from '../lib/datos-estructurados';
 import { contactoEmpleo, type Vacante } from '../data/vacantes';
 
 /**
@@ -25,24 +28,60 @@ const { vacante, vacantes } = Astro.props;
 // El flyer lo sube Talento Humano en Control360 (llega como URL); si la
 // vacante no tiene, se busca en public/img/empleos/ (lista estática) y, si
 // tampoco, sale el marcador de posición.
-const { src: imagen, esMarcador } = imagenOMarcador(vacante.imagen, vacante.cargo, 900, 1200);
+const { src: imagenOriginal, esMarcador } = imagenOMarcador(vacante.imagen, vacante.cargo, 900, 1200);
+// En Vercel el flyer de Control360 pasa por /_vercel/image (AVIF/WebP al ancho
+// justo). Ver src/lib/empleos/flyer.mjs.
+const { src: imagen, srcset: srcsetImagen } = atributosFlyer(imagenOriginal, {
+  enVercel: Boolean(process.env.VERCEL),
+});
 
 const mensajeWhatsapp = encodeURIComponent(
   `Hola, vi la convocatoria de "${vacante.cargo}" en la página y me interesa postularme.`,
 );
 
 const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
+
+// Datos estructurados: la ficha de Google Empleos (no sale en "Buscamos
+// vehículos", que no es un empleo) y las migas Inicio › Empleos › cargo.
+const sitio = Astro.site ?? 'https://dstunja.com';
+const urlVacante = new URL(ruta(`/empleos/${vacante.slug}/`), sitio).href;
+const fichaEmpleo = jobPosting(vacante, {
+  url: urlVacante,
+  logo: new URL(ruta('/logo-distribuciones.png'), sitio).href,
+});
+const datosEmpleo = fichaEmpleo ? jsonLd(fichaEmpleo) : '';
+const datosMigas = jsonLd(
+  listaMigas(
+    [
+      { nombre: 'Inicio', ruta: ruta('/') },
+      { nombre: 'Empleos', ruta: ruta('/empleos/') },
+      { nombre: vacante.cargo, ruta: ruta(`/empleos/${vacante.slug}/`) },
+    ],
+    sitio,
+  ),
+);
+
+// Al compartir el enlace (WhatsApp, Facebook) se ve el flyer, no la imagen
+// genérica. Siempre absoluta y la original (no la del optimizador): los
+// rastreadores de redes no resuelven rutas relativas. Con marcador, la genérica.
+const ogFlyer = esMarcador ? undefined : new URL(imagenOriginal, sitio).href;
 ---
 
 <BaseLayout
   title={`${vacante.cargo} — Empleos en Distribuciones Santiago de Tunja`}
   description={vacante.resumen}
+  ogImage={ogFlyer}
+  ogImageAlt={ogFlyer ? `Convocatoria: ${vacante.cargo}` : undefined}
 >
+  <Fragment slot="head">
+    {datosEmpleo && <script type="application/ld+json" set:html={datosEmpleo} is:inline />}
+    <script type="application/ld+json" set:html={datosMigas} is:inline />
+  </Fragment>
   <!-- ENCABEZADO -->
   <section class="border-b border-line bg-fondo pt-14 pb-12" data-vacante={vacante.cargo}>
     <div class="wrap">
       <a
-        class="group mb-6 inline-flex items-center gap-2 text-[14.5px] font-semibold text-secondary-dark"
+        class="group mb-6 inline-flex min-h-11 items-center gap-2 text-[14.5px] font-semibold text-secondary-dark"
         href={ruta('/empleos/')}
       >
         <Icono nombre="arrow-right" class="h-4 w-4 rotate-180" />
@@ -85,11 +124,20 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
   <section class="section">
     <div class="wrap grid grid-cols-1 items-start gap-12 tablet:grid-cols-[.95fr_1.05fr]">
       <figure class="glass-card m-0 overflow-hidden p-3">
+        {/* Es lo más grande de la página (el LCP): carga ansiosa y con
+            prioridad. El ancho/alto reservan el hueco (proporción típica de
+            flyer, 3:4); `h-auto` deja que mande la proporción real al cargar. */}
         <img
           src={imagen}
+          srcset={srcsetImagen}
+          sizes={srcsetImagen ? '(min-width: 900px) 45vw, calc(100vw - 56px)' : undefined}
           alt={`Convocatoria: ${vacante.cargo}`}
+          width="900"
+          height="1200"
           loading="eager"
-          class="w-full rounded-[12px] bg-primary-soft object-contain"
+          fetchpriority="high"
+          decoding="async"
+          class="h-auto w-full rounded-[12px] bg-primary-soft object-contain"
         />
         {
           esMarcador && (
@@ -167,10 +215,10 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
 
         <div class="mt-12 rounded-card border border-line bg-fondo p-7">
           <h2 class="text-[20px]">Contacto</h2>
-          <ul class="mt-4 flex list-none flex-col gap-3 p-0">
+          <ul class="mt-4 flex list-none flex-col gap-1 p-0">
             <li>
               <a
-                class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
+                class="group inline-flex min-h-11 items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
                 href={`mailto:${contactoEmpleo.email}?subject=${asuntoCorreo}`}
               >
                 <Icono nombre="mail" class="h-[18px] w-[18px] text-secondary" />
@@ -179,7 +227,7 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
             </li>
             <li>
               <a
-                class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
+                class="group inline-flex min-h-11 items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
                 href={`tel:+${contactoEmpleo.whatsapp.numero}`}
               >
                 <Icono nombre="phone" class="h-[18px] w-[18px] text-secondary" />
@@ -190,7 +238,7 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
               vacante.whatsappExtra && (
                 <li>
                   <a
-                    class="group inline-flex items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
+                    class="group inline-flex min-h-11 items-center gap-2.5 text-[15px] font-medium text-ink transition-colors duration-200 hover:text-secondary-dark"
                     href={`tel:+${vacante.whatsappExtra.numero}`}
                   >
                     <Icono nombre="phone" class="h-[18px] w-[18px] text-secondary" />

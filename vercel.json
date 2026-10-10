@@ -4,6 +4,10 @@
     {
       "path": "/api/pqrs/limpieza",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/empleos/limpieza",
+      "schedule": "0 8 * * *"
     }
   ],
   "redirects": [
@@ -14,16 +18,24 @@
     { "source": "/:viejo(contact|contact-us|contacto)/:resto*{/}?", "destination": "/contactanos/", "statusCode": 301 },
     { "source": "/:viejo(my-account|mi-cuenta|blog|portfolio|home-base|sample-page|pagina-ejemplo|feed|comments|category|categoria|tag|etiqueta|author|autor)/:resto*{/}?", "destination": "/", "statusCode": 301 },
     { "source": "/:anio(\\d{4})/:mes(\\d{2})/:resto*{/}?", "destination": "/", "statusCode": 301 },
+    { "source": "/:viejo(sitemap|sitemap_index|wp-sitemap)\\.xml", "destination": "/sitemap-index.xml", "statusCode": 301 },
+    { "source": "/:viejo([a-z_]+-sitemap\\d*|wp-sitemap-[a-z0-9_-]+)\\.xml", "destination": "/sitemap-index.xml", "statusCode": 301 },
     { "source": "/empleos", "destination": "/empleos/", "statusCode": 301 },
     { "source": "/empleos/:slug([a-z0-9-]+)", "destination": "/empleos/:slug/", "statusCode": 301 }
   ],
   "headers": [
     {
+      "source": "/_astro/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://txefdbdnaactqjaxygzb.supabase.co https://*.tile.openstreetmap.fr https://placehold.co https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self'; connect-src 'self' https://control360app.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://vercel.com https://*.blob.vercel-storage.com; frame-src https://challenges.cloudflare.com https://www.googletagmanager.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://txefdbdnaactqjaxygzb.supabase.co https://*.tile.openstreetmap.fr https://placehold.co; font-src 'self'; connect-src 'self' https://control360app.com https://vercel.com https://*.blob.vercel-storage.com; frame-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
         },
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },

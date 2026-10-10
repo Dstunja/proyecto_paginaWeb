@@ -5,7 +5,7 @@
 # compila el sitio. Si algo falla, el PR queda marcado en rojo antes de que el
 # cambio llegue a Vercel (que despliega solo con cada push a main).
 #
-# No publica nada: el espejo de GitHub Pages sigue en deploy.yml.
+# No publica nada: el único destino es Vercel, que despliega solo.
 name: CI
 
 on:
@@ -46,6 +46,6 @@ jobs:
         run: npx astro check
 
       # Sin variables de entorno: el build no debe depender de secretos. Las
-      # vacantes caen a src/data/vacantes.ts y el sitio sale sin analítica.
+      # vacantes caen a src/data/vacantes.ts.
       - name: Compilar
         run: npm run build

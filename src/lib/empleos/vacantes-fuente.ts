@@ -143,6 +143,10 @@ export function leerVacantesRemotas(
     // Fecha del último cambio, si Control360 la manda (para el sitemap). Solo
     // se acepta una fecha ISO real; lo demás se ignora.
     const actualizada = fechaIso(o.actualizada);
+    // Publicación y cierre, para Google Empleos (JobPosting). Hoy Control360
+    // no las manda; se aceptan con los nombres más probables.
+    const publicada = fechaIso(o.publicada ?? o.creada ?? o.fechaPublicacion);
+    const vence = fechaIso(o.vence ?? o.validThrough ?? o.cierre);
     salida.push({
       slug,
       cargo,
@@ -160,6 +164,8 @@ export function leerVacantesRemotas(
       ...(salario ? { salario } : {}),
       ...(jornada ? { jornada } : {}),
       ...(actualizada ? { actualizada } : {}),
+      ...(publicada ? { publicada } : {}),
+      ...(vence ? { vence } : {}),
     });
   }
   // Lista vacía de verdad = RRHH no tiene nada publicado, y así se muestra.

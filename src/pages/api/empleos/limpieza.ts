@@ -2,13 +2,11 @@
  * GET /api/empleos/limpieza — borra las hojas de vida guardadas que pasaron del
  * plazo de conservación.
  *
- * ESTE CRON TODAVÍA NO ESTÁ DECLARADO EN vercel.json, a propósito. La ruta
- * existe y funciona, pero nadie la llama: se activa cuando se apruebe el plazo,
- * añadiendo el bloque que está documentado en docs/EMPLEOS-POSTULACION.md. Y
- * aunque se llame, mientras `EMPLEOS_RETENCION_ACTIVA` no valga `'1'` solo hace
- * un simulacro y no borra nada (ver src/lib/empleos/retencion.ts). Son dos
- * cerrojos para lo mismo: un borrado irreversible de datos personales no se
- * enciende solo.
+ * Lo llama a diario el cron declarado en vercel.json (08:00 UTC). Mientras
+ * `EMPLEOS_RETENCION_ACTIVA` no valga `'1'` solo hace un SIMULACRO y no borra
+ * nada (ver src/lib/empleos/retencion.ts): el registro dice cuántas habrían
+ * caducado. Un borrado irreversible de datos personales no se enciende solo:
+ * hay que aprobar el plazo y poner esa variable a mano.
  *
  * QUÉ BORRA. Solo lo que hay bajo `empleos/`, que son las postulaciones cuyo
  * correo a Talento Humano no salió y se pusieron a salvo. En el camino normal
@@ -16,11 +14,13 @@
  * `pqrs/`: de eso se encarga /api/pqrs/limpieza, que tiene su propio plazo y su
  * propia razón (soportes subidos y nunca radicados, 24 horas).
  *
- * PROTECCIÓN. La misma que la limpieza de PQRS: Vercel manda el cron con la
- * cabecera `Authorization: Bearer $CRON_SECRET`, y sin esa variable el endpoint
- * responde 503 en vez de quedar abierto.
+ * PROTECCIÓN. La misma que la limpieza de PQRS (src/lib/cron.ts): Vercel manda
+ * el cron con `Authorization: Bearer $CRON_SECRET`, que se compara en tiempo
+ * constante, y sin esa variable el endpoint responde 503 en vez de quedar
+ * abierto.
  */
 import type { APIRoute } from 'astro';
+import { rechazoCron } from '../../../lib/cron';
 import { blobConfigurado } from '../../../lib/pqrs/config';
 import type { Entorno } from '../../../lib/empleos/config';
 import { limpiarPostulaciones } from '../../../lib/empleos/retencion';
@@ -36,14 +36,8 @@ function json(estado: number, cuerpo: unknown): Response {
 
 export const GET: APIRoute = async ({ request }) => {
   const env = process.env as Entorno;
-  const secreto = env.CRON_SECRET;
-
-  if (!secreto) {
-    return json(503, { ok: false, errores: ['CRON_SECRET no está configurada.'] });
-  }
-  if (request.headers.get('authorization') !== `Bearer ${secreto}`) {
-    return json(401, { ok: false, errores: ['No autorizado.'] });
-  }
+  const rechazo = rechazoCron(request, env);
+  if (rechazo) return rechazo;
   if (!blobConfigurado(env)) {
     return json(503, { ok: false, errores: ['BLOB_READ_WRITE_TOKEN no está configurada.'] });
   }
