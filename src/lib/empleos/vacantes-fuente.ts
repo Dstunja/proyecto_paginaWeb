@@ -7,16 +7,30 @@
  * en /api/empleos/vacantes.json: { version: 1, vacantes: [{ slug, cargo,
  * ciudad, tipo, resumen, descripcion[], requisitos[], funciones[] }] }.
  *
- * CUÁNDO SE LEE. En tiempo de build (el sitio es estático): /empleos/, cada
- * /empleos/<slug>/, el <select> del formulario y el JSON público se generan con
- * lo que Control360 tenga en ese momento. Un cambio en Control360 se ve en la
- * página con el siguiente despliegue. La función de postular también la llama
- * en cada arranque, para validar el cargo contra la misma lista.
+ * CUÁNDO SE LEE. En Vercel, /empleos/, cada /empleos/<slug>/, el <select> del
+ * formulario y el JSON público se sirven con ISR (src/lib/empleos/isr.mjs):
+ * quedan en caché y se vuelven a generar —leyendo Control360 en ese momento—
+ * cuando Control360 avisa por POST /api/empleos/revalidar (en segundos) o, si
+ * el aviso se pierde, cuando la copia cumple 5 minutos. En el espejo de GitHub
+ * Pages se siguen leyendo una sola vez, en el build. La función de postular
+ * también la llama, para validar el cargo contra la misma lista.
+ *
+ * LECTURA FRESCA. La ruta de Control360 tiene caché de CDN de 5 minutos para
+ * aguantar a los navegadores; si el servidor de este sitio la leyera igual, una
+ * revalidación de ISR podría traer la versión vieja. Por eso, cuando existe el
+ * secreto compartido `EMPLEOS_WEBHOOK_SECRET`, el servidor pide `?fresco=1` con
+ * `Authorization: Bearer <secreto>` y Control360 responde sin caché, directo de
+ * la base. Sin el secreto se lee la URL normal (con su caché de 5 minutos). El
+ * secreto nunca sale del servidor.
+ *
+ * CERO VACANTES ES UNA RESPUESTA. Si Control360 responde bien y la lista viene
+ * vacía (RRHH cerró todas), la página dice que no hay vacantes abiertas; no
+ * resucita la lista fija del repositorio.
  *
  * SI FALLA, LA PÁGINA NO SE QUEDA SIN VACANTES. Sin `C360_VACANTES_URL`, con la
- * URL caída, con un JSON que no tiene la forma esperada o con cero vacantes,
- * se usa `src/data/vacantes.ts` tal cual estaba. Nunca se lanza: el build no
- * se cae por Control360.
+ * URL caída, con un JSON que no tiene la forma esperada o con una lista en la
+ * que ninguna entrada es válida, se usa `src/data/vacantes.ts` tal cual estaba.
+ * Nunca se lanza: ni el build ni la página se caen por Control360.
  *
  * QUÉ SE ENRIQUECE. Desde 10·09 Control360 también manda el flyer (`imagen`,
  * como URL pública de su bucket), el `salario` (solo si RRHH lo marcó para
@@ -33,8 +47,19 @@ import { leerPreguntas } from './preguntas';
 /** Variable de entorno con la URL pública de Control360. */
 export const VARIABLE_URL = 'C360_VACANTES_URL';
 
+/** Secreto compartido con Control360 (el mismo del webhook de revalidación). */
+export const VARIABLE_SECRETO = 'EMPLEOS_WEBHOOK_SECRET';
+
 /** Cuánto se espera a Control360 antes de usar la lista estática. */
 export const TIEMPO_MAXIMO_MS = 10_000;
+
+/**
+ * En una función (ISR o postular), cuánto se reutiliza una lectura. Solo para
+ * que un mismo render (página + formulario) y una ráfaga de revalidaciones no
+ * pidan lo mismo varias veces; más largo haría que una revalidación sirviera
+ * datos viejos guardados en la memoria del proceso.
+ */
+export const MEMORIA_EN_FUNCION_MS = 2_000;
 
 export type FuenteVacantes = 'control360' | 'estatica';
 
@@ -125,7 +150,11 @@ export function leerVacantesRemotas(
       ...(jornada ? { jornada } : {}),
     });
   }
-  if (salida.length === 0) return { ok: false, motivo: 'Control360 no tiene vacantes publicadas' };
+  // Lista vacía de verdad = RRHH no tiene nada publicado, y así se muestra.
+  // Lista con entradas pero ninguna válida = algo raro: mejor la estática.
+  if (salida.length === 0 && vacantes.length > 0) {
+    return { ok: false, motivo: 'ninguna vacante de Control360 tiene slug y cargo válidos' };
+  }
   return { ok: true, vacantes: salida };
 }
 
@@ -140,6 +169,19 @@ export function urlVacantes(env: Entorno = entornoActual()): string | null {
 }
 
 /**
+ * Cómo pide el SERVIDOR la lista: con el secreto compartido, `?fresco=1` +
+ * Bearer (Control360 responde sin la caché de su CDN); sin él, la URL tal cual.
+ */
+export function pedidoVacantes(url: string, env: Entorno): { url: string; headers: Record<string, string> } {
+  const secreto = (env as Record<string, string | undefined>)[VARIABLE_SECRETO]?.trim();
+  const headers: Record<string, string> = { accept: 'application/json' };
+  if (!secreto) return { url, headers };
+  const fresca = new URL(url);
+  fresca.searchParams.set('fresco', '1');
+  return { url: fresca.toString(), headers: { ...headers, authorization: `Bearer ${secreto}` } };
+}
+
+/**
  * Trae las vacantes, de Control360 si se puede y de la lista estática si no.
  * Recibe `fetch` y el entorno como parámetros para poder probarse sin red.
  */
@@ -149,13 +191,16 @@ export async function resolverVacantes(opciones: {
   estaticas?: readonly Vacante[];
 } = {}): Promise<ResultadoVacantes> {
   const estaticas = [...(opciones.estaticas ?? vacantesEstaticas)];
-  const url = urlVacantes(opciones.env ?? entornoActual());
+  const env = opciones.env ?? entornoActual();
+  const url = urlVacantes(env);
   if (!url) return { fuente: 'estatica', vacantes: estaticas, motivo: `sin ${VARIABLE_URL}` };
 
   const fetchFn = opciones.fetchFn ?? fetch;
+  const pedido = pedidoVacantes(url, env);
   try {
-    const respuesta = await fetchFn(url, {
-      headers: { accept: 'application/json' },
+    const respuesta = await fetchFn(pedido.url, {
+      headers: pedido.headers,
+      cache: 'no-store',
       signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
     });
     if (!respuesta.ok) {
@@ -170,25 +215,36 @@ export async function resolverVacantes(opciones: {
   }
 }
 
-let memoria: Promise<ResultadoVacantes> | null = null;
+let memoria: { promesa: Promise<ResultadoVacantes>; desde: number } | null = null;
 
 /**
- * Las vacantes para las páginas, el formulario y la validación: una sola
- * lectura por proceso (el build las pide desde varias páginas y no tiene
- * sentido ir a Control360 cada vez). Deja en el log de dónde salieron.
+ * ¿Se está compilando? La integración de astro.config.mjs marca el proceso del
+ * build; en una función de Vercel esa marca no existe.
+ */
+function enBuild(): boolean {
+  return typeof process !== 'undefined' && process.env.EMPLEOS_LECTURA_UNICA === '1';
+}
+
+/**
+ * Las vacantes para las páginas, el formulario y la validación. En el build,
+ * una sola lectura por proceso (lo piden varias páginas y no tiene sentido ir
+ * a Control360 cada vez). En una función (ISR o postular), una lectura vale
+ * solo MEMORIA_EN_FUNCION_MS: cada regeneración tiene que ver lo último que
+ * guardó RRHH. Deja en el log de dónde salieron.
  */
 export function cargarVacantes(): Promise<ResultadoVacantes> {
-  if (!memoria) {
-    memoria = resolverVacantes().then((r) => {
-      if (r.fuente === 'control360') {
-        console.log(`[empleos] ${r.vacantes.length} vacantes leídas de Control360`);
-      } else {
-        console.warn(`[empleos] vacantes de src/data/vacantes.ts (${r.motivo})`);
-      }
-      return r;
-    });
-  }
-  return memoria;
+  const ahora = Date.now();
+  if (memoria && (enBuild() || ahora - memoria.desde < MEMORIA_EN_FUNCION_MS)) return memoria.promesa;
+  const promesa = resolverVacantes().then((r) => {
+    if (r.fuente === 'control360') {
+      console.log(`[empleos] ${r.vacantes.length} vacantes leídas de Control360`);
+    } else {
+      console.warn(`[empleos] vacantes de src/data/vacantes.ts (${r.motivo})`);
+    }
+    return r;
+  });
+  memoria = { promesa, desde: ahora };
+  return promesa;
 }
 
 /** Solo para pruebas: olvida la lectura anterior. */

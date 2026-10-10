@@ -364,8 +364,8 @@ function revisarCsp(csp, etiqueta) {
   comprobar(`${etiqueta}: CSP img-src con las teselas del mapa`, tiene('img-src', "'self'", 'https://*.tile.openstreetmap.fr'));
   comprobar(`${etiqueta}: CSP font-src solo fuentes propias`, fuentes('font-src').join(' ') === "'self'", fuentes('font-src').join(' '));
   comprobar(
-    `${etiqueta}: CSP connect-src con la API propia, Google Analytics y Vercel Blob`,
-    tiene('connect-src', "'self'", 'https://*.google-analytics.com', 'https://vercel.com', 'https://*.blob.vercel-storage.com'),
+    `${etiqueta}: CSP connect-src con la API propia, Control360, Google Analytics y Vercel Blob`,
+    tiene('connect-src', "'self'", 'https://control360app.com', 'https://*.google-analytics.com', 'https://vercel.com', 'https://*.blob.vercel-storage.com'),
   );
   comprobar(`${etiqueta}: CSP frame-ancestors 'none'`, tiene('frame-ancestors', "'none'"));
   comprobar(

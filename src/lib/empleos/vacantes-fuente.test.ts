@@ -10,7 +10,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Vacante } from '../../data/vacantes';
 import { cargosDe, CARGO_ESPONTANEO } from './cargos';
-import { leerVacantesRemotas, resolverVacantes, urlVacantes, VARIABLE_URL, whatsappDesdeDigitos } from './vacantes-fuente';
+import {
+  leerVacantesRemotas,
+  pedidoVacantes,
+  resolverVacantes,
+  urlVacantes,
+  VARIABLE_SECRETO,
+  VARIABLE_URL,
+  whatsappDesdeDigitos,
+} from './vacantes-fuente';
 
 const ESTATICA: Vacante = {
   slug: 'vendedor-tat',
@@ -189,10 +197,15 @@ describe('leerVacantesRemotas', () => {
     expect(leerVacantesRemotas(null, ESTATICAS).ok).toBe(false);
     expect(leerVacantesRemotas({ version: 2, vacantes: [] }, ESTATICAS).ok).toBe(false);
     expect(leerVacantesRemotas({ version: 1 }, ESTATICAS).ok).toBe(false);
-    expect(leerVacantesRemotas({ version: 1, vacantes: [] }, ESTATICAS)).toEqual({
+    // Entradas que existen pero ninguna sirve: algo raro, mejor la estática.
+    expect(leerVacantesRemotas({ version: 1, vacantes: [{ slug: 'MAL SLUG', cargo: 'x' }] }, ESTATICAS)).toEqual({
       ok: false,
-      motivo: 'Control360 no tiene vacantes publicadas',
+      motivo: 'ninguna vacante de Control360 tiene slug y cargo válidos',
     });
+  });
+
+  it('una lista vacía es una respuesta: RRHH cerró todas y la página lo dice', () => {
+    expect(leerVacantesRemotas({ version: 1, vacantes: [] }, ESTATICAS)).toEqual({ ok: true, vacantes: [] });
   });
 });
 
@@ -240,7 +253,35 @@ describe('resolverVacantes', () => {
     expect(llamadas).toBe(0);
   });
 
-  it('con la URL caída (503), con error de red o con JSON vacío, cae a la estática', async () => {
+  it('con el secreto, el servidor pide ?fresco=1 con Bearer y sin caché; sin él, la URL tal cual', async () => {
+    const pedidos: { url: string; init: RequestInit }[] = [];
+    const espia = (async (url: string, init: RequestInit) => {
+      pedidos.push({ url: String(url), init });
+      return new Response(JSON.stringify(REMOTO), { status: 200 });
+    }) as unknown as typeof fetch;
+
+    await resolverVacantes({ env: { ...env, [VARIABLE_SECRETO]: ' s3creto ' }, fetchFn: espia, estaticas: ESTATICAS });
+    await resolverVacantes({ env, fetchFn: espia, estaticas: ESTATICAS });
+
+    expect(pedidos[0].url).toBe('https://control360app.com/api/talento/vacantes/dst?fresco=1');
+    expect((pedidos[0].init.headers as Record<string, string>).authorization).toBe('Bearer s3creto');
+    expect(pedidos[0].init.cache).toBe('no-store');
+    expect(pedidos[1].url).toBe('https://control360app.com/api/talento/vacantes/dst');
+    expect(pedidos[1].init.headers).not.toHaveProperty('authorization');
+  });
+
+  it('pedidoVacantes respeta los parámetros que ya traiga la URL', () => {
+    const p = pedidoVacantes('https://c360.test/api/x?a=1', { [VARIABLE_SECRETO]: 'k' });
+    expect(p.url).toBe('https://c360.test/api/x?a=1&fresco=1');
+  });
+
+  it('Control360 sano con lista vacía: cero vacantes, no la lista estática', async () => {
+    const vacio = await resolverVacantes({ env, fetchFn: respuesta({ version: 1, vacantes: [] }), estaticas: ESTATICAS });
+    expect(vacio.fuente).toBe('control360');
+    expect(vacio.vacantes).toEqual([]);
+  });
+
+  it('con la URL caída (503), con error de red o con JSON raro, cae a la estática', async () => {
     const caida = await resolverVacantes({ env, fetchFn: respuesta({ ok: false }, 503), estaticas: ESTATICAS });
     expect(caida.fuente).toBe('estatica');
     expect(caida.motivo).toContain('503');
@@ -250,9 +291,9 @@ describe('resolverVacantes', () => {
     expect(red.fuente).toBe('estatica');
     expect(red.motivo).toContain('ECONNREFUSED');
 
-    const vacio = await resolverVacantes({ env, fetchFn: respuesta({ version: 1, vacantes: [] }), estaticas: ESTATICAS });
-    expect(vacio.fuente).toBe('estatica');
-    expect(vacio.vacantes).toEqual(ESTATICAS);
+    const raro = await resolverVacantes({ env, fetchFn: respuesta({ version: 1, vacantes: [{}] }), estaticas: ESTATICAS });
+    expect(raro.fuente).toBe('estatica');
+    expect(raro.vacantes).toEqual(ESTATICAS);
   });
 
   it('la lista estática que devuelve es una copia', async () => {

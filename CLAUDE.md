@@ -54,6 +54,11 @@ Stack: Astro + Tailwind 4 + TypeScript.
   a mano con `export const prerender = false`. Esas funciones **solo existen en
   Vercel**: en GitHub Pages no hay backend y el formulario de PQRS cae al correo en
   vez de radicar.
+- **Excepción: empleos va con ISR en Vercel.** `/empleos/`, `/empleos/<slug>/` y
+  `/api/empleos/vacantes.json` se sirven desde la caché de Vercel y se regeneran
+  cuando Control360 avisa por `POST /api/empleos/revalidar` (o a los 5 minutos).
+  Su `prerender` lo decide la integración de `astro.config.mjs` (falso en Vercel,
+  verdadero en GitHub Pages), no el archivo. Ver `src/lib/empleos/isr.mjs`.
 - Con el adaptador puesto, el build deja el sitio en **`dist/client/`**, no en
   `dist/` (`dist/server/` es la función). Por eso el workflow de Pages usa
   `withastro/action@v5` con `out-dir: dist/client`: la v3 no acepta ese parámetro y
