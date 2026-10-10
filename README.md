@@ -3,7 +3,8 @@
 Sitio hecho en **Astro + Tailwind CSS 4 (TypeScript estricto)**, publicado en
 **Vercel** (<https://dstunja.com>) y desplegado solo con cada `git push` a `main`.
 Las páginas son estáticas; solo `src/pages/api/**` (PQRS y empleos) corre como
-función de Vercel. Hay además un espejo de revisión interna en GitHub Pages.
+función de Vercel. Las visitas las cuenta Vercel Web Analytics, sin cookies
+(ver `docs/ANALITICA.md`).
 
 Empezó como un prototipo en HTML plano; ese prototipo ya no está en el
 repositorio (sigue en el historial de git, carpeta `legacy-html/`).
@@ -143,7 +144,6 @@ scripts/build-og.mjs       Genera la tarjeta Open Graph con Playwright.
 scripts/build-favicon.mjs  Genera los íconos a partir del isotipo.
 scripts/geocodificar.mjs   Consulta Nominatim y llena data/coordenadas.json.
 .github/workflows/ci.yml   CI: pruebas, astro check y build en cada PR y push a main.
-.github/workflows/deploy.yml  Espejo en GitHub Pages.
 ```
 
 ## Qué editar y dónde
@@ -378,10 +378,9 @@ sirve igual en un hook o en CI.
 
 | Variable | Para qué | Cuándo se lee |
 | --- | --- | --- |
-| `PUBLIC_GTM_CONTAINER_ID` | Contenedor de Google Tag Manager (analítica). Vacío = sin analítica | Build |
 | `PQRS_RESEND_API_KEY`, `RESEND_API_KEY` | Correo de PQRS y de Empleos (Resend) | Petición |
 | `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET` | Antirrobots (Cloudflare Turnstile) | Build / petición |
-| `CRON_SECRET`, `PQRS_IP_SALT` | Protege el cron que borra las subidas abandonadas de la PQRS, y sal del hash de la IP de quien radica | Petición |
+| `CRON_SECRET`, `PQRS_IP_SALT` | Protege los dos crons de limpieza (PQRS y empleos; se compara en tiempo constante, ver `src/lib/cron.ts`), y sal del hash de la IP de quien radica | Petición |
 | `PUBLIC_PQRS_ADJUNTO_MAX_MB` | Peso máximo de cada soporte de la PQRS | Build |
 | `C360_POSTULACIONES_URL`, `C360_POSTULACIONES_SECRET` | Envío de postulaciones a Control360 | Petición |
 | `C360_VACANTES_URL` | Vacantes publicadas en Control360 | Build |
@@ -415,7 +414,7 @@ npx vercel env pull .env.local
 | `PQRS_IP_SALT`, `CRON_SECRET` | Se generan: `node -e "console.log(crypto.randomUUID())"`. |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | Vercel → *Marketplace* → Upstash (plan gratuito). Opcionales. |
 | `EMPLEOS_DESTINO`, `EMPLEOS_REMITENTE` | Opcionales. Buzón y remitente de las postulaciones de empleos; sin ellas se usa el correo de `contactoEmpleo` (`src/data/vacantes.ts`) y el remitente de PQRS. Ver `docs/EMPLEOS-POSTULACION.md`. |
-| `C360_VACANTES_URL` | Opcional. URL pública de Control360 con las vacantes publicadas por Talento Humano (`https://control360app.com/api/talento/vacantes/dst`). Se lee **en el build**; sin ella, o si falla, la página usa `src/data/vacantes.ts`. En GitHub Pages va como *Variable* de Actions. |
+| `C360_VACANTES_URL` | Opcional. URL pública de Control360 con las vacantes publicadas por Talento Humano (`https://control360app.com/api/talento/vacantes/dst`). Se lee **en el build**; sin ella, o si falla, la página usa `src/data/vacantes.ts`. |
 | `PUBLIC_PQRS_BLOB_ACCESS` | **Ya no existe.** El acceso a los blobs es privado y fijo; si sigue definida en Vercel, borrarla. |
 
 Para desarrollo, Cloudflare publica un par de claves de prueba que **aceptan
@@ -459,24 +458,24 @@ Qué permite la CSP, además del propio origen:
 
 | Directiva | Fuera del sitio | Para qué |
 | --- | --- | --- |
-| `script-src` | `challenges.cloudflare.com`, `www.googletagmanager.com` | Turnstile y el contenedor de Tag Manager. **Sin `'unsafe-inline'`** |
-| `frame-src` | `challenges.cloudflare.com`, `www.googletagmanager.com` | El iframe de Turnstile y el de respaldo de Tag Manager (sin JavaScript) |
-| `img-src` | `*.tile.openstreetmap.fr`, `placehold.co`, Google Analytics, `data:` | Teselas del mapa, marcadores de imágenes que faltan, píxel de GA |
-| `connect-src` | Google Analytics, `vercel.com`, `*.blob.vercel-storage.com` | Envíos de GA y subida de soportes de PQRS a Vercel Blob |
+| `script-src` | `challenges.cloudflare.com` | Turnstile. **Sin `'unsafe-inline'`**. Vercel Analytics se sirve del mismo dominio (`/_vercel/insights/`) |
+| `frame-src` | `challenges.cloudflare.com` | El iframe de Turnstile |
+| `img-src` | `*.tile.openstreetmap.fr`, `placehold.co`, el bucket de Supabase de Control360, `data:` | Teselas del mapa, marcadores de imágenes que faltan, flyers de las vacantes |
+| `connect-src` | `control360app.com`, `vercel.com`, `*.blob.vercel-storage.com` | Vacantes vivas y subida de soportes de PQRS a Vercel Blob |
 | `style-src` | `'unsafe-inline'` | Hay atributos `style` en el HTML (iconos, tarjetas) y Leaflet los usa |
 | `font-src` | ninguno | Las fuentes son propias (Fontsource) |
 | `frame-ancestors` | `'none'` | Nadie puede incrustar el sitio en un iframe |
 
 Tres consecuencias que hay que conocer:
 
-- **No puede haber scripts en línea.** Los tres que había (el interruptor del
-  revelado, el arranque de Tag Manager y el aviso del catálogo) están en
+- **No puede haber scripts en línea.** Los que había (el interruptor del
+  revelado y el aviso del catálogo) están en
   `public/js/`, y
   `astro.config.mjs` pone `vite.build.assetsInlineLimit: 0` para que Astro no
   incruste los scripts pequeños. Un `<script is:inline>` con código nuevo se
   bloquearía en producción sin avisar; los de datos (`type="application/json"`)
   sí valen.
-- **Un servicio externo nuevo** (otro mapa, un chat, una herramienta de GTM) hay
+- **Un servicio externo nuevo** (otro mapa, un chat, otra analítica) hay
   que añadirlo a la CSP de `vercel.json`, o el navegador lo bloqueará.
 - **La geolocalización solo la puede pedir el propio sitio** (`geolocation=(self)`):
   la PQRS la usa para preseleccionar el municipio más cercano, y ningún iframe de
@@ -490,8 +489,7 @@ Los comentarios HTML de las plantillas **no se publican**: los quita
 `npm run verificar:navegacion` aplica esas mismas cabeceras en su servidor local y
 comprueba, con la red real, que ninguna página provoca bloqueos de CSP, que los
 mapas cargan teselas, que Turnstile da token y los formularios llegan a su API, y
-que la analítica pide el contenedor de Tag Manager si el build lleva
-`PUBLIC_GTM_CONTAINER_ID`. Con
+que la página no pide nada a Google ni muestra franja de cookies. Con
 `--url https://dstunja.com` revisa además producción: cabeceras, redirección de
 `http://` a `https://` y bloqueos en el navegador.
 
@@ -506,7 +504,7 @@ adjunta** (PDF, DOC o DOCX, máximo 4 MB), a `POST /api/empleos/postular`
 bytes del archivo, comprueba el campo trampa, el límite por IP y Turnstile, y
 manda **un** correo por Resend a Talento Humano con el `replyTo` del candidato y
 el teléfono y el correo como enlaces `tel:` y `mailto:`. El archivo no se guarda
-en ningún sitio. Si la función no contesta (GitHub Pages, 5xx o red caída) cae al
+en ningún sitio. Si la función no contesta (5xx o red caída) cae al
 `mailto:` pidiendo adjuntar la hoja de vida a mano. Se prueba con `npm test` y
 `npm run verificar:empleos`. Detalle en `docs/EMPLEOS-POSTULACION.md`.
 
@@ -520,7 +518,7 @@ resto de la página: no hay botón de «continuar» y no se recarga nada.
   escritos a mano— con botón de copiar en cada uno. Debajo hay un formulario
   corto y opcional (nombre, teléfono, correo opcional y mensaje) que manda un
   recado con `POST /api/pqrs/administrativa`; si esa función no está, cae a un
-  `mailto:`, así que en el espejo de GitHub Pages se sigue pudiendo escribir.
+  `mailto:`, así que se sigue pudiendo escribir.
 El **municipio** es un combobox cerrado a los 87 municipios de cobertura, que
 salen de `src/data/municipios.ts`. Busca ignorando tildes y mayúsculas, se
 maneja con el teclado, y si la persona concede la ubicación preselecciona el más
@@ -536,8 +534,8 @@ límites y la misma forma de contar, que viven en `src/lib/pqrs/limites-texto.ts
 
 - **Comercial**: pide el tipo (paso 2) y **radica de verdad** contra
   `src/pages/api/pqrs/`. Guarda la solicitud y sus soportes, devuelve un número
-  de radicado y manda dos correos. Esas funciones **solo existen en Vercel**; en
-  el espejo de GitHub Pages no hay backend y el formulario cae al respaldo por
+  de radicado y manda dos correos. Esas funciones **solo existen en Vercel**;
+  sin ellas (por ejemplo, en `astro preview`) el formulario cae al respaldo por
   correo, avisando de que así no queda radicado. Necesita las variables de la
   sección anterior.
 
@@ -547,20 +545,23 @@ Comercial · …». Detalle completo en `docs/PQRS-ADJUNTOS.md`.
 
 ## Despliegue
 
-Hay dos destinos, y cada uno compila con un `site`/`base` distinto. Los elige
-`astro.config.mjs` según la variable `VERCEL`, que Vercel define en todos sus
-builds:
+Un solo destino: **Vercel** (<https://dstunja.com>), que publica solo con cada
+push a `main` (integración Git de Vercel). Cada PR recibe una vista previa.
 
-| Destino | Dirección | Cómo se publica | `base` |
-| --- | --- | --- | --- |
-| **Vercel** (principal) | <https://dstunja.com> | Solo, con cada push a `main` (integración Git de Vercel). Cada PR recibe una vista previa. | ninguno |
-| **GitHub Pages** (espejo de revisión interna) | <https://dstunja.github.io/proyecto_paginaWeb> | `.github/workflows/deploy.yml` con cada push a `main` | `/proyecto_paginaWeb` |
-
+- El espejo de revisión en GitHub Pages se apagó el 10/10/2026: se borró su
+  workflow (`deploy.yml`). En el repositorio hay que desactivar también
+  *Settings › Pages*. `astro.config.mjs` sigue compilando con
+  `base: '/proyecto_paginaWeb'` cuando no corre en Vercel, porque los scripts
+  de `scripts/verificar-*.mjs` sirven `dist/client/` con ese prefijo.
 - Con el adaptador de Vercel, el build deja el sitio en **`dist/client/`** (y la
-  función en `dist/server/`), no en `dist/`. El workflow de Pages publica
-  `dist/client`.
-- En GitHub Pages **no hay funciones**: la PQRS cae al respaldo por correo y no
-  radica. La radicación de verdad solo funciona en Vercel.
+  función en `dist/server/`), no en `dist/`.
+- Crons (`vercel.json`, una vez al día como permite el plan Hobby):
+  `/api/pqrs/limpieza` a las 04:00 UTC y `/api/empleos/limpieza` a las 08:00
+  UTC. Los dos exigen `CRON_SECRET`.
+- `/_astro/*` sale con `Cache-Control: public, max-age=31536000, immutable`
+  (los nombres llevan hash). Los flyers de las vacantes pasan por el
+  optimizador de imágenes de Vercel (`/_vercel/image`, ver
+  `src/lib/empleos/flyer.mjs`).
 - **CI** (`.github/workflows/ci.yml`): en cada PR y en cada push a `main` corre
   `npm ci`, `npm test`, `npx astro check` y `npm run build` con Node 22. No
   publica nada.
@@ -573,8 +574,19 @@ El dominio y los registros DNS del correo (Zoho) no se tocan al desplegar.
 ## SEO
 
 - `sitemap-index.xml` generado con `@astrojs/sitemap`.
-- `robots.txt` apuntando al sitemap.
-- Canonical, Open Graph y Twitter Card en cada página.
-- Datos estructurados `LocalBusiness` (dirección, teléfono, redes) en el layout.
+- `robots.txt` apuntando al sitemap y con `Disallow: /api/`.
+- Los sitemaps del WordPress viejo (`/sitemap.xml`, `/sitemap_index.xml`,
+  `/wp-sitemap*.xml`, `/*-sitemap.xml`) redirigen con 301 a `/sitemap-index.xml`.
+- Canonical, Open Graph y Twitter Card en cada página; cada vacante comparte su
+  flyer como imagen.
+- Datos estructurados (`src/lib/datos-estructurados.ts`): `LocalBusiness`
+  completo en el layout (NIT, fundación, dirección, coordenadas, horario, logo),
+  `BreadcrumbList` en las páginas internas y `JobPosting` en cada vacante para
+  Google Empleos (`src/lib/empleos/job-posting.ts`; no en «Buscamos vehículos»).
+- `site.webmanifest` con los íconos de 192 y 512.
+- Barra final: todos los enlaces la llevan, pero `trailingSlash` sigue en
+  `'ignore'`. Con `'always'` las funciones sin extensión (`/api/pqrs`,
+  `/api/empleos/revalidar`, los crons) pasarían a redirigir, y Control360 y
+  Vercel las llaman sin barra.
 - La URL del sitio se define en `astro.config.mjs` (`site`). Si el dominio cambia,
   hay que actualizarla ahí y en `public/robots.txt`.

@@ -886,9 +886,6 @@ Para arreglarlo, una de dos:
   `base: process.env.DEPLOY_TARGET === 'github' ? '/proyecto_paginaWeb' : undefined`,
   y poner `DEPLOY_TARGET=github` en el workflow.
 
-También quedan de la etapa anterior `wrangler.jsonc` y la dependencia `wrangler`
-(Cloudflare), que ya no se usan.
-
 ## Comandos
 
 ```bash

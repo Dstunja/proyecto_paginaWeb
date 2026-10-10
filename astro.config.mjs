@@ -19,17 +19,18 @@ import { CONFIG_IMAGENES_VERCEL } from './src/lib/empleos/flyer.mjs';
 //    que hace falta para distinguir este caso (no hay que configurar nada a
 //    mano en el panel).
 //
-// 2. GITHUB PAGES (espejo de revision interna, .github/workflows/deploy.yml)
-//    https://dstunja.github.io/proyecto_paginaWeb
-//    Es un "project site": cuelga de /proyecto_paginaWeb, no de la raiz. Sin
-//    `base` los archivos de /_astro/ dan 404 y el sitio se ve sin estilos.
+// 2. FUERA DE VERCEL (CI, builds locales). Antes era el espejo de GitHub Pages
+//    (https://dstunja.github.io/proyecto_paginaWeb), que se apago el 10/10/2026
+//    al borrar .github/workflows/deploy.yml. Se sigue compilando con
+//    `base: '/proyecto_paginaWeb'` porque los scripts scripts/verificar-*.mjs
+//    sirven dist/client/ con ese prefijo; quitarlo exige ajustarlos a la vez.
 //
 // El sitio sigue siendo ESTATICO en los dos casos: `output: 'static'` compila
 // todas las paginas a HTML en el build. Lo unico que corre como funcion son
 // las rutas que se marcan a mano con `export const prerender = false`, que hoy
 // son las de src/pages/api/pqrs/ (radicacion de PQRS, tokens de subida y
 // limpieza) y las de src/pages/api/empleos/. Esas funciones solo existen en
-// Vercel; en GitHub Pages no hay backend y el formulario de PQRS no radica.
+// Vercel; fuera de Vercel no hay backend y el formulario de PQRS no radica.
 //
 // EXCEPCION: LAS PAGINAS DE EMPLEOS EN VERCEL VAN CON ISR. /empleos/,
 // /empleos/<slug>/ y /api/empleos/vacantes.json leen las vacantes de

@@ -24,19 +24,15 @@ Stack: Astro + Tailwind 4 + TypeScript.
   borra del árbol de trabajo lo que la otra sesión no haya guardado todavía, y
   eso no se puede recuperar. Lo correcto es parar, avisar de qué archivos están
   compartidos y reanudar sobre la base ya commiteada.
-- **Dos destinos de publicación**, y cada uno necesita un `site`/`base` distinto:
-  - **Vercel** (plan Hobby), la publicación principal: <https://dstunja.com> (también
-    responde en <https://paginaweb-beta-coral.vercel.app>). Cuelga de la raíz del
-    dominio, así que va **sin `base`**. Despliega solo, con cada push a `main`.
-  - **GitHub Pages** (espejo de revisión interna, `.github/workflows/deploy.yml`):
-    <https://dstunja.github.io/proyecto_paginaWeb>. Es un *project site*: cuelga de
-    `/proyecto_paginaWeb`, así que necesita `base: '/proyecto_paginaWeb'`. Sin él,
-    los archivos de `/_astro/` dan 404 y el sitio se ve sin estilos.
-- En `astro.config.mjs`, `site` y `base` son **condicionales**: se eligen según la
-  variable de entorno `VERCEL`, que Vercel define con valor `'1'` en todos sus
-  builds (producción y preview). Las URLs están en constantes al principio del
-  archivo: `SITIO_VERCEL`, `SITIO_GITHUB_PAGES` y `BASE_GITHUB_PAGES`. No dejar
-  ninguno de los dos fijo: romperías uno de los dos despliegues.
+- **Un solo destino de publicación: Vercel** (plan Hobby): <https://dstunja.com>
+  (también responde en <https://paginaweb-beta-coral.vercel.app>). Cuelga de la raíz
+  del dominio, así que va **sin `base`**. Despliega solo, con cada push a `main`.
+  El espejo de GitHub Pages se apagó el 10/10/2026 (se borró `deploy.yml`).
+- En `astro.config.mjs`, `site` y `base` siguen siendo **condicionales** según la
+  variable `VERCEL` (que Vercel define con `'1'` en todos sus builds): fuera de
+  Vercel (CI, builds locales) se compila con `base: '/proyecto_paginaWeb'`, que es
+  lo que esperan los scripts `scripts/verificar-*.mjs` al servir `dist/client/`.
+  Quitar ese `base` exige ajustar esos scripts a la vez.
 - **`dstunja.com` es el `site` de Vercel** (`SITIO_VERCEL`): el dominio ya apunta a
   Vercel y el WordPress anterior dejó de servirse. Canonical, Open Graph y sitemap
   salen de `site`. La línea `Sitemap:` de `public/robots.txt` es estática (se copia
@@ -52,17 +48,15 @@ Stack: Astro + Tailwind 4 + TypeScript.
 - `output: 'static'` y `adapter: vercel()` en los dos builds. Las páginas siguen
   siendo estáticas. Solo `src/pages/api/**` corre como función, y cada ruta lo pide
   a mano con `export const prerender = false`. Esas funciones **solo existen en
-  Vercel**: en GitHub Pages no hay backend y el formulario de PQRS cae al correo en
-  vez de radicar.
+  Vercel**: sin ellas (p. ej. `astro preview`) el formulario de PQRS cae al correo
+  en vez de radicar.
 - **Excepción: empleos va con ISR en Vercel.** `/empleos/`, `/empleos/<slug>/` y
   `/api/empleos/vacantes.json` (y `/sitemap-empleos.xml`, que `sitemap-index.xml` incluye) se sirven desde la caché de Vercel y se regeneran
   cuando Control360 avisa por `POST /api/empleos/revalidar` (o a los 5 minutos).
   Su `prerender` lo decide la integración de `astro.config.mjs` (falso en Vercel,
-  verdadero en GitHub Pages), no el archivo. Ver `src/lib/empleos/isr.mjs`.
+  verdadero fuera de Vercel), no el archivo. Ver `src/lib/empleos/isr.mjs`.
 - Con el adaptador puesto, el build deja el sitio en **`dist/client/`**, no en
-  `dist/` (`dist/server/` es la función). Por eso el workflow de Pages usa
-  `withastro/action@v5` con `out-dir: dist/client`: la v3 no acepta ese parámetro y
-  publicaba el sitio colgando de `/client/`.
+  `dist/` (`dist/server/` es la función).
 - Las rutas internas (enlaces, imágenes, estilos) nunca se escriben a mano: pasan
   por `ruta()` de `src/lib/rutas.ts` o por `import.meta.env.BASE_URL`. Así el mismo
   código sirve con `base` y sin él, sin tocar los componentes uno a uno.
