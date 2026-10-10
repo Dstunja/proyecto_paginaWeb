@@ -567,7 +567,6 @@ builds:
 - Las variables de Vercel se cargan en el panel del proyecto (ver «Variables de
   entorno»). Las que se leen en el build (`PUBLIC_*`, `C360_VACANTES_URL`) solo
   surten efecto al volver a desplegar.
-- `wrangler.jsonc` es un resto de cuando el plan era Cloudflare; no se usa.
 
 El dominio y los registros DNS del correo (Zoho) no se tocan al desplegar.
 
