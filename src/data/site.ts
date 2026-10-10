@@ -310,13 +310,18 @@ export const PIDEKY_URL = '';
  * Imagen principal del hero (portada). Hoy muestra la ilustración de la mascota
  * de la empresa (el búho conductor) sobre el camión de reparto.
  *
+ * Es el NOMBRE de un archivo de src/assets/marca/, no una ruta de public/: así
+ * pasa por el optimizador de Astro (astro:assets), que genera AVIF y WebP en
+ * varios anchos con su `srcset`. Es la imagen más grande que se ve al entrar en
+ * el móvil (el LCP), así que esto pesa en lo rápido que se siente la portada.
+ *
  * EDITAR AQUÍ: reemplazar cuando se suba la foto real de [bodega/equipo/flota].
- * Basta con dejar el archivo en public/img/marca/ y cambiar estas dos constantes
- * (la ruta y su texto alternativo): el hero de src/pages/index.astro las lee de
- * aquí y no hay que tocar el maquetado. Si HERO_IMAGEN se deja vacío, el hero
- * vuelve al panel de marca con el isotipo.
+ * Basta con dejar el archivo en src/assets/marca/ y cambiar estas dos constantes
+ * (el nombre y su texto alternativo): el hero de src/pages/index.astro las lee
+ * de aquí y no hay que tocar el maquetado. Si HERO_IMAGEN se deja vacío (o el
+ * archivo no existe), el hero vuelve al panel de marca con el isotipo.
  */
-export const HERO_IMAGEN = '/img/marca/mascota-camion.jpg';
+export const HERO_IMAGEN = 'mascota-camion.jpg';
 
 /**
  * Texto alternativo de la imagen del hero. Debe describir la foto que esté

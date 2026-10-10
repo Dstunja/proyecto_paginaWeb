@@ -4,6 +4,7 @@ import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import vercel from '@astrojs/vercel';
 import { configIsr, prerenderDe, tokenIsr, VARIABLE_TOKEN_ISR } from './src/lib/empleos/isr.mjs';
+import { CONFIG_IMAGENES_VERCEL } from './src/lib/empleos/flyer.mjs';
 
 // ---------------------------------------------------------------------------
 // DOS DESTINOS DE PUBLICACION, DOS `site`/`base` DISTINTOS
@@ -91,7 +92,15 @@ export default defineConfig({
   // `isr` solo tiene efecto sobre las rutas bajo demanda; las prerenderizadas
   // siguen siendo archivos. Fuera de Vercel no hay rutas de empleos bajo
   // demanda, asi que da igual, pero se deja apagado para que quede claro.
-  adapter: vercel({ isr: enVercel ? configIsr(process.env) : false }),
+  //
+  // `imagesConfig` solo habilita el optimizador de Vercel (/_vercel/image) para
+  // los flyers de las vacantes (el bucket público de Control360, ver
+  // src/lib/empleos/flyer.mjs). No se activa `imageService`: las imágenes
+  // locales siguen optimizándose en el build con astro:assets, como siempre.
+  adapter: vercel({
+    isr: enVercel ? configIsr(process.env) : false,
+    ...(enVercel ? { imagesConfig: CONFIG_IMAGENES_VERCEL } : {}),
+  }),
   // El sitemap solo ve las paginas prerenderizadas. En Vercel las de empleos van
   // con ISR, asi que tienen su propio sitemap, tambien con ISR
   // (src/pages/sitemap-empleos.xml.ts): /empleos/ y cada vacante abierta, al dia

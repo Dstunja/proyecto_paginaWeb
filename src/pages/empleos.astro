@@ -7,6 +7,7 @@ import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
 import { contactoEmpleo } from '../data/vacantes';
 import { cargarVacantes, urlVacantes } from '../lib/empleos/vacantes-fuente';
+import { atributosFlyer } from '../lib/empleos/flyer.mjs';
 
 /**
  * Las vacantes las publica Talento Humano en Control360 (C360_VACANTES_URL); si
@@ -26,10 +27,13 @@ const { vacantes } = await cargarVacantes();
 // que src/lib/empleos/vacantes-vivas.ts esconda una tarjeta que se cerró
 // después de generar esta copia. Sin la variable no hay respaldo.
 const urlVivas = urlVacantes() ?? undefined;
-const tarjetas = vacantes.map((vacante) => ({
-  ...vacante,
-  ...imagenOMarcador(vacante.imagen, vacante.cargo, 800, 600),
-}));
+// En Vercel, el flyer de Control360 pasa por /_vercel/image: la tarjeta mide
+// como mucho ~400 px, así que basta con 828 px (2x). Ver src/lib/empleos/flyer.mjs.
+const enVercel = Boolean(process.env.VERCEL);
+const tarjetas = vacantes.map((vacante) => {
+  const { src, esMarcador } = imagenOMarcador(vacante.imagen, vacante.cargo, 800, 600);
+  return { ...vacante, esMarcador, ...atributosFlyer(src, { enVercel, anchoMaximo: 828 }) };
+});
 
 const proceso = [
   {
@@ -91,10 +95,13 @@ const proceso = [
                 >
                   <img
                     src={vacante.src}
+                    srcset={vacante.srcset}
+                    sizes={vacante.srcset ? '(min-width: 900px) 30vw, (min-width: 520px) 45vw, calc(100vw - 32px)' : undefined}
                     alt=""
                     width="800"
                     height="600"
                     loading="lazy"
+                    decoding="async"
                     class="aspect-[4/3] w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
                   />
                 </a>

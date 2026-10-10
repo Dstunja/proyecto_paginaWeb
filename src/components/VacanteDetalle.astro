@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Icono from './Icono.astro';
 import { ruta } from '../lib/rutas';
 import { imagenOMarcador } from '../lib/imagenes';
+import { atributosFlyer } from '../lib/empleos/flyer.mjs';
 import { contactoEmpleo, type Vacante } from '../data/vacantes';
 
 /**
@@ -25,7 +26,12 @@ const { vacante, vacantes } = Astro.props;
 // El flyer lo sube Talento Humano en Control360 (llega como URL); si la
 // vacante no tiene, se busca en public/img/empleos/ (lista estática) y, si
 // tampoco, sale el marcador de posición.
-const { src: imagen, esMarcador } = imagenOMarcador(vacante.imagen, vacante.cargo, 900, 1200);
+const { src: imagenOriginal, esMarcador } = imagenOMarcador(vacante.imagen, vacante.cargo, 900, 1200);
+// En Vercel el flyer de Control360 pasa por /_vercel/image (AVIF/WebP al ancho
+// justo). Ver src/lib/empleos/flyer.mjs.
+const { src: imagen, srcset: srcsetImagen } = atributosFlyer(imagenOriginal, {
+  enVercel: Boolean(process.env.VERCEL),
+});
 
 const mensajeWhatsapp = encodeURIComponent(
   `Hola, vi la convocatoria de "${vacante.cargo}" en la página y me interesa postularme.`,
@@ -85,11 +91,20 @@ const asuntoCorreo = encodeURIComponent(`Postulación: ${vacante.cargo}`);
   <section class="section">
     <div class="wrap grid grid-cols-1 items-start gap-12 tablet:grid-cols-[.95fr_1.05fr]">
       <figure class="glass-card m-0 overflow-hidden p-3">
+        {/* Es lo más grande de la página (el LCP): carga ansiosa y con
+            prioridad. El ancho/alto reservan el hueco (proporción típica de
+            flyer, 3:4); `h-auto` deja que mande la proporción real al cargar. */}
         <img
           src={imagen}
+          srcset={srcsetImagen}
+          sizes={srcsetImagen ? '(min-width: 900px) 45vw, calc(100vw - 56px)' : undefined}
           alt={`Convocatoria: ${vacante.cargo}`}
+          width="900"
+          height="1200"
           loading="eager"
-          class="w-full rounded-[12px] bg-primary-soft object-contain"
+          fetchpriority="high"
+          decoding="async"
+          class="h-auto w-full rounded-[12px] bg-primary-soft object-contain"
         />
         {
           esMarcador && (

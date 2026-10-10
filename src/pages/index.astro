@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import { Image, Picture } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { ruta } from '../lib/rutas';
 import { altoSeguroLogo, logoLlevaFondoPropio, logoMarcaImagen } from '../lib/imagenes';
@@ -28,6 +28,19 @@ import {
 import { departamentos } from '../data/municipios';
 
 const formatoNumero = new Intl.NumberFormat('es-CO');
+
+/*
+ * Imagen del hero: el archivo de src/assets/marca/ que nombra HERO_IMAGEN
+ * (src/data/site.ts). Pasa por astro:assets para salir en AVIF y WebP, en
+ * varios anchos y con sus dimensiones reales en el HTML: es el LCP del móvil.
+ */
+const imagenesMarca = import.meta.glob<{ default: ImageMetadata }>(
+  '../assets/marca/*.{png,jpg,jpeg,webp,avif}',
+  { eager: true },
+);
+const imagenHero = HERO_IMAGEN
+  ? (Object.entries(imagenesMarca).find(([archivo]) => archivo.endsWith(`/${HERO_IMAGEN}`))?.[1].default ?? null)
+  : null;
 
 /**
  * EDITAR AQUÍ (src/data/site.ts, PIDEKY_URL): mientras esa variable esté vacía,
@@ -124,15 +137,24 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
              [bodega/equipo/flota]. No se toca este bloque: la ruta y el texto
              alternativo salen de HERO_IMAGEN y HERO_IMAGEN_ALT en
              src/data/site.ts. El object-cover recorta cualquier foto al mismo
-             formato 5:4, así que sirve tanto horizontal como vertical. */
-          HERO_IMAGEN ? (
+             formato 5:4, así que sirve tanto horizontal como vertical.
+
+             Es el LCP en el móvil: carga ansiosa, `fetchpriority="high"`,
+             AVIF/WebP con `srcset` y ancho/alto explícitos (sin saltos). */
+          imagenHero ? (
             /* `data-parallax`: la foto se desplaza unos píxeles más despacio
                que el texto al hacer scroll, para dar profundidad. El recorrido
                son 16 px como máximo; lo gobierna src/lib/interacciones.ts y se
                apaga solo con "reducir movimiento". */
-            <img
-              src={ruta(HERO_IMAGEN)}
+            <Picture
+              src={imagenHero}
               alt={HERO_IMAGEN_ALT}
+              formats={['avif', 'webp']}
+              widths={[384, 576, imagenHero.width]}
+              sizes="(min-width: 900px) 45vw, calc(100vw - 32px)"
+              loading="eager"
+              decoding="async"
+              fetchpriority="high"
               class="aspect-[5/4] w-full rounded-[28px] object-cover shadow-[0_28px_60px_rgba(13,44,132,.22)] will-change-transform"
               data-parallax
             />
