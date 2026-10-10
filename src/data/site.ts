@@ -137,9 +137,26 @@ export const titulosDePagina: Record<string, string> = {
  */
 export const CLIENTES_TEXTO = '+7.000';
 
+/**
+ * Año en que se fundó la empresa (confirmado por el dueño el 10/10/2026).
+ * Los «años de experiencia» de todo el sitio se calculan desde aquí, así que
+ * nadie tiene que acordarse de cambiar «21» por «22» en 2027.
+ */
+export const ANIO_FUNDACION = 2005;
+
+/**
+ * Años de experiencia al momento de compilar, con el año de Colombia (no el
+ * del servidor de build, que corre en UTC). El sitio se recompila con cada
+ * publicación, así que el número se actualiza solo con el primer despliegue
+ * de cada año.
+ */
+export const ANIOS_EXPERIENCIA =
+  Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Bogota', year: 'numeric' }).format(new Date())) -
+  ANIO_FUNDACION;
+
 /** Barra de cifras del hero: cada una con su ícono. */
 export const cifras = [
-  { valor: '21', etiqueta: 'años de experiencia', icono: 'award' },
+  { valor: String(ANIOS_EXPERIENCIA), etiqueta: 'años de experiencia', icono: 'award' },
   { valor: CLIENTES_TEXTO, etiqueta: 'clientes atendidos', icono: 'users' },
   { valor: '87', etiqueta: 'municipios', icono: 'map-pin' },
   { valor: '3', etiqueta: 'departamentos', icono: 'map' },
@@ -250,11 +267,11 @@ export const cobertura = [
 
 /**
  * Los municipios cubiertos (con sus coordenadas para el mapa) viven ahora en
- * src/data/municipios.ts, que es lo que usa la sección "Cobertura nacional".
+ * src/data/municipios.ts, que es lo que usa la sección "Nuestra cobertura".
  */
 
 /**
- * Clientes que se MUESTRAN en el resumen de la sección "Cobertura nacional".
+ * Clientes que se MUESTRAN en el resumen de la sección "Nuestra cobertura".
  *
  * OJO: son cifras de comunicación, no el conteo real. La empresa comunica una
  * red de 7.000 clientes, así que el titular y los tres contadores de esa
@@ -336,8 +353,10 @@ export const beneficios = [
     icono: 'badge-percent',
     titulo: 'Precios competitivos',
     texto: 'Ofertas y promociones de la quincena pensadas para el margen de tu negocio.',
-    enlace: '/catalogo/',
-    enlaceTexto: 'Pedir la lista de precios',
+    /* Lleva a Arma tu pedido, que es donde están los precios de referencia: el
+       catálogo no los muestra, y un botón que promete precios no debe llevar ahí. */
+    enlace: '/pedido/',
+    enlaceTexto: 'Ver los precios de referencia',
   },
   {
     icono: 'user-check',

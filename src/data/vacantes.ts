@@ -86,7 +86,7 @@ export const vacantes: Vacante[] = [
     resumen: 'Lidera y acompaña en calle al equipo de ventas TAT de la zona.',
     imagen: '/img/empleos/supervision-de-ventas.jpeg',
     descripcion: [
-      'En Distribuciones Santiago De Tunja buscamos personas con experiencia en liderazgo comercial, que quieran hacer parte de nuestro equipo y aportar al crecimiento del área de ventas.',
+      'En Distribuciones Santiago de Tunja buscamos personas con experiencia en liderazgo comercial, que quieran hacer parte de nuestro equipo y aportar al crecimiento del área de ventas.',
       'También se valora la experiencia en cargos de liderazgo comercial o supervisión de equipos de ventas.',
     ],
     requisitos: [
@@ -128,7 +128,7 @@ export const vacantes: Vacante[] = [
     resumen: 'Lidera el equipo de ventas de la zona de Barbosa. Requiere moto propia.',
     imagen: '/img/empleos/supervisor-de-ventas-barbosa.jpeg',
     descripcion: [
-      'En Distribuciones Santiago De Tunja buscamos personas con experiencia en liderazgo comercial, que quieran hacer parte de nuestro equipo y aportar al crecimiento del área de ventas.',
+      'En Distribuciones Santiago de Tunja buscamos personas con experiencia en liderazgo comercial, que quieran hacer parte de nuestro equipo y aportar al crecimiento del área de ventas.',
       'La convocatoria es para la zona de Barbosa, Santander, preferiblemente para quien ya resida allí.',
     ],
     requisitos: [
@@ -161,7 +161,7 @@ export const vacantes: Vacante[] = [
     resumen: 'Atiende la ruta de tiendas asignada y toma el pedido en el punto de venta.',
     imagen: '/img/empleos/perfil-de-ventas.jpeg',
     descripcion: [
-      'En Distribuciones Santiago De Tunja buscamos personas con actitud comercial, orientación al cliente y muchas ganas de crecer en el área de ventas TAT.',
+      'En Distribuciones Santiago de Tunja buscamos personas con actitud comercial, orientación al cliente y muchas ganas de crecer en el área de ventas TAT.',
       'También se valora la experiencia en cargos similares o en el sector de consumo masivo.',
     ],
     requisitos: [
@@ -196,7 +196,7 @@ export const vacantes: Vacante[] = [
     resumen: 'Elabora y revisa las facturas de venta y compra, y apoya la gestión documental.',
     imagen: '/img/empleos/facturacion.jpeg',
     descripcion: [
-      'En Distribuciones Santiago De Tunja buscamos personas con experiencia en procesos de facturación y gestión documental, que quieran hacer parte de nuestro equipo.',
+      'En Distribuciones Santiago de Tunja buscamos personas con experiencia en procesos de facturación y gestión documental, que quieran hacer parte de nuestro equipo.',
     ],
     requisitos: [
       'Técnico, tecnólogo o profesional en áreas administrativas, contables, financieras o afines',
@@ -228,7 +228,7 @@ export const vacantes: Vacante[] = [
     imagen: '/img/empleos/auxiliar-administrativo.jpeg',
     descripcion: [
       'Si te gusta el trabajo en equipo, la organización y los retos, esta oportunidad es para ti.',
-      'En Distribuciones Santiago De Tunja buscamos un auxiliar administrativo con experiencia en el cargo, que quiera hacer parte de una empresa sólida y en constante evolución.',
+      'En Distribuciones Santiago de Tunja buscamos un auxiliar administrativo con experiencia en el cargo, que quiera hacer parte de una empresa sólida y en constante evolución.',
     ],
     requisitos: [
       'Experiencia de 1 año en el cargo',
@@ -257,7 +257,7 @@ export const vacantes: Vacante[] = [
     resumen: 'Recibe, almacena y despacha la mercancía que sale a las rutas de distribución.',
     imagen: '/img/empleos/perfil-de-logistica.jpeg',
     descripcion: [
-      'En Distribuciones Santiago De Tunja buscamos personas con actitud, compromiso y ganas de ser parte de un gran equipo en el área de logística.',
+      'En Distribuciones Santiago de Tunja buscamos personas con actitud, compromiso y ganas de ser parte de un gran equipo en el área de logística.',
     ],
     requisitos: [
       'Experiencia o formación en logística, distribución, almacenamiento o administración de inventarios',

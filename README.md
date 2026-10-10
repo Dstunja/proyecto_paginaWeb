@@ -1,34 +1,46 @@
 # Distribuciones Santiago de Tunja — sitio web
 
-Sitio estático hecho en **Astro + Tailwind CSS 4 (TypeScript estricto)**, pensado para
-alojarse en **Cloudflare** y desplegarse solo con cada `git push`.
+Sitio hecho en **Astro + Tailwind CSS 4 (TypeScript estricto)**, publicado en
+**Vercel** (<https://dstunja.com>) y desplegado solo con cada `git push` a `main`.
+Las páginas son estáticas; solo `src/pages/api/**` (PQRS y empleos) corre como
+función de Vercel. Hay además un espejo de revisión interna en GitHub Pages.
 
-Es la evolución del prototipo HTML que está guardado en [`legacy-html/`](legacy-html/):
-mismo diseño y mismos textos, pero ahora el encabezado, el pie y el botón de WhatsApp
-viven en un solo sitio en vez de estar copiados en seis archivos.
+Empezó como un prototipo en HTML plano; ese prototipo ya no está en el
+repositorio (sigue en el historial de git, carpeta `legacy-html/`).
 
 ---
 
 ## Requisitos
 
-- **Node.js 22.12 o superior** (Astro 7 no arranca con versiones menores).
-  En este equipo hay Node 22.9, así que hay que actualizarlo:
-  `winget install OpenJS.NodeJS.LTS` y reabrir la terminal.
+- **Node.js 22.12 o superior** (Astro no arranca con versiones menores). En
+  Windows: `winget install OpenJS.NodeJS.LTS` y reabrir la terminal.
 
 ## Cómo trabajar
 
 ```bash
-npm install          # una sola vez
+npm ci               # instala exactamente lo del package-lock.json
 npm run dev          # servidor local en http://localhost:4321
-npm run build        # genera el sitio estático en dist/
-npm run preview      # ver dist/ como quedará en producción
-npm run check        # revisa tipos y errores de Astro
+npm test             # pruebas (Vitest) de los módulos de servidor
+npm run check        # revisa tipos y plantillas (astro check)
+npm run build        # compila: el sitio queda en dist/client/ y la función en dist/server/
+npm run preview      # ver el build como quedará en producción
 npm run check:env    # comprueba las variables de entorno antes de arrancar
 npm run og           # regenera la tarjeta de link (public/og.png)
 npm run favicon      # regenera favicon.ico y apple-touch-icon desde el isotipo
 npm run geocodificar # busca las coordenadas que falten (municipios y sede)
 npm run iconos       # las dos anteriores
+npm run verificar:navegacion  # recorre el sitio con Playwright (CSP, mapas, formularios)
 ```
+
+Las mismas tres comprobaciones que corre la CI (`npm test`, `npx astro check` y
+`npm run build`) conviene pasarlas antes de abrir un PR.
+
+> **Build en Windows con `node_modules` enlazado (junction):** el adaptador de
+> Vercel crea, al final del build, un enlace simbólico de `node_modules` dentro
+> de `.vercel/output/`. Si `node_modules` es un junction a otra carpeta,
+> Windows responde `EPERM` en ese paso. Las páginas ya quedaron generadas en
+> `dist/client/`; es un problema del entorno local, no del código (en Vercel y
+> en la CI no pasa).
 
 ## Estructura
 
@@ -41,6 +53,9 @@ src/
   data/coordenadas.json    Caché de coordenadas geocodificadas con Nominatim.
   data/municipios.ts       Cruce de los dos anteriores: lo que usa el mapa.
   data/innovaciones.ts     Novedades mes a mes de la página de innovación.
+  data/especiales.ts       Especiales del mes (inicio y línea de tiempo de innovación).
+  data/reseñas.ts          Reseñas de Google. Vacío a propósito: solo datos reales.
+  data/misionVision.ts     Texto oficial de misión y visión.
   lib/rutas.ts             ruta(): antepone el `base` a los enlaces internos y
                            a los archivos de public/. OBLIGATORIO usarlo.
   lib/mapa-base.ts         Teselas de los mapas (OpenStreetMap / CARTO).
@@ -78,7 +93,8 @@ src/
     Footer.astro           Pie con contacto, canales y redes.
     Logo.astro             Logo oficial: completo, claro (fondo oscuro) e iso.
     Icono.astro            Todos los íconos (lucide + logos de marca).
-    Testimonio.astro       Testimonio de cliente con estrellas.
+    Resenas.astro          Reseñas de Google. Sin reseñas reales cargadas, solo
+                           enlaces a la empresa en Google, sin cifras.
     MisionVision.astro     Pestañas accesibles de Misión / Visión.
     BuscadorCobertura.astro Buscador de municipios (ignora tildes y mayúsculas).
     MapaCobertura.astro    Mapa de la sede, a nivel de calle (Leaflet).
@@ -126,7 +142,8 @@ public/
 scripts/build-og.mjs       Genera la tarjeta Open Graph con Playwright.
 scripts/build-favicon.mjs  Genera los íconos a partir del isotipo.
 scripts/geocodificar.mjs   Consulta Nominatim y llena data/coordenadas.json.
-legacy-html/               El prototipo HTML original, como referencia.
+.github/workflows/ci.yml   CI: pruebas, astro check y build en cada PR y push a main.
+.github/workflows/deploy.yml  Espejo en GitHub Pages.
 ```
 
 ## Qué editar y dónde
@@ -136,10 +153,12 @@ legacy-html/               El prototipo HTML original, como referencia.
 | Teléfono, correo, dirección, redes | `src/data/site.ts` |
 | Lista real de los 87 municipios | `src/data/clientes-municipio.ts` (nombres y clientes) + `src/data/coordenadas.json` (lat/lng). `src/data/municipios.ts` los cruza y es lo que importan el mapa, la cobertura y el campo de municipio de la PQRS |
 | Enlace real de Pideky | `src/data/site.ts` → `PIDEKY_URL` |
-| Textos de Misión y Visión | `src/components/MisionVision.astro` |
+| Textos de Misión y Visión (oficiales) | `src/data/misionVision.ts` |
+| Año de fundación (los «años de experiencia» se calculan solos) | `src/data/site.ts` → `ANIO_FUNDACION` |
 | Colores y tipografía | `src/styles/global.css` (bloque `@theme`) |
 | Foto del hero (camión / bodega) | `src/data/site.ts` → `HERO_IMAGEN` |
-| Testimonio de cliente | `src/data/site.ts` → `testimonio` |
+| Reseñas de Google (solo reales) | `src/data/reseñas.ts` |
+| Especiales del mes | `src/data/especiales.ts` |
 | Íconos disponibles | `src/components/Icono.astro` |
 | Categorías del catálogo | `src/pages/catalogo.astro` |
 | Vacantes y convocatorias | `src/data/vacantes.ts` |
@@ -187,7 +206,7 @@ están marcados en el código con `EDITAR AQUÍ`.
 
 ## Mapa de la red comercial
 
-La sección "Cobertura nacional" del inicio dibuja **un punto por municipio
+La sección "Nuestra cobertura" del inicio dibuja **un punto por municipio
 atendido**: 87 puntos, con el color de su departamento. El número de clientes no
 se pinta sobre el mapa; aparece al pasar el mouse o al tocar el punto, para que
 el mapa se lea limpio. Tunja lleva además el punto pulsante de sede principal.
@@ -248,7 +267,7 @@ El mapa de **Contáctanos** es distinto: muestra la sede a nivel de calle
 | `secondary` | `#1E88E5` | Azul: íconos, acentos, bordes activos |
 | `secondary-dark` | `#1565C0` | Azul para texto y enlaces (contraste AA) |
 | `accent` | `#F5A623` | Naranja: botón destacado, subrayados, estrellas |
-| `accent-text` | `#A65F00` | Naranja legible sobre fondo claro (antetítulos, textos) |
+| `accent-text` | `#9A5800` | Naranja legible sobre fondo claro (antetítulos, textos): AA también sobre el velo naranja |
 | `base` | `#F5F7FA` | Gris muy claro: franjas alternas |
 | `ink` | `#263238` | Gris oscuro: texto y pie de página |
 
@@ -354,6 +373,22 @@ npm run check:env
 Dice cuáles faltan, cuáles tienen mala pinta y de dónde sale cada una. No
 imprime ningún valor. Sale con código 1 si falta alguna imprescindible, así que
 sirve igual en un hook o en CI.
+
+### Resumen de `.env.example`
+
+| Variable | Para qué | Cuándo se lee |
+| --- | --- | --- |
+| `PUBLIC_GTM_CONTAINER_ID` | Contenedor de Google Tag Manager (analítica). Vacío = sin analítica | Build |
+| `PQRS_RESEND_API_KEY`, `RESEND_API_KEY` | Correo de PQRS y de Empleos (Resend) | Petición |
+| `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET` | Antirrobots (Cloudflare Turnstile) | Build / petición |
+| `CRON_SECRET`, `PQRS_IP_SALT` | Protege el cron que borra las subidas abandonadas de la PQRS, y sal del hash de la IP de quien radica | Petición |
+| `PUBLIC_PQRS_ADJUNTO_MAX_MB` | Peso máximo de cada soporte de la PQRS | Build |
+| `C360_POSTULACIONES_URL`, `C360_POSTULACIONES_SECRET` | Envío de postulaciones a Control360 | Petición |
+| `C360_VACANTES_URL` | Vacantes publicadas en Control360 | Build |
+
+`BLOB_READ_WRITE_TOKEN` (Vercel Blob) no está en el ejemplo porque la define
+Vercel al conectar el store. El detalle de cada una está comentado en
+`.env.example` y en la tabla de abajo.
 
 ### Traerlas de Vercel
 
@@ -510,14 +545,29 @@ Los dos caminos acaban en el **mismo buzón**, el de `PQRS_DESTINO`, y se separa
 por el asunto: «Solicitud administrativa · Nombre» frente a «[PQRS-…] PQRS
 Comercial · …». Detalle completo en `docs/PQRS-ADJUNTOS.md`.
 
-## Despliegue en Cloudflare
+## Despliegue
 
-El sitio se compila a HTML estático en `dist/`.
+Hay dos destinos, y cada uno compila con un `site`/`base` distinto. Los elige
+`astro.config.mjs` según la variable `VERCEL`, que Vercel define en todos sus
+builds:
 
-- **Cloudflare Pages / Workers (recomendado):** conectar el repositorio de GitHub y
-  configurar `npm run build` como comando de build y `dist` como carpeta de salida.
-  Cada `git push` a `main` reconstruye y publica.
-- **Manual:** `npm run deploy` (usa `wrangler.jsonc`, requiere `wrangler login`).
+| Destino | Dirección | Cómo se publica | `base` |
+| --- | --- | --- | --- |
+| **Vercel** (principal) | <https://dstunja.com> | Solo, con cada push a `main` (integración Git de Vercel). Cada PR recibe una vista previa. | ninguno |
+| **GitHub Pages** (espejo de revisión interna) | <https://dstunja.github.io/proyecto_paginaWeb> | `.github/workflows/deploy.yml` con cada push a `main` | `/proyecto_paginaWeb` |
+
+- Con el adaptador de Vercel, el build deja el sitio en **`dist/client/`** (y la
+  función en `dist/server/`), no en `dist/`. El workflow de Pages publica
+  `dist/client`.
+- En GitHub Pages **no hay funciones**: la PQRS cae al respaldo por correo y no
+  radica. La radicación de verdad solo funciona en Vercel.
+- **CI** (`.github/workflows/ci.yml`): en cada PR y en cada push a `main` corre
+  `npm ci`, `npm test`, `npx astro check` y `npm run build` con Node 22. No
+  publica nada.
+- Las variables de Vercel se cargan en el panel del proyecto (ver «Variables de
+  entorno»). Las que se leen en el build (`PUBLIC_*`, `C360_VACANTES_URL`) solo
+  surten efecto al volver a desplegar.
+- `wrangler.jsonc` es un resto de cuando el plan era Cloudflare; no se usa.
 
 El dominio y los registros DNS del correo (Zoho) no se tocan al desplegar.
 

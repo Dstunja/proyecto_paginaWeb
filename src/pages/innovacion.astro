@@ -63,24 +63,47 @@ const novedades = [
     ...novedad,
     ...imagenOMarcador(novedad.imagen, novedad.titulo, 1200, 675),
   }));
+
+/**
+ * Textos de la cabecera según lo que de verdad haya publicado.
+ *
+ * Mientras src/data/innovaciones.ts esté vacío, la página solo muestra los
+ * especiales de las marcas: prometer «nuevas herramientas, mejoras en las
+ * rutas y proyectos con nuestro equipo» sin enseñar ninguno sería engañoso
+ * (auditoría, D7). En cuanto se cargue la primera novedad de la empresa,
+ * vuelven los textos de la operación sin tocar nada más.
+ */
+const hayNovedadesPropias = innovaciones.length > 0;
+
+const cabecera = hayNovedadesPropias
+  ? {
+      titulo: 'Lo que estamos mejorando',
+      texto:
+        'Mes a mes contamos las novedades de la operación: nuevas herramientas, mejoras en las rutas y proyectos con nuestro equipo y nuestros aliados.',
+      descripcion:
+        'Novedades, mejoras y proyectos de Distribuciones Santiago de Tunja: tecnología, logística y equipo humano, mes a mes.',
+    }
+  : {
+      titulo: 'Novedades de nuestras marcas',
+      texto:
+        'Aquí publicamos las ediciones especiales y lanzamientos de las marcas que distribuimos. Pregúntale a tu asesor por la disponibilidad en tu zona.',
+      descripcion:
+        'Ediciones especiales y lanzamientos de las marcas que distribuye Distribuciones Santiago de Tunja.',
+    };
 ---
 
 <BaseLayout
   title="Innovación — Distribuciones Santiago de Tunja"
-  description="Novedades, mejoras y proyectos de Distribuciones Santiago de Tunja: tecnología, logística y equipo humano, mes a mes."
+  description={cabecera.descripcion}
 >
-  <PageHero
-    kicker="Innovación"
-    titulo="Lo que estamos mejorando"
-    texto="Mes a mes contamos las novedades de la operación: nuevas herramientas, mejoras en las rutas y proyectos con nuestro equipo y nuestros aliados."
-  />
+  <PageHero kicker="Innovación" titulo={cabecera.titulo} texto={cabecera.texto} />
 
   <section class="section">
     <div class="wrap">
       {
         novedades.length === 0 ? (
           <p class="glass-card p-8 text-muted">
-            Pronto publicaremos aquí las novedades de la operación.
+            Por ahora no hay novedades publicadas.
           </p>
         ) : (
           /* Línea de tiempo: un riel vertical a la izquierda con un punto por

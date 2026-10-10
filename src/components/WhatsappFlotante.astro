@@ -19,7 +19,8 @@ const ocultar = esActual('/pedido/', Astro.url.pathname);
       href={enlacePedido(MENSAJE_PEDIDO)}
       target="_blank"
       rel="noopener"
-      class="group fixed right-6 bottom-6 z-[150] flex h-14 w-14 items-center justify-center rounded-full
+      class="boton-whatsapp-flotante group fixed right-3 z-[150] flex h-12 w-12 items-center justify-center rounded-full
+             mob:right-6 mob:h-14 mob:w-14
              bg-whatsapp text-white shadow-[0_8px_20px_rgba(0,0,0,.2)]
              transition-all duration-200 hover:brightness-95 focus-visible:brightness-95"
       aria-label="Escríbenos por WhatsApp"
@@ -29,3 +30,19 @@ const ocultar = esActual('/pedido/', Astro.url.pathname);
     </a>
   )
 }
+
+<style>
+  /* En móvil el botón es más pequeño y va más pegado a la esquina, y respeta
+     la franja inferior de los teléfonos sin botón de inicio. Junto con el
+     margen derecho de los botones de la portada (index.astro), así ya no tapa
+     «Conoce nuestro portafolio» (auditoría, D15). */
+  .boton-whatsapp-flotante {
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (min-width: 520px) {
+    .boton-whatsapp-flotante {
+      bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+</style>

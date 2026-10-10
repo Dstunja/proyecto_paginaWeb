@@ -8,7 +8,6 @@ import { bloquePrecio } from '../lib/plantillasCatalogo';
 import { productos as catalogo } from '../data/productos';
 import {
   especialesDelMes,
-  periodoEspeciales,
   hayEspecialesDelMes,
   type ProductoEspecial,
 } from '../data/especiales';
@@ -130,12 +129,11 @@ const columnas =
           </div>
 
           <div class="flex flex-wrap items-center gap-3 tablet:justify-end">
-            {/* El mes va en una píldora blanca: deja claro de un vistazo que
-                esto es contenido que rota, no una sección fija del catálogo. */}
-            <p class="m-0 inline-flex shrink-0 items-center gap-2 rounded-full border border-accent/40 bg-surface px-4 py-2 font-display text-[13px] font-semibold text-accent-text">
-              <Icono nombre="calendar" class="h-4 w-4" interactivo={false} />
-              {periodoEspeciales}
-            </p>
+            {/* Aquí iba una píldora con el mes («Septiembre 2026»). Se quitó
+                porque el sitio es estático y la lista se actualiza a mano: si
+                nadie la cambia a tiempo, el inicio anuncia un mes vencido. El
+                mes sigue en src/data/especiales.ts (`periodoEspeciales`) para
+                ordenar la línea de tiempo de /innovacion/. */}
 
             {esCarrusel && (
               /* Flechas del carrusel. Van en la cabecera y no encima de las

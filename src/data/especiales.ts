@@ -93,10 +93,16 @@ export interface ProductoEspecial {
 }
 
 /**
- * Mes que se está mostrando, tal como se quiere leer.
+ * Mes al que corresponden los productos de abajo, tal como se quiere leer.
  *
- * EDITAR AQUÍ: actualizarlo cada vez que cambien los productos de abajo, para
- * que la sección no anuncie un mes que ya pasó.
+ * Ya NO se muestra en el inicio (la sección dice solo «Especiales del mes»,
+ * para no anunciar un mes vencido si nadie la actualiza a tiempo). Se usa para
+ * fechar y ordenar los especiales en la línea de tiempo de /innovacion/.
+ *
+ * PENDIENTE (octubre 2026): faltan los especiales de octubre. Los de abajo son
+ * los de septiembre; al cargar los nuevos, actualizar también este texto.
+ *
+ * EDITAR AQUÍ cada vez que cambien los productos de abajo.
  */
 export const periodoEspeciales = 'Septiembre 2026';
 

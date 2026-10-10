@@ -71,7 +71,7 @@
   --color-accent: #f5a623; /* naranja: CTA destacado */
   --color-accent-soft: #fdf3e3; /* velo naranja muy claro: franja de Especiales del mes */
   --color-accent-dark: #d98c07; /* hover del naranja */
-  --color-accent-text: #a65f00; /* naranja legible como texto pequeño sobre blanco */
+  --color-accent-text: #9a5800; /* naranja legible como texto pequeño: AA (≥4,5:1) sobre blanco, #F5F7FA, el velo naranja y los velos azules */
   --color-accent-strong: #c77700; /* naranja para titulares grandes (AA en texto grande) */
 
   /* Marcador de la sede en los dos mapas (inicio y Contáctanos). No es el rojo

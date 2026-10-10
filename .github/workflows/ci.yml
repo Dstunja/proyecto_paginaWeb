@@ -1,0 +1,51 @@
+# Revisión automática de cada cambio (integración continua).
+#
+# Corre en cada pull request y en cada push a main: instala dependencias con
+# el lockfile, pasa las pruebas, revisa tipos y plantillas con `astro check` y
+# compila el sitio. Si algo falla, el PR queda marcado en rojo antes de que el
+# cambio llegue a Vercel (que despliega solo con cada push a main).
+#
+# No publica nada: el espejo de GitHub Pages sigue en deploy.yml.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Un push nuevo al mismo PR cancela la revisión anterior, que ya no sirve.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  revisar:
+    name: Pruebas, tipos y compilación
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Node 22 con caché de npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Pruebas
+        run: npm test
+
+      - name: Revisar tipos y plantillas
+        run: npx astro check
+
+      # Sin variables de entorno: el build no debe depender de secretos. Las
+      # vacantes caen a src/data/vacantes.ts y el sitio sale sin analítica.
+      - name: Compilar
+        run: npm run build

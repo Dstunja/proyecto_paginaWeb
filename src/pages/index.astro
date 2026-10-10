@@ -20,6 +20,7 @@ import {
   HERO_IMAGEN,
   HERO_IMAGEN_ALT,
   resumenCobertura,
+  ANIOS_EXPERIENCIA,
 } from '../data/site';
 // De municipios.ts sale el dato real (cuántos municipios cubre cada
 // departamento y su color); las cifras de clientes que se muestran son las
@@ -73,7 +74,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
 
 <BaseLayout
   title="Distribuciones Santiago de Tunja — Distribuidor Nutresa en Boyacá, Santander y Cundinamarca"
-  description="Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. 21 años de experiencia, 87 municipios cubiertos y más de 7.000 clientes atendidos."
+  description={`Distribuidor oficial de Grupo Nutresa en Boyacá, Santander y Cundinamarca. ${ANIOS_EXPERIENCIA} años de experiencia, 87 municipios cubiertos y más de 7.000 clientes atendidos.`}
 >
   <!-- HERO -->
   <section class="relative overflow-hidden pt-14 pb-0 tablet:pt-24" data-seccion="hero">
@@ -85,7 +86,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
               <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-verde opacity-75"></span>
               <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-verde"></span>
             </span>
-            Aliado comercial de Grupo Nutresa
+            Distribuidor oficial de Grupo Nutresa
           </p>
           <h1 class="text-[38px] mob:text-[46px] tablet:text-[60px]">
             Las marcas que mueven tu negocio,{' '}
@@ -98,8 +99,10 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
           {/* `data-magnetico`: los dos CTA de la portada se estiran unos
               píxeles hacia el cursor cuando pasa cerca. Solo con ratón y solo
               si el sistema no pide menos movimiento; lo gobierna
-              src/lib/interacciones.ts. */}
-          <div class="mt-10 flex flex-wrap gap-4">
+              src/lib/interacciones.ts.
+              `max-mob:pr-12` deja libre en móvil la columna del botón
+              flotante de WhatsApp, que si no tapaba el segundo botón. */}
+          <div class="mt-10 flex flex-wrap gap-4 max-mob:pr-12">
             <a
               class="btn btn-whatsapp"
               href={enlacePedido(MENSAJE_PEDIDO)}
@@ -164,7 +167,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
         class="sobre-oscuro mt-20 rounded-[24px] bg-primary px-6 py-9 shadow-[0_18px_44px_rgba(13,44,132,.22)] tablet:px-10"
         data-seccion="cifras"
       >
-        <dl class="grid grid-cols-2 gap-y-9 tablet:grid-cols-4">
+        <div class="grid grid-cols-2 gap-y-9 tablet:grid-cols-4">
           {
             cifras.map((cifra, i) => (
               <div
@@ -176,16 +179,20 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
                 <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent transition-all duration-300 group-hover:scale-105 group-hover:bg-accent group-hover:text-ink-dark">
                   <Icono nombre={cifra.icono} class="h-5 w-5" />
                 </span>
-                <div>
-                  <dd class="font-display text-[30px] leading-none font-bold" data-contador>
+                {/* Cada cifra es su propia lista de definición: un <dl> solo admite
+                    <dt>/<dd> (o <div> con ellos) como hijos, y aquí cada grupo
+                    lleva además el ícono. El <dt> va primero, como pide HTML,
+                    y `flex-col-reverse` deja el número arriba en pantalla. */}
+                <dl class="m-0 flex flex-col-reverse">
+                  <dt class="mt-1.5 text-[12.5px] text-muted">{cifra.etiqueta}</dt>
+                  <dd class="m-0 font-display text-[30px] leading-none font-bold" data-contador>
                     {cifra.valor}
                   </dd>
-                  <dt class="mt-1.5 text-[12.5px] text-muted">{cifra.etiqueta}</dt>
-                </div>
+                </dl>
               </div>
             ))
           }
-        </dl>
+        </div>
       </div>
     </div>
   </section>
@@ -254,7 +261,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
       >
         <div class="max-w-[52ch]">
           <span class="kicker">Nuestra red</span>
-          <h2 class="text-[28px] tablet:text-[38px]">Cobertura nacional</h2>
+          <h2 class="text-[28px] tablet:text-[38px]">Nuestra cobertura</h2>
           {/* La cifra sale de CLIENTES_TEXTO (src/data/site.ts), la misma que
               muestra la barra del hero: son el mismo dato y no pueden diferir. */}
           <p class="mt-3 text-muted">
