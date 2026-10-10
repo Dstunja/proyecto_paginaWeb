@@ -6,8 +6,9 @@
  * ejemplo (4,8 · 34) presentados como "Reseñas reales en Google". Eso es
  * publicidad engañosa y se retiró (auditoría, hallazgo D2). Mientras
  * `resenas` esté vacío y `resumenResenas` no traiga promedio ni total, el
- * inicio muestra solo un botón "Ver nuestras reseñas en Google" que lleva a la
- * ficha real del negocio (por su Place ID, src/data/site.ts).
+ * inicio muestra solo dos enlaces discretos: "Ver la empresa en Google" (la
+ * búsqueda en Google Maps) y "Califícanos en Google" (el cuadro de escribir
+ * reseña). Sin números ni estrellas.
  *
  * NUNCA cargar aquí reseñas de ejemplo ni cifras aproximadas. Solo opiniones
  * reales, copiadas tal cual de la ficha de Google (o traídas por la API), con
@@ -88,8 +89,6 @@
  *    un archivo hay que refrescarlo con cada publicación.
  */
 
-import { googlePlaceId } from './site';
-
 export interface Resena {
   /** Nombre del autor tal como lo publica Google (authorAttribution.displayName). */
   autor: string;
@@ -127,11 +126,9 @@ export const resenas: Resena[] = [];
  * `userRatingCount`), van sin definir y el inicio no muestra ninguna cifra:
  * una calificación que no coincida con la ficha de Google es peor que ninguna.
  *
- * El enlace abre la ficha real del negocio por su Place ID (formato
- * documentado de las "Maps URLs" de Google).
+ * El enlace abre en Google Maps la búsqueda «Distribuciones Santiago de Tunja»
+ * (enlace confirmado por el dueño el 10 de octubre de 2026).
  */
 export const resumenResenas: ResumenResenas = {
-  url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    'Distribuciones Santiago de Tunja',
-  )}&query_place_id=${googlePlaceId}`,
+  url: 'https://www.google.com/maps/search/?api=1&query=Distribuciones+Santiago+de+Tunja',
 };

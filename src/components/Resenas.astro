@@ -9,9 +9,9 @@
  * haya que cambiar nada de aquí. Ver el comentario largo de src/data/reseñas.ts.
  *
  * Dos formas, según haya datos REALES o no:
- *   - Sin reseñas cargadas (lo de hoy): una franja corta con el botón "Ver
- *     nuestras reseñas en Google", que abre la ficha real del negocio, y la
- *     invitación a escribir una. No se muestra ninguna cifra ni testimonio.
+ *   - Sin reseñas cargadas (lo de hoy): una franja corta con "Ver la empresa
+ *     en Google" (búsqueda en Google Maps) y "Califícanos en Google" (cuadro
+ *     de escribir reseña). No se muestra ninguna cifra, estrella ni testimonio.
  *   - Con reseñas: las tarjetas, y el resumen de promedio y total solo si
  *     ambos números vienen de la ficha (nunca de ejemplo).
  */
@@ -58,37 +58,30 @@ const columnas = resenas.length >= 4 ? 'tablet:grid-cols-4' : 'tablet:grid-cols-
 
 {
   resenas.length === 0 && (
-    /* Sin reseñas reales cargadas: solo los enlaces a la ficha de Google. */
-    <section id="resenas" class="section" data-seccion="resenas">
-      <div class="wrap">
-        <div class="glass-card mx-auto flex max-w-[760px] flex-col items-center gap-5 px-7 py-9 text-center">
-          <span class="kicker">Lo que dicen nuestros clientes</span>
-          <h2 class="text-[26px] tablet:text-[32px]">Nuestras reseñas en Google</h2>
-          <p class="m-0 max-w-[52ch] text-muted">
-            Las opiniones de los tenderos y negocios que trabajan con nosotros están publicadas
-            en nuestra ficha de Google Maps.
-          </p>
-          <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-            <a
-              class="btn btn-primary"
-              href={resumen.url}
-              target="_blank"
-              rel="noopener"
-              data-cta="resenas"
-            >
-              Ver nuestras reseñas en Google
-              <Icono nombre="arrow-right" class="h-4 w-4" interactivo={false} />
-            </a>
-            <a
-              class="inline-flex min-h-6 items-center font-semibold text-secondary-dark underline underline-offset-4"
-              href={empresa.escribirResenaUrl}
-              target="_blank"
-              rel="noopener"
-              data-cta="escribir_resena"
-            >
-              Cuéntanos tu experiencia
-            </a>
-          </div>
+    /* Sin reseñas reales cargadas: solo dos enlaces discretos a Google, sin
+       cifras ni estrellas. */
+    <section id="resenas" class="py-12" data-seccion="resenas">
+      <div class="wrap flex flex-col items-center gap-4 text-center">
+        <p class="m-0 text-muted">¿Ya trabajas con nosotros? Tu opinión nos ayuda a mejorar.</p>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <a
+            class="btn btn-secondary"
+            href={resumen.url}
+            target="_blank"
+            rel="noopener"
+            data-cta="resenas"
+          >
+            Ver la empresa en Google
+          </a>
+          <a
+            class="btn btn-secondary"
+            href={empresa.escribirResenaUrl}
+            target="_blank"
+            rel="noopener"
+            data-cta="escribir_resena"
+          >
+            Califícanos en Google
+          </a>
         </div>
       </div>
     </section>
@@ -160,7 +153,7 @@ const columnas = resenas.length >= 4 ? 'tablet:grid-cols-4' : 'tablet:grid-cols-
               rel="noopener"
               data-cta="resenas"
             >
-              Ver nuestras reseñas en Google
+              Ver la empresa en Google
               <Icono nombre="arrow-right" class="h-4 w-4" interactivo={false} />
             </a>
           )}
