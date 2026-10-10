@@ -36,7 +36,36 @@ const {
 } = Astro.props;
 ---
 
+{/*
+  Sin JavaScript este formulario no puede armar el correo. Dos defensas para
+  que, aun así, los datos personales nunca terminen en la URL (auditoría, D6):
+    - method="post": sin él, enviar el formulario sin JS hacía un GET a esta
+      misma página con nombre, teléfono y mensaje en la barra de direcciones
+      (y en el historial y los registros del servidor).
+    - <noscript>: muestra WhatsApp y correo como alternativa y oculta el botón
+      de envío, que sin JS no llevaría a ninguna parte.
+*/}
+<noscript>
+  <p class="mb-5 rounded-xl border border-line bg-fondo p-4 text-[14.5px] text-ink">
+    Para enviar este formulario necesitas tener JavaScript activado. También puedes escribirnos
+    por{' '}
+    <a class="font-semibold text-secondary-dark underline" href={empresa.whatsapp} rel="noopener"
+      >WhatsApp ({empresa.telefono})</a
+    >{' '}
+    o al correo{' '}
+    <a class="font-semibold break-all text-secondary-dark underline" href={`mailto:${destinatario}`}
+      >{destinatario}</a
+    >.
+  </p>
+  <style is:inline>
+    form[data-mailto] button[type='submit'] {
+      display: none;
+    }
+  </style>
+</noscript>
+
 <form
+  method="post"
   data-mailto
   data-asunto={asunto}
   data-destinatario={destinatario}
