@@ -34,6 +34,7 @@ it('las puertas van en orden y la respuesta no lleva secretos', async () => {
   expect(pedidos).toEqual([
     'https://dstunja.com/empleos/ 40',
     'https://dstunja.com/api/empleos/vacantes.json 40',
+    'https://dstunja.com/sitemap-empleos.xml 40',
     'https://dstunja.com/empleos/facturacion/ 40',
   ]);
   vi.stubEnv('ISR_BYPASS_TOKEN', '');

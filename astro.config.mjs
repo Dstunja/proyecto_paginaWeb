@@ -92,12 +92,22 @@ export default defineConfig({
   // siguen siendo archivos. Fuera de Vercel no hay rutas de empleos bajo
   // demanda, asi que da igual, pero se deja apagado para que quede claro.
   adapter: vercel({ isr: enVercel ? configIsr(process.env) : false }),
-  // El sitemap solo ve las paginas prerenderizadas; en Vercel /empleos/ va con
-  // ISR y hay que nombrarla a mano para que no se caiga del sitemap. Los
-  // detalles /empleos/<slug>/ cambian con Control360 y se descubren desde ahi.
+  // El sitemap solo ve las paginas prerenderizadas. En Vercel las de empleos van
+  // con ISR, asi que tienen su propio sitemap, tambien con ISR
+  // (src/pages/sitemap-empleos.xml.ts): /empleos/ y cada vacante abierta, al dia
+  // con Control360. sitemap-index.xml lo incluye con `customSitemaps`. En GitHub
+  // Pages las paginas de empleos son estaticas y ya entran en sitemap-0.xml.
   integrations: [
     empleosIsr,
-    sitemap(enVercel ? { customPages: [`${SITIO_VERCEL}/empleos/`] } : {}),
+    sitemap(
+      enVercel
+        ? {
+            customSitemaps: [`${SITIO_VERCEL}/sitemap-empleos.xml`],
+            // /empleos/ ya va en sitemap-empleos.xml: aqui no se repite.
+            filter: (pagina) => pagina !== `${SITIO_VERCEL}/empleos/`,
+          }
+        : {},
+    ),
   ],
   // Los comentarios HTML de las plantillas NO se publican: los quita
   // src/middleware.ts al generar cada pagina. Astro no tiene opcion para eso.

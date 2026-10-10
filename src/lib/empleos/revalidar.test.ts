@@ -78,13 +78,14 @@ describe('rutasARevalidar', () => {
     expect(rutasARevalidar(['facturacion', 'logistica', 'facturacion'])).toEqual([
       '/empleos/',
       '/api/empleos/vacantes.json',
+      '/sitemap-empleos.xml',
       '/empleos/facturacion/',
       '/empleos/logistica/',
     ]);
   });
 
-  it('sin slugs, solo la lista y el JSON', () => {
-    expect(rutasARevalidar([])).toEqual(['/empleos/', '/api/empleos/vacantes.json']);
+  it('sin slugs, solo la lista, el JSON y el sitemap de empleos', () => {
+    expect(rutasARevalidar([])).toEqual(['/empleos/', '/api/empleos/vacantes.json', '/sitemap-empleos.xml']);
   });
 });
 
@@ -106,12 +107,14 @@ describe('revalidarRutas', () => {
     expect(pedidos.map((p) => p.url)).toEqual([
       'https://dstunja.com/empleos/',
       'https://dstunja.com/api/empleos/vacantes.json',
+      'https://dstunja.com/sitemap-empleos.xml',
       'https://dstunja.com/empleos/cerrada/',
     ]);
     expect(pedidos.every((p) => p.token === TOKEN)).toBe(true);
     expect(r).toEqual([
       { ruta: '/empleos/', estado: 200 },
       { ruta: '/api/empleos/vacantes.json', estado: 200 },
+      { ruta: '/sitemap-empleos.xml', estado: 200 },
       { ruta: '/empleos/cerrada/', estado: 404 },
     ]);
   });
@@ -125,6 +128,7 @@ describe('revalidarRutas', () => {
     expect(r).toEqual([
       { ruta: '/empleos/', estado: 200 },
       { ruta: '/api/empleos/vacantes.json', estado: 0 },
+      { ruta: '/sitemap-empleos.xml', estado: 200 },
     ]);
   });
 });
@@ -163,7 +167,7 @@ describe('isr.mjs', () => {
     for (const ruta of ['/api/pqrs', '/api/pqrs/token', '/api/empleos/postular', '/api/empleos/revalidar', '/api/empleos/descarga']) {
       expect(EXCLUIR_DE_ISR.test(ruta), ruta).toBe(true);
     }
-    for (const ruta of ['/api/empleos/vacantes.json', '/empleos', '/empleos/[slug]', '/pqrs']) {
+    for (const ruta of ['/api/empleos/vacantes.json', '/empleos', '/empleos/[slug]', '/sitemap-empleos.xml', '/pqrs']) {
       expect(EXCLUIR_DE_ISR.test(ruta), ruta).toBe(false);
     }
   });

@@ -12,6 +12,7 @@
  * la caché para todos (revalidación bajo demanda de ISR). Se regeneran:
  *   - /empleos/ (las tarjetas y el <select> del formulario),
  *   - /api/empleos/vacantes.json,
+ *   - /sitemap-empleos.xml (lo que ven los buscadores),
  *   - /empleos/<slug>/ de cada slug recibido, TAMBIÉN de los cerrados: así el
  *     enlace viejo pasa a "Esta vacante ya se cerró" sin esperar 5 minutos.
  *
@@ -39,7 +40,7 @@ const FORMA_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const LARGO_MAXIMO_SLUG = 100;
 
 /** Rutas que se regeneran siempre, cambie la vacante que cambie. */
-export const RUTAS_SIEMPRE = ['/empleos/', '/api/empleos/vacantes.json'] as const;
+export const RUTAS_SIEMPRE = ['/empleos/', '/api/empleos/vacantes.json', '/sitemap-empleos.xml'] as const;
 
 const resumen = (texto: string): Buffer => createHash('sha256').update(texto, 'utf8').digest();
 

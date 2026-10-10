@@ -66,6 +66,11 @@ export interface Vacante {
    * estática no las tiene, y sin ellas el formulario queda como siempre.
    */
   preguntas?: PreguntaVacante[];
+  /**
+   * Cuándo cambió la vacante por última vez (fecha ISO), si Control360 la manda.
+   * Solo la usa el sitemap de empleos como `lastmod`; sin ella no se inventa.
+   */
+  actualizada?: string;
 }
 
 /**

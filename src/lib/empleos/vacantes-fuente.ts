@@ -77,6 +77,14 @@ const textos = (x: unknown): string[] =>
   Array.isArray(x) ? x.map((s) => String(s ?? '').trim()).filter(Boolean) : [];
 const texto = (x: unknown): string => String(x ?? '').trim();
 
+/** "2026-10-10" o "2026-10-10T15:04:05Z" → ISO normalizado; cualquier otra cosa → ''. */
+const fechaIso = (x: unknown): string => {
+  const v = texto(x);
+  if (!/^\d{4}-\d{2}-\d{2}(?:T[\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(v)) return '';
+  const t = Date.parse(v);
+  return Number.isNaN(t) ? '' : new Date(t).toISOString();
+};
+
 /** El flyer de Control360 llega como URL absoluta (su bucket); cualquier otra cosa no se usa. */
 const urlImagen = (x: unknown): string => {
   const v = texto(x);
@@ -132,6 +140,9 @@ export function leerVacantesRemotas(
     const whatsappExtra = whatsappDesdeDigitos(o.whatsappExtra) ?? (base?.whatsappExtra ? { ...base.whatsappExtra } : null);
     const salario = texto(o.salario) || base?.salario || '';
     const jornada = texto(o.jornada) || base?.jornada || '';
+    // Fecha del último cambio, si Control360 la manda (para el sitemap). Solo
+    // se acepta una fecha ISO real; lo demás se ignora.
+    const actualizada = fechaIso(o.actualizada);
     salida.push({
       slug,
       cargo,
@@ -148,6 +159,7 @@ export function leerVacantesRemotas(
       ...(whatsappExtra ? { whatsappExtra } : {}),
       ...(salario ? { salario } : {}),
       ...(jornada ? { jornada } : {}),
+      ...(actualizada ? { actualizada } : {}),
     });
   }
   // Lista vacía de verdad = RRHH no tiene nada publicado, y así se muestra.

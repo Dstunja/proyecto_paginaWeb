@@ -55,7 +55,7 @@ Stack: Astro + Tailwind 4 + TypeScript.
   Vercel**: en GitHub Pages no hay backend y el formulario de PQRS cae al correo en
   vez de radicar.
 - **Excepción: empleos va con ISR en Vercel.** `/empleos/`, `/empleos/<slug>/` y
-  `/api/empleos/vacantes.json` se sirven desde la caché de Vercel y se regeneran
+  `/api/empleos/vacantes.json` (y `/sitemap-empleos.xml`, que `sitemap-index.xml` incluye) se sirven desde la caché de Vercel y se regeneran
   cuando Control360 avisa por `POST /api/empleos/revalidar` (o a los 5 minutos).
   Su `prerender` lo decide la integración de `astro.config.mjs` (falso en Vercel,
   verdadero en GitHub Pages), no el archivo. Ver `src/lib/empleos/isr.mjs`.

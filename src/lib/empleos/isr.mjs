@@ -15,7 +15,8 @@
  *
  * QUÉ ENTRA. Solo las tres rutas que leen las vacantes: /empleos/ (tarjetas y
  * el <select> del formulario, que vive en la misma página), /empleos/<slug>/ y
- * el JSON público /api/empleos/vacantes.json. Todo lo demás (inicio, PQRS,
+ * el JSON público /api/empleos/vacantes.json, más /sitemap-empleos.xml (para que
+ * los buscadores vean cada vacante abierta). Todo lo demás (inicio, PQRS,
  * catálogo…) sigue prerenderizado al compilar, como siempre.
  *
  * DÓNDE. Solo en Vercel. En el espejo de GitHub Pages no hay funciones, así que
@@ -36,6 +37,7 @@ export const COMPONENTES_ISR = [
   'src/pages/empleos.astro',
   'src/pages/empleos/[slug].astro',
   'src/pages/api/empleos/vacantes.json.ts',
+  'src/pages/sitemap-empleos.xml.ts',
 ];
 
 /** Segundos que vive una copia sin aviso de Control360 (respaldo del webhook). */
