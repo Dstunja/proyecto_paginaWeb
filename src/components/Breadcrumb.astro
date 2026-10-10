@@ -52,13 +52,13 @@ const nombre = titulo ?? titulosDePagina[limpia];
       <ol class="m-0 flex list-none flex-wrap items-center gap-2 p-0 text-[13px]">
         <li>
           <a
-            class="text-muted underline-offset-4 transition-colors duration-200 hover:text-secondary-dark hover:underline"
+            class="inline-flex min-h-6 items-center text-muted underline-offset-4 transition-colors duration-200 hover:text-secondary-dark hover:underline"
             href={ruta('/')}
           >
             Inicio
           </a>
         </li>
-        <li aria-hidden="true" class="text-muted/60">
+        <li aria-hidden="true" class="text-muted">
           &rsaquo;
         </li>
         {/* La página actual no es un enlace: ya estás en ella. */}

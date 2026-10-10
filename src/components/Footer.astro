@@ -71,15 +71,15 @@ const canales = [
       </div>
 
       <div>
-        <h4 class="mb-6 text-[12px] font-semibold tracking-[0.14em] text-ink uppercase">
+        <h3 class="mb-6 text-[12px] font-semibold tracking-[0.14em] text-ink uppercase">
           Enlaces rápidos
-        </h4>
+        </h3>
         <ul class="m-0 flex list-none flex-col gap-3.5 p-0">
           {
             navegacion.map((item) => (
               <li>
                 <a
-                  class="text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
+                  class="inline-flex min-h-6 items-center text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
                   href={ruta(item.href)}
                 >
                   {item.texto}
@@ -91,15 +91,15 @@ const canales = [
       </div>
 
       <div>
-        <h4 class="mb-6 text-[12px] font-semibold tracking-[0.14em] text-ink uppercase">
+        <h3 class="mb-6 text-[12px] font-semibold tracking-[0.14em] text-ink uppercase">
           Nuestros canales
-        </h4>
+        </h3>
         <ul class="m-0 flex list-none flex-col gap-3.5 p-0">
           {
             canales.map((canal) => (
               <li>
                 <a
-                  class="group flex items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
+                  class="group flex min-h-6 items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
                   href={ruta(canal.href)}
                   {...canal.externo ? { target: '_blank', rel: 'noopener' } : {}}
                 >
@@ -114,7 +114,7 @@ const canales = [
         <ul class="m-0 mt-8 flex list-none flex-col gap-3.5 p-0">
           <li>
             <a
-              class="group flex items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
+              class="group flex min-h-6 items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
               href={`mailto:${empresa.email}`}
             >
               <Icono nombre="mail" class="h-4 w-4" />
@@ -123,7 +123,7 @@ const canales = [
           </li>
           <li>
             <a
-              class="group flex items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
+              class="group flex min-h-6 items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
               href={`tel:${empresa.telefonoE164}`}
             >
               <Icono nombre="phone" class="h-4 w-4" />
@@ -139,7 +139,7 @@ const canales = [
           <li>
             <EnlaceUbicacion
               subrayado={false}
-              class="group flex items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
+              class="group flex min-h-6 items-center gap-3 text-[14.5px] text-muted transition-colors duration-200 hover:text-accent"
             >
               <Icono nombre="map-pin" class="h-4 w-4" />
               {empresa.direccion}, {empresa.ciudad}
@@ -149,12 +149,12 @@ const canales = [
       </div>
     </div>
 
-    <div class="flex flex-wrap items-center justify-between gap-3 pt-8 text-[13px] text-muted/70">
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-8 text-[13px] text-muted">
       <span>© {anio} {empresa.razonSocial} Todos los derechos reservados.</span>
       <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
         {/* La ley de proteccion de datos pide que la politica se pueda
             encontrar desde cualquier pagina. */}
-        <a class="underline transition-colors duration-200 hover:text-accent" href={ruta('/privacidad/')}>
+        <a class="inline-flex min-h-6 items-center underline transition-colors duration-200 hover:text-accent" href={ruta('/privacidad/')}>
           Tratamiento de datos
         </a>
         <span class="tracking-[0.08em] uppercase">Boyacá · Santander · Cundinamarca</span>

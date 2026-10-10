@@ -165,7 +165,7 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
         class="sobre-oscuro mt-20 rounded-[24px] bg-primary px-6 py-9 shadow-[0_18px_44px_rgba(13,44,132,.22)] tablet:px-10"
         data-seccion="cifras"
       >
-        <dl class="grid grid-cols-2 gap-y-9 tablet:grid-cols-4">
+        <div class="grid grid-cols-2 gap-y-9 tablet:grid-cols-4">
           {
             cifras.map((cifra, i) => (
               <div
@@ -177,16 +177,20 @@ const logosDeLaFranja = marcasDeLaFranja.flatMap((nombre) => {
                 <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/15 text-accent transition-all duration-300 group-hover:scale-105 group-hover:bg-accent group-hover:text-ink-dark">
                   <Icono nombre={cifra.icono} class="h-5 w-5" />
                 </span>
-                <div>
-                  <dd class="font-display text-[30px] leading-none font-bold" data-contador>
+                {/* Cada cifra es su propia lista de definición: un <dl> solo admite
+                    <dt>/<dd> (o <div> con ellos) como hijos, y aquí cada grupo
+                    lleva además el ícono. El <dt> va primero, como pide HTML,
+                    y `flex-col-reverse` deja el número arriba en pantalla. */}
+                <dl class="m-0 flex flex-col-reverse">
+                  <dt class="mt-1.5 text-[12.5px] text-muted">{cifra.etiqueta}</dt>
+                  <dd class="m-0 font-display text-[30px] leading-none font-bold" data-contador>
                     {cifra.valor}
                   </dd>
-                  <dt class="mt-1.5 text-[12.5px] text-muted">{cifra.etiqueta}</dt>
-                </div>
+                </dl>
               </div>
             ))
           }
-        </dl>
+        </div>
       </div>
     </div>
   </section>
