@@ -250,11 +250,11 @@ export const cobertura = [
 
 /**
  * Los municipios cubiertos (con sus coordenadas para el mapa) viven ahora en
- * src/data/municipios.ts, que es lo que usa la sección "Cobertura nacional".
+ * src/data/municipios.ts, que es lo que usa la sección "Nuestra cobertura".
  */
 
 /**
- * Clientes que se MUESTRAN en el resumen de la sección "Cobertura nacional".
+ * Clientes que se MUESTRAN en el resumen de la sección "Nuestra cobertura".
  *
  * OJO: son cifras de comunicación, no el conteo real. La empresa comunica una
  * red de 7.000 clientes, así que el titular y los tres contadores de esa
@@ -336,8 +336,10 @@ export const beneficios = [
     icono: 'badge-percent',
     titulo: 'Precios competitivos',
     texto: 'Ofertas y promociones de la quincena pensadas para el margen de tu negocio.',
-    enlace: '/catalogo/',
-    enlaceTexto: 'Pedir la lista de precios',
+    /* Lleva a Arma tu pedido, que es donde están los precios de referencia: el
+       catálogo no los muestra, y un botón que promete precios no debe llevar ahí. */
+    enlace: '/pedido/',
+    enlaceTexto: 'Ver los precios de referencia',
   },
   {
     icono: 'user-check',
