@@ -18,7 +18,6 @@
     "fotos:conectar": "node scripts/conectar-fotos.mjs",
     "iconos": "npm run favicon && npm run og",
     "check:env": "node scripts/check-env.mjs",
-    "verificar:analitica": "node scripts/verificar-analitica.mjs",
     "verificar:pedido": "node scripts/verificar-pedido.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

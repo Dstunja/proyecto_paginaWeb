@@ -25,9 +25,9 @@
  *   7. Con la red real, sin interceptar nada: ninguna página provoca un bloqueo
  *      de CSP, los dos mapas cargan teselas, Turnstile carga y entrega token
  *      (con la clave de prueba de Cloudflare inyectada), los formularios de
- *      PQRS y Empleos llegan a su API (un doble local), la analítica carga si
- *      el build lleva PUBLIC_GTM_CONTAINER_ID, y los destinos de connect-src
- *      (Google Analytics, Vercel Blob) no se bloquean mientras uno ajeno sí.
+ *      PQRS y Empleos llegan a su API (un doble local), la página no pide nada
+ *      a Google Analytics ni a Tag Manager, y el destino de connect-src
+ *      (Vercel Blob) no se bloquea mientras uno ajeno sí.
  *
  * Con `--url https://dstunja.com` además revisa PRODUCCIÓN: las cabeceras de
  * varias respuestas, que http:// redirige a https:// con 301 o 308, y que las
@@ -38,9 +38,6 @@
  *   npm run build
  *   node scripts/verificar-navegacion.mjs
  *   node scripts/verificar-navegacion.mjs --url https://dstunja.com
- *
- * Para probar también la analítica en local, compilar con un ID de prueba:
- *   PUBLIC_GTM_CONTAINER_ID=GTM-TEST000 npm run build
  *
  * Puerto: 4399, el mismo en todos los scripts de verificación. Está lejos del
  * 4321 de `astro dev` y de los que Astro toma cuando ese está ocupado (4322,
@@ -349,23 +346,23 @@ function revisarCsp(csp, etiqueta) {
   comprobar(`${etiqueta}: hay Content-Security-Policy`, Boolean(csp), csp ? '' : '(ausente)');
   comprobar(`${etiqueta}: CSP default-src 'self'`, tiene('default-src', "'self'"));
   comprobar(
-    `${etiqueta}: CSP script-src sin 'unsafe-inline' ni 'unsafe-eval', con Turnstile y Tag Manager`,
-    tiene('script-src', "'self'", 'https://challenges.cloudflare.com', 'https://www.googletagmanager.com') &&
+    `${etiqueta}: CSP script-src sin 'unsafe-inline' ni 'unsafe-eval', con Turnstile`,
+    tiene('script-src', "'self'", 'https://challenges.cloudflare.com') &&
       !fuentes('script-src').some((f) => /unsafe/.test(f)),
     fuentes('script-src').join(' '),
   );
   comprobar(
-    // El segundo es el <iframe> de respaldo de Tag Manager (AnaliticaNoscript.astro),
-    // el que ve quien navega sin JavaScript. Nada más debe poder empotrarse.
-    `${etiqueta}: CSP frame-src solo Turnstile y Tag Manager`,
-    fuentes('frame-src').join(' ') === 'https://challenges.cloudflare.com https://www.googletagmanager.com',
+    // Solo el reto de Turnstile. Nada más debe poder empotrarse.
+    `${etiqueta}: CSP frame-src solo Turnstile`,
+    fuentes('frame-src').join(' ') === 'https://challenges.cloudflare.com',
     fuentes('frame-src').join(' '),
   );
   comprobar(`${etiqueta}: CSP img-src con las teselas del mapa y los flyers de Control360`, tiene('img-src', "'self'", 'https://*.tile.openstreetmap.fr', 'https://txefdbdnaactqjaxygzb.supabase.co'));
   comprobar(`${etiqueta}: CSP font-src solo fuentes propias`, fuentes('font-src').join(' ') === "'self'", fuentes('font-src').join(' '));
   comprobar(
-    `${etiqueta}: CSP connect-src con la API propia, Control360, Google Analytics y Vercel Blob`,
-    tiene('connect-src', "'self'", 'https://control360app.com', 'https://*.google-analytics.com', 'https://vercel.com', 'https://*.blob.vercel-storage.com'),
+    `${etiqueta}: CSP connect-src con la API propia, Control360 y Vercel Blob (sin Google)`,
+    tiene('connect-src', "'self'", 'https://control360app.com', 'https://vercel.com', 'https://*.blob.vercel-storage.com') &&
+      !/google/.test(fuentes('connect-src').join(' ')),
   );
   comprobar(`${etiqueta}: CSP frame-ancestors 'none'`, tiene('frame-ancestors', "'none'"));
   comprobar(
@@ -638,36 +635,26 @@ async function revisarCspEnNavegador(navegador, { base, local, etiqueta }) {
   // ---- Analítica ---------------------------------------------------------------
   {
     /*
-     * Se miran las PETICIONES, no las respuestas. Con un ID de contenedor de
-     * prueba (GTM-TEST000) Google responde 404 con un tipo que no es JavaScript
-     * y Chrome la descarta por ORB, así que no hay respuesta que mirar. Lo que
-     * aquí se comprueba es lo que depende de este repositorio: que el arranque
-     * se ejecute, arme el `dataLayer` y consiga pedir el contenedor sin que la
-     * CSP lo corte. Que el contenedor exista es cosa de la cuenta de GTM.
+     * La analítica es Vercel Web Analytics, servida desde el mismo dominio
+     * (/_vercel/insights/). Aquí solo se comprueba que ya no quede nada de
+     * Google: ni peticiones a Tag Manager/Analytics ni franja de cookies.
      */
-    const peticionesGa = [];
+    const peticionesGoogle = [];
     const alPedir = (r) => {
-      if (/googletagmanager\.com\/gtm\.js|google-analytics\.com\/g\/collect/.test(r.url())) {
-        peticionesGa.push(`${new URL(r.url()).host}${new URL(r.url()).pathname}`);
-      }
+      if (/googletagmanager\.com|google-analytics\.com/.test(r.url())) peticionesGoogle.push(new URL(r.url()).host);
     };
     pagina.on('request', alPedir);
     await pagina.goto(`${base}/`, { waitUntil: 'load' });
-    // Analitica.astro solo siembra esta etiqueta si hay ID de contenedor.
-    const conGtm = (await pagina.content()).includes('analitica-arranque.js');
-    if (!conGtm) {
-      console.log(`  --    ${etiqueta}: analítica omitida — el build no lleva PUBLIC_GTM_CONTAINER_ID`);
-    } else {
-      await pagina.waitForTimeout(4000);
-      const arranco = await pagina.evaluate(
-        () => typeof window.gtag === 'function' && Array.isArray(window.dataLayer) && window.dataLayer.some((e) => e && e.event === 'gtm.js'),
-      );
-      comprobar(
-        `${etiqueta}: la analítica pide el contenedor de Tag Manager sin bloqueos de CSP`,
-        arranco && peticionesGa.some((r) => r.includes('gtm.js')) && (await violaciones(pagina)).length === 0,
-        peticionesGa.join(', ') || '(no se pidió nada a Google)',
-      );
-    }
+    await pagina.waitForTimeout(1500);
+    comprobar(
+      `${etiqueta}: la página no pide nada a Google Analytics ni a Tag Manager`,
+      peticionesGoogle.length === 0,
+      peticionesGoogle.join(', '),
+    );
+    comprobar(
+      `${etiqueta}: no hay franja de cookies (la analítica no usa cookies)`,
+      (await pagina.locator('[data-aviso-cookies]').count()) === 0,
+    );
     pagina.off('request', alPedir);
   }
 
@@ -687,16 +674,15 @@ async function revisarCspEnNavegador(navegador, { base, local, etiqueta }) {
         }
       };
       return {
-        ga: await probar('https://region1.google-analytics.com/g/collect?v=2'),
         blob: await probar('https://vercel.com/api/blob/'),
         ajeno: await probar('https://example.com/'),
       };
     });
     const probas = await violaciones(pagina);
     comprobar(
-      `${etiqueta}: connect-src deja salir hacia Google Analytics y Vercel Blob`,
-      !probas.some((v) => /google-analytics|vercel\.com/.test(v)),
-      `ga=${resultado.ga} blob=${resultado.blob}`,
+      `${etiqueta}: connect-src deja salir hacia Vercel Blob`,
+      !probas.some((v) => /vercel\.com/.test(v)),
+      `blob=${resultado.blob}`,
     );
     comprobar(
       `${etiqueta}: connect-src bloquea un destino ajeno (la CSP está activa)`,

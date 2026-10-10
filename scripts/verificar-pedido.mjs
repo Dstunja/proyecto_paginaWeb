@@ -29,7 +29,7 @@
  *   node scripts/verificar-pedido.mjs
  *
  * No necesita dependencias nuevas: Playwright ya está en devDependencies y el
- * servidor estático es el mismo patrón de scripts/verificar-analitica.mjs.
+ * servidor estático es el mismo patrón de scripts/verificar-navegacion.mjs.
  *
  * Puerto: 4399, el mismo en todos los scripts de verificación. Está lejos del
  * 4321 de `astro dev` y de los que Astro toma cuando ese está ocupado (4322,
