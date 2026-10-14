@@ -121,6 +121,7 @@ function campos(extra: Record<string, string> = {}): Record<string, string> {
     nombre: 'Cristian Amaya',
     correo: 'practicaspasantiasdst@gmail.com',
     telefono: '310 623 2429',
+    municipio: 'Tunja',
     cargo: 'Vendedor TAT',
     experiencia: 'Dos años en ventas TAT en Tunja.',
     autorizacion: 'si',

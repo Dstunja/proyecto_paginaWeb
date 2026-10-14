@@ -14,13 +14,18 @@ import { esCargoValido, vacanteDelCargo, type VacanteDelCargo } from './cargos';
 import { CAMPO_HONEYPOT } from './config';
 import { validarHojaDeVida } from './hoja-de-vida';
 import { validarRespuestas, type RespuestaPregunta } from './preguntas';
+import { limpiarMunicipio, preguntasConTraslado } from './ubicacion';
 
 /** Nombres de los campos del multipart. Son los `name` del formulario. */
 export const CAMPOS = {
   nombre: 'nombre',
   correo: 'correo',
   telefono: 'telefono',
+  /** «Municipio donde vives» (obligatorio desde el 13·10, como en Control360). */
+  municipio: 'municipio',
   cargo: 'cargo',
+  /** Slug de la vacante elegida: desempata un cargo abierto en varias sedes. */
+  vacante: 'vacante',
   experiencia: 'experiencia',
   autorizacion: 'autorizacion',
   hojaDeVida: 'hoja-de-vida',
@@ -58,6 +63,8 @@ export interface PostulacionValidada {
   nombre: string;
   correo: string;
   telefono: string;
+  /** Limpio con `limpiarMunicipio` (src/lib/empleos/ubicacion.ts): «Tunja», «San josé de pare». */
+  municipio: string;
   cargo: string;
   /** Vacío si no escribió nada: el campo es opcional. */
   experiencia: string;
@@ -77,8 +84,9 @@ export interface PostulacionValidada {
   /**
    * El filtro de Control360 (src/lib/empleos/preguntas.ts). `vacanteSlug` es la
    * vacante elegida (null si es espontánea o el cargo ya no está); `respuestas`
-   * son las preguntas respondidas, o null cuando la vacante no tiene preguntas:
-   * entonces no se manda nada y Control360 la deja SIN FILTRO.
+   * son las preguntas respondidas, o null cuando no hay ninguna que hacer (ni de
+   * la vacante ni la de traslado): entonces no se manda nada y Control360 la deja
+   * SIN FILTRO.
    */
   vacanteSlug?: string | null;
   respuestas?: RespuestaPregunta[] | null;
@@ -86,7 +94,7 @@ export interface PostulacionValidada {
 
 /** Inyectable en las pruebas: de dónde salen las preguntas de un cargo. */
 export interface OpcionesValidacion {
-  vacanteDe?: (cargo: string) => Promise<VacanteDelCargo | null>;
+  vacanteDe?: (cargo: string, slug?: string | null) => Promise<VacanteDelCargo | null>;
 }
 
 export type ResultadoPostulacion =
@@ -145,6 +153,10 @@ export async function validarPostulacion(
     errores.push('El teléfono es demasiado largo.');
   }
 
+  // Como en el formulario de Control360: sin municipio no se recibe (400).
+  const municipio = limpiarMunicipio(limpiar(texto(formulario.get(CAMPOS.municipio))));
+  if (!municipio) errores.push('Escribe el municipio donde vives.');
+
   const cargo = limpiar(texto(formulario.get(CAMPOS.cargo)));
   if (cargo.length === 0) errores.push('Elige el cargo al que te postulas.');
   else if (cargo.length > LIMITES.cargo || !(await esCargoValido(cargo))) {
@@ -153,13 +165,17 @@ export async function validarPostulacion(
     );
   }
 
-  // Las preguntas de filtro de la vacante elegida. Se exigen aquí y no solo en
-  // el navegador: un multipart armado a mano no puede saltarse una obligatoria.
-  // Sin vacante (espontánea) o sin preguntas no hay nada que validar ni mandar.
-  const vacante = cargo ? await (opciones.vacanteDe ?? vacanteDelCargo)(cargo) : null;
+  // Las preguntas de filtro de la vacante elegida (las del cargo y las suyas) y,
+  // si vive en otro municipio, la de traslado. Se exigen aquí y no solo en el
+  // navegador: un multipart armado a mano no puede saltarse una obligatoria, y
+  // Control360 rechazaría la postulación si faltara. Sin vacante (espontánea) o
+  // sin ninguna pregunta no hay nada que validar ni mandar.
+  const slug = limpiar(texto(formulario.get(CAMPOS.vacante))) || null;
+  const vacante = cargo ? await (opciones.vacanteDe ?? vacanteDelCargo)(cargo, slug) : null;
+  const preguntas = vacante ? preguntasConTraslado(vacante.preguntas, municipio, vacante.ciudad) : [];
   let respuestas: RespuestaPregunta[] | null = null;
-  if (vacante && vacante.preguntas.length > 0) {
-    const r = validarRespuestas(vacante.preguntas, (nombre) => texto(formulario.get(nombre)));
+  if (preguntas.length > 0) {
+    const r = validarRespuestas(preguntas, (nombre) => texto(formulario.get(nombre)));
     errores.push(...r.errores);
     respuestas = r.respuestas;
   }
@@ -196,7 +212,7 @@ export async function validarPostulacion(
 
   const hojaDeVida = await revisarHojaDeVida(formulario.get(CAMPOS.hojaDeVida), errores);
 
-  if (errores.length > 0 || !hojaDeVida) {
+  if (errores.length > 0 || !hojaDeVida || !municipio) {
     return { ok: false, errores };
   }
 
@@ -206,6 +222,7 @@ export async function validarPostulacion(
       nombre,
       correo,
       telefono,
+      municipio,
       cargo,
       experiencia,
       autorizacion: true,

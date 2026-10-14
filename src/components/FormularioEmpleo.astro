@@ -54,12 +54,21 @@
  * `required`). Si la vacante no tiene preguntas, no aparece nada y el
  * formulario queda como siempre. El servidor las vuelve a exigir
  * (src/lib/empleos/postulacion.ts) y las manda a Control360 como `respuestas`.
+ * Desde el 13·10 llegan juntas las del cargo (heredadas, id «c-…») y las de la
+ * vacante.
+ *
+ * MUNICIPIO Y TRASLADO (13·10, igual que el formulario público de Control360).
+ * «Municipio donde vives» es obligatorio. Si no es la sede de la vacante elegida
+ * (sin tildes ni mayúsculas: src/lib/empleos/ubicacion.ts), se agrega al final
+ * de las preguntas «¿Puedes vivir o trabajar en <sede>?», Sí/No y obligatoria.
+ * Es solo una alerta para Talento Humano: nunca descarta.
  */
 import { contactoEmpleo } from '../data/vacantes';
-import { cargosAdmitidos } from '../lib/empleos/cargos';
+import { CARGO_ESPONTANEO } from '../lib/empleos/cargos';
 import { CAMPO_HONEYPOT } from '../lib/empleos/config';
 import { AUTORIZACION_PARRAFOS } from '../lib/empleos/autorizacion';
 import { ACEPTA_HOJA_DE_VIDA, AYUDA_HOJA_DE_VIDA } from '../lib/empleos/hoja-de-vida';
+import { MUNICIPIO_MAX, MUNICIPIO_MIN } from '../lib/empleos/ubicacion';
 import { cargarVacantes } from '../lib/empleos/vacantes-fuente';
 import { ruta } from '../lib/rutas';
 import Icono from './Icono.astro';
@@ -79,16 +88,28 @@ const enlaceCorreo = `mailto:${contactoEmpleo.email}`;
 const claveTurnstile = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 // Las vacantes de Control360 (o la lista estática si no se pudieron leer):
 // se resuelven en el build, una sola vez por proceso.
-const cargos = await cargosAdmitidos();
-
-// Las preguntas de filtro, por cargo, para el navegador. Solo las vacantes que
-// traen alguna; el JSON va incrustado en un <script type="application/json">
-// y se escapa `<` para que ningún texto pueda cerrar la etiqueta.
+// Son las mismas que `cargosAdmitidos()` (src/lib/empleos/cargos.ts) valida en
+// el servidor.
 const { vacantes } = await cargarVacantes();
-const preguntasPorCargo = Object.fromEntries(
-  vacantes.filter((v) => v.preguntas?.length).map((v) => [v.cargo, v.preguntas]),
+
+// Control360 crea una vacante por sede con el mismo cargo: si un cargo se
+// repite, la opción dice también la ciudad, y cada una lleva su slug para que
+// el servidor sepa cuál se eligió.
+const repetidos = new Set(vacantes.map((v) => v.cargo).filter((c, i, xs) => xs.indexOf(c) !== i));
+const opciones = vacantes.map((v) => ({
+  cargo: v.cargo,
+  slug: v.slug,
+  texto: repetidos.has(v.cargo) && v.ciudad ? `${v.cargo} — ${v.ciudad}` : v.cargo,
+}));
+
+// Por vacante (slug): su sede y sus preguntas de filtro (las del cargo y las
+// suyas), para el navegador. El JSON va incrustado en un <script
+// type="application/json"> y se escapa `<` para que ningún texto pueda cerrar
+// la etiqueta.
+const datosPorVacante = Object.fromEntries(
+  vacantes.map((v) => [v.slug, { sede: v.ciudad, preguntas: v.preguntas ?? [] }]),
 );
-const jsonPreguntas = JSON.stringify(preguntasPorCargo).replace(/</g, '\\u003c');
+const jsonVacantes = JSON.stringify(datosPorVacante).replace(/</g, '\\u003c');
 ---
 
 <form
@@ -148,10 +169,29 @@ const jsonPreguntas = JSON.stringify(preguntasPorCargo).replace(/</g, '\\u003c')
   </div>
 
   <div>
+    <label class="field-label" for="municipio-empleo">Municipio donde vives *</label>
+    <input
+      class="field"
+      id="municipio-empleo"
+      name="municipio"
+      type="text"
+      required
+      minlength={MUNICIPIO_MIN}
+      maxlength={MUNICIPIO_MAX}
+      autocomplete="address-level2"
+      autocapitalize="words"
+      placeholder="Ej.: Tunja"
+    />
+  </div>
+
+  <div>
     <label class="field-label" for="cargo-empleo">Cargo al que te postulas *</label>
     <select class="field" id="cargo-empleo" name="cargo" required>
-      {cargos.map((cargo) => <option value={cargo}>{cargo}</option>)}
+      {opciones.map((o) => <option value={o.cargo} data-vacante={o.slug}>{o.texto}</option>)}
+      <option value={CARGO_ESPONTANEO}>{CARGO_ESPONTANEO}</option>
     </select>
+    {/* El slug de la opción elegida; lo mantiene al día el script de abajo. */}
+    <input type="hidden" name="vacante" value={opciones[0]?.slug ?? ''} data-vacante-empleo />
   </div>
 
   {/*
@@ -159,7 +199,7 @@ const jsonPreguntas = JSON.stringify(preguntasPorCargo).replace(/</g, '\\u003c')
     pinta el script de abajo a partir del JSON. `hidden` mientras no hay nada,
     para que no quede un hueco en el formulario.
   */}
-  <script type="application/json" is:inline data-preguntas-por-cargo set:html={jsonPreguntas}></script>
+  <script type="application/json" is:inline data-vacantes-empleo set:html={jsonVacantes}></script>
   <fieldset
     class="m-0 hidden grid-cols-1 gap-5 rounded-xl border border-line bg-fondo p-5"
     data-preguntas-empleo
@@ -408,7 +448,8 @@ const jsonPreguntas = JSON.stringify(preguntasPorCargo).replace(/</g, '\\u003c')
   import { formatearTamano, nombreParaMostrar } from '../lib/adjuntos';
   import { registrarEvento } from '../lib/analitica';
   import { validarFileHojaDeVida } from '../lib/empleos/hoja-de-vida';
-  import { LIMITES, nombreCampo, type PreguntaVacante } from '../lib/empleos/preguntas';
+  import { LIMITES, PREFIJO_CAMPO, nombreCampo, type PreguntaVacante } from '../lib/empleos/preguntas';
+  import { limpiarMunicipio, preguntasConTraslado } from '../lib/empleos/ubicacion';
   import { ruta } from '../lib/rutas';
   import {
     ErrorTurnstile,
@@ -471,14 +512,17 @@ const jsonPreguntas = JSON.stringify(preguntasPorCargo).replace(/</g, '\\u003c')
     // pinta como HTML. Cada campo se llama `pregunta__<id>`, que es lo que el
     // servidor lee (src/lib/empleos/postulacion.ts).
     const selectCargo = form.querySelector<HTMLSelectElement>('#cargo-empleo');
+    const entradaMunicipio = form.querySelector<HTMLInputElement>('#municipio-empleo');
+    const entradaVacante = form.querySelector<HTMLInputElement>('[data-vacante-empleo]');
     const cajaPreguntas = form.querySelector<HTMLFieldSetElement>('[data-preguntas-empleo]');
     const camposPreguntas = form.querySelector<HTMLElement>('[data-preguntas-campos]');
-    const jsonPreguntas = form.querySelector<HTMLScriptElement>('[data-preguntas-por-cargo]');
-    let preguntasPorCargo: Record<string, PreguntaVacante[]> = {};
+    const jsonVacantes = form.querySelector<HTMLScriptElement>('[data-vacantes-empleo]');
+    type DatosVacante = { sede: string; preguntas: PreguntaVacante[] };
+    let datosPorVacante: Record<string, DatosVacante> = {};
     try {
-      preguntasPorCargo = JSON.parse(jsonPreguntas?.textContent || '{}') as Record<string, PreguntaVacante[]>;
+      datosPorVacante = JSON.parse(jsonVacantes?.textContent || '{}') as Record<string, DatosVacante>;
     } catch {
-      preguntasPorCargo = {};
+      datosPorVacante = {};
     }
 
     function etiqueta(p: PreguntaVacante, para?: string): HTMLLabelElement {
@@ -560,16 +604,56 @@ const jsonPreguntas = JSON.stringify(preguntasPorCargo).replace(/</g, '\\u003c')
       return caja;
     }
 
+    /** Lo respondido hasta ahora, para no borrarlo al volver a pintar. */
+    function respuestasActuales(): Map<string, string> {
+      const datos = new FormData(form);
+      const mapa = new Map<string, string>();
+      for (const [nombre, valor] of datos) {
+        if (nombre.startsWith(PREFIJO_CAMPO) && typeof valor === 'string') mapa.set(nombre, valor);
+      }
+      return mapa;
+    }
+
+    function restaurar(caja: HTMLElement, previas: Map<string, string>) {
+      caja.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select').forEach((campo) => {
+        const previa = previas.get(campo.name);
+        if (previa === undefined) return;
+        if (campo instanceof HTMLInputElement && campo.type === 'radio') campo.checked = campo.value === previa;
+        else campo.value = previa;
+      });
+    }
+
+    // La firma de lo que hay pintado: si no cambia, no se toca nada (escribir
+    // el municipio letra a letra no debe parpadear ni mover el foco).
+    let pintadas = '';
+
     function pintarPreguntas() {
       if (!cajaPreguntas || !camposPreguntas) return;
-      const lista = preguntasPorCargo[selectCargo?.value ?? ''] ?? [];
+      // La vacante de la opción elegida (la espontánea no tiene).
+      const slug = selectCargo?.selectedOptions[0]?.dataset.vacante ?? '';
+      if (entradaVacante) entradaVacante.value = slug;
+      const vacante = datosPorVacante[slug];
+      const municipio = limpiarMunicipio(entradaMunicipio?.value ?? '');
+      const lista = vacante ? preguntasConTraslado(vacante.preguntas, municipio, vacante.sede) : [];
+      const firma = JSON.stringify([slug, lista.map((p) => [p.id, p.texto])]);
+      if (firma === pintadas) return;
+      pintadas = firma;
+      const previas = respuestasActuales();
       camposPreguntas.textContent = '';
       for (const p of lista) camposPreguntas.append(campoPregunta(p));
+      restaurar(camposPreguntas, previas);
       cajaPreguntas.classList.toggle('hidden', lista.length === 0);
       cajaPreguntas.classList.toggle('grid', lista.length > 0);
     }
 
     selectCargo?.addEventListener('change', pintarPreguntas);
+    // Mientras escribe, se espera a que pare un momento; al salir del campo, ya.
+    let pausaMunicipio: number | undefined;
+    entradaMunicipio?.addEventListener('input', () => {
+      clearTimeout(pausaMunicipio);
+      pausaMunicipio = window.setTimeout(pintarPreguntas, 400);
+    });
+    entradaMunicipio?.addEventListener('change', pintarPreguntas);
     pintarPreguntas();
 
     function valorDe(nombre: string): string {
@@ -804,6 +888,10 @@ const jsonPreguntas = JSON.stringify(preguntasPorCargo).replace(/</g, '\\u003c')
 
     form.addEventListener('submit', async (evento) => {
       evento.preventDefault();
+      // Por si envió con Enter justo después de escribir el municipio: la de
+      // traslado tiene que estar pintada antes de comprobar las obligatorias.
+      clearTimeout(pausaMunicipio);
+      pintarPreguntas();
       if (!form.reportValidity()) return;
 
       mostrarErrores([]);

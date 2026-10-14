@@ -496,6 +496,7 @@ async function rellenar(pagina, archivo) {
   await pagina.fill('#nombre-empleo', 'Cristian Amaya (prueba automática)');
   await pagina.fill('#correo-empleo', 'practicaspasantiasdst@gmail.com');
   await pagina.fill('#telefono-empleo', '3106232429');
+  await pagina.fill('#municipio-empleo', 'Tunja');
   await pagina.selectOption('#cargo-empleo', 'Vendedor TAT');
   await pagina.fill('#experiencia-empleo', 'Dos años en ventas TAT en Tunja.');
   if (archivo) await pagina.setInputFiles('#hoja-de-vida-empleo', archivo);
@@ -673,6 +674,7 @@ async function revisarCampo(navegador, archivos, etiqueta, viewport) {
   await pagina.fill('#nombre-empleo', 'Cristian Amaya');
   await pagina.fill('#correo-empleo', 'practicaspasantiasdst@gmail.com');
   await pagina.fill('#telefono-empleo', '3106232429');
+  await pagina.fill('#municipio-empleo', 'Tunja');
   await pagina.click('[data-enviar-empleo]');
   await pagina.waitForTimeout(500);
   comprobar(
@@ -761,6 +763,7 @@ async function revisarEnvio(navegador, archivos, etiqueta, viewport) {
       valor('nombre') === 'Cristian Amaya (prueba automática)' &&
         valor('correo') === 'practicaspasantiasdst@gmail.com' &&
         valor('telefono') === '3106232429' &&
+        valor('municipio') === 'Tunja' &&
         valor('cargo') === 'Vendedor TAT' &&
         valor('experiencia') === 'Dos años en ventas TAT en Tunja.',
       partes.map((p) => `${p.nombre}=${p.archivo ?? p.datos.toString('utf8').slice(0, 40)}`).join(' | '),
@@ -1270,6 +1273,7 @@ async function envioReal(base, archivos) {
   cuerpo.set('nombre', 'Prueba automática de dstunja.com');
   cuerpo.set('correo', 'practicaspasantiasdst@gmail.com');
   cuerpo.set('telefono', '3106232429');
+  cuerpo.set('municipio', 'Tunja');
   cuerpo.set('cargo', 'Otro / hoja de vida espontánea');
   cuerpo.set('experiencia', 'Envío de prueba de scripts/verificar-empleos.mjs. Ignorar.');
   cuerpo.set('autorizacion', 'si');

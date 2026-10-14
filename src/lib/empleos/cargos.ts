@@ -41,15 +41,22 @@ export async function esCargoValido(cargo: string): Promise<boolean> {
 /** Lo que el filtro de Control360 necesita de la vacante elegida. */
 export interface VacanteDelCargo {
   slug: string;
+  /** La sede («Tunja, Boyacá»): si el candidato vive en otro municipio, se pregunta el traslado. */
+  ciudad: string;
   preguntas: PreguntaVacante[];
 }
 
 /**
  * La vacante a la que corresponde un cargo, o null (espontánea, o un cargo que
- * ya no está). Con ella van el slug y las preguntas de filtro que el servidor
- * valida y manda a Control360.
+ * ya no está). Con ella van el slug, la sede y las preguntas de filtro que el
+ * servidor valida y manda a Control360.
+ *
+ * `slug` desempata cuando el mismo cargo está abierto en varias sedes (Control360
+ * crea una vacante por sede, con el mismo nombre de cargo): el formulario manda
+ * el slug de la opción elegida. Solo cuenta si es de ese cargo.
  */
-export async function vacanteDelCargo(cargo: string): Promise<VacanteDelCargo | null> {
-  const v = (await cargarVacantes()).vacantes.find((x) => x.cargo === cargo);
-  return v ? { slug: v.slug, preguntas: v.preguntas ?? [] } : null;
+export async function vacanteDelCargo(cargo: string, slug?: string | null): Promise<VacanteDelCargo | null> {
+  const delCargo = (await cargarVacantes()).vacantes.filter((x) => x.cargo === cargo);
+  const v = delCargo.find((x) => slug && x.slug === slug) ?? delCargo[0];
+  return v ? { slug: v.slug, ciudad: v.ciudad, preguntas: v.preguntas ?? [] } : null;
 }
