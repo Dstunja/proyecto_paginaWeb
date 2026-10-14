@@ -148,6 +148,7 @@ const proceso = [
                       class="inline-flex min-h-11 items-center text-[14.5px] font-semibold text-muted underline transition-colors duration-200 hover:text-primary"
                       href="#postular"
                       data-postular={vacante.cargo}
+                      data-postular-vacante={vacante.slug}
                     >
                       Postularme
                     </a>
@@ -237,13 +238,17 @@ const proceso = [
 
   const select = () => document.getElementById('cargo-empleo') as HTMLSelectElement | null;
 
-  /** Elige una opción del select solo si ese cargo existe en la lista. */
-  function elegirCargo(cargo: string) {
+  /**
+   * Elige una opción del select solo si ese cargo existe en la lista. Con
+   * `slug` elige la vacante exacta: el mismo cargo puede estar en varias sedes.
+   */
+  function elegirCargo(cargo: string, slug?: string) {
     const campo = select();
     if (!campo) return;
-    const existe = Array.from(campo.options).some((o) => o.value === cargo);
-    if (!existe) return;
-    campo.value = cargo;
+    const opciones = Array.from(campo.options).filter((o) => o.value === cargo);
+    const opcion = opciones.find((o) => slug && o.dataset.vacante === slug) ?? opciones[0];
+    if (!opcion) return;
+    campo.selectedIndex = opcion.index;
     // Cambiar `value` por código no dispara `change`, y el formulario escucha
     // ese evento para pintar las preguntas de filtro de la vacante elegida.
     campo.dispatchEvent(new Event('change', { bubbles: true }));
@@ -254,7 +259,7 @@ const proceso = [
     enlace.addEventListener('click', () => {
       const cargo = enlace.dataset.postular;
       if (!cargo) return;
-      elegirCargo(cargo);
+      elegirCargo(cargo, enlace.dataset.postularVacante);
       registrarEvento('vacante_postular', { vacante: cargo });
     });
   });

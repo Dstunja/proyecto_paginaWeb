@@ -1,7 +1,8 @@
 // PREGUNTAS DE FILTRO DE UNA VACANTE — las que Control360 publica y el formulario hace antes de la hoja de vida.
 //
-// Por qué existe: Talento Humano escribe en Control360 (Postulaciones › Vacantes) hasta 8 preguntas
-//   básicas por vacante (moto propia, licencia, años de experiencia, ciudad, disponibilidad…). Llegan
+// Por qué existe: Talento Humano escribe en Control360 hasta 8 preguntas básicas por CARGO (se
+//   heredan en todas sus vacantes, con id «c-…») y hasta 8 por vacante (moto propia, licencia, años
+//   de experiencia, disponibilidad…). Desde el 13·10 llegan juntas, las del cargo primero. Llegan
 //   con las vacantes en GET /api/talento/vacantes/dst como `preguntas` (sin la regla que descarta:
 //   eso se queda allá) y aquí se pintan en el formulario, se validan en el servidor y se mandan a
 //   Control360 como `respuestas` para que la postulación entre marcada CUMPLE / NO CUMPLE.
@@ -31,8 +32,11 @@ export interface RespuestaPregunta {
   respuesta: string;
 }
 
-/** Mismos topes que Control360 (filtro.ts allá). */
-export const LIMITES = { preguntas: 8, texto: 200, opciones: 10, opcion: 60, respuesta: 300 } as const;
+/**
+ * Mismos topes que Control360 (filtro.ts allá). `preguntas` es lo que puede ver el candidato en
+ * total (LIMITES_PREGUNTA.total allá): 8 del cargo + 8 de la vacante + la de traslado.
+ */
+export const LIMITES = { preguntas: 17, texto: 200, opciones: 10, opcion: 60, respuesta: 300 } as const;
 
 const FORMA_ID = /^[a-z0-9_-]{1,32}$/;
 const texto = (x: unknown, max: number): string =>

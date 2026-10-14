@@ -183,6 +183,7 @@ function cuerpoHtml(datos: PostulacionValidada, fecha: string, opciones: Opcione
         'Teléfono',
         `<a href="tel:${escapar(telefonoHref)}" style="${ESTILO_ENLACE}">${escapar(datos.telefono)}</a>`,
       )}
+      ${fila('Municipio', escapar(datos.municipio))}
       ${fila(
         'Correo',
         `<a href="mailto:${escapar(datos.correo)}" style="${ESTILO_ENLACE}">${escapar(datos.correo)}</a>`,
@@ -221,6 +222,7 @@ function cuerpoTexto(datos: PostulacionValidada, fecha: string, opciones: Opcion
     `Nombre: ${datos.nombre}`,
     `Cargo: ${datos.cargo}`,
     `Teléfono: ${datos.telefono}`,
+    `Municipio: ${datos.municipio}`,
     `Correo: ${datos.correo}`,
   );
   if (opciones.id) lineas.push(`Identificador: ${opciones.id}`);

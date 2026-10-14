@@ -103,6 +103,7 @@ export async function guardarPostulacion(
           nombre: datos.nombre,
           correo: datos.correo,
           telefono: datos.telefono,
+          municipio: datos.municipio,
         },
         cargo: datos.cargo,
         experiencia: datos.experiencia || null,

@@ -47,9 +47,9 @@ describe('leerPreguntas', () => {
     expect(leerPreguntas({})).toEqual([]);
   });
 
-  it('se queda con las primeras 8', () => {
-    const muchas = Array.from({ length: 12 }, (_, i) => ({ id: `p${i}`, texto: `Pregunta ${i}`, tipo: 'TEXTO' }));
-    expect(leerPreguntas(muchas)).toHaveLength(8);
+  it('se queda con las primeras 17 (8 del cargo + 8 de la vacante + la de traslado)', () => {
+    const muchas = Array.from({ length: 20 }, (_, i) => ({ id: `p${i}`, texto: `Pregunta ${i}`, tipo: 'TEXTO' }));
+    expect(leerPreguntas(muchas)).toHaveLength(17);
   });
 });
 

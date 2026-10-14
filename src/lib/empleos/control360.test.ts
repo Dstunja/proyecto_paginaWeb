@@ -25,6 +25,7 @@ const datos: PostulacionValidada = {
   nombre: 'Ana Prueba',
   correo: 'ana@example.com',
   telefono: '3001234567',
+  municipio: 'Tunja',
   cargo: 'Vendedor TAT',
   experiencia: '',
   autorizacion: true,
@@ -54,7 +55,7 @@ describe('el cuerpo', () => {
   it('lleva exactamente los campos que lee Control360', () => {
     const c = JSON.parse(cuerpoParaControl360(datos, 'id-1'));
     expect(Object.keys(c).sort()).toEqual(
-      ['archivo', 'autorizacion', 'autorizacionVersion', 'cargo', 'correo', 'envioId', 'experiencia', 'nombre', 'telefono'].sort(),
+      ['archivo', 'autorizacion', 'autorizacionVersion', 'cargo', 'correo', 'envioId', 'experiencia', 'municipio', 'nombre', 'telefono'].sort(),
     );
     expect(c.autorizacion).toBe(true);
     expect(c.autorizacionVersion).toBe(AUTORIZACION_VERSION);

@@ -17,8 +17,14 @@ const PREGUNTAS: PreguntaVacante[] = [
   { id: 'exp', texto: '¿Cuántos años de experiencia tienes?', tipo: 'NUMERO', obligatoria: false },
 ];
 
-const vacanteDe = async (cargo: string) =>
-  cargo === 'Vendedor TAT' ? { slug: 'vendedor-tat', preguntas: PREGUNTAS } : cargo === 'Facturación' ? { slug: 'facturacion', preguntas: [] } : null;
+const vacanteDe = async (cargo: string, slug?: string | null) =>
+  cargo === 'Vendedor TAT'
+    ? { slug: 'vendedor-tat', ciudad: 'Tunja, Boyacá', preguntas: PREGUNTAS }
+    : cargo === 'Facturación'
+      ? slug === 'facturacion-duitama'
+        ? { slug: 'facturacion-duitama', ciudad: 'Duitama, Boyacá', preguntas: [] }
+        : { slug: 'facturacion', ciudad: 'Tunja y alrededores', preguntas: [] }
+      : null;
 
 function formulario(extra: Record<string, string> = {}): FormData {
   const f = new FormData();
@@ -26,6 +32,7 @@ function formulario(extra: Record<string, string> = {}): FormData {
     nombre: 'Cristian Amaya',
     correo: 'practicaspasantiasdst@gmail.com',
     telefono: '310 623 2429',
+    municipio: 'Tunja',
     cargo: 'Vendedor TAT',
     experiencia: '',
     autorizacion: 'si',
@@ -86,5 +93,83 @@ describe('validarPostulacion con preguntas de filtro', () => {
     expect(cuerpo.vacanteSlug).toBe('vendedor-tat');
     expect(cuerpo.respuestas).toEqual([{ id: 'moto', texto_pregunta: '¿Tienes moto propia?', respuesta: 'NO' }]);
     expect(Object.keys(cuerpo.respuestas[0]).sort()).toEqual(['id', 'respuesta', 'texto_pregunta']);
+  });
+});
+
+describe('municipio y pregunta de traslado (Control360, 13·10)', () => {
+  it('sin municipio no se recibe, con el mismo mensaje que Control360', async () => {
+    const r = await validarPostulacion(formulario({ municipio: '', [nombreCampo('moto')]: 'SI' }), { vacanteDe });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.errores).toEqual(['Escribe el municipio donde vives.']);
+  });
+
+  it('el municipio sale limpio y viaja siempre en el cuerpo firmado', async () => {
+    const r = await validarPostulacion(
+      formulario({ municipio: '  san  josé de pare ,boyacá ', cargo: 'Otro / hoja de vida espontánea' }),
+      { vacanteDe },
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.datos.municipio).toBe('San josé de pare, boyacá');
+    const cuerpo = JSON.parse(cuerpoParaControl360(r.datos, 'e1'));
+    expect(cuerpo.municipio).toBe('San josé de pare, boyacá');
+    // Espontánea: sin vacante no hay sede con qué comparar ni pregunta que hacer.
+    expect(cuerpo).not.toHaveProperty('respuestas');
+  });
+
+  it('si vive en la sede (con o sin tildes y mayúsculas) no se pregunta el traslado', async () => {
+    const r = await validarPostulacion(formulario({ municipio: 'TUNJA', [nombreCampo('moto')]: 'SI' }), { vacanteDe });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.datos.respuestas?.map((x) => x.id)).toEqual(['moto']);
+  });
+
+  it('si vive en otro municipio, la de traslado es obligatoria', async () => {
+    const r = await validarPostulacion(formulario({ municipio: 'Bogotá', [nombreCampo('moto')]: 'SI' }), { vacanteDe });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.errores).toEqual(['Falta responder: «¿Puedes vivir o trabajar en Tunja?».']);
+  });
+
+  it('la respuesta de traslado va con las demás, con el id que espera Control360', async () => {
+    const r = await validarPostulacion(
+      formulario({ municipio: 'Bogotá', [nombreCampo('moto')]: 'SI', [nombreCampo('c360-traslado')]: 'NO' }),
+      { vacanteDe },
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const cuerpo = JSON.parse(cuerpoParaControl360(r.datos, 'e2'));
+    expect(cuerpo.respuestas).toEqual([
+      { id: 'moto', texto_pregunta: '¿Tienes moto propia?', respuesta: 'SI' },
+      { id: 'c360-traslado', texto_pregunta: '¿Puedes vivir o trabajar en Tunja?', respuesta: 'NO' },
+    ]);
+  });
+
+  it('una vacante vieja sin preguntas solo agrega la de traslado («Tunja y alrededores» es Tunja)', async () => {
+    const enTunja = await validarPostulacion(formulario({ cargo: 'Facturación', municipio: 'tunja' }), { vacanteDe });
+    expect(enTunja.ok && enTunja.datos.respuestas).toBeNull();
+
+    const fuera = await validarPostulacion(
+      formulario({ cargo: 'Facturación', municipio: 'Paipa', [nombreCampo('c360-traslado')]: 'Sí' }),
+      { vacanteDe },
+    );
+    expect(fuera.ok).toBe(true);
+    if (!fuera.ok) return;
+    expect(fuera.datos.vacanteSlug).toBe('facturacion');
+    expect(fuera.datos.respuestas).toEqual([
+      { id: 'c360-traslado', texto_pregunta: '¿Puedes vivir o trabajar en Tunja?', respuesta: 'SI' },
+    ]);
+  });
+
+  it('el slug elegido desempata un cargo abierto en varias sedes', async () => {
+    const r = await validarPostulacion(
+      formulario({ cargo: 'Facturación', vacante: 'facturacion-duitama', municipio: 'Duitama' }),
+      { vacanteDe },
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.datos.vacanteSlug).toBe('facturacion-duitama');
+    expect(r.datos.respuestas).toBeNull();
   });
 });

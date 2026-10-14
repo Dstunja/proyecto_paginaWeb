@@ -42,9 +42,10 @@ export function configControl360(env: Entorno): ConfigControl360 | null {
  *
  * Teléfono y experiencia vacíos van como null: Control360 los valida solo si vienen.
  * La autorización va como booleano de verdad; la cadena "true" se rechaza allá.
- * `vacanteSlug` y `respuestas` (el filtro de la vacante) van SOLO cuando la vacante
- * tiene preguntas: sin ellos Control360 deja la postulación SIN FILTRO, que es lo
- * que corresponde a una espontánea o a una vacante sin preguntas.
+ * `vacanteSlug` y `respuestas` (el filtro de la vacante) van SOLO cuando hubo preguntas
+ * (las de la vacante o la de traslado): sin ellos Control360 deja la postulación SIN
+ * FILTRO, que es lo que corresponde a una espontánea o a una vacante sin preguntas.
+ * `municipio` va siempre (13·10): con él Control360 arma la alerta de ubicación.
  */
 export function cuerpoParaControl360(datos: PostulacionValidada, envioId: string): string {
   const filtro = datos.respuestas
@@ -62,6 +63,7 @@ export function cuerpoParaControl360(datos: PostulacionValidada, envioId: string
     nombre: datos.nombre,
     correo: datos.correo,
     telefono: datos.telefono.trim() || null,
+    municipio: datos.municipio,
     cargo: datos.cargo,
     experiencia: datos.experiencia.trim() || null,
     autorizacion: true,
