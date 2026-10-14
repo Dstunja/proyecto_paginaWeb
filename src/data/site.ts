@@ -34,9 +34,9 @@ export const empresa = {
   descripcion:
     'Distribuidores líderes del departamento de Boyacá, Cundinamarca y Santander. Calidad y cumplimiento en cada entrega.',
   /**
-   * La única línea de la empresa: el pie, los enlaces `tel:` generales, el
-   * `telephone` de los datos estructurados y —desde que Televentas dejó de
-   * existir— también los pedidos por WhatsApp (src/lib/whatsapp-pedido.ts).
+   * La línea general de la empresa: los enlaces `tel:`, el `telephone` de los
+   * datos estructurados, PQRS, empleos y lo administrativo. Los pedidos y las
+   * cotizaciones por WhatsApp van a otra línea (src/lib/whatsapp-pedido.ts).
    */
   telefono: '310 623 2429',
   telefonoE164: '+573106232429',

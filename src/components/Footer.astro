@@ -4,6 +4,7 @@ import Logo from './Logo.astro';
 import Icono from './Icono.astro';
 import EnlaceUbicacion from './EnlaceUbicacion.astro';
 import { ruta } from '../lib/rutas';
+import { WHATSAPP_PEDIDO } from '../lib/whatsapp-pedido';
 
 const anio = new Date().getFullYear();
 
@@ -18,7 +19,7 @@ const anio = new Date().getFullYear();
  * inicio.
  */
 const canales = [
-  { icono: 'whatsapp', texto: 'WhatsApp', href: empresa.whatsapp, externo: true },
+  { icono: 'whatsapp', texto: 'WhatsApp', href: WHATSAPP_PEDIDO, externo: true },
   ...(PIDEKY_URL.trim() !== ''
     ? [{ icono: 'shopping-cart', texto: 'Pideky', href: PIDEKY_URL, externo: true }]
     : []),

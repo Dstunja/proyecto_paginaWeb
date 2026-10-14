@@ -6,7 +6,7 @@ import MapaCobertura from '../components/MapaCobertura.astro';
 import FormularioMailto from '../components/FormularioMailto.astro';
 import Icono from '../components/Icono.astro';
 import { empresa, horario } from '../data/site';
-import { MENSAJE_PEDIDO, enlacePedido } from '../lib/whatsapp-pedido';
+import { MENSAJE_PEDIDO, TELEFONO_PEDIDO, enlacePedido } from '../lib/whatsapp-pedido';
 import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
 // El horario de atención vive en src/data/site.ts (`horario`): lo usan esta
@@ -14,19 +14,18 @@ import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
 // Antes había una tarjeta aparte de Televentas, con una fila por asesora.
 // Televentas dejó de existir como área, así que WhatsApp es ahora un canal más
-// de esta lista y apunta al número general (src/lib/whatsapp-pedido.ts).
+// de esta lista y apunta a la línea comercial (src/lib/whatsapp-pedido.ts).
 //
-// OJO: hoy WhatsApp y Teléfono muestran EL MISMO número, porque la empresa
-// tiene una sola línea. No es un error de copiado; cuando haya un número propio
-// para pedidos, se cambia en src/lib/whatsapp-pedido.ts y esta tarjeta lo toma.
+// WhatsApp y Teléfono muestran números distintos a propósito: WhatsApp es la
+// línea comercial (pedidos y cotizaciones) y Teléfono, la línea general.
 const canales = [
   {
     icono: 'whatsapp',
     titulo: 'WhatsApp',
-    valor: empresa.telefono,
+    valor: TELEFONO_PEDIDO,
     href: enlacePedido(MENSAJE_PEDIDO),
     externo: true,
-    nota: 'La vía más rápida para pedidos y asesoría comercial.',
+    nota: 'Para pedidos y cotizaciones.',
   },
   {
     icono: 'phone',

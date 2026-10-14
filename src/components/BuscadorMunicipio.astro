@@ -23,7 +23,7 @@
  */
 import Icono from './Icono.astro';
 import { municipios } from '../data/municipios';
-import { empresa } from '../data/site';
+import { WHATSAPP_PEDIDO } from '../lib/whatsapp-pedido';
 import { ruta } from '../lib/rutas';
 
 /** Solo lo que el navegador necesita para buscar y responder. */
@@ -42,7 +42,7 @@ const aJson = (valor: unknown) => JSON.stringify(valor).replace(/</g, '\\u003c')
   class="glass-card mb-8 p-6 tablet:p-8"
   data-buscador-cobertura
   data-ruta-pedido={ruta('/pedido/')}
-  data-whatsapp={empresa.whatsapp}
+  data-whatsapp={WHATSAPP_PEDIDO}
 >
   <div class="flex flex-col gap-5 tablet:flex-row tablet:items-end tablet:justify-between">
     <div class="max-w-[46ch]">
