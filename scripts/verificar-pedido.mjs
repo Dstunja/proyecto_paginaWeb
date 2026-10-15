@@ -287,6 +287,7 @@ const WHATSAPP_PERMITIDOS = [WHATSAPP_PEDIDOS, '573108788754'];
 
 const NUMEROS_RETIRADOS = [
   '573112371868', '311 237 1868', // línea retirada hace tiempo
+  '573118275957', '311 827 5957', // línea comercial aparte, descartada
   '573106218289', '310 621 8289', // Gabriela, Televentas
   '573507461127', '350 746 1127', // Sara, Televentas
 ];

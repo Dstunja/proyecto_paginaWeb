@@ -14,10 +14,13 @@ import EnlaceUbicacion from '../components/EnlaceUbicacion.astro';
 
 // Antes había una tarjeta aparte de Televentas, con una fila por asesora.
 // Televentas dejó de existir como área, así que WhatsApp es ahora un canal más
-// de esta lista y apunta a la línea comercial (src/lib/whatsapp-pedido.ts).
+// de esta lista y sale de src/lib/whatsapp-pedido.ts.
 //
-// WhatsApp y Teléfono muestran números distintos a propósito: WhatsApp es la
-// línea comercial (pedidos y cotizaciones) y Teléfono, la línea general.
+// WhatsApp y Teléfono muestran el MISMO número: la empresa atiende pedidos,
+// cotizaciones y lo administrativo por una sola línea. No es una repetición por
+// descuido; son dos formas de usar el mismo número, y cada tarjeta dice para
+// qué sirve. Si algún día vuelve a haber una línea comercial aparte, cambia
+// sola la de WhatsApp (whatsapp-pedido.ts) y las dos vuelven a diferir.
 const canales = [
   {
     icono: 'whatsapp',
@@ -25,7 +28,7 @@ const canales = [
     valor: TELEFONO_PEDIDO,
     href: enlacePedido(MENSAJE_PEDIDO),
     externo: true,
-    nota: 'Para pedidos y cotizaciones.',
+    nota: 'Pedidos, cotizaciones y atención comercial.',
   },
   {
     icono: 'phone',
@@ -33,7 +36,7 @@ const canales = [
     valor: empresa.telefono,
     href: `tel:${empresa.telefonoE164}`,
     externo: false,
-    nota: 'Atención en horario de oficina.',
+    nota: 'La misma línea, si prefieres llamar. En horario de oficina.',
   },
   {
     icono: 'mail',
